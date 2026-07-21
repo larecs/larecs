@@ -156,8 +156,16 @@ struct ComponentManager[
         """
         writer.write("ComponentManager[")
         comptime if len(Self.ComponentTypes) > 0:
-            writer.write(reflect[Self.ComponentTypes[0]].name())
+            writer.write(self.get_type_name(0))
         comptime for i in range(1, len(Self.ComponentTypes)):
             writer.write(", ")
-            writer.write(reflect[Self.ComponentTypes[i]].name())
+            writer.write(self.get_type_name(i))
         writer.write("]")
+
+    @staticmethod
+    def get_type_name(id: ComponentId) -> StaticString:
+        comptime for i in range(len(Self.ComponentTypes)):
+            if id == i:
+                return reflect[Self.ComponentTypes[i]].name()
+
+        return "<UNKNOWN_COMPONENT>"
