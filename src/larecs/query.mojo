@@ -717,7 +717,7 @@ struct _WorldEntityIterator[
     ]
 
     comptime ArchetypeEntityIterator = _ArchetypeEntityIterator[
-        _,
+        Self.archetype_list_origin._get_owned_interior["element"],
         *Self.ComponentTypes,
     ]
 
@@ -736,10 +736,7 @@ struct _WorldEntityIterator[
     var _current_archetype_index: Int
 
     var _archetype_iterator: Self.ArchetypeIterator
-    var _entity_iterator:
-        Self.ArchetypeEntityIterator[
-            Self.archetype_list_origin._get_owned_interior["element"]
-        ]
+    var _entity_iterator: Self.ArchetypeEntityIterator
 
     def __init__(
         out self,
@@ -774,12 +771,11 @@ struct _WorldEntityIterator[
             except:
                 raise LarecsError(WorldError.out_of_locks)
             self._start_indices = start_indices^
-
             self._archetype_iterator = archetype_iter^
             self._entity_iterator = Self.ArchetypeEntityIterator(
                 self._archetype_iterator._archetypes[][0],
                 0,
-            ) # initialize entity iterator with the empty zero archetype
+            )  # initialize entity iterator with the empty zero archetype
 
             self._current_archetype_index = 0
 
@@ -824,7 +820,7 @@ struct _WorldEntityIterator[
             self._entity_iterator = Self.ArchetypeEntityIterator(
                 archetypes[][0],
                 0,
-            ) # initialize entity iterator with the empty zero archetype
+            )  # initialize entity iterator with the empty zero archetype
 
             self._current_archetype_index = 0
 

@@ -637,14 +637,14 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
                 archetype_index, count
             )
 
-            archetype = Pointer(to=self._archetypes.unsafe_get(archetype_index))
+            ref archetype = self._archetypes.unsafe_get(archetype_index)
 
             comptime for i in range(component_count):
                 comptime T = Ts[i]
                 comptime assert Self.component_manager._ContainsComponent[
                     T
                 ], "Component type is not part of the world."
-                archetype[].set_component_range[T](
+                archetype.set_component_range[T](
                     first_index_in_archetype, count, components[i]
                 )
 
@@ -701,10 +701,10 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
             )
         ):
             debug_assert(count > 0, "Count must be positive.")
-            archetype = Pointer(to=self._archetypes.unsafe_get(archetype_index))
-            arch_start_idx = archetype[].extend(count, self._entity_pool)
+            ref archetype = self._archetypes.unsafe_get(archetype_index)
+            arch_start_idx = archetype.extend(count, self._entity_pool)
             entities_size = (
-                archetype[].get_entity(arch_start_idx + count - 1).get_id() + 1
+                archetype.get_entity(arch_start_idx + count - 1).get_id() + 1
             )
             if entities_size > len(self._entities):
                 if entities_size > self._entities.capacity():
@@ -717,7 +717,7 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
                 )
 
             for i in range(arch_start_idx, arch_start_idx + count):
-                entity_id = archetype[].get_entity(i).get_id()
+                entity_id = archetype.get_entity(i).get_id()
                 self._entities[entity_id].archetype_index = archetype_index
                 self._entities[entity_id].entity_index = i
 
@@ -740,8 +740,8 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
 
         with Zone(function_name="World.remove_entity(entity: Entity)"):
             entity_loc = self._entities[entity.get_id()]
-            old_archetype = Pointer(
-                to=self._archetypes.unsafe_get(entity_loc.archetype_index)
+            ref old_archetype = self._archetypes.unsafe_get(
+                entity_loc.archetype_index
             )
 
             # if self._listener != nil:
@@ -760,7 +760,7 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
             #         self._listener.Notify(self, EntityEventEntity: entity, Removed: old_archetype.Mask, RemovedIDs: oldIds, OldRelation: oldRel, OldTarget: old_archetype.RelationTarget, EventTypes: bits)
             #         self.unlock(lock)
 
-            swapped = old_archetype[].remove(entity_loc.entity_index)
+            swapped = old_archetype.remove(entity_loc.entity_index)
 
             try:
                 self._entity_pool.recycle(entity)
@@ -771,9 +771,7 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
                 )
 
             if swapped:
-                swap_entity = old_archetype[].get_entity(
-                    entity_loc.entity_index
-                )
+                swap_entity = old_archetype.get_entity(entity_loc.entity_index)
                 self._entities[
                     swap_entity.get_id()
                 ].entity_index = entity_loc.entity_index
@@ -1289,10 +1287,8 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
             entity_loc = self._entities[entity.get_id()]
 
             old_archetype_idx = entity_loc.archetype_index
-            old_archetype = Pointer(
-                to=self._archetypes.unsafe_get(index(old_archetype_idx))
-            )
-            old_archetype_mask = old_archetype[].get_mask()
+            ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
+            old_archetype_mask = old_archetype.get_mask()
 
             comptime if rem_size:
                 if not old_archetype_mask.contains(BitMask(remove_ids)):
@@ -1333,37 +1329,36 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
 
             index_in_old_archetype = entity_loc.entity_index
             new_archetype_idx = self._get_archetype_index(
-                component_ids, old_archetype[].get_node_index()
+                component_ids, old_archetype.get_node_index()
             )
-            new_archetype = Pointer(
-                to=self._archetypes.unsafe_get(new_archetype_idx)
-            )
-            index_in_new_archetype = new_archetype[].add_entity(entity)
+            ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
+            ref new_archetype = self._archetypes.unsafe_get(new_archetype_idx)
+            index_in_new_archetype = new_archetype.add_entity(entity)
 
             # Move component data from old archetype to new archetype.
             comptime for id in range(Self.component_manager.component_count):
                 comptime T = Self.component_types[id]
-                if not old_archetype[].has_components[T]():
+                if not old_archetype.has_components[T]():
                     continue
 
                 comptime if rem_size:
-                    if not new_archetype[].has_components[T]():
+                    if not new_archetype.has_components[T]():
                         continue
 
-                new_archetype[].set_components[T](
+                new_archetype.set_components[T](
                     index_in_new_archetype,
-                    old_archetype[]
-                    .get_component[T](index_in_old_archetype)
-                    .copy(),
+                    old_archetype.get_component[T](
+                        index_in_old_archetype
+                    ).copy(),
                 )
 
-            new_archetype[].init_components[*Ts](
+            new_archetype.init_components[*Ts](
                 index_in_new_archetype, *add_components^
             )
 
-            swapped = old_archetype[].remove(index_in_old_archetype)
+            swapped = old_archetype.remove(index_in_old_archetype)
             if swapped:
-                var swap_entity = old_archetype[].get_entity(
+                var swap_entity = old_archetype.get_entity(
                     entity_loc.entity_index
                 )
                 self._entities[
@@ -1633,7 +1628,9 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
 
     @always_inline
     def apply[
-        OperationType: def(accessor: MutableEntityAccessor) raises -> None,
+        OperationType: def[origin: MutOrigin](
+            accessor: MutableEntityAccessor[origin, *Self.component_types]
+        ) raises -> None,
         //,
         has_without_mask: Bool = False,
         *,
@@ -1671,13 +1668,14 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
             self._assert_unlocked()
 
             with self._locked():
-                for archetype in Self.ArchetypeIterator(
+                for ref archetype in Self.ArchetypeIterator(
                     Pointer(to=self._archetypes),
                     query.copy(),
                 ):
-                    for i in range(len(archetype[])):
+                    for i in range(len(archetype)):
                         try:
-                            operation(archetype[].get_entity_accessor(i))
+                            ref entity = archetype.get_entity_accessor(i)
+                            operation(entity)
                         except:
                             raise LarecsError(UnknownError())
 
