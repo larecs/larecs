@@ -1628,9 +1628,7 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
 
     @always_inline
     def apply[
-        OperationType: def[origin: MutOrigin](
-            accessor: MutableEntityAccessor[origin, *Self.component_types]
-        ) raises -> None,
+        OperationType: def(accessor: MutableEntityAccessor) raises -> None,
         //,
         has_without_mask: Bool = False,
         *,
