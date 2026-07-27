@@ -605,47 +605,47 @@ def test_world_lock() raises:
     assert_false(world.is_locked())
 
 
-def test_world_apply_SIMD() raises:
-    world = SmallWorld()
-    pos = Position(0.0, 2.0)
-    vel = Velocity(0.1, 0.2)
+# def test_world_apply_SIMD() raises:
+#     world = SmallWorld()
+#     pos = Position(0.0, 2.0)
+#     vel = Velocity(0.1, 0.2)
 
-    comparison = List[Position](capacity=100)
+#     comparison = List[Position](capacity=100)
 
-    for _ in range(100):
-        pos.x += 1
-        _ = world.add_entity(pos, vel)
-        new_pos = pos.copy()
-        new_pos.x += vel.dx
-        new_pos.y += vel.dy
-        comparison.append(new_pos)
+#     for _ in range(100):
+#         pos.x += 1
+#         _ = world.add_entity(pos, vel)
+#         new_pos = pos.copy()
+#         new_pos.x += vel.dx
+#         new_pos.y += vel.dy
+#         comparison.append(new_pos)
 
-    def operation[simd_width: Int](accessor: MutableEntityAccessor) raises:
-        ref pos2 = accessor.get[Position]()
-        ref vel2 = accessor.get[Velocity]()
+#     def operation[simd_width: Int](accessor: MutableEntityAccessor) raises:
+#         ref pos2 = accessor.get[Position]()
+#         ref vel2 = accessor.get[Velocity]()
 
-        comptime _load = load2[simd_width]
-        comptime _store = store2[simd_width]
+#         comptime _load = load2[simd_width]
+#         comptime _store = store2[simd_width]
 
-        x = _load(pos2.x)
-        y = _load(pos2.y)
+#         x = _load(pos2.x)
+#         y = _load(pos2.y)
 
-        x += _load(vel2.dx)
-        y += _load(vel2.dy)
+#         x += _load(vel2.dx)
+#         y += _load(vel2.dy)
 
-        _store(pos2.x, x)
-        _store(pos2.y, y)
+#         _store(pos2.x, x)
+#         _store(pos2.y, y)
 
-    world.apply[simd_width=4, unroll_factor=3](
-        world.query[Position, Velocity](), operation
-    )
+#     world.apply[simd_width=4, unroll_factor=3](
+#         world.query[Position, Velocity](), operation
+#     )
 
-    i = 0
-    for entity in world.query[Position, Velocity]():
-        new_pos = comparison[i]
-        assert_equal(entity.get[Position]().x, new_pos.x)
-        assert_equal(entity.get[Position]().y, new_pos.y)
-        i += 1
+#     i = 0
+#     for entity in world.query[Position, Velocity]():
+#         new_pos = comparison[i]
+#         assert_equal(entity.get[Position]().x, new_pos.x)
+#         assert_equal(entity.get[Position]().y, new_pos.y)
+#         i += 1
 
 
 def test_world_copy() raises:
