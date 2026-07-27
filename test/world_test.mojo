@@ -56,9 +56,7 @@ def test_add_entities() raises:
     assert_equal(i, 25)
 
     i = 0
-    for entity in world.add_entities(
-        pos, vel, FlexibleComponent[0](0, 0), count=0
-    ):
+    for _ in world.add_entities(pos, vel, FlexibleComponent[0](0, 0), count=0):
         i += 1
     assert_equal(i, 0)
 
