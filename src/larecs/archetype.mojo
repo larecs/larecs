@@ -84,6 +84,7 @@ struct EntityAccessor[
         with Zone(function_name="EntityAccessor.get_entity()"):
             return self._archetype[].get_entity(self._index_in_archetype)
 
+    @__unsafe_nested_origins_read_only
     @always_inline
     def get[
         T: ComponentType
@@ -1002,6 +1003,7 @@ struct Archetype[
             self._storage.reserve(new_capacity)
             self._entities.reserve(self._storage._capacity)
 
+    @__unsafe_nested_origins_read_only
     @always_inline
     def get_entity(self, idx: Int) -> ref[origin_of(self._entities[idx])] Entity:
         """Returns the entity at the given index.
@@ -1017,6 +1019,7 @@ struct Archetype[
 
             return self._entities[idx]
 
+    @__unsafe_nested_origins_read_only
     @always_inline
     def get_entity_accessor(
         ref self,
@@ -1044,6 +1047,7 @@ struct Archetype[
                 idx,
             )
 
+    @__unsafe_nested_origins_read_only
     @always_inline
     def get_component[
         T: ComponentType
