@@ -8,7 +8,7 @@ from parameters import Parameters, GRAVITATIONAL_CONSTANT
 def move(mut world: World) raises:
     ref parameters = world.resources.get[Parameters]()
 
-    for entity in world.query[Position, Velocity]():
+    for entity in world.storage.query[Position, Velocity]():
         ref position = entity.get[Position]()
         ref velocity = entity.get[Velocity]()
 
@@ -20,7 +20,7 @@ def accelerate(mut world: World) raises:
     ref parameters = world.resources.get[Parameters]()
     constant = -GRAVITATIONAL_CONSTANT * parameters.mass * parameters.dt
 
-    for entity in world.query[Position, Velocity]():
+    for entity in world.storage.query[Position, Velocity]():
         ref position = entity.get[Position]()
         ref velocity = entity.get[Velocity]()
 
@@ -47,11 +47,13 @@ def get_random_velocity() -> Velocity:
 
 def add_satellites(mut world: World, count: Int) raises:
     for _ in range(count):
-        _ = world.add_entity(get_random_position(), get_random_velocity())
+        _ = world.storage.add_entity(
+            get_random_position(), get_random_velocity()
+        )
 
 
 def position_to_numpy(mut world: World, out numpy_array: PythonObject) raises:
-    iterator = world.query[Position]()
+    iterator = world.storage.query[Position]()
 
     np = Python.import_module("numpy")
     numpy_array = np.zeros(Python.tuple(len(iterator), 2))

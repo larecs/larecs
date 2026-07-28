@@ -26,7 +26,7 @@ struct UpdateOnlySystem(System):
             world: The world to update.
         """
         self.updates += 1
-        _ = world.add_entity(1)
+        _ = world.storage.add_entity(1)
 
 
 def test_scheduler_default_lifecycle_hooks() raises:
@@ -46,19 +46,19 @@ struct TestSystem[copies: Int, count: Int = 10](System):
 
     def initialize(mut self, mut world: World) raises:
         assert_equal(self.a, 0)
-        _ = world.add_entities(self.a, count=Self.count)
+        _ = world.storage.add_entities(self.a, count=Self.count)
         self.a = 1
 
     def update(mut self, mut world: World) raises:
         assert_equal(self.a, 1)
         assert_equal(len(world), Self.count * self.copies)
-        for entity in world.query[Int]():
+        for entity in world.storage.query[Int]():
             entity.get[Int]() += 1
 
     def finalize(mut self, mut world: World) raises:
         sum = 0
         counter = 0
-        for entity in world.query[Int]():
+        for entity in world.storage.query[Int]():
             sum += entity.get[Int]()
             counter += 1
         world.resources.set[add_if_not_found=True](

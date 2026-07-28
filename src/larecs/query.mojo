@@ -10,7 +10,7 @@ from .component import (
     constrain_components_unique,
 )
 from .archetype import Archetype as _Archetype
-from .world import World
+from .storage import Storage
 from .lock import LockManager
 from .debug_utils import debug_warn
 from .static_optional import StaticOptional
@@ -35,8 +35,8 @@ struct Query[
 
     ```mojo {doctest="query_init"}
     world = World[Float64, Float32, Int]()
-    _ = world.add_entity(Float64(1.0), Float32(2.0), 3)
-    _ = world.add_entity(Float64(1.0), 3)
+    _ = world.storage.add_entity(Float64(1.0), Float32(2.0), 3)
+    _ = world.storage.add_entity(Float64(1.0), 3)
 
     for entity in world.query[Float64, Int]():
         ref f = entity.get[Float64]()
@@ -51,7 +51,7 @@ struct Query[
         has_without_mask: Whether the query has excluded components.
     """
 
-    comptime World = World[*Self.ComponentTypes]
+    comptime Storage = Storage[*Self.ComponentTypes]
     """The world type for this query."""
     comptime ArchetypeIterator = _ArchetypeIterator[
         _,
@@ -67,7 +67,7 @@ struct Query[
     ]
     """The query type with an active exclusion mask."""
 
-    var _archetypes: Pointer[Self.World.Archetypes, Self.archetypes_origin]
+    var _archetypes: Pointer[Self.Storage.Archetypes, Self.archetypes_origin]
     """Pointer to the world's archetypes."""
     var _lock_ptr: Pointer[LockManager, Self.locks_origin]
     """Pointer to the world's lock manager."""
@@ -78,7 +78,7 @@ struct Query[
     @doc_hidden
     def __init__(
         out self,
-        archetypes: Pointer[Self.World.Archetypes, Self.archetypes_origin],
+        archetypes: Pointer[Self.Storage.Archetypes, Self.archetypes_origin],
         lock_ptr: Pointer[LockManager, Self.locks_origin],
         var mask: BitMask,
         var without_mask: StaticOptional[BitMask, Self.has_without_mask] = None,
@@ -110,7 +110,7 @@ struct Query[
     @doc_hidden
     def __init__(
         out self,
-        archetypes: Pointer[Self.World.Archetypes, Self.archetypes_origin],
+        archetypes: Pointer[Self.Storage.Archetypes, Self.archetypes_origin],
         lock_ptr: Pointer[LockManager, Self.locks_origin],
         var info: QueryInfo[has_without_mask=Self.has_without_mask],
     ):
@@ -230,7 +230,7 @@ struct Query[
                 self._lock_ptr,
                 self._info
                 ^.without(
-                    BitMask(Self.World.component_manager.get_id_arr[*Ts]())
+                    BitMask(Self.Storage.component_manager.get_id_arr[*Ts]())
                 ),
             )
 
