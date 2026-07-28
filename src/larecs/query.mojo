@@ -919,7 +919,7 @@ struct _WorldEntityIterator[
             accessor = {
                 self._entity_iterator.archetype.unsafe_origin_cast[
                     Self.archetype_list_origin
-                ](),
+                ]()[],
                 self._entity_iterator.__next__()._index_in_archetype,
             }
 

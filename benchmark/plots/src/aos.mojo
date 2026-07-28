@@ -223,7 +223,7 @@ def benchmark[
     components_exp: Int
 ](rounds: Int, entities: Int) raises -> BenchResult:
     w1 = create_ecs_world[components_exp](entities)
-    var start_ecs: UInt = perf_counter_ns()
+    var start_ecs = perf_counter_ns()
     for _ in range(rounds):
         for entity in w1.query[Position, Velocity]():
             ref position = entity.get[Position]()
@@ -235,7 +235,7 @@ def benchmark[
     )
 
     w2 = AosWorld[components_exp](entities)
-    var start_aos: UInt = perf_counter_ns()
+    var start_aos = perf_counter_ns()
     for _ in range(rounds):
         w2.update()
     dur_aos = Float64(perf_counter_ns() - start_aos) / Float64(

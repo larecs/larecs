@@ -193,7 +193,9 @@ struct Resources(Copyable, Movable, Sized):
     @always_inline
     def get[
         T: ResourceType
-    ](mut self) raises -> ref[origin_of(self._storage[""].unsafe_get[T]())] T:
+    ](mut self) raises -> ref[
+        origin_of(self._storage)._get_owned_interior["value"]
+    ] T:
         """Gets a resource.
 
         Parameters:

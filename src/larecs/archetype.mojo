@@ -1,6 +1,11 @@
 from std.sys.defines import is_defined
 from std.reflection import reflect
-from std.memory import UnsafePointer, uninit_copy_n, uninit_move_n, destroy_n
+from std.memory import (
+    UnsafePointer,
+    unsafe_uninit_copy_n,
+    unsafe_uninit_move_n,
+    unsafe_destroy_n,
+)
 from std.bit import next_power_of_two
 
 from tracy import Zone
@@ -55,8 +60,8 @@ struct EntityAccessor[
 
     @doc_hidden
     def __init__(
-        out self,
-        archetype: Pointer[Self.Archetype, Self.archetype_origin],
+        out self: EntityAccessor[Self.archetype_origin, *Self.ComponentTypes],
+        ref[Self.archetype_origin] archetype: Self.Archetype,
         index_in_archetype: Int,
     ):
         """
@@ -66,11 +71,11 @@ struct EntityAccessor[
         """
         with Zone(
             function_name=(
-                "EntityAccessor.__init__(archetype: Pointer,"
+                "EntityAccessor.__init__(ref archetype: Self.Archetype,"
                 " index_in_archetype: Int)"
             )
         ):
-            self._archetype = archetype
+            self._archetype = Pointer(to=archetype)
             self._index_in_archetype = index_in_archetype
 
     @always_inline
@@ -110,19 +115,14 @@ struct EntityAccessor[
 
     @always_inline
     def set[
-        origin: MutOrigin, *Ts: ComponentType
+        *Ts: ComponentType
     ](
-        mut self: EntityAccessor[
-            origin,
-            *Self.ComponentTypes,
-        ],
-        var *components: *Ts,
-    ) raises LarecsError:
+        self, var *components: *Ts
+    ) raises LarecsError where Self.archetype_origin.mut:
         """
         Overwrites components for an [..entity.Entity], using the given content.
 
         Parameters:
-            origin: The origin of the accessor.
             Ts:        The types of the components.
 
         Args:
@@ -140,7 +140,8 @@ struct EntityAccessor[
                 *Ts
             ](), "Component types must be unique."
 
-            self._archetype[].set_components[*Ts](
+            ref archetype = self._archetype.unsafe_mut_cast[True]()[]
+            archetype.set_components[*Ts](
                 self._index_in_archetype, *components^
             )
 
@@ -261,7 +262,7 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             ) -> Self.ComponentPointer[T]:
                 new_ptr = alloc[T](storage_capacity)
                 if storage_size > 0:
-                    uninit_copy_n[overlapping=False](
+                    unsafe_uninit_copy_n[overlapping=False](
                         dest=new_ptr, src=comp_ptr.value(), count=storage_size
                     )
                 return rebind[Self.ComponentPointer[T]](Optional(new_ptr))
@@ -293,7 +294,7 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
                 storage_capacity: Int,
                 comp_ptr: UnsafePointer[T, MutUntrackedOrigin],
             ):
-                destroy_n(comp_ptr, count=storage_size)
+                unsafe_destroy_n(pointer=comp_ptr, count=storage_size)
                 comp_ptr.free()
 
             self._apply_to_active_components(free_component_storage)
@@ -322,7 +323,9 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
                 Self._PointerMapper
             ]().all_conforms_to[
                 Copyable
-            ](), "All component pointer types must be copyable for shallow copy."
+            ](), (
+                "All component pointer types must be copyable for shallow copy."
+            )
             new_storage._data = self._data.copy()
 
     def _unsafe_init_components(mut self, imm init_component_mask: BitMask):
@@ -432,7 +435,7 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             ) {imm} -> Self.ComponentPointer[T]:
                 var new_ptr = alloc[T](new_pow2_capacity)
                 if storage_size > 0:
-                    uninit_move_n[overlapping=False](
+                    unsafe_uninit_move_n[overlapping=False](
                         dest=new_ptr, src=old_ptr.value(), count=storage_size
                     )
                 old_ptr.value().free()
@@ -490,9 +493,9 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
                 storage_capacity: Int,
                 comp_ptr: UnsafePointer[T, MutUntrackedOrigin],
             ) {imm}:
-                destroy_n(comp_ptr + remove_idx, count=1)
+                unsafe_destroy_n(comp_ptr + remove_idx, count=1)
                 if need_swap:
-                    uninit_move_n[overlapping=False](
+                    unsafe_uninit_move_n[overlapping=False](
                         dest=comp_ptr + remove_idx,
                         src=comp_ptr + storage_size,
                         count=1,
@@ -608,11 +611,10 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
                     base_comp_ptr = self.get_component_ptr[T]()
                 except:
                     return assert_unreachable(
-                        "Not reachable as component presence was asserted before."
+                        "Not reachable as component presence was asserted"
+                        " before."
                     )
-                entity_comp_ptr = base_comp_ptr + entity_idx
-                destroy_n(entity_comp_ptr, 1)
-                entity_comp_ptr.unsafe_write(component^)
+                base_comp_ptr[unsafe_offset=entity_idx] = component^
 
             (components^).consume_elements[set_component]()
 
@@ -655,10 +657,10 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
                     base_comp_ptr = self.get_component_ptr[T]()
                 except:
                     return assert_unreachable(
-                        "Not reachable as component presence was asserted before."
+                        "Not reachable as component presence was asserted"
+                        " before."
                     )
-                entity_comp_ptr = base_comp_ptr + entity_idx
-                entity_comp_ptr.unsafe_write(component^)
+                base_comp_ptr.unsafe_offset(entity_idx).unsafe_write(component^)
 
             (components^).consume_elements[init_component]()
 
@@ -699,9 +701,9 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             if count == 0:
                 return
 
-            destroy_n(self.get_component_ptr[T]() + to_idx, count=count)
+            unsafe_destroy_n(self.get_component_ptr[T]() + to_idx, count=count)
 
-            uninit_copy_n[overlapping=False](
+            unsafe_uninit_copy_n[overlapping=False](
                 dest=self.get_component_ptr[T]() + to_idx,
                 src=storage.get_component_ptr[T]() + from_idx,
                 count=count,
@@ -750,8 +752,10 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             comptime T = Self.ComponentTypes[id]
             if self.has_components[T]() and source[].has_components[T]():
                 try:
-                    destroy_n(self.get_component_ptr[T]() + to_idx, count=count)
-                    uninit_copy_n[overlapping=False](
+                    unsafe_destroy_n(
+                        self.get_component_ptr[T]() + to_idx, count=count
+                    )
+                    unsafe_uninit_copy_n[overlapping=False](
                         dest=self.get_component_ptr[T]() + to_idx,
                         src=source[].get_component_ptr[T]() + from_idx,
                         count=count,
@@ -1005,7 +1009,9 @@ struct Archetype[
 
     @__unsafe_nested_origins_read_only
     @always_inline
-    def get_entity(self, idx: Int) -> ref[origin_of(self._entities[idx])] Entity:
+    def get_entity(
+        self, idx: Int
+    ) -> ref[origin_of(self._entities[idx])] Entity:
         """Returns the entity at the given index.
 
         Args:
@@ -1043,7 +1049,7 @@ struct Archetype[
             _assert_index_in_bounds(idx, self._storage._size)
 
             accessor = Self.EntityAccessor(
-                Pointer(to=self),
+                self,
                 idx,
             )
 
@@ -1154,7 +1160,9 @@ struct Archetype[
                 return
 
             var comp_ptr = self._storage.get_component_ptr[T]()
-            Span(ptr=comp_ptr + start_entity_idx, length=count).fill(value)
+            Span(unsafe_ptr=comp_ptr + start_entity_idx, length=count).fill(
+                value
+            )
 
     @always_inline
     def copy_component_from[
@@ -1350,12 +1358,11 @@ struct Archetype[
                 comptime T = Self.ComponentTypes[id]
                 if self.has_components[T]() and source[].has_components[T]():
                     try:
-                        uninit_copy_n[overlapping=False](
+                        unsafe_uninit_copy_n[overlapping=False](
                             dest=self._storage.get_component_ptr[T]()
                             + start_index,
-                            src=UnsafePointer(
-                                to=source[].get_component[T](from_idx)
-                            ),
+                            src=source[]._storage.get_component_ptr[T]()
+                            + from_idx,
                             count=count,
                         )
                     except:

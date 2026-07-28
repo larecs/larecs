@@ -12,8 +12,8 @@ satellites = { cmd = "mojo run -I ../../src model.mojo", default-environment = "
 profiling = { cmd = "mojo run -I ../../src -Xlinker -L\"$CONDA_PREFIX/lib\" -Xlinker -lmojotracy -DTRACY_ENABLED model.mojo", default-environment = "default" }
 
 [dependencies]
-mojo = ">=1.0.0b3.dev2026072206,<2"
+mojo = ">=1.0.0b3.dev2026072806,<2"
 python = ">=3.14.4,<3.15"
 matplotlib = ">=3.10.9,<4"
 numpy = ">=2.4.3,<3"
-mojo-tracy = ">=0.3.0,<0.4.0"
+mojo-tracy = ">=0.4.0,<0.5.0"

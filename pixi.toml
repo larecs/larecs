@@ -17,9 +17,12 @@ benchmarks = { cmd = "mojo run -I src benchmark/run_benchmarks.mojo", default-en
 update-mojo = { cmd = "python scripts/update_mojo.py", default-environment = "default" }
 profiling = { cmd = "mojo run -I src -Xlinker -L\"$CONDA_PREFIX/lib\" -Xlinker -lmojotracy -DTRACY_ENABLED benchmark/run_benchmarks.mojo", default-environment = "default" }
 
+satellites = { cmd = "cd examples/satellites && pixi run satellites" }
+plots = { cmd = "cd benchmark/plots && pixi run plots" }
+
 [dependencies]
-mojo = ">=1.0.0b3.dev2026072206,<2"
-mojo-tracy = ">=0.3.0, <0.4.0"
+mojo = ">=1.0.0b3.dev2026072806,<2"
+mojo-tracy = ">=0.4.0, <0.5.0"
 
 [feature.test.dependencies]
 clang = ">=22.1.8,<23"

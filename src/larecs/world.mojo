@@ -30,7 +30,7 @@ from .query import (
 )
 from .lock import LockManager
 from .resource import Resources
-from ._utils import concatenate_inline_arrays, assert_unreachable
+from ._utils import concatenate_arrays, assert_unreachable
 from .types import ComponentId
 from .error import (
     LarecsError,
@@ -46,7 +46,7 @@ struct Replacer[
     world_origin: MutOrigin,
     size: Int,
     *component_types: ComponentType,
-    remove_ids: InlineArray[ComponentId, size],
+    remove_ids: Array[ComponentId, size],
 ]:
     """
     Replacer is a helper struct for removing and adding components to an [..entity.Entity].
@@ -245,8 +245,8 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
     comptime component_manager = ComponentManager[*Self.component_types]()
     """Component manager for this world's component type set."""
 
-    # If *Ts is empty, this results in a zero-sized InlineArray, else this
-    # results in an InlineArray of component IDs.
+    # If *Ts is empty, this results in a zero-sized Array, else this
+    # results in an Array of component IDs.
     comptime _optional_component_ids[
         *Ts: ComponentType
     ] = Self.component_manager.get_id_arr[*Ts]()
@@ -374,7 +374,7 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
         size: Int
     ](
         mut self,
-        components: InlineArray[ComponentId, size],
+        components: Array[ComponentId, size],
         start_node_index: Int = 0,
     ) -> Int:
         """Returns the archetype list index of the archetype
@@ -396,7 +396,7 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
         with Zone(
             function_name=(
                 "World._get_archetype_index[size: Int](components:"
-                " InlineArray[ComponentId, size], start_node_index: Int)"
+                " Array[ComponentId, size], start_node_index: Int)"
             )
         ):
             comptime assert 0 <= size, "Size must be non-negative."
@@ -1239,7 +1239,9 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
     def _remove_and_add[
         *Ts: ComponentType,
         rem_size: Int = 0,
-        remove_ids: InlineArray[ComponentId, rem_size] = [],
+        remove_ids: Array[ComponentId, rem_size] = Array[ComponentId, rem_size](
+            uninitialized=True
+        ),
     ](mut self, entity: Entity, var *add_components: *Ts) raises LarecsError:
         """
         Adds and removes components to an [..entity.Entity].
@@ -1262,7 +1264,7 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
         with Zone(
             function_name=(
                 "World._remove_and_add[*Ts: ComponentType, rem_size: Int,"
-                " remove_ids: InlineArray[ComponentId, rem_size]](entity:"
+                " remove_ids: Array[ComponentId, rem_size]](entity:"
                 " Entity, var *add_components: *Ts)"
             )
         ):
@@ -1310,15 +1312,11 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
                         )
                     )
 
-            comptime ComponentIdsType = InlineArray[
-                ComponentId, add_size + rem_size
-            ]
+            comptime ComponentIdsType = Array[ComponentId, add_size + rem_size]
             comptime assert 0 <= add_size + rem_size
 
             comptime if add_size and rem_size:
-                comptime concatenated = concatenate_inline_arrays(
-                    remove_ids, add_ids
-                )
+                comptime concatenated = concatenate_arrays(remove_ids, add_ids)
                 component_ids = concatenated
             elif Bool(add_size) and not rem_size:
                 component_ids = rebind[ComponentIdsType](add_ids)
@@ -1373,7 +1371,9 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
     def _batch_remove_and_add[
         *Ts: ComponentType,
         rem_size: Int = 0,
-        remove_ids: InlineArray[ComponentId, rem_size] = [],
+        remove_ids: Array[ComponentId, rem_size] = Array[ComponentId, rem_size](
+            uninitialized=True
+        ),
         has_without_mask: Bool = False,
     ](
         mut self,
@@ -1410,7 +1410,7 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
         with Zone(
             function_name=(
                 "World._batch_remove_and_add[*Ts: ComponentType, rem_size: Int,"
-                " remove_ids: InlineArray[ComponentId, rem_size],"
+                " remove_ids: Array[ComponentId, rem_size],"
                 " has_without_mask: Bool](query: QueryInfo, var"
                 " *add_components: *Ts, out iterator: Self.Iterator)"
             )
@@ -1425,9 +1425,7 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
             comptime add_size = len(Ts)
             comptime add_ids = Self.component_manager.get_id_arr[*Ts]()
 
-            comptime ComponentIdsType = InlineArray[
-                ComponentId, add_size + rem_size
-            ]
+            comptime ComponentIdsType = Array[ComponentId, add_size + rem_size]
             comptime assert 0 <= add_size + rem_size
 
             # Note:
@@ -1485,9 +1483,7 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
                         )
 
             comptime if add_size and rem_size:
-                comptime concatenated = concatenate_inline_arrays(
-                    remove_ids, add_ids
-                )
+                comptime concatenated = concatenate_arrays(remove_ids, add_ids)
                 component_ids = concatenated
             elif Bool(add_size) and not rem_size:
                 component_ids = rebind[ComponentIdsType](add_ids)
@@ -1864,6 +1860,7 @@ struct World[*component_types: ComponentType](Copyable, Movable, Sized):
     #     """
     #     return &Batchw
 
+    @__unsafe_nested_origins_read_only
     @always_inline
     def query[
         *Ts: ComponentType
