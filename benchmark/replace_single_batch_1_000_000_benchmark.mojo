@@ -22,7 +22,7 @@ def benchmark_replace_1_comp_batch_1_000_000(
         return
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         """Run one replace-forward and replace-back cycle."""
         try:
             _ = world.replace[FlexibleComponent[0]]().by(

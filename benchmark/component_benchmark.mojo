@@ -270,7 +270,7 @@ def benchmark_get_first_id_1_000_000(mut bencher: Bencher):
     manager = FullManager()
 
     @always_inline
-    def bench_fn() {read}:
+    def bench_fn() {imm}:
         for _ in range(1_000_000):
             keep(manager.get_id[FlexibleComponent[0]]())
 
@@ -282,7 +282,7 @@ def benchmark_get_last_id_1_000_000(mut bencher: Bencher):
     manager = FullManager()
 
     @always_inline
-    def bench_fn() {read}:
+    def bench_fn() {imm}:
         for _ in range(1_000_000):
             keep(manager.get_id[FlexibleComponent[255]]())
 
@@ -298,7 +298,7 @@ def benchmark_get_5_id_arr_1_000_000(mut bencher: Bencher):
     manager = FullManager()
 
     @always_inline
-    def bench_fn() {read}:
+    def bench_fn() {imm}:
         for _ in range(1_000_000):
             arr = manager.get_id_arr[
                 FlexibleComponent[1],

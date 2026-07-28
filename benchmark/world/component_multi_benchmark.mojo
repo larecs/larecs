@@ -15,7 +15,7 @@ def benchmark_add_remove_5_comp_1_000_000(
     world = SmallWorld()
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         try:
             entity = world.add_entity(pos)
             for _ in range(1_000_000):

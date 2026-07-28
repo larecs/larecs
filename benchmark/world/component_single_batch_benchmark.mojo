@@ -27,7 +27,7 @@ def benchmark_add_remove_1_comp_batch_1_000_000(
         return
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         try:
             _ = world.add(
                 world.query[Position]().without[FlexibleComponent[1]](),
@@ -55,7 +55,7 @@ def benchmark_add_remove_1_comp_1_000_batch_1_000(
         return
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         try:
             # then 1_000 x add component and remove it afterwards
             for _ in range(1000):

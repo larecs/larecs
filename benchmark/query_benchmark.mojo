@@ -28,7 +28,7 @@ def benchmark_query_1_comp_1_000_000(
     world = SmallWorld()
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         try:
             for _ in range(1000):
                 _ = world.add_entity(pos)
@@ -49,7 +49,7 @@ def benchmark_query_2_comp_1_000_000(
     world = SmallWorld()
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         try:
             for _ in range(1000):
                 _ = world.add_entity(pos, vel)
@@ -75,7 +75,7 @@ def benchmark_query_5_comp_1_000_000(
     world = FullWorld()
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         try:
             for _ in range(1000):
                 _ = world.add_entity(c1, c2, c3, c4, c5)
@@ -110,7 +110,7 @@ def benchmark_query_get_iter_1_000_000(
     world = FullWorld()
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         try:
             _ = world.add_entity(c1, c2, c3, c4, c5)
             for _ in range(1_000_000):
@@ -133,7 +133,7 @@ def benchmark_query_has_1_000_000(
     world = FullWorld()
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         try:
             _ = world.add_entity(c1, c2, c3, c4, c5)
             for entity in world.query[FlexibleComponent[1]]():
