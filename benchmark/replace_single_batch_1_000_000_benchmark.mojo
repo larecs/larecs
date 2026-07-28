@@ -16,7 +16,9 @@ def benchmark_replace_1_comp_batch_1_000_000(
     """
     world = SmallWorld()
     try:
-        _ = world.storage.add_entities(FlexibleComponent[0](1.0, 2.0), count=1_000_000)
+        _ = world.storage.add_entities(
+            FlexibleComponent[0](1.0, 2.0), count=1_000_000
+        )
     except e:
         print(e)
         return

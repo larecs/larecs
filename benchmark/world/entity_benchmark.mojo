@@ -114,7 +114,13 @@ def benchmark_add_entity_5_comp_1_000_batch_1_000(
     def bench_fn() {imm, mut world}:
         try:
             for _ in range(1_000):
-                keep(Bool(world.storage.add_entities(c1, c2, c3, c4, c5, count=1000)))
+                keep(
+                    Bool(
+                        world.storage.add_entities(
+                            c1, c2, c3, c4, c5, count=1000
+                        )
+                    )
+                )
 
         except e:
             print(e)
@@ -201,7 +207,9 @@ def benchmark_add_remove_entity_5_comp_1_000_000(
             entities = List[Entity]()
             for _ in range(1000):
                 for _ in range(1000):
-                    entities.append(world.storage.add_entity(c1, c2, c3, c4, c5))
+                    entities.append(
+                        world.storage.add_entity(c1, c2, c3, c4, c5)
+                    )
                 e = world.storage.add_entity(c3, c5)
                 for entity in entities:
                     world.storage.remove_entity(entity)

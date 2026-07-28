@@ -60,7 +60,9 @@ def benchmark_add_remove_1_comp_1_000_batch_1_000(
             # then 1_000 x add component and remove it afterwards
             for _ in range(1000):
                 _ = world.storage.add(
-                    world.storage.query[Position]().without[FlexibleComponent[1]](),
+                    world.storage.query[Position]().without[
+                        FlexibleComponent[1]
+                    ](),
                     FlexibleComponent[1](1.0, 42.0),
                 )
                 _ = world.storage.remove[FlexibleComponent[1]](

@@ -8,7 +8,9 @@ def _add_remove_1_comp_workload() raises:
     world = SmallWorld()
     entities = List[Entity]()
     for _ in range(1000):
-        entities.append(world.storage.add_entity(FlexibleComponent[0](1.0, 2.0)))
+        entities.append(
+            world.storage.add_entity(FlexibleComponent[0](1.0, 2.0))
+        )
 
     for _ in range(100):
         comptime for i in range(10):
