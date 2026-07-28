@@ -8,8 +8,8 @@ def prevent_inlining_replace() raises:
     pos = Position(1.0, 2.0)
     vel = Velocity(0.1, 0.2)
     world = SmallWorld()
-    entity = world.add_entity(pos)
-    _ = world.replace[Position]().by(vel, entity=entity)
+    entity = world.storage.add_entity(pos)
+    _ = world.storage.replace[Position]().by(vel, entity=entity)
 
 
 def _replace_1_comp_workload() raises:
@@ -17,13 +17,13 @@ def _replace_1_comp_workload() raises:
     entities = List[Entity]()
     component0 = FlexibleComponent[0](1.0, 2.0)
     for _ in range(1000):
-        entities.append(world.add_entity(component0))
+        entities.append(world.storage.add_entity(component0))
 
     for _ in range(100):
         comptime for i in range(10):
             component = FlexibleComponent[(i + 1) % 10](Float64(i), 2.0)
             for entity in entities:
-                world.replace[FlexibleComponent[i]]().by(
+                world.storage.replace[FlexibleComponent[i]]().by(
                     component, entity=entity
                 )
 

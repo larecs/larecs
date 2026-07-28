@@ -225,7 +225,7 @@ def benchmark[
     w1 = create_ecs_world[components_exp](entities)
     var start_ecs = perf_counter_ns()
     for _ in range(rounds):
-        for entity in w1.query[Position, Velocity]():
+        for entity in w1.storage.query[Position, Velocity]():
             ref position = entity.get[Position]()
             ref velocity = entity.get[Velocity]()
             position.x += velocity.x
@@ -259,10 +259,10 @@ def create_ecs_world[components_exp: Int](entities: Int, out w: World) raises:
 def create_ecs_entity[
     components_exp: Int
 ](mut w: World, out e: lx.Entity) raises:
-    e = w.add_entity(Position(1, 2), Velocity(1, 2))
+    e = w.storage.add_entity(Position(1, 2), Velocity(1, 2))
 
     comptime for i in range(2**components_exp):
-        w.add(e, PayloadComponent[i](1.0, 2.0))
+        w.storage.add(e, PayloadComponent[i](1.0, 2.0))
 
 
 struct AosWorld[components_exp: Int](Copyable, Movable):

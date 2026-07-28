@@ -17,10 +17,10 @@ def benchmark_add_remove_5_comp_1_000_000(
     @always_inline
     def bench_fn() {imm, mut world}:
         try:
-            entity = world.add_entity(pos)
+            entity = world.storage.add_entity(pos)
             for _ in range(1_000_000):
-                world.add(entity, c1, c2, c3, c4, c5)
-                world.remove[
+                world.storage.add(entity, c1, c2, c3, c4, c5)
+                world.storage.remove[
                     FlexibleComponent[1],
                     FlexibleComponent[2],
                     FlexibleComponent[3],

@@ -11,7 +11,7 @@ def benchmark_add_entity_1_000_000(mut bencher: Bencher):
     def bench_fn() {imm, mut world}:
         try:
             for _ in range(1_000_000):
-                keep(world.add_entity().get_id())
+                keep(world.storage.add_entity().get_id())
 
         except e:
             print(e)
@@ -28,7 +28,7 @@ def benchmark_add_entities_1_000_batch_1_000(
     def bench_fn() {imm, mut world}:
         try:
             for _ in range(1_000):
-                keep(Bool(world.add_entities(count=1000)))
+                keep(Bool(world.storage.add_entities(count=1000)))
 
         except e:
             print(e)
@@ -46,7 +46,7 @@ def benchmark_add_entity_1_comp_1_000_000(
     def bench_fn() {imm, mut world}:
         try:
             for _ in range(1_000_000):
-                keep(world.add_entity(pos).get_id())
+                keep(world.storage.add_entity(pos).get_id())
         except e:
             print(e)
 
@@ -63,7 +63,7 @@ def benchmark_add_entities_1_comp_1_000_batch_1_000(
     def bench_fn() {imm, mut world}:
         try:
             for _ in range(1_000):
-                keep(Bool(world.add_entities(pos, count=1000)))
+                keep(Bool(world.storage.add_entities(pos, count=1000)))
 
         except e:
             print(e)
@@ -74,8 +74,8 @@ def benchmark_add_entities_1_comp_1_000_batch_1_000(
 def prevent_inlining_add_entity_1_comp() raises:
     pos = Position(1.0, 2.0)
     world = SmallWorld()
-    _ = world.add_entity(pos)
-    _ = world.add_entities(pos, count=1)
+    _ = world.storage.add_entity(pos)
+    _ = world.storage.add_entities(pos, count=1)
 
 
 def benchmark_add_entities_5_comp_1_000_000(
@@ -92,7 +92,7 @@ def benchmark_add_entities_5_comp_1_000_000(
     def bench_fn() {imm, mut world}:
         try:
             for _ in range(1_000_000):
-                keep(world.add_entity(c1, c2, c3, c4, c5).get_id())
+                keep(world.storage.add_entity(c1, c2, c3, c4, c5).get_id())
 
         except e:
             print(e)
@@ -114,7 +114,7 @@ def benchmark_add_entity_5_comp_1_000_batch_1_000(
     def bench_fn() {imm, mut world}:
         try:
             for _ in range(1_000):
-                keep(Bool(world.add_entities(c1, c2, c3, c4, c5, count=1000)))
+                keep(Bool(world.storage.add_entities(c1, c2, c3, c4, c5, count=1000)))
 
         except e:
             print(e)
@@ -129,8 +129,8 @@ def prevent_inlining_add_entity_5_comp() raises:
     c4 = FlexibleComponent[4](1.0, 2.0)
     c5 = FlexibleComponent[5](1.0, 2.0)
     world = SmallWorld()
-    _ = world.add_entity(c1, c2, c3, c4, c5)
-    _ = world.add_entities(c1, c2, c3, c4, c5, count=1)
+    _ = world.storage.add_entity(c1, c2, c3, c4, c5)
+    _ = world.storage.add_entities(c1, c2, c3, c4, c5, count=1)
 
 
 def benchmark_add_remove_entity_1_comp_1_000_000(
@@ -145,9 +145,9 @@ def benchmark_add_remove_entity_1_comp_1_000_000(
             entities = List[Entity]()
             for _ in range(1000):
                 for _ in range(1000):
-                    entities.append(world.add_entity(pos))
+                    entities.append(world.storage.add_entity(pos))
                 for entity in entities:
-                    world.remove_entity(entity)
+                    world.storage.remove_entity(entity)
                 entities.clear()
 
         except e:
@@ -166,8 +166,8 @@ def benchmark_add_remove_entities_1_comp_1_000_batch_1000(
     def bench_fn() {imm, mut world}:
         try:
             for _ in range(1000):
-                _ = world.add_entities(pos, count=1000)
-                world.remove_entities(world.query[Position]())
+                _ = world.storage.add_entities(pos, count=1000)
+                world.storage.remove_entities(world.storage.query[Position]())
 
         except e:
             print(e)
@@ -178,9 +178,9 @@ def benchmark_add_remove_entities_1_comp_1_000_batch_1000(
 def prevent_inlining_add_remove_entity_1_comp() raises:
     pos = Position(1.0, 2.0)
     world = SmallWorld()
-    entity = world.add_entity(pos)
-    world.remove_entity(entity)
-    world.remove_entities(world.query[Position]())
+    entity = world.storage.add_entity(pos)
+    world.storage.remove_entity(entity)
+    world.storage.remove_entities(world.storage.query[Position]())
 
 
 def benchmark_add_remove_entity_5_comp_1_000_000(
@@ -196,16 +196,16 @@ def benchmark_add_remove_entity_5_comp_1_000_000(
     @always_inline
     def bench_fn() {imm, mut world}:
         try:
-            _ = world.add_entity(c3, c5)
+            _ = world.storage.add_entity(c3, c5)
 
             entities = List[Entity]()
             for _ in range(1000):
                 for _ in range(1000):
-                    entities.append(world.add_entity(c1, c2, c3, c4, c5))
-                e = world.add_entity(c3, c5)
+                    entities.append(world.storage.add_entity(c1, c2, c3, c4, c5))
+                e = world.storage.add_entity(c3, c5)
                 for entity in entities:
-                    world.remove_entity(entity)
-                world.remove_entity(e)
+                    world.storage.remove_entity(entity)
+                world.storage.remove_entity(e)
                 entities.clear()
 
         except e:
@@ -228,9 +228,9 @@ def benchmark_add_remove_entities_5_comp_1_000_batch_1_000(
     def bench_fn() {imm, mut world}:
         try:
             for _ in range(1000):
-                _ = world.add_entities(c1, c2, c3, c4, c5, count=1000)
-                world.remove_entities(
-                    world.query[
+                _ = world.storage.add_entities(c1, c2, c3, c4, c5, count=1000)
+                world.storage.remove_entities(
+                    world.storage.query[
                         LargerComponent,
                         FlexibleComponent[2],
                         FlexibleComponent[3],
@@ -253,11 +253,11 @@ def prevent_inlining_add_remove_entity_5_comp() raises:
     c5 = FlexibleComponent[5](1.0, 2.0)
 
     world = SmallWorld()
-    entity = world.add_entity(c1, c2, c3, c4, c5)
-    world.remove_entity(entity)
-    _ = world.add_entity(c1, c2, c3, c4, c5)
-    world.remove_entities(
-        world.query[
+    entity = world.storage.add_entity(c1, c2, c3, c4, c5)
+    world.storage.remove_entity(entity)
+    _ = world.storage.add_entity(c1, c2, c3, c4, c5)
+    world.storage.remove_entities(
+        world.storage.query[
             LargerComponent,
             FlexibleComponent[2],
             FlexibleComponent[3],
@@ -275,9 +275,9 @@ def benchmark_has_1_000_000(mut bencher: Bencher):
     @always_inline
     def bench_fn() {imm, mut world}:
         try:
-            entity = world.add_entity(pos, vel)
+            entity = world.storage.add_entity(pos, vel)
             for _ in range(1_000_000):
-                keep(world.has[Position](entity))
+                keep(world.storage.has[Position](entity))
 
         except e:
             print(e)
@@ -293,9 +293,9 @@ def benchmark_is_alive_1_000_000(mut bencher: Bencher):
     @always_inline
     def bench_fn() {imm, mut world}:
         try:
-            entity = world.add_entity(pos, vel)
+            entity = world.storage.add_entity(pos, vel)
             for _ in range(1_000_000):
-                keep(world.is_alive(entity))
+                keep(world.storage.is_alive(entity))
 
         except e:
             print(e)

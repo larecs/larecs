@@ -13,9 +13,9 @@ def benchmark_get_1_000_000(mut bencher: Bencher):
     @always_inline
     def bench_fn() {imm, mut world}:
         try:
-            entity = world.add_entity(pos, vel)
+            entity = world.storage.add_entity(pos, vel)
             for _ in range(1_000_000):
-                keep(world.get[Position](entity).x)
+                keep(world.storage.get[Position](entity).x)
 
         except e:
             print(e)
@@ -27,8 +27,8 @@ def prevent_inlining_get() raises:
     pos = Position(1.0, 2.0)
     vel = Velocity(0.1, 0.2)
     world = SmallWorld()
-    entity = world.add_entity(pos, vel)
-    keep(world.get[Position](entity).x)
+    entity = world.storage.add_entity(pos, vel)
+    keep(world.storage.get[Position](entity).x)
 
 
 def benchmark_set_1_comp_1_000_000(mut bencher: Bencher):
@@ -40,10 +40,10 @@ def benchmark_set_1_comp_1_000_000(mut bencher: Bencher):
     @always_inline
     def bench_fn() {imm, mut world}:
         try:
-            entity = world.add_entity(pos, vel)
+            entity = world.storage.add_entity(pos, vel)
             for _ in range(500_000):
-                world.set(entity, pos2)
-                world.set(entity, pos)
+                world.storage.set(entity, pos2)
+                world.storage.set(entity, pos)
 
         except e:
             print(e)
@@ -56,9 +56,9 @@ def prevent_inlining_set_1_comp() raises:
     pos2 = Position(2.0, 2.0)
     vel = Velocity(0.1, 0.2)
     world = SmallWorld()
-    entity = world.add_entity(pos, vel)
-    world.set(entity, pos2)
-    world.set(entity, pos)
+    entity = world.storage.add_entity(pos, vel)
+    world.storage.set(entity, pos2)
+    world.storage.set(entity, pos)
 
 
 def benchmark_set_5_comp_1_000_000(
@@ -80,10 +80,10 @@ def benchmark_set_5_comp_1_000_000(
     @always_inline
     def bench_fn() {imm, mut world}:
         try:
-            entity = world.add_entity(c1, c2, c3, c4, c5)
+            entity = world.storage.add_entity(c1, c2, c3, c4, c5)
             for _ in range(500_000):
-                world.set(entity, c1_2, c2_2, c3_2, c4_2, c5_2)
-                world.set(entity, c1, c2, c3, c4, c5)
+                world.storage.set(entity, c1_2, c2_2, c3_2, c4_2, c5_2)
+                world.storage.set(entity, c1, c2, c3, c4, c5)
 
         except e:
             print(e)
@@ -105,9 +105,9 @@ def prevent_inlining_set_5_comp() raises:
     c5_2 = FlexibleComponent[5](2.0, 4.0)
 
     world = SmallWorld()
-    entity = world.add_entity(c1, c2, c3, c4, c5)
-    world.set(entity, c1_2, c2_2, c3_2, c4_2, c5_2)
-    world.set(entity, c1, c2, c3, c4, c5)
+    entity = world.storage.add_entity(c1, c2, c3, c4, c5)
+    world.storage.set(entity, c1_2, c2_2, c3_2, c4_2, c5_2)
+    world.storage.set(entity, c1, c2, c3, c4, c5)
 
 
 def benchmark_apply_expexp_1_comp_100_000(
@@ -121,7 +121,7 @@ def benchmark_apply_expexp_1_comp_100_000(
     def bench_fn() {imm, mut world}:
         try:
             for _ in range(1_000):
-                _ = world.add_entity(pos, vel)
+                _ = world.storage.add_entity(pos, vel)
 
             @always_inline
             def operation_plus(accessor: MutableEntityAccessor):
@@ -133,8 +133,8 @@ def benchmark_apply_expexp_1_comp_100_000(
                     pass
 
             for _ in range(100):
-                world.apply[unroll_factor=3](
-                    world.query[Position](), operation_plus
+                world.storage.apply[unroll_factor=3](
+                    world.storage.query[Position](), operation_plus
                 )
 
         except e:
@@ -154,7 +154,7 @@ def benchmark_apply_expexp_1_comp_100_000(
 #     def bench_fn() {imm, mut world}:
 #         try:
 #             for _ in range(1_000):
-#                 _ = world.add_entity(pos, vel)
+#                 _ = world.storage.add_entity(pos, vel)
 
 #             @always_inline
 #             def operation_plus[
@@ -171,10 +171,10 @@ def benchmark_apply_expexp_1_comp_100_000(
 #                     return
 
 #             for _ in range(100):
-#                 world.apply[
+#                 world.storage.apply[
 #                     simd_width=16,
 #                     unroll_factor=3,
-#                 ](world.query[Position, Velocity](), operation_plus)
+#                 ](world.storage.query[Position, Velocity](), operation_plus)
 
 #         except e:
 #             print(e)

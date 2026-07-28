@@ -16,7 +16,7 @@ def benchmark_replace_1_comp_batch_1_000_000(
     """
     world = SmallWorld()
     try:
-        _ = world.add_entities(FlexibleComponent[0](1.0, 2.0), count=1_000_000)
+        _ = world.storage.add_entities(FlexibleComponent[0](1.0, 2.0), count=1_000_000)
     except e:
         print(e)
         return
@@ -25,13 +25,13 @@ def benchmark_replace_1_comp_batch_1_000_000(
     def bench_fn() {imm, mut world}:
         """Run one replace-forward and replace-back cycle."""
         try:
-            _ = world.replace[FlexibleComponent[0]]().by(
-                world.query[FlexibleComponent[0]](),
+            _ = world.storage.replace[FlexibleComponent[0]]().by(
+                world.storage.query[FlexibleComponent[0]](),
                 FlexibleComponent[1](3.0, 4.0),
             )
 
-            _ = world.replace[FlexibleComponent[1]]().by(
-                world.query[FlexibleComponent[1]](),
+            _ = world.storage.replace[FlexibleComponent[1]]().by(
+                world.storage.query[FlexibleComponent[1]](),
                 FlexibleComponent[0](1.0, 2.0),
             )
 

@@ -9,7 +9,7 @@ def _replace_5_comp_workload() raises:
     entities = List[Entity]()
     for _ in range(1000):
         entities.append(
-            world.add_entity(
+            world.storage.add_entity(
                 FlexibleComponent[0](1.0, 2.0),
                 FlexibleComponent[1](3.0, 4.0),
                 FlexibleComponent[2](5.0, 6.0),
@@ -21,7 +21,7 @@ def _replace_5_comp_workload() raises:
         comptime for i in range(20):
             comptime base = i * 5
             for entity in entities:
-                world.replace[
+                world.storage.replace[
                     FlexibleComponent[base + 0],
                     FlexibleComponent[base + 1],
                     FlexibleComponent[base + 2],
