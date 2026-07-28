@@ -538,35 +538,6 @@ struct _ArchetypeIterator[
             self._index += 1
             return archetype
 
-    @__unsafe_nested_origins_read_only
-    @always_inline
-    def peek(
-        self,
-    ) raises StopIteration -> ref[
-        origin_of(
-            self._archetypes[].unsafe_get(
-                self._archetype_indices.unsafe_get(self._index)
-            )
-        )
-    ] Self.Element:
-        """
-        Returns the next archetype in the iteration without advancing the iterator.
-
-        Raises:
-            StopIteration: If there are no more archetypes to return.
-
-        Returns:
-            The next archetype as a pointer.
-        """
-        with Zone(
-            function_name="_ArchetypeIterator.peek() -> ref Self.Element"
-        ):
-            if not self._has_next():
-                raise StopIteration()
-            return self._archetypes[].unsafe_get(
-                self._archetype_indices.unsafe_get(self._index)
-            )
-
     def __len__(self) -> Int:
         """
         Returns the number of archetypes remaining in the iterator.
@@ -607,19 +578,6 @@ struct _ArchetypeEntityIterator[
     Iterator over all entities of an archetype.
 
     Note: For internal use only! Do not expose to users.
-
-    The archetype pointer is stored with an untracked origin
-    (`UntrackedOrigin[mut=archetype_mutability]`) because the tracked origin of
-    an archetype — the *interior element* origin of the world's archetype list
-    — cannot be carried in a struct field: Mojo ties interior origins to
-    specific owning values, not to type parameters, so a field parameterized by
-    such an interior origin would be reported as a "never-initialized interior
-    reference". Instead, the correct tracked interior origin is supplied by the
-    caller at access time through the `archetype_origin` parameter of
-    `__next__` (see `_WorldEntityIterator.__next__`) and reattached to the
-    pointer via `unsafe_origin_cast`. This is safe because the pointer
-    genuinely points into the archetype list's interior storage for the
-    duration of iteration.
 
     Parameters:
         archetype_mutability: Whether the archetype references produced by this
@@ -693,12 +651,6 @@ struct _ArchetypeEntityIterator[
         """
         Returns the next entity in the iteration.
 
-        The tracked origin of the produced accessor is *not* fixed by this
-        iterator's parameters; it is supplied by the caller as
-        `archetype_origin`. This must be the interior element origin of the
-        archetype list the archetype pointer was derived from (i.e.
-        `list_origin._get_owned_interior["element"]`).
-
         Raises:
             StopIteration: If there are no more entities to iterate.
 
@@ -753,11 +705,6 @@ struct _WorldEntityIterator[
     #     *Self.ComponentTypes,
     # ]
 
-    comptime _UnsafeArchetypeEntityIterator = _ArchetypeEntityIterator[
-        UntrackedOrigin[mut=Self.archetype_list_mutability],
-        *Self.ComponentTypes,
-    ]
-
     comptime IteratorOwnedType = _WorldEntityIterator[
         Self.archetype_list_origin,
         Self.lock_origin,
@@ -773,6 +720,19 @@ struct _WorldEntityIterator[
     var _current_archetype_index: Int
 
     var _archetype_iterator: Self.ArchetypeIterator
+
+    # We need to store the `_ArchetypeEntityIterator` with an untracked origin, because
+    # the interior origins don't carry over from `_WorldEntityIterator` creation to the
+    # call of `__next__`. Therefore, we need to reattach the tracked origin via
+    # `unsafe_origin_cast`.
+    # The same strategy is used in `List` in the standard library.
+    # See
+    #  - https://github.com/modular/modular/issues/6806
+    #  - https://github.com/modular/modular/blob/2b9eb0f719997665d20d19ddeab85fa8a481e871/mojo/stdlib/std/collections/list.mojo#L335
+    comptime _UnsafeArchetypeEntityIterator = _ArchetypeEntityIterator[
+        UntrackedOrigin[mut=Self.archetype_list_mutability],
+        *Self.ComponentTypes,
+    ]
     var _entity_iterator: Self._UnsafeArchetypeEntityIterator
 
     def __init__(
@@ -816,8 +776,10 @@ struct _WorldEntityIterator[
             )
             self._entity_iterator = Self._UnsafeArchetypeEntityIterator(
                 archetype_list_ptr[][0],
-                0,
-            )  # initialize entity iterator with the empty zero archetype
+                len(archetype_list_ptr[][0]),
+            )  # initialize entity iterator exhausted so that the first
+            # `__next__` always advances to the next archetype; the zero
+            # archetype may be non-empty when it is the iteration target.
 
             self._current_archetype_index = 0
 
@@ -864,8 +826,10 @@ struct _WorldEntityIterator[
             ]()
             self._entity_iterator = Self._UnsafeArchetypeEntityIterator(
                 archetype_list_ptr[][0],
-                0,
-            )  # initialize entity iterator with the empty zero archetype
+                len(archetype_list_ptr[][0]),
+            )  # initialize entity iterator exhausted so that the first
+            # `__next__` always advances to the next archetype; the zero
+            # archetype may be non-empty when it is the iteration target.
 
             self._current_archetype_index = 0
 
@@ -899,9 +863,7 @@ struct _WorldEntityIterator[
     @always_inline
     def __next__(
         mut self,
-        out accessor: Self.Archetype.EntityAccessor[
-            origin_of(self._archetype_iterator.peek())
-        ],
+        out accessor: Self.Archetype.EntityAccessor[Self.archetype_list_origin],
     ) raises StopIteration:
         """
         Returns the next entity in the iteration.
@@ -912,6 +874,19 @@ struct _WorldEntityIterator[
         Returns:
             An [..archetype.EntityAccessor] to the entity.
         """
+
+        # Implementation note:
+        #
+        # The accessor is constructed from the untracked archetype pointer of
+        # `self._entity_iterator`, with the tracked whole-list origin
+        # reattached via `unsafe_origin_cast`. This is safe because that pointer
+        # genuinely points into the archetype list's interior storage for the
+        # duration of iteration. Note that the whole-list origin is used (and
+        # not an interior element origin of the list): an interior origin in an
+        # `out` parameter of a `mut self` method is reported as invalidated by
+        # the caller (see `_DequeIter.__next__` in the Mojo stdlib, which uses
+        # the whole-container origin for the same reason).
+
         with Zone(
             function_name=(
                 "_WorldEntityIterator.__next__(out accessor: Self.Element)"
@@ -942,7 +917,9 @@ struct _WorldEntityIterator[
                 )
 
             accessor = {
-                Pointer(to=self._archetype_iterator.peek()),
+                self._entity_iterator.archetype.unsafe_origin_cast[
+                    Self.archetype_list_origin
+                ](),
                 self._entity_iterator.__next__()._index_in_archetype,
             }
 
