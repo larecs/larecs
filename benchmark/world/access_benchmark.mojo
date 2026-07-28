@@ -200,10 +200,10 @@ def run_all_world_access_benchmarks(mut bench: Bench) raises:
     #     benchmark_apply_expexp_1_comp_100_000,
     #     BenchId("10^5 * get and set exp(exp) via apply 1 component"),
     # )
-    bench.bench_function(
-        benchmark_apply_simd_expexp_1_comp_100_000,
-        BenchId("10^5 * get and set exp(exp) via apply simd 1 component"),
-    )
+    # bench.bench_function(
+    #     benchmark_apply_simd_expexp_1_comp_100_000,
+    #     BenchId("10^5 * get and set exp(exp) via apply simd 1 component"),
+    # )
 
     # Functions to prevent inlining
     prevent_inlining_get()
