@@ -334,27 +334,11 @@ comptime World = lx.World[
     PayloadComponent[13],
     PayloadComponent[14],
     PayloadComponent[15],
-    PayloadComponent[16],
-    PayloadComponent[17],
-    PayloadComponent[18],
-    PayloadComponent[19],
-    PayloadComponent[20],
-    PayloadComponent[21],
-    PayloadComponent[22],
-    PayloadComponent[23],
-    PayloadComponent[24],
-    PayloadComponent[25],
-    PayloadComponent[26],
-    PayloadComponent[27],
-    PayloadComponent[28],
-    PayloadComponent[29],
-    PayloadComponent[30],
-    PayloadComponent[31],
 ]
 
 
 def main() raises:
-    config = BenchConfig[max_comp_exp=5](
+    config = BenchConfig[max_comp_exp=4](
         max_entity_exp=6, target_iters=TARGET_ITERATIONS
     )
 
