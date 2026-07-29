@@ -24,11 +24,11 @@ build:
 
 requirements:
   build:
-    - mojo-compiler >=1.0.0b3.dev2026071505, <2
+    - mojo-compiler ==1.0.0b3.dev2026071505
   host:
-    - mojo-compiler >=1.0.0b3.dev2026071505, <2
+    - mojo-compiler ==1.0.0b3.dev2026071505
   run:
-    - mojo-compiler >=1.0.0b3.dev2026071505, <2
+    - mojo-compiler ==1.0.0b3.dev2026071505
 
 tests:
   - script:
