@@ -36,8 +36,9 @@ jobs:
         run: |
           pixi run tests test
 
-      - name: Run benchmarks
-        run: pixi run benchmarks
+      # BUG: Skip benchmarks as they need to much time to compile!
+      # - name: Run benchmarks
+      #   run: pixi run benchmarks
 
       - name: Run examples
         run: |
