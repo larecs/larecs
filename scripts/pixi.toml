@@ -2,10 +2,11 @@
 authors = ["Mose Schmiedel <mose@schmiednet.de>"]
 channels = ["https://conda.modular.com/max-nightly", "conda-forge"]
 name = "scripts"
-platforms = ["osx-arm64"]
+platforms = ["osx-arm64", "linux-64"]
 version = "0.1.0"
 
 [tasks]
+build-docs = "python build_docs.py"
 
 [dependencies]
 python = ">=3.14.4,<3.15"
