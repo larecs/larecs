@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import json
 import platform
 import shutil
@@ -177,32 +178,55 @@ class BinDir:
             shutil.unpack_archive(destination, self._path)
 
 
-def build_static_site(bin_dir: BinDir, hugo_site_dir):
+async def build_static_site(bin_dir: BinDir, hugo_site_dir):
     larecs_dir = Path(__file__).parent.parent
-    subprocess.run(
-        [str(bin_dir.hugo()), "-s", larecs_dir / hugo_site_dir],
-        check=True,
-        cwd=larecs_dir,
+    return asyncio.create_subprocess_exec(
+        bin_dir.hugo(),
+        "-s",
+        cwd=larecs_dir / hugo_site_dir,
     )
 
 
-def build_docs(bin_dir: BinDir):
+def build_docs(bin_dir: BinDir, watch=False):
     larecs_dir = Path(__file__).parent.parent
-    subprocess.run(
-        [str(bin_dir.modo()), "build", "--tests", ""], check=True, cwd=larecs_dir
+    return asyncio.create_subprocess_exec(
+        bin_dir.modo(),
+        "build",
+        "--watch" if watch else "",
+        cwd=larecs_dir,
     )
 
 
 def serve_docs(bin_dir: BinDir, hugo_site_dir):
     larecs_dir = Path(__file__).parent.parent
-    subprocess.run(
-        [bin_dir.hugo(), "server"], check=True, cwd=larecs_dir / hugo_site_dir
+    return asyncio.create_subprocess_exec(
+        bin_dir.hugo(), "server", cwd=larecs_dir / hugo_site_dir
     )
 
 
-def main():
+def parse_modo_version(args) -> str:
+    modo_version = args.modo_version
+    if not modo_version or not modo_version.strip():
+        sys.exit(
+            'Modo version not provided as an argument or via the MODO_VERSION environment variable. Specify "latest" or a specific version tag!'
+        )
+    if modo_version == "latest":
+        modo_version = get_latest_modo_version()
+    return modo_version
+
+
+def parse_hugo_version(args):
+    hugo_version = args.hugo_version
+    if not hugo_version or not hugo_version.strip():
+        sys.exit(
+            "Hugo version not provided as an argument or via the HUGO_VERSION environment variable. Specify a version tag!"
+        )
+    return hugo_version
+
+
+async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["build", "serve"], default="build")
+    parser.add_argument("command", choices=["build", "serve", "watch"], default="build")
     parser.add_argument("--modo-version", default=environ.get("MODO_VERSION"))
     parser.add_argument("--hugo-version", default=environ.get("HUGO_VERSION"))
     args = parser.parse_args()
@@ -211,28 +235,26 @@ def main():
 
     match args.command:
         case "build":
-            modo_version = args.modo_version
-            if not modo_version or not modo_version.strip():
-                sys.exit(
-                    'Modo version not provided as an argument or via the MODO_VERSION environment variable. Specify "latest" or a specific version tag!'
-                )
-            if modo_version == "latest":
-                modo_version = get_latest_modo_version()
+            bin_dir.install_modo(parse_modo_version(args))
+            bin_dir.install_hugo(parse_hugo_version(args))
+            await build_docs(bin_dir)
+            await build_static_site(bin_dir, "docs/site")
 
-            hugo_version = args.hugo_version
-            if not hugo_version or not hugo_version.strip():
-                sys.exit(
-                    "Hugo version not provided as an argument or via the HUGO_VERSION environment variable. Specify a version tag!"
-                )
+        case "watch":
+            bin_dir.install_modo(parse_modo_version(args))
+            bin_dir.install_hugo(parse_hugo_version(args))
 
-            bin_dir.install_modo(modo_version)
-            bin_dir.install_hugo(hugo_version)
-            build_docs(bin_dir)
-            build_static_site(bin_dir, "docs/site")
+            modo_proc = build_docs(bin_dir, watch=True)
+            hugo_proc = serve_docs(bin_dir, "docs/site")
+
+            await asyncio.gather(
+                modo_proc,
+                hugo_proc,
+            )
 
         case "serve":
-            serve_docs(bin_dir, "docs/site")
+            await serve_docs(bin_dir, "docs/site")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
