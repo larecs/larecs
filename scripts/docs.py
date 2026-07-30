@@ -180,26 +180,31 @@ class BinDir:
 
 async def build_static_site(bin_dir: BinDir, hugo_site_dir):
     larecs_dir = Path(__file__).parent.parent
-    return asyncio.create_subprocess_exec(
+    return await asyncio.create_subprocess_exec(
         bin_dir.hugo(),
         "-s",
-        cwd=larecs_dir / hugo_site_dir,
-    )
-
-
-def build_docs(bin_dir: BinDir, watch=False):
-    larecs_dir = Path(__file__).parent.parent
-    return asyncio.create_subprocess_exec(
-        bin_dir.modo(),
-        "build",
-        "--watch" if watch else "",
+        hugo_site_dir,
         cwd=larecs_dir,
     )
 
 
-def serve_docs(bin_dir: BinDir, hugo_site_dir):
+async def build_docs(bin_dir: BinDir, watch=False):
     larecs_dir = Path(__file__).parent.parent
-    return asyncio.create_subprocess_exec(
+
+    args = ["build"]
+    if watch:
+        args.append("--watch")
+
+    return await asyncio.create_subprocess_exec(
+        bin_dir.modo(),
+        *args,
+        cwd=larecs_dir,
+    )
+
+
+async def serve_docs(bin_dir: BinDir, hugo_site_dir):
+    larecs_dir = Path(__file__).parent.parent
+    return await asyncio.create_subprocess_exec(
         bin_dir.hugo(), "server", cwd=larecs_dir / hugo_site_dir
     )
 
@@ -237,23 +242,27 @@ async def main():
         case "build":
             bin_dir.install_modo(parse_modo_version(args))
             bin_dir.install_hugo(parse_hugo_version(args))
-            await build_docs(bin_dir)
-            await build_static_site(bin_dir, "docs/site")
+            modo_proc = await build_docs(bin_dir)
+            await modo_proc.wait()
+
+            hugo_proc = await build_static_site(bin_dir, "docs/site")
+            await hugo_proc.wait()
 
         case "watch":
             bin_dir.install_modo(parse_modo_version(args))
             bin_dir.install_hugo(parse_hugo_version(args))
 
-            modo_proc = build_docs(bin_dir, watch=True)
-            hugo_proc = serve_docs(bin_dir, "docs/site")
+            modo_proc = await build_docs(bin_dir, watch=True)
+            hugo_proc = await serve_docs(bin_dir, "docs/site")
 
             await asyncio.gather(
-                modo_proc,
-                hugo_proc,
+                modo_proc.wait(),
+                hugo_proc.wait(),
             )
 
         case "serve":
-            await serve_docs(bin_dir, "docs/site")
+            hugo_proc = await serve_docs(bin_dir, "docs/site")
+            await hugo_proc.wait()
 
 
 if __name__ == "__main__":
