@@ -30,18 +30,6 @@ jobs:
         run: |
           curl -ssL https://pixi.sh/install.sh | bash
 
-      # Download Modo release
-      - name: Download Modo
-        run: |
-          mkdir modo/
-          curl -sSL https://github.com/mlange-42/modo/releases/download/${{env.MODO_VERSION}}/modo-${{env.MODO_VERSION}}-linux-amd64.tar.gz | tar -xz -C modo/
-
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v3
-        with:
-          hugo-version: "${{env.HUGO_VERSION}}"
-          extended: true
-
       - name: Run AoS benchmarks
         run: |
           cd benchmark/plots
@@ -58,14 +46,10 @@ jobs:
           mkdir -p docs/src/guide/images
           cp benchmark/plots/results/aos_benchmark.svg docs/src/guide/images/
 
-      - name: Run Modo # Includes 'mojo doc' and 'mojo test'
+      - name: Build docs # Includes 'modo build', 'mojo doc', 'mojo test' and 'hugo -s docs/site'
         run: |
           pixi install --locked
-          ./modo/modo build --tests ""
-
-      - name: Run Hugo
-        run: |
-          hugo -s docs/site
+          pixi run build-docs
 
       - name: Archive Doc-tests
         uses: actions/upload-artifact@v4
