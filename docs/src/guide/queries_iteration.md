@@ -4,19 +4,19 @@ title = "Queries and iteration"
 weight = 40
 +++
 
-Iterating over entities can be done via 
+Iterating over entities can be done via
 classic `for` loops applied to [queries](#queries),
-or via an [`apply`](#applying-functions-to-entities-in-queries) 
-operation, which applies a given function to all entities 
+or via an [`apply`](#applying-functions-to-entities-in-queries)
+operation, which applies a given function to all entities
 conforming to a query.
 
 ## Queries
 
-{{< api Query Queries >}} allow to iterate over all 
-entities with or without a specific 
-set of components. To create a query, we can use 
-the {{< api World.query query >}} method of 
-{{< api World >}}. The parameters used in this method are the components
+{{< api Query Queries >}} allow to iterate over all
+entities with or without a specific
+set of components. To create a query, we can use
+the {{< api Storage.query query >}} method of
+{{< api Storage >}}. The parameters used in this method are the components
 that each entity we look for must have. For example, if we want to
 iterate over all entities with a `Position` and a `Velocity` component,
 we can do this as follows:
@@ -48,7 +48,7 @@ _ = world.add_entity(Velocity(1, 0))
 _ = world.add_entity(Position(1, 0), Velocity(1, 0))
 
 # Query all entities that have a position
-query = world.query[Position]()
+query = world.storage.query[Position]()
 
 # Of the entities we have just added,
 # two have a position component
@@ -58,7 +58,7 @@ print(len(query)) # "2"
 for entity in query:
     ref pos = entity.get[Position]()
     print(
-        "Entity at position: (" 
+        "Entity at position: ("
         + String(pos.x) + ", " + String(pos.y) + ")"
     )
 ```
@@ -66,27 +66,27 @@ for entity in query:
 Queries can be adjusted to also exclude entities that have
 certain components. For example, if we want to iterate
 over all entities that have a `Position` component
-but not a `Velocity` component, we can do this 
+but not a `Velocity` component, we can do this
 using the {{< api Query.without without >}} method:
 
 ```mojo {doctest="guide_queries_iteration"}
-excluding_query = world.query[Position]().without[Velocity]()
+excluding_query = world.storage.query[Position]().without[Velocity]()
 print(len(excluding_query)) # "1"
 ```
 
 Furthermore, we can also query for entities that have
 exactly the components we are looking for but no more.
-This can be done using the {{< api Query.exclusive exclusive >}} 
+This can be done using the {{< api Query.exclusive exclusive >}}
 method. For example, if we want to iterate
 over all entities that have only a `Position` component,
 we can do this as follows:
 
 ```mojo {doctest="guide_queries_iteration"}
-excluding_query = world.query[Position]().exclusive()
+excluding_query = world.storage.query[Position]().exclusive()
 print(len(excluding_query)) # "1"
 ```
 
-> [!Note] 
+> [!Note]
 > Determining the length of a query is not a trivial operation
 > and may require an internal iteration if the ECS involves many components.
 > Therefore, it is advisable to avoid applying the `len` function
@@ -96,33 +96,33 @@ print(len(excluding_query)) # "1"
 ## Iterating over queries
 
 As we have seen, we can iterate over queries using a for loop.
-Here, the control variable ("entity") is an {{< api EntityAccessor >}} 
+Here, the control variable ("entity") is an {{< api EntityAccessor >}}
 object, i.e., not technically an {{< api Entity >}}, which is
 merely an identifier of an entity. Instead, the `EntityAccessor`
 directly provides methods to get, set, and check the existence
-of components, so that we do not need to call the world's 
-methods for this, making the code more efficient. 
+of components, so that we do not need to call the world's
+methods for this, making the code more efficient.
 
 ```mojo {doctest="guide_queries_iteration"}
-for entity in world.query[Position]():
+for entity in world.storage.query[Position]():
     ref pos = entity.get[Position]()
     print(
-        "Entity at position: (" 
+        "Entity at position: ("
         + String(pos.x) + ", " + String(pos.y) + ")"
     )
     if entity.has[Velocity]():
         ref vel = entity.get[Velocity]()
         # Also print the velocity
         print(
-            " - with velocity (" 
+            " - with velocity ("
             + String(vel.dx) + ", " + String(vel.dy) + ")"
         )
 ```
 
-> [!Note] 
+> [!Note]
 > The `EntityAccessor` is a temporary object that is
 > created for each iteration. Therefore, it should not be
-> stored in a container. Use {{< api EntityAccessor.get_entity >}} 
+> stored in a container. Use {{< api EntityAccessor.get_entity >}}
 > instead if you need to store the entity for later use.
 
 > [!Note]
@@ -132,24 +132,24 @@ for entity in world.query[Position]():
 
 ## Preventing iterator invalidation: the locked world
 
-Adding/removing entities to/from the world 
+Adding/removing entities to/from the world
 or components to/from entities
-while iterating could invalidate the iterator. That is, 
+while iterating could invalidate the iterator. That is,
 the iterator could leave out some entities or consider
-some entities multiple times. 
-To prevent this, Larecs🌲 locks the world during iterations. 
+some entities multiple times.
+To prevent this, Larecs🌲 locks the world during iterations.
 This means that methods that change how many entities
 exist in the world or which components entities have
 will raise exceptions if called during iteration.
 
 ```mojo {doctest="guide_queries_iteration"}
-for entity in world.query[Position]():
+for entity in world.storage.query[Position]():
 
     # Adding entities to the world while iterating
     # is forbidden.
     with assert_raises():
         _ = world.add_entity(Velocity(1, 0)) # Raises an exception
-    
+
     # Changing components of an entity while iterating
     # is forbidden.
     with assert_raises():
@@ -157,7 +157,7 @@ for entity in world.query[Position]():
 ```
 
 If we want to add or remove components from entities while iterating,
-we need to store the entities in an intermediate 
+we need to store the entities in an intermediate
 container and iterate over them in
 a separate loop. Consider the following example, where we
 add a `Velocity` component to all entities that have a `Position`
@@ -166,10 +166,10 @@ but no `Velocity` component:
 ```mojo {doctest="guide_queries_iteration"}
 # A container for the entities
 entities = List[Entity]()
-for entity in world.query[Position]().without[Velocity]():
-    
+for entity in world.storage.query[Position]().without[Velocity]():
+
     # Store the entity for later use
-    # The implicit conversion to `Entity` 
+    # The implicit conversion to `Entity`
     # allows us to use `entity` directly
     entities.append(entity)
 
@@ -186,15 +186,14 @@ for entity in entities:
 > that will allow adding or removing components
 > from multiple entities at once.
 
-
 ## Applying functions to entities in queries
 
 We may want to apply a certain operation to all entities
-that have certain components. This can be achieved with 
+that have certain components. This can be achieved with
 the {{< api World.apply apply >}} method. This method
 iterates over all entities conforming to a query and
 calls the provided function with the entities as arguments.
-The function must take a `MutableEntityAccessor` 
+The function must take a `MutableEntityAccessor`
 (an alias for {{< api EntityAccessor `EntityAccessor[True]` >}})
 as its only argument. Applying a function to all entities
 can be more convenient and also faster than iterating over the entities
@@ -218,17 +217,17 @@ fn move(entity: MutableEntityAccessor) capturing:
         pass
 
 # Apply the move function to all entities with a position and a velocity
-world.apply[move](world.query[Position, Velocity]())
+world.apply[move](world.storage.query[Position, Velocity]())
 ```
 
-> [!Note] 
+> [!Note]
 > Currently, the applied operation can not raise exceptions.
 > Therefore, we need to catch exceptions in the function
 > itself. This is due to current limitations of Mojo and
 > will be changed as soon as possible.
 
 > [!Caution]
-> The world is locked during the iteration, and 
+> The world is locked during the iteration, and
 > accessing variables outside a locally defined
 > function is an immature feature in Mojo. Do not
 > attempt to access the `world` from inside the operation.

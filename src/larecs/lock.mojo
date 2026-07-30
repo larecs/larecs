@@ -10,7 +10,7 @@ struct LockManager(Copyable, Movable):
     """
     Manages locks by mask bits.
 
-    The number of simultaneous locks at a given time is limited to [..bitmask._BitMask.total_bits].
+    The number of simultaneous locks at a given time is limited internally (currently 256).
     """
 
     var locks: BitMask  # The actual locks.

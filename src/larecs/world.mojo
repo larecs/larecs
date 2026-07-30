@@ -27,16 +27,16 @@ struct World[*component_types: ComponentType](Copyable, Sized):
     """
     World is the central type holding entity and component data, as well as resources.
 
-    The World provides all the basic ECS functionality of Larecs,
-    like [.World.query], [.World.add_entity], [.World.add], [.World.remove], [.World.get] or [.World.remove_entity].
+    The World provides all the basic ECS functionality of Larecs through it's member [..storage.Storage storage].
+    These include functions like [..storage.Storage.query], [..storage.Storage.add_entity], [..storage.Storage.add], [..storage.Storage.remove], [..storage.Storage.get] or [..storage.Storage.remove_entity].
     """
 
     comptime Storage = Storage[*Self.component_types]
     var storage: Self.Storage
-    """Component storage associated with the world."""
+    """[..storage.Storage Component Storage] associated with the world."""
 
     var resources: Resources  # The resources of the world.
-    """Resource storage associated with the world."""
+    """[..resource.Resources Resource Storage] associated with the world."""
 
     def __init__(out self):
         """

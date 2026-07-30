@@ -34,6 +34,21 @@ from tracy import Zone
 
 
 struct Storage[*ComponentTypes: ComponentType](Copyable):
+    """
+    Holds all the component and entity data for a world.
+
+    This is always used in combination with a [..world.World] instance, e.g. as a member of it.
+
+    Parameters:
+        ComponentTypes: A variadic list with all possible component types for this storage.
+
+    Examples:
+        ```mojo
+        var world = World[Position, Velocity]()
+        world.storage.add_entitiy(Position(10.0, 20.0)
+        ```
+    """
+
     comptime component_manager = ComponentManager[*Self.ComponentTypes]
 
     # If *Ts is empty, this results in a zero-sized Array, else this
@@ -567,7 +582,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         _ = world.add_entity(Float64(0))
 
         # Remove all entities with a Float32 component.
-        world.remove_entities(world.query[Float32]())
+        world.storage.remove_entities(world.storage.query[Float32]())
         ```
 
         Args:
@@ -841,8 +856,8 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         world = World[Position, Velocity]()
         _ = world.add_entities(Position(0, 0), 100)
 
-        for entity in world.add[Velocity](
-            world.query[Position]().without_mask[Velocity](),
+        for entity in world.storage.add[Velocity](
+            world.storage.query[Position]().without_mask[Velocity](),
             Velocity(0.5, -0.5),
         ):
             velocity = entity.get[Velocity]()
@@ -946,8 +961,8 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         world = World[Position, Velocity]()
         _ = world.add_entities(Position(0, 0), Velocity(1, 0), 100)
 
-        for entity in world.remove[Velocity](
-            world.query[Position, Velocity]()
+        for entity in world.storage.remove[Velocity](
+            world.storage.query[Position, Velocity]()
         ):
             position = entity.get[Position]()
         ```
@@ -1543,7 +1558,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     #         # Store the SIMD at the same address
     #         ptr.store(val)
 
-    #     world.apply[operation, simd_width=simdwidthof[Float64]()](world.query[Float64]())
+    #     world.storage.apply[operation, simd_width=simdwidthof[Float64]()](world.storage.query[Float64]())
     #     ```
 
     #     """

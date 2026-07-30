@@ -27,7 +27,7 @@ struct Query[
 ](ImplicitlyCopyable, SizedRaising):
     """Query builder for entities with and without specific components.
 
-    This type should not be used directly, but through the [..world.World.query] method:
+    This type should not be used directly, but through the [..storage.Storage.query] method:
 
     ```mojo {doctest="query_init" global=true hide=true}
     from larecs import World, Resources, MutableEntityAccessor
@@ -38,7 +38,7 @@ struct Query[
     _ = world.storage.add_entity(Float64(1.0), Float32(2.0), 3)
     _ = world.storage.add_entity(Float64(1.0), 3)
 
-    for entity in world.query[Float64, Int]():
+    for entity in world.storage.query[Float64, Int]():
         ref f = entity.get[Float64]()
         f += 1
     ```
@@ -86,7 +86,7 @@ struct Query[
         """
         Creates a new query.
 
-        The constructors should not be used directly, but through the [..world.World.query] method.
+        The constructors should not be used directly, but through the [..storage.Storage.query] method.
 
         Args:
             archetypes: A pointer to the world's archetypes.
@@ -117,7 +117,7 @@ struct Query[
         """
         Creates a new query from existing query information.
 
-        The constructors should not be used directly, but through the [..world.World.query] method.
+        The constructors should not be used directly, but through the [..storage.Storage.query] method.
 
         Args:
             archetypes: A pointer to the world's archetypes.
@@ -202,9 +202,9 @@ struct Query[
         ```mojo {doctest="query_without"}
         world = World[Float64, Float32, Int]()
         _ = world.add_entity(Float64(1.0), Float32(2.0), 3)
-        _ = world.add_entity(Float64(1.0), 3)
+        _ = world.storage.add_entity(Float64(1.0), 3)
 
-        for entity in world.query[Float64, Int]().without[Float32]():
+        for entity in world.storage.query[Float64, Int]().without[Float32]():
             ref f = entity.get[Float64]()
             f += 1
         ```
@@ -246,9 +246,9 @@ struct Query[
         ```mojo {doctest="query_without"}
         world = World[Float64, Float32, Int]()
         _ = world.add_entity(Float64(1.0), Float32(2.0), 3)
-        _ = world.add_entity(Float64(1.0), 3)
+        _ = world.storage.add_entity(Float64(1.0), 3)
 
-        for entity in world.query[Float64, Int]().exclusive():
+        for entity in world.storage.query[Float64, Int]().exclusive():
             ref f = entity.get[Float64]()
             f += 1
         ```

@@ -142,7 +142,7 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
         def update[
             *ComponentTypes: ComponentType
         ](mut self, mut world: World[*ComponentTypes]) raises:
-            for entity in world.query[Position, Velocity]():
+            for entity in world.storage.query[Position, Velocity]():
                 entity.get[Position]().x += entity.get[Velocity]().x
                 entity.get[Position]().y += entity.get[Velocity]().y
 
@@ -151,7 +151,7 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
             *ComponentTypes: ComponentType
         ](mut self, mut world: World[*ComponentTypes]) raises:
             print("Final positions")
-            for entity in world.query[Position]():
+            for entity in world.storage.query[Position]():
                 print(entity.get[Position]().x, entity.get[Position]().y)
     ```
 
