@@ -60,7 +60,7 @@ def test_component_manager_get_id() raises:
 def test_component_manager_get_id_arr() raises:
     comptime assert component_manager.contains_components[
         TestPosition, TestVelocity
-    ], "Component types not in component manager"
+    ](), "Component types not in component manager"
     comptime assert constrain_components_unique[
         TestPosition, TestVelocity
     ](), "Component types not unique"
