@@ -1,6 +1,10 @@
 # macOS
 .DS_Store
 
+# Doc build installation cache
+.doc_install_cache/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

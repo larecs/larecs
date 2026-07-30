@@ -72,8 +72,7 @@ def hugo_url(hugo_version: str) -> str:
             os_name = "darwin"
             arch = "universal"
             ext = "pkg"
-            sys.exit(f"MacOS is currently not supported")
-
+            sys.exit("MacOS is currently not supported")
         case "Windows":
             os_name = "windows"
             ext = "zip"
@@ -119,108 +118,120 @@ def get_filename(url: str, response, fallback: str = "modo.tar.gz") -> str:
     return fallback
 
 
-def download_modo(modo_version):
-    """
-    Downloads and extracts the Modo binary.
+class BinDir:
+    _path: Path
 
-    Args:
-        modo_version (str): The version of Modo to download.
+    def __init__(self):
+        script_dir = Path(__file__).parent
+        self._path = (script_dir / ".." / ".doc_install_cache").absolute().resolve()
+        self._path.mkdir(parents=True, exist_ok=True)
 
-    Returns:
-        Path: The path to the extracted Modo binary.
-    """
-    url = modo_url(modo_version)
+    def modo(self):
+        return self._path / "modo"
 
-    with TemporaryDirectory() as tmp:
-        tmp_dir = Path(tmp)
+    def hugo(self):
+        return self._path / "hugo"
 
-        with urlopen(url) as response:
-            filename = get_filename(url, response)
-            destination = tmp_dir / Path(filename)
+    def install_modo(self, modo_version):
+        """
+        Downloads and extracts the Modo binary.
 
-            with destination.open("wb") as file:
-                while chunk := response.read(1024 * 1024):
-                    file.write(chunk)
+        Args:
+            modo_version (str): The version of Modo to download.
+        """
+        url = modo_url(modo_version)
 
-        modo_dir = Path("modo")
-        modo_dir.mkdir(parents=True, exist_ok=True)
+        with TemporaryDirectory() as tmp:
+            tmp_dir = Path(tmp)
 
-        shutil.unpack_archive(destination, modo_dir)
+            with urlopen(url) as response:
+                filename = get_filename(url, response)
+                destination = tmp_dir / Path(filename)
 
-        return modo_dir / "modo"
+                with destination.open("wb") as file:
+                    while chunk := response.read(1024 * 1024):
+                        file.write(chunk)
 
+            shutil.unpack_archive(destination, self._path)
 
-def download_hugo(hugo_version):
-    """
-    Downloads and extracts the Hugo binary.
+    def install_hugo(self, hugo_version):
+        """
+        Downloads and extracts the Hugo binary.
 
-    Args:
-        hugo_version (str): The version of Hugo to download.
+        Args:
+            hugo_version (str): The version of Hugo to download.
+        """
+        url = hugo_url(hugo_version)
 
-    Returns:
-        Path: The path to the extracted Hugo binary.
-    """
-    url = hugo_url(hugo_version)
+        with TemporaryDirectory() as tmp:
+            tmp_dir = Path(tmp)
 
-    with TemporaryDirectory() as tmp:
-        tmp_dir = Path(tmp)
+            with urlopen(url) as response:
+                filename = get_filename(url, response)
+                destination = tmp_dir / Path(filename)
 
-        with urlopen(url) as response:
-            filename = get_filename(url, response)
-            destination = tmp_dir / Path(filename)
+                with destination.open("wb") as file:
+                    while chunk := response.read(1024 * 1024):
+                        file.write(chunk)
 
-            with destination.open("wb") as file:
-                while chunk := response.read(1024 * 1024):
-                    file.write(chunk)
-
-        modo_dir = Path("modo")
-        modo_dir.mkdir(parents=True, exist_ok=True)
-
-        shutil.unpack_archive(destination, modo_dir)
-
-        return modo_dir / "hugo"
+            shutil.unpack_archive(destination, self._path)
 
 
-def build_docs(modo_bin: Path):
-    curr_dir = Path.cwd()
-    larecs_dir = curr_dir.parent
+def build_static_site(bin_dir: BinDir, hugo_site_dir):
+    larecs_dir = Path(__file__).parent.parent
     subprocess.run(
-        [str(curr_dir / modo_bin), "build", "--tests", ""], check=True, cwd=larecs_dir
+        [str(bin_dir.hugo()), "-s", larecs_dir / hugo_site_dir],
+        check=True,
+        cwd=larecs_dir,
     )
 
 
-def build_static_site(hugo_bin: Path, hugo_site_dir):
-    curr_dir = Path.cwd()
-    larecs_dir = curr_dir.parent
+def build_docs(bin_dir: BinDir):
+    larecs_dir = Path(__file__).parent.parent
     subprocess.run(
-        [str(curr_dir / hugo_bin), "-s", str(hugo_site_dir)], check=True, cwd=larecs_dir
+        [str(bin_dir.modo()), "build", "--tests", ""], check=True, cwd=larecs_dir
+    )
+
+
+def serve_docs(bin_dir: BinDir, hugo_site_dir):
+    larecs_dir = Path(__file__).parent.parent
+    subprocess.run(
+        [bin_dir.hugo(), "server"], check=True, cwd=larecs_dir / hugo_site_dir
     )
 
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("command", choices=["build", "serve"], default="build")
     parser.add_argument("--modo-version", default=environ.get("MODO_VERSION"))
     parser.add_argument("--hugo-version", default=environ.get("HUGO_VERSION"))
     args = parser.parse_args()
 
-    modo_version = args.modo_version
-    if not modo_version or not modo_version.strip():
-        sys.exit(
-            'Modo version not provided as an argument or via the MODO_VERSION environment variable. Specify "latest" or a specific version tag!'
-        )
-    if modo_version == "latest":
-        modo_version = get_latest_modo_version()
+    bin_dir = BinDir()
 
-    hugo_version = args.hugo_version
-    if not hugo_version or not hugo_version.strip():
-        sys.exit(
-            "Hugo version not provided as an argument or via the HUGO_VERSION environment variable. Specify a version tag!"
-        )
+    match args.command:
+        case "build":
+            modo_version = args.modo_version
+            if not modo_version or not modo_version.strip():
+                sys.exit(
+                    'Modo version not provided as an argument or via the MODO_VERSION environment variable. Specify "latest" or a specific version tag!'
+                )
+            if modo_version == "latest":
+                modo_version = get_latest_modo_version()
 
-    modo_bin = download_modo(modo_version)
-    hugo_bin = download_hugo(hugo_version)
-    build_docs(modo_bin)
-    build_static_site(hugo_bin, "docs/site")
+            hugo_version = args.hugo_version
+            if not hugo_version or not hugo_version.strip():
+                sys.exit(
+                    "Hugo version not provided as an argument or via the HUGO_VERSION environment variable. Specify a version tag!"
+                )
+
+            bin_dir.install_modo(modo_version)
+            bin_dir.install_hugo(hugo_version)
+            build_docs(bin_dir)
+            build_static_site(bin_dir, "docs/site")
+
+        case "serve":
+            serve_docs(bin_dir, "docs/site")
 
 
 if __name__ == "__main__":

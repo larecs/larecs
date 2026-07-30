@@ -16,7 +16,8 @@ tests = { cmd = "test/run_tests.sh", default-environment = "test" }
 benchmarks = { cmd = "mojo run -I src benchmark/run_benchmarks.mojo", default-environment = "default" }
 update-mojo = { cmd = "python scripts/update_mojo.py", default-environment = "default" }
 profiling = { cmd = "mojo run -I src -Xlinker -L\"$CONDA_PREFIX/lib\" -Xlinker -lmojotracy -DTRACY_ENABLED benchmark/run_benchmarks.mojo", default-environment = "default" }
-build-docs = { cmd = "cd scripts && pixi run build-docs", default-environment = "default" }
+build-docs = { cmd = "cd scripts && pixi run build-docs --hugo-version 0.148.2 --modo-version v0.11.13", default-environment = "default" }
+serve-docs = { cmd = "cd scripts && pixi run serve-docs", default-environment = "default" }
 
 satellites = { cmd = "cd examples/satellites && pixi run satellites" }
 plots = { cmd = "cd benchmark/plots && pixi run plots" }

@@ -6,7 +6,8 @@ platforms = ["osx-arm64", "linux-64"]
 version = "0.1.0"
 
 [tasks]
-build-docs = "python build_docs.py"
+build-docs = "python docs.py build"
+serve-docs = "python docs.py serve"
 
 [dependencies]
 python = ">=3.14.4,<3.15"
