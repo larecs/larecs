@@ -45,7 +45,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     Examples:
         ```mojo
         var world = World[Position, Velocity]()
-        world.storage.add_entitiy(Position(10.0, 20.0)
+        world.storage.add_entitiy(Position(10.0, 20.0))
         ```
     """
 
@@ -112,9 +112,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
     var _entity_pool: EntityPool  # Pool for entities.
     """Pool used to allocate and recycle entity IDs."""
-    var _entity_locations: List[
-        EntityLocation
-    ]  # Mapping from entities to archetype and index.
+    var _entity_locations: List[EntityLocation]
     """Mapping from entity IDs to their current archetype location."""
 
     comptime Archetype = Archetype[*Self.ComponentTypes]
@@ -126,12 +124,13 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     var _archetypes: Self.Archetypes
     """Storage for all archetypes owned by this storage."""
 
-    var _archetype_map: BitMaskGraph[
-        -1
-    ]  # Mapping from component masks to archetypes.
+    var _archetype_map: BitMaskGraph[-1]
     """Graph mapping component masks to archetype indices."""
 
     def __init__(out self):
+        """
+        Initializes the storage with the zero archetype and zero entity location.
+        """
         self._entity_locations = [EntityLocation(0, 0)]
         self._entity_pool = EntityPool()
 
@@ -1468,6 +1467,8 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                         except:
                             raise LarecsError(UnknownError())
 
+    # BUG: Mojo cannot correctly infer the simd_width for `Storage.apply` therefore disable this for now.
+    #
     # def apply[
     #     OperationType: def[simd_width: Int](
     #         accessor: MutableEntityAccessor
