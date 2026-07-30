@@ -524,9 +524,9 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
                 "_ComponentStorage.get_component_ptr[T: ComponentType]()"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponent[
+            comptime assert Self.component_manager.contains_components[
                 T
-            ], "Component type not in component manager"
+            ](), "Component type not in component manager"
             comptime id = Self.component_manager.get_id[T]()
 
             self.assert_has_components[T]()

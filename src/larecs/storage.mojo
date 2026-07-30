@@ -307,9 +307,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 "Storage.add_entity[*Ts: ComponentType](var *components: *Ts)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "Not all component types are in the component manager."
+            ](), "Not all component types are in the component manager."
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in add_entity are not allowed."
@@ -409,9 +409,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 " count: Int, out iterator: Self.Iterator)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "Not all component types are in the component manager."
+            ](), "Not all component types are in the component manager."
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in add_entities are not allowed."
@@ -451,9 +451,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
             comptime for i in range(component_count):
                 comptime T = Ts[i]
-                comptime assert Self.component_manager._ContainsComponent[
+                comptime assert Self.component_manager.contains_components[
                     T
-                ], "Component type is not part of the world."
+                ](), "Component type is not part of the world."
                 archetype.set_component_range[T](
                     first_index_in_archetype, count, components[i]
                 )
@@ -651,9 +651,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         with Zone(
             function_name="Storage.has[T: ComponentType](entity: Entity)"
         ):
-            comptime assert Self.component_manager._ContainsComponent[
+            comptime assert Self.component_manager.contains_components[
                 T
-            ], "Component type not in component manager"
+            ](), "Component type not in component manager"
             self._assert_alive(entity)
             return self._archetypes.unsafe_get(
                 index(self._entity_locations[entity.get_id()].archetype_index)
@@ -677,9 +677,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             LarecsError: If the entity is not alive or does not have the component.
         """
-        comptime assert Self.component_manager._ContainsComponent[
+        comptime assert Self.component_manager.contains_components[
             T
-        ], "Component type not in component manager"
+        ](), "Component type not in component manager"
         entity_loc = self._entity_locations[entity.get_id()]
         self._assert_alive(entity)
 
@@ -722,9 +722,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 " component: T)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponent[
+            comptime assert Self.component_manager.contains_components[
                 T
-            ], "Component type not in component manager"
+            ](), "Component type not in component manager"
             self._assert_alive(entity)
             entity_loc = self._entity_locations[entity.get_id()]
             self._archetypes.unsafe_get(
@@ -755,9 +755,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 " *components: *Ts)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "One or more component types not in component manager"
+            ](), "One or more component types not in component manager"
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in set are not allowed."
@@ -886,9 +886,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 " Self.Iterator)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "One or more component types not in component manager"
+            ](), "One or more component types not in component manager"
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in add are not allowed."
@@ -992,9 +992,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in remove are not allowed."
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "One or more component types not in component manager"
+            ](), "One or more component types not in component manager"
 
             return self._batch_remove_and_add[
                 rem_size=len(Ts),
@@ -1060,9 +1060,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 " Entity, var *add_components: *Ts)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "One or more component types not in component manager"
+            ](), "One or more component types not in component manager"
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in remove are not allowed."
@@ -1207,9 +1207,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 " *add_components: *Ts, out iterator: Self.Iterator)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "One or more component types not in component manager"
+            ](), "One or more component types not in component manager"
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in add are not allowed."

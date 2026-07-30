@@ -267,24 +267,22 @@ comptime FullManager = ComponentManager[
 
 def benchmark_get_first_id_1_000_000(mut bencher: Bencher):
     # create a component manager with 256 components
-    manager = FullManager()
 
     @always_inline
     def bench_fn() {imm}:
         for _ in range(1_000_000):
-            keep(manager.get_id[FlexibleComponent[0]]())
+            keep(FullManager.get_id[FlexibleComponent[0]]())
 
     bencher.iter(bench_fn)
 
 
 def benchmark_get_last_id_1_000_000(mut bencher: Bencher):
     # create a component manager with 256 components
-    manager = FullManager()
 
     @always_inline
     def bench_fn() {imm}:
         for _ in range(1_000_000):
-            keep(manager.get_id[FlexibleComponent[255]]())
+            keep(FullManager.get_id[FlexibleComponent[255]]())
 
     bencher.iter(bench_fn)
 
@@ -295,12 +293,11 @@ def t[size: Int](arr: InlineArray[UInt8, size]) -> UInt8:
 
 def benchmark_get_5_id_arr_1_000_000(mut bencher: Bencher):
     # create a component manager with 256 components
-    manager = FullManager()
 
     @always_inline
     def bench_fn() {imm}:
         for _ in range(1_000_000):
-            arr = manager.get_id_arr[
+            arr = FullManager.get_id_arr[
                 FlexibleComponent[1],
                 FlexibleComponent[0],
                 FlexibleComponent[2],

@@ -30,7 +30,7 @@ struct TestVelocity(ComponentType & ImplicitlyCopyable):
 
 comptime component_manager = ComponentManager[
     TestLargerComponent, TestPosition, TestVelocity
-]()
+]
 
 
 def test_constrain_components_unique() raises:
@@ -58,7 +58,7 @@ def test_component_manager_get_id() raises:
 
 
 def test_component_manager_get_id_arr() raises:
-    comptime assert component_manager._ContainsComponents[
+    comptime assert component_manager.contains_components[
         TestPosition, TestVelocity
     ], "Component types not in component manager"
     comptime assert constrain_components_unique[

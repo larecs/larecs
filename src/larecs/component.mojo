@@ -59,32 +59,43 @@ struct ComponentManager[
     comptime component_count = len(Self.ComponentTypes)
     """The number of component types handled by this ComponentManager."""
 
-    def __init__(out self):
-        """Construct a component manager for the configured component types.
+    comptime _registry = Self._create_registry()
 
-        Constraints:
-            The component count must fit into the bitmask capacity.
+    @staticmethod
+    @always_inline
+    def _create_registry(out dict: Dict[String, ComponentId]):
         """
-        with Zone(function_name="ComponentManager.__init__()"):
-            comptime assert Self.component_count <= Int(Self.max_size)
+        Create a registry mapping component type names to their IDs.
 
-    comptime _ContainsComponent[
-        T: ComponentType
-    ] = Self.ComponentTypes.contains[T]()
-    """Whether a component type is registered in this manager."""
+        Returns:
+            A dictionary mapping component type names to their IDs.
+        """
+        dict = {}
+        comptime for i in range(len(Self.ComponentTypes)):
+            comptime T = Self.ComponentTypes[i]
+            dict[reflect[T].name()] = ComponentId(i)
 
-    comptime _ContainsComponents[*Ts: ComponentType] = Ts.all_satisfies[
-        Self._ContainsComponent
-    ]()
-    """Whether all component types are registered in this manager."""
+    @staticmethod
+    @always_inline
+    def contains_components[*Ts: ComponentType]() -> Bool:
+        """Checks whether all component types are registered in this manager.
+
+        Returns:
+            True if all component types are registered, False otherwise.
+        """
+        comptime for i in range(len(Ts)):
+            comptime T = Ts[i]
+            comptime if not reflect[T].name() in Self._registry:
+                return False
+        return True
 
     @staticmethod
     @always_inline
     def assert_valid_components[*Ts: ComponentType]():
         """Assert that all component types are valid."""
-        comptime assert Self._ContainsComponents[
+        comptime assert Self.contains_components[
             *Ts
-        ], "Not all component types are valid for this component manager."
+        ](), "Not all component types are valid for this component manager."
 
     @staticmethod
     @always_inline
@@ -97,22 +108,16 @@ struct ComponentManager[
         Returns:
             The ID of the component type.
         """
-        comptime assert Self._ContainsComponent[
+        comptime assert Self.contains_components[
             T
-        ], "Component type not in component manager"
+        ](), "Component type not in component manager"
 
-        comptime for i in range(len(Self.ComponentTypes)):
-            comptime if T == Self.ComponentTypes[i]:
-                return i
-
-        # This is unreachable.
-        return -1
+        comptime id = Self._registry.get(reflect[T].name())
+        return id.unsafe_value()
 
     @staticmethod
     @always_inline
-    def get_id_arr[
-        *Ts: ComponentType
-    ](out ids: InlineArray[ComponentId, len(Ts)]):
+    def get_id_arr[*Ts: ComponentType](out ids: Array[ComponentId, len(Ts)]):
         """Get the IDs of multiple component types.
 
         Parameters:
@@ -128,11 +133,11 @@ struct ComponentManager[
             *Ts
         ](), "Duplicate component types in get_id_arr are not allowed."
         ids = InlineArray[ComponentId, len(Ts)](uninitialized=True)
+        comptime assert Self.contains_components[
+            *Ts
+        ](), "Component type not in component manager"
 
         comptime for i in range(len(Ts)):
-            comptime assert Self._ContainsComponent[
-                Ts[i]
-            ], "Component type not in component manager"
             ids[i] = Self.get_id[Ts[i]]()
 
     def write_to(self, mut writer: Some[Writer]):
