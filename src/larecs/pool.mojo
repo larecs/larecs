@@ -115,7 +115,7 @@ struct BitPool(Copyable, Movable):
     comptime capacity = Int(UInt8.MAX_FINITE) + 1
     """The maximum number of unique bit indices managed by the pool."""
 
-    var _bits: InlineArray[UInt8, Self.capacity]
+    var _bits: Array[UInt8, Self.capacity]
     """Storage for allocated bit values and recycled free-list links."""
 
     var _next: Int
@@ -139,7 +139,7 @@ struct BitPool(Copyable, Movable):
         bits become available.
         """
         with Zone(function_name="BitPool.__init__()"):
-            self._bits = InlineArray[UInt8, Self.capacity](fill=0)
+            self._bits = Array[UInt8, Self.capacity](fill=0)
             self._next = 0
             self._length = 0
             self._available = 0

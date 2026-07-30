@@ -287,7 +287,7 @@ def benchmark_get_last_id_1_000_000(mut bencher: Bencher):
     bencher.iter(bench_fn)
 
 
-def t[size: Int](arr: InlineArray[UInt8, size]) -> UInt8:
+def t[size: Int](arr: Array[UInt8, size]) -> UInt8:
     return arr[0]
 
 

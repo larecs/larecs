@@ -122,7 +122,7 @@ def get_random_bitmask_list(
     list = List[BitMask]()
     list.reserve(count)
     for _ in range(count):
-        bytes = InlineArray[Scalar[DType.int], BitMask.total_bytes // 4]()
+        bytes = Array[Scalar[DType.int], BitMask.total_bytes // 4]()
         random.randint(bytes.unsafe_ptr(), 4, range_start, range_end)
         list.append(
             BitMask(

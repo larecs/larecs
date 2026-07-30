@@ -55,7 +55,7 @@ struct WorldError(Equatable, ImplicitlyCopyable, Writable):
         Returns:
             The human-readable message for the variant.
         """
-        comptime WORLD_ERROR_VARIANT_MESSAGES: InlineArray[StaticString, 3] = [
+        comptime WORLD_ERROR_VARIANT_MESSAGES: Array[StaticString, 3] = [
             "Unknown error.",
             "Attempt to modify a locked world.",
             (
@@ -93,7 +93,7 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
     comptime MAX_ENTITY_COUNT = 10
     """The maximum number of entities that can be involved in an error."""
 
-    var entities: InlineArray[Entity, Self.MAX_ENTITY_COUNT]
+    var entities: Array[Entity, Self.MAX_ENTITY_COUNT]
     """The entities involved in the error."""
 
     @always_inline
@@ -101,18 +101,14 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
         assert variant < 2, "Invalid variant for EntityError"
 
         self._variant = variant
-        self.entities = InlineArray[Entity, Self.MAX_ENTITY_COUNT](
+        self.entities = Array[Entity, Self.MAX_ENTITY_COUNT](
             fill=Entity()  # fill with zero Entity
         )
 
     @always_inline
     def with_entities[
         entity_count: Int
-    ](
-        deinit self,
-        entities: InlineArray[Entity, entity_count],
-        out next_self: Self,
-    ):
+    ](deinit self, entities: Array[Entity, entity_count], out next_self: Self,):
         comptime assert (
             entity_count <= Self.MAX_ENTITY_COUNT
         ), "Entity count exceeds maximum inline array size"
@@ -140,7 +136,7 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
         Returns:
             The human-readable message for the variant.
         """
-        comptime ENTITY_ERROR_VARIANT_MESSAGES: InlineArray[StaticString, 2] = [
+        comptime ENTITY_ERROR_VARIANT_MESSAGES: Array[StaticString, 2] = [
             "Unknown error.",
             "The considered entity does not exist anymore:",
         ]
@@ -217,9 +213,7 @@ struct ComponentError(Equatable, ImplicitlyCopyable, Writable):
         Returns:
             The human-readable message for the variant.
         """
-        comptime COMPONENT_ERROR_VARIANT_MESSAGES: InlineArray[
-            StaticString, 6
-        ] = [
+        comptime COMPONENT_ERROR_VARIANT_MESSAGES: Array[StaticString, 6] = [
             "Unknown error.",
             "Entity does not have all the components to remove:",
             "Entity already has components that are being added:",

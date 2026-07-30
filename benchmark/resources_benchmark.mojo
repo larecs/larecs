@@ -5,10 +5,10 @@ from larecs import Resources, ResourceType
 
 @fieldwise_init
 struct TestResource[size: Int = 1000](ResourceType):
-    var _storage: InlineArray[Float64, Self.size]
+    var _storage: Array[Float64, Self.size]
 
     def __init__(out self, value: Float64 = 0):
-        self._storage = InlineArray[Float64, Self.size](fill=value)
+        self._storage = Array[Float64, Self.size](fill=value)
 
 
 def benchmark_add_remove_resource_1_000(mut bencher: Bencher):
