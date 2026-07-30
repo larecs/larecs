@@ -12,6 +12,8 @@ watch-docs = "python docs.py watch"
 
 [dependencies]
 python = ">=3.14.4,<3.15"
+hugo = ">0.148.0,<=0.148.2"
 
 [pypi-dependencies]
 perfetto = ">=0.16.0, <0.17"
+pymodo = ">=0.11.13, <0.12"

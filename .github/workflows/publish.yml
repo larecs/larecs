@@ -10,10 +10,6 @@ permissions:
   contents: write
   pages: write
 
-env:
-  MODO_VERSION: v0.11.13
-  HUGO_VERSION: 0.148.2
-
 jobs:
   publish:
     name: Publish API docs

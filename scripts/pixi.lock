@@ -13,6 +13,7 @@ environments:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_9.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/hugo-0.148.2-hecca717_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-h54a6638_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.1-hecca717_1.conda
@@ -34,6 +35,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-8_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
+      - pypi: https://files.pythonhosted.org/packages/4b/89/90600d5b873c2f0e63f4f8494821dbc6c7c0bec18149006f203c532f676e/pymodo-0.11.13-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/de/26/6a28db36a65f9f6e57cb0da611593e309b6422bdbf07e0785cf5b6e8e4cc/perfetto-0.16.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e4/be/5b3cfe508bfab6761414ff944e3366eb13be4fd71efcd69450f89ba39f43/protobuf-7.35.1-cp310-abi3-manylinux2014_x86_64.whl
       osx-arm64:
@@ -41,6 +43,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-8_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-hd037594_9.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/hugo-0.148.2-hec049ff_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-22.1.8-h55c6f16_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.0-hf6b4638_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libffi-3.5.2-hcf2aa1b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblzma-5.8.3-h8088a28_0.conda
@@ -53,6 +57,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h46df422_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-h010d191_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
+      - pypi: https://files.pythonhosted.org/packages/4b/89/90600d5b873c2f0e63f4f8494821dbc6c7c0bec18149006f203c532f676e/pymodo-0.11.13-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/de/26/6a28db36a65f9f6e57cb0da611593e309b6422bdbf07e0785cf5b6e8e4cc/perfetto-0.16.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ec/11/3325d41e6ee15bf1125654301211247b042563bcc898784351252549a8ad/protobuf-7.34.1-cp310-abi3-macosx_10_9_universal2.whl
 packages:
@@ -87,6 +92,20 @@ packages:
     - bzip2 >=1.0.8,<2.0a0
   size: 260182
   timestamp: 1771350215188
+- conda: https://conda.anaconda.org/conda-forge/linux-64/hugo-0.148.2-hecca717_0.conda
+  sha256: 14708e2c0908c1825914bc1f4a6e61d45c83113f2981755146583ff8f3dd0f3a
+  md5: 42af6404b6fdae54ebae55d645203f70
+  depends:
+  - __glibc >=2.17
+  - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
+  - libstdcxx >=14
+  license: Apache-2.0
+  license_family: APACHE
+  purls: []
+  run_exports: {}
+  size: 17691544
+  timestamp: 1753682753425
 - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-h54a6638_2.conda
   sha256: d7c260b7e1cf22ce04d6ba8a86eabf4e6c50bc96a5c27fe2ecb32298af3e88eb
   md5: 4ef4b977bb216a3001a3334696a80850
@@ -417,6 +436,29 @@ packages:
   purls: []
   size: 124834
   timestamp: 1771350416561
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/hugo-0.148.2-hec049ff_0.conda
+  sha256: ceb6fe024efa075708eeb65cad7bb618731448d5542d9e2779e7bf4219b77d18
+  md5: 0bede0e5597048610e6756e13efd5451
+  depends:
+  - __osx >=11.0
+  - libcxx >=19
+  license: Apache-2.0
+  license_family: APACHE
+  purls: []
+  run_exports: {}
+  size: 15757639
+  timestamp: 1753682943786
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-22.1.8-h55c6f16_0.conda
+  sha256: a2e7abab5add9750fab064c024394de48e49f97631c605ad5db5c8ac3fc769ef
+  md5: 89f76a2a21a3ec3ec983b5eb237c4113
+  depends:
+  - __osx >=11.0
+  license: Apache-2.0 WITH LLVM-exception
+  license_family: Apache
+  purls: []
+  run_exports: {}
+  size: 569349
+  timestamp: 1781670209146
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.0-hf6b4638_0.conda
   sha256: f4b1cafc59afaede8fa0a2d9cf376840f1c553001acd72f6ead18bbc8ac8c49c
   md5: 65466e82c09e888ca7560c11a97d5450
@@ -560,6 +602,11 @@ packages:
   purls: []
   size: 433413
   timestamp: 1764777166076
+- pypi: https://files.pythonhosted.org/packages/4b/89/90600d5b873c2f0e63f4f8494821dbc6c7c0bec18149006f203c532f676e/pymodo-0.11.13-py3-none-any.whl
+  name: pymodo
+  version: 0.11.13
+  sha256: a6ae39e5c00452fa7df8b5163c5f20de7dbe660a184618cd8869e913038a7c34
+  requires_python: '>=3.8'
 - pypi: https://files.pythonhosted.org/packages/de/26/6a28db36a65f9f6e57cb0da611593e309b6422bdbf07e0785cf5b6e8e4cc/perfetto-0.16.0-py3-none-any.whl
   name: perfetto
   version: 0.16.0
