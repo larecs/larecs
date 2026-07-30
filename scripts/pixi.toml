@@ -2,13 +2,18 @@
 authors = ["Mose Schmiedel <mose@schmiednet.de>"]
 channels = ["https://conda.modular.com/max-nightly", "conda-forge"]
 name = "scripts"
-platforms = ["osx-arm64"]
+platforms = ["osx-arm64", "linux-64"]
 version = "0.1.0"
 
 [tasks]
+build-docs = "python docs.py build"
+serve-docs = "python docs.py serve"
+watch-docs = "python docs.py watch"
 
 [dependencies]
 python = ">=3.14.4,<3.15"
+hugo = ">0.148.0,<=0.148.2"
 
 [pypi-dependencies]
 perfetto = ">=0.16.0, <0.17"
+pymodo = ">=0.11.13, <0.12"

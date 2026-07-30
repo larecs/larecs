@@ -29,7 +29,7 @@ def benchmark_archetype_bitmask_contains_1_000_000(
     archetype = Archetype(0, mask, 10)
 
     @always_inline
-    def bench_fn() {read}:
+    def bench_fn() {imm}:
         for _ in range(1_000_000):
             keep(archetype.get_mask().contains(mask))
 

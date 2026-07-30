@@ -2,6 +2,7 @@ from std.builtin.globals import global_constant
 from std.utils import Variant
 
 from .bitmask import BitMask
+from .entity import Entity
 
 
 comptime LarecsError = Variant[

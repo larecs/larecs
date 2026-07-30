@@ -1,0 +1,16 @@
+[workspace]
+authors = ["Mose Schmiedel <mose@schmiednet.de>"]
+channels = ["conda-forge", "https://repo.prefix.dev/max-nightly", "https://prefix.dev/tree-d"]
+name = "larecs-compile-benchmark"
+platforms = ["linux-64", "osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+compile-bench = "python compile_bench.py"
+
+[dependencies]
+python = ">=3.14.6,<3.15"
+matplotlib = ">=3.11.1,<4"
+mojo = ">=1.0.0b3.dev2026072906,<2"
+mojo-tracy = ">=0.4.0,<0.5"
+tqdm = ">=4.70.0,<5"

@@ -11,11 +11,11 @@ def benchmark_get_1_000_000(mut bencher: Bencher):
     world = SmallWorld()
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         try:
-            entity = world.add_entity(pos, vel)
+            entity = world.storage.add_entity(pos, vel)
             for _ in range(1_000_000):
-                keep(world.get[Position](entity).x)
+                keep(world.storage.get[Position](entity).x)
 
         except e:
             print(e)
@@ -27,8 +27,8 @@ def prevent_inlining_get() raises:
     pos = Position(1.0, 2.0)
     vel = Velocity(0.1, 0.2)
     world = SmallWorld()
-    entity = world.add_entity(pos, vel)
-    keep(world.get[Position](entity).x)
+    entity = world.storage.add_entity(pos, vel)
+    keep(world.storage.get[Position](entity).x)
 
 
 def benchmark_set_1_comp_1_000_000(mut bencher: Bencher):
@@ -38,12 +38,12 @@ def benchmark_set_1_comp_1_000_000(mut bencher: Bencher):
     world = SmallWorld()
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         try:
-            entity = world.add_entity(pos, vel)
+            entity = world.storage.add_entity(pos, vel)
             for _ in range(500_000):
-                world.set(entity, pos2)
-                world.set(entity, pos)
+                world.storage.set(entity, pos2)
+                world.storage.set(entity, pos)
 
         except e:
             print(e)
@@ -56,9 +56,9 @@ def prevent_inlining_set_1_comp() raises:
     pos2 = Position(2.0, 2.0)
     vel = Velocity(0.1, 0.2)
     world = SmallWorld()
-    entity = world.add_entity(pos, vel)
-    world.set(entity, pos2)
-    world.set(entity, pos)
+    entity = world.storage.add_entity(pos, vel)
+    world.storage.set(entity, pos2)
+    world.storage.set(entity, pos)
 
 
 def benchmark_set_5_comp_1_000_000(
@@ -78,12 +78,12 @@ def benchmark_set_5_comp_1_000_000(
     world = SmallWorld()
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         try:
-            entity = world.add_entity(c1, c2, c3, c4, c5)
+            entity = world.storage.add_entity(c1, c2, c3, c4, c5)
             for _ in range(500_000):
-                world.set(entity, c1_2, c2_2, c3_2, c4_2, c5_2)
-                world.set(entity, c1, c2, c3, c4, c5)
+                world.storage.set(entity, c1_2, c2_2, c3_2, c4_2, c5_2)
+                world.storage.set(entity, c1, c2, c3, c4, c5)
 
         except e:
             print(e)
@@ -105,9 +105,9 @@ def prevent_inlining_set_5_comp() raises:
     c5_2 = FlexibleComponent[5](2.0, 4.0)
 
     world = SmallWorld()
-    entity = world.add_entity(c1, c2, c3, c4, c5)
-    world.set(entity, c1_2, c2_2, c3_2, c4_2, c5_2)
-    world.set(entity, c1, c2, c3, c4, c5)
+    entity = world.storage.add_entity(c1, c2, c3, c4, c5)
+    world.storage.set(entity, c1_2, c2_2, c3_2, c4_2, c5_2)
+    world.storage.set(entity, c1, c2, c3, c4, c5)
 
 
 def benchmark_apply_expexp_1_comp_100_000(
@@ -118,10 +118,10 @@ def benchmark_apply_expexp_1_comp_100_000(
     world = SmallWorld()
 
     @always_inline
-    def bench_fn() {read, mut world}:
+    def bench_fn() {imm, mut world}:
         try:
             for _ in range(1_000):
-                _ = world.add_entity(pos, vel)
+                _ = world.storage.add_entity(pos, vel)
 
             @always_inline
             def operation_plus(accessor: MutableEntityAccessor):
@@ -133,8 +133,8 @@ def benchmark_apply_expexp_1_comp_100_000(
                     pass
 
             for _ in range(100):
-                world.apply[unroll_factor=3](
-                    world.query[Position](), operation_plus
+                world.storage.apply[unroll_factor=3](
+                    world.storage.query[Position](), operation_plus
                 )
 
         except e:
@@ -143,43 +143,45 @@ def benchmark_apply_expexp_1_comp_100_000(
     bencher.iter(bench_fn)
 
 
-def benchmark_apply_simd_expexp_1_comp_100_000(
-    mut bencher: Bencher,
-):
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    world = SmallWorld()
+# BUG: Mojo cannot correctly infer simd_width for `Storage.apply` therefore disable this for now.
+#
+# def benchmark_apply_simd_expexp_1_comp_100_000(
+#     mut bencher: Bencher,
+# ):
+#     pos = Position(1.0, 2.0)
+#     vel = Velocity(0.1, 0.2)
+#     world = SmallWorld()
 
-    @always_inline
-    def bench_fn() {read, mut world}:
-        try:
-            for _ in range(1_000):
-                _ = world.add_entity(pos, vel)
+#     @always_inline
+#     def bench_fn() {imm, mut world}:
+#         try:
+#             for _ in range(1_000):
+#                 _ = world.storage.add_entity(pos, vel)
 
-            @always_inline
-            def operation_plus[
-                simd_width: Int
-            ](accessor: MutableEntityAccessor):
-                comptime _load = load2[simd_width]
-                comptime _store = store2[simd_width]
+#             @always_inline
+#             def operation_plus[
+#                 simd_width: Int
+#             ](accessor: MutableEntityAccessor):
+#                 comptime _load = load2[simd_width]
+#                 comptime _store = store2[simd_width]
 
-                try:
-                    ref pos2 = accessor.get[Position]()
-                    _store(pos2.x, exp(1 - exp(_load(pos2.x))))
-                    _store(pos2.y, exp(1 - exp(_load(pos2.y))))
-                except:
-                    return
+#                 try:
+#                     ref pos2 = accessor.get[Position]()
+#                     _store(pos2.x, exp(1 - exp(_load(pos2.x))))
+#                     _store(pos2.y, exp(1 - exp(_load(pos2.y))))
+#                 except:
+#                     return
 
-            for _ in range(100):
-                world.apply[
-                    simd_width=16,
-                    unroll_factor=3,
-                ](world.query[Position, Velocity](), operation_plus)
+#             for _ in range(100):
+#                 world.storage.apply[
+#                     simd_width=16,
+#                     unroll_factor=3,
+#                 ](world.storage.query[Position, Velocity](), operation_plus)
 
-        except e:
-            print(e)
+#         except e:
+#             print(e)
 
-    bencher.iter(bench_fn)
+#     bencher.iter(bench_fn)
 
 
 def run_all_world_access_benchmarks() raises:
@@ -196,14 +198,14 @@ def run_all_world_access_benchmarks(mut bench: Bench) raises:
     bench.bench_function(
         benchmark_set_5_comp_1_000_000, BenchId("10^6 * set 5 components")
     )
-    bench.bench_function(
-        benchmark_apply_expexp_1_comp_100_000,
-        BenchId("10^5 * get and set exp(exp) via apply 1 component"),
-    )
-    bench.bench_function(
-        benchmark_apply_simd_expexp_1_comp_100_000,
-        BenchId("10^5 * get and set exp(exp) via apply simd 1 component"),
-    )
+    # bench.bench_function(
+    #     benchmark_apply_expexp_1_comp_100_000,
+    #     BenchId("10^5 * get and set exp(exp) via apply 1 component"),
+    # )
+    # bench.bench_function(
+    #     benchmark_apply_simd_expexp_1_comp_100_000,
+    #     BenchId("10^5 * get and set exp(exp) via apply simd 1 component"),
+    # )
 
     # Functions to prevent inlining
     prevent_inlining_get()

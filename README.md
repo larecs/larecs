@@ -92,7 +92,7 @@ fn main() raises:
         world.replace[IsStatic]().by(Velocity(2, 2), entity=entity)
 
     # We can query entities with specific components
-    for entity in world.query[Position, Velocity]():
+    for entity in world.storage.query[Position, Velocity]():
         # Get references to specific components
         ref position = entity.get[Position]()
         ref velocity = entity.get[Velocity]()

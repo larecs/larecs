@@ -1,6 +1,5 @@
 from std.collections.check_bounds import check_bounds
 from std.sys import size_of
-from std.sys.intrinsics import _type_is_eq
 
 # from collections import Dict
 from std.memory import UnsafePointer
@@ -11,7 +10,7 @@ from .bitmask import BitMask
 from .types import ComponentId
 
 
-comptime ComponentType = Copyable & Movable & ImplicitlyDeletable
+comptime ComponentType = Copyable & ImplicitlyDeletable
 """The trait that components must conform to."""
 
 
@@ -27,7 +26,7 @@ def constrain_components_unique[*Ts: ComponentType]() -> Bool:
     """
     comptime for i in range(len(Ts)):
         comptime for j in range(i + 1, len(Ts)):
-            if _type_is_eq[Ts[i], Ts[j]]():
+            if Ts[i] == Ts[j]:
                 return False
     return True
 
@@ -103,7 +102,7 @@ struct ComponentManager[
         ], "Component type not in component manager"
 
         comptime for i in range(len(Self.ComponentTypes)):
-            comptime if _type_is_eq[T, Self.ComponentTypes[i]]():
+            comptime if T == Self.ComponentTypes[i]:
                 return i
 
         # This is unreachable.

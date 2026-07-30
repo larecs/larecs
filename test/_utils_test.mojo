@@ -1,13 +1,13 @@
 from std.testing import *
 
-from larecs._utils import concatenate_inline_arrays
+from larecs._utils import concatenate_arrays
 
 
-def test_concatenate_inline_arrays_uint8() raises:
+def test_concatenate_arrays_uint8() raises:
     left: InlineArray[UInt8, 3] = [1, 2, 3]
     right: InlineArray[UInt8, 2] = [4, 5]
 
-    result = concatenate_inline_arrays(left, right)
+    result = concatenate_arrays(left, right)
 
     assert_equal(len(result), 5)
     assert_equal(result[0], 1)
@@ -17,11 +17,11 @@ def test_concatenate_inline_arrays_uint8() raises:
     assert_equal(result[4], 5)
 
 
-def test_concatenate_inline_arrays_uint16() raises:
+def test_concatenate_arrays_uint16() raises:
     left: InlineArray[UInt16, 0] = []
     right: InlineArray[UInt16, 2] = [3003, 4004]
 
-    result = concatenate_inline_arrays(left, right)
+    result = concatenate_arrays(left, right)
 
     assert_equal(len(result), 2)
     assert_equal(result[0], 3003)

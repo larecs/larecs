@@ -1,4 +1,4 @@
-from std.memory import uninit_copy_n
+from std.memory import unsafe_uninit_copy_n
 from std.collections.check_bounds import check_bounds
 
 from tracy import Zone
@@ -31,12 +31,12 @@ def assert_unreachable[
 
 
 @always_inline
-def concatenate_inline_arrays[
-    ElementType: Copyable & Movable, a_size: Int, b_size: Int
+def concatenate_arrays[
+    ElementType: Copyable, a_size: Int, b_size: Int
 ](
-    a: InlineArray[ElementType, a_size],
-    b: InlineArray[ElementType, b_size],
-    out result: InlineArray[ElementType, a_size + b_size],
+    a: Array[ElementType, a_size],
+    b: Array[ElementType, b_size],
+    out result: Array[ElementType, a_size + b_size],
 ):
     """Concatenates two inline arrays into an output inline array.
 
@@ -54,12 +54,12 @@ def concatenate_inline_arrays[
     """
     result = {uninitialized = True}
 
-    uninit_copy_n[overlapping=False](
+    unsafe_uninit_copy_n[overlapping=False](
         dest=result.unsafe_ptr(), src=a.unsafe_ptr(), count=a_size
     )
 
-    uninit_copy_n[overlapping=False](
-        dest=result.unsafe_ptr() + a_size,
+    unsafe_uninit_copy_n[overlapping=False](
+        dest=result.unsafe_ptr().unsafe_offset(a_size),
         src=b.unsafe_ptr(),
         count=b_size,
     )

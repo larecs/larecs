@@ -4,7 +4,7 @@ from .bitmask import _BitMask
 
 
 # Filter is the interface for logic filters.
-# Filters are required to query entities using [World.Query].
+# Filters are required to query entities using [Storage.Query].
 #
 # See [BitMask], [MaskFilter] anf [RelationFilter] for basic filters.
 # For type-safe generics queries, see package [github.com/mlange-42/arche/generic].
@@ -17,10 +17,7 @@ from .bitmask import _BitMask
 
 @fieldwise_init
 struct MaskFilter[total_bits: Int]:
-    """MaskFilter is a filter for including and excluding certain components.
-
-    See [..bitmask._BitMask.exclusive].
-    """
+    """MaskFilter is a filter for including and excluding certain components."""
 
     comptime bitmask = _BitMask[Self.total_bits]
     """The concrete bitmask type matched by this filter."""

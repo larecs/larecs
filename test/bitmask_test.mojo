@@ -26,14 +26,14 @@ def get_random_int_list(size: Int, out vals: List[Int]):
     """
     vals = List[Int](length=size, fill=0)
     std.random.randint(
-        Span(ptr=vals.unsafe_ptr().bitcast[Scalar[DType.int]](), length=size),
+        vals,
         0,
         Int(BitMask.total_bits - 1),
     )
 
 
 def unique(l: List[Int], out result: List[Int]):
-    mask = InlineArray[Bool, 256](fill=False)
+    mask = Array[Bool, 256](fill=False)
     result = List[Int]()
     for v in l:
         if not mask[v]:

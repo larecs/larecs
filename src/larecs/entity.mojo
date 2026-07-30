@@ -28,7 +28,7 @@ struct Entity(
     """Entity identifier.
     Holds an entity ID and it's generation for recycling.
 
-    Entities are only created via the [..world.World], using [..world.World.add_entity].
+    Entities are only created via the [..world.World], using [..storage.Storage.add_entity].
 
     ⚠️ Important:
     Entities are intended to be stored and passed around via copy, not via pointers!

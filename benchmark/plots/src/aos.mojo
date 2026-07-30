@@ -223,9 +223,9 @@ def benchmark[
     components_exp: Int
 ](rounds: Int, entities: Int) raises -> BenchResult:
     w1 = create_ecs_world[components_exp](entities)
-    var start_ecs: UInt = perf_counter_ns()
+    var start_ecs = perf_counter_ns()
     for _ in range(rounds):
-        for entity in w1.query[Position, Velocity]():
+        for entity in w1.storage.query[Position, Velocity]():
             ref position = entity.get[Position]()
             ref velocity = entity.get[Velocity]()
             position.x += velocity.x
@@ -235,7 +235,7 @@ def benchmark[
     )
 
     w2 = AosWorld[components_exp](entities)
-    var start_aos: UInt = perf_counter_ns()
+    var start_aos = perf_counter_ns()
     for _ in range(rounds):
         w2.update()
     dur_aos = Float64(perf_counter_ns() - start_aos) / Float64(
@@ -259,10 +259,10 @@ def create_ecs_world[components_exp: Int](entities: Int, out w: World) raises:
 def create_ecs_entity[
     components_exp: Int
 ](mut w: World, out e: lx.Entity) raises:
-    e = w.add_entity(Position(1, 2), Velocity(1, 2))
+    e = w.storage.add_entity(Position(1, 2), Velocity(1, 2))
 
     comptime for i in range(2**components_exp):
-        w.add(e, PayloadComponent[i](1.0, 2.0))
+        w.storage.add(e, PayloadComponent[i](1.0, 2.0))
 
 
 struct AosWorld[components_exp: Int](Copyable, Movable):
@@ -334,27 +334,11 @@ comptime World = lx.World[
     PayloadComponent[13],
     PayloadComponent[14],
     PayloadComponent[15],
-    PayloadComponent[16],
-    PayloadComponent[17],
-    PayloadComponent[18],
-    PayloadComponent[19],
-    PayloadComponent[20],
-    PayloadComponent[21],
-    PayloadComponent[22],
-    PayloadComponent[23],
-    PayloadComponent[24],
-    PayloadComponent[25],
-    PayloadComponent[26],
-    PayloadComponent[27],
-    PayloadComponent[28],
-    PayloadComponent[29],
-    PayloadComponent[30],
-    PayloadComponent[31],
 ]
 
 
 def main() raises:
-    config = BenchConfig[max_comp_exp=5](
+    config = BenchConfig[max_comp_exp=4](
         max_entity_exp=6, target_iters=TARGET_ITERATIONS
     )
 

@@ -15,7 +15,7 @@ def benchmark_replace_5_comp_batch_1_000_000(
     """
     world = SmallWorld()
     try:
-        _ = world.add_entities(
+        _ = world.storage.add_entities(
             FlexibleComponent[0](1.0, 2.0),
             FlexibleComponent[1](3.0, 4.0),
             FlexibleComponent[2](5.0, 6.0),
@@ -31,14 +31,14 @@ def benchmark_replace_5_comp_batch_1_000_000(
     def bench_fn() {mut world}:
         """Run one batch replace cycle in both component directions."""
         try:
-            _ = world.replace[
+            _ = world.storage.replace[
                 FlexibleComponent[0],
                 FlexibleComponent[1],
                 FlexibleComponent[2],
                 FlexibleComponent[3],
                 FlexibleComponent[4],
             ]().by(
-                world.query[
+                world.storage.query[
                     FlexibleComponent[0],
                     FlexibleComponent[1],
                     FlexibleComponent[2],
@@ -52,14 +52,14 @@ def benchmark_replace_5_comp_batch_1_000_000(
                 FlexibleComponent[9](19.0, 20.0),
             )
 
-            _ = world.replace[
+            _ = world.storage.replace[
                 FlexibleComponent[5],
                 FlexibleComponent[6],
                 FlexibleComponent[7],
                 FlexibleComponent[8],
                 FlexibleComponent[9],
             ]().by(
-                world.query[
+                world.storage.query[
                     FlexibleComponent[5],
                     FlexibleComponent[6],
                     FlexibleComponent[7],

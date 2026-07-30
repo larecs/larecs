@@ -531,7 +531,7 @@ struct MemTestStruct[
 
 
 def test_copy_move_del[
-    Container: Copyable & Movable & ImplicitlyDeletable,
+    Container: Copyable & ImplicitlyDeletable,
     //,
     container_factory: def(
         var val: MemTestStruct[
@@ -562,9 +562,9 @@ def test_copy_move_del[
     copy_counter = alloc[Int](1)
     move_counter = alloc[Int](1)
     del_counter = alloc[Int](1)
-    copy_counter.init_pointee_copy(0)
-    move_counter.init_pointee_copy(0)
-    del_counter.init_pointee_copy(0)
+    copy_counter.unsafe_write(0)
+    move_counter.unsafe_write(0)
+    del_counter.unsafe_write(0)
 
     var test_del_counter = 0
     var test_move_counter = init_moves
@@ -609,9 +609,9 @@ def test_copy_move_del[
     assert_equal(move_counter[], test_move_counter)
     assert_equal(copy_counter[], test_copy_counter)
 
-    copy_counter.destroy_pointee()
-    move_counter.destroy_pointee()
-    del_counter.destroy_pointee()
+    copy_counter.unsafe_deinit_pointee()
+    move_counter.unsafe_deinit_pointee()
+    del_counter.unsafe_deinit_pointee()
     copy_counter.free()
     move_counter.free()
     del_counter.free()

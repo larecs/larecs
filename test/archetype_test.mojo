@@ -50,15 +50,15 @@ struct LifecycleCounters(Movable):
         self.copy_counter = alloc[Int](1)
         self.move_counter = alloc[Int](1)
         self.del_counter = alloc[Int](1)
-        self.copy_counter.init_pointee_copy(0)
-        self.move_counter.init_pointee_copy(0)
-        self.del_counter.init_pointee_copy(0)
+        self.copy_counter.unsafe_write(0)
+        self.move_counter.unsafe_write(0)
+        self.del_counter.unsafe_write(0)
 
     def __del__(deinit self):
         """Destroys and frees the allocated lifecycle counters."""
-        self.copy_counter.destroy_pointee()
-        self.move_counter.destroy_pointee()
-        self.del_counter.destroy_pointee()
+        self.copy_counter.unsafe_deinit_pointee()
+        self.move_counter.unsafe_deinit_pointee()
+        self.del_counter.unsafe_deinit_pointee()
         self.copy_counter.free()
         self.move_counter.free()
         self.del_counter.free()
@@ -116,7 +116,7 @@ def init_tracked_component(
     try:
         (
             archetype._storage.get_component_ptr[TrackedComponent]() + idx
-        ).init_pointee_move(component^)
+        ).unsafe_write(component^)
     except:
         assert_unreachable(
             "`NonTrivialArchetype` should have `TrackedComponent`."

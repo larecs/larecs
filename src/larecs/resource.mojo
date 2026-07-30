@@ -5,7 +5,7 @@ from tracy import Zone
 
 from .unsafe_box import UnsafeBox
 
-comptime ResourceType = Copyable & Movable & ImplicitlyDeletable
+comptime ResourceType = Copyable & ImplicitlyDeletable
 """The trait that resources must conform to."""
 
 
@@ -13,7 +13,7 @@ comptime ResourceType = Copyable & Movable & ImplicitlyDeletable
 struct Resources(Copyable, Movable, Sized):
     """Manages resources."""
 
-    comptime IdType = StringSlice[StaticConstantOrigin]
+    comptime IdType = StringSlice[ImmStaticOrigin]
     """The type of the internal type IDs."""
 
     var _storage: Dict[Self.IdType, UnsafeBox]
@@ -54,9 +54,7 @@ struct Resources(Copyable, Movable, Sized):
                 "Resources.add[*Ts: ResourceType](var *resources: *Ts)"
             )
         ):
-            conflicting_ids = List[StringSlice[StaticConstantOrigin]](
-                capacity=0
-            )
+            conflicting_ids = List[StringSlice[ImmStaticOrigin]](capacity=0)
 
             comptime for idx in range(len(Ts)):
                 comptime id = reflect[Ts[idx]].name()
@@ -112,7 +110,7 @@ struct Resources(Copyable, Movable, Sized):
             )
         ):
             comptime if not add_if_not_found:
-                conflicting_ids = List[StringSlice[StaticConstantOrigin]]()
+                conflicting_ids = List[StringSlice[ImmStaticOrigin]]()
 
                 comptime for idx in range(len(Ts)):
                     comptime id = reflect[Ts[idx]].name()
@@ -195,7 +193,9 @@ struct Resources(Copyable, Movable, Sized):
     @always_inline
     def get[
         T: ResourceType
-    ](mut self) raises -> ref[origin_of(self._storage[""].unsafe_get[T]())] T:
+    ](mut self) raises -> ref[
+        origin_of(self._storage)._get_owned_interior["value"]
+    ] T:
         """Gets a resource.
 
         Parameters:

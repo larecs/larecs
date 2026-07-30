@@ -19,9 +19,9 @@ def test_zero_entity() raises:
 
 def test_implicit_constructor() raises:
     world = SmallWorld()
-    entity = world.add_entity(Position(1, 0))
+    entity = world.storage.add_entity(Position(1, 0))
     storage = List[Entity]()
-    for e in world.query[Position]():
+    for e in world.storage.query[Position]():
         storage.append(e)
 
     assert_equal(storage[0], entity)

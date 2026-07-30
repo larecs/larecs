@@ -26,7 +26,7 @@ def _destructor[T: ImplicitlyDeletable](box_storage: UnsafeBox.data_type):
             "Attempting to destroy an empty UnsafeBox.",
         )
 
-        box_storage.unsafe_value().bitcast[T]().destroy_pointee()
+        box_storage.unsafe_value().bitcast[T]().unsafe_deinit_pointee()
         comptime if size_of[T]() > 0:
             box_storage.unsafe_value().free()
 
@@ -83,7 +83,7 @@ def _copy_initializer[
             }
         else:
             ptr = alloc[T](1)
-            ptr.init_pointee_copy(existing_box.unsafe_value().bitcast[T]()[])
+            ptr.unsafe_write(copy=existing_box.unsafe_value().bitcast[T]()[])
             self_data = ptr.bitcast[Byte]()
 
 
@@ -125,7 +125,7 @@ struct UnsafeBox(Copyable, Movable):
     comptime data_type = Optional[UnsafePointer[Byte, MutUntrackedOrigin]]
     """The type of the data stored in the box."""
 
-    comptime EltType = Copyable & Movable & ImplicitlyDeletable
+    comptime EltType = Copyable & ImplicitlyDeletable
     """Trait requirements for values that can be stored in the box."""
 
     var _data: Self.data_type
@@ -181,7 +181,7 @@ struct UnsafeBox(Copyable, Movable):
                 }
             else:
                 var ptr = alloc[T](1)
-                ptr.init_pointee_move(data^)
+                ptr.unsafe_write(data^)
                 self._data = ptr.bitcast[Byte]()
 
             self._destructor = _destructor[T]

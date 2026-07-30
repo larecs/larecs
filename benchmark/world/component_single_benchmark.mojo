@@ -8,16 +8,18 @@ def _add_remove_1_comp_workload() raises:
     world = SmallWorld()
     entities = List[Entity]()
     for _ in range(1000):
-        entities.append(world.add_entity(FlexibleComponent[0](1.0, 2.0)))
+        entities.append(
+            world.storage.add_entity(FlexibleComponent[0](1.0, 2.0))
+        )
 
     for _ in range(100):
         comptime for i in range(10):
             for entity in entities:
-                world.add(
+                world.storage.add(
                     entity, FlexibleComponent[(i + 1) % 10](Float64(i), 2.0)
                 )
             for entity in entities:
-                world.remove[FlexibleComponent[i]](entity)
+                world.storage.remove[FlexibleComponent[i]](entity)
 
 
 def benchmark_add_remove_1_comp_1_000_000(
@@ -37,9 +39,9 @@ def prevent_inlining_add_remove() raises:
     pos = Position(1.0, 2.0)
     vel = Velocity(0.1, 0.2)
     world = SmallWorld()
-    entity = world.add_entity(pos)
-    world.add(entity, vel)
-    world.remove[Velocity](entity)
+    entity = world.storage.add_entity(pos)
+    world.storage.add(entity, vel)
+    world.storage.remove[Velocity](entity)
 
 
 def run_all_world_component_single_benchmarks() raises:

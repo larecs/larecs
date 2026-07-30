@@ -6,7 +6,7 @@ from larecs.entity import Entity
 def benchmark_entity_is_zero(mut bencher: Bencher):
     e = Entity()
 
-    def bench_fn(calls: Int) {read} -> Int:
+    def bench_fn(calls: Int) {imm} -> Int:
         for _ in range(calls):
             keep(e.is_zero())
         return calls
