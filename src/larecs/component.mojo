@@ -1,7 +1,7 @@
 from std.collections.check_bounds import check_bounds
 from std.sys import size_of
 
-# from collections import Dict
+from std.collections import Set
 from std.memory import UnsafePointer
 
 from tracy import Zone
@@ -24,11 +24,10 @@ def constrain_components_unique[*Ts: ComponentType]() -> Bool:
     Returns:
         True when no component type appears more than once.
     """
+    set = Set[String]()
     comptime for i in range(len(Ts)):
-        comptime for j in range(i + 1, len(Ts)):
-            if Ts[i] == Ts[j]:
-                return False
-    return True
+        _ = set.insert(reflect[Ts[i]].name())
+    return len(set) == len(Ts)
 
 
 def constrain_valid_components[*Ts: ComponentType]() -> Bool:
@@ -60,6 +59,7 @@ struct ComponentManager[
     """The number of component types handled by this ComponentManager."""
 
     comptime _registry = Self._create_registry()
+    """The registry mapping component type names to their IDs."""
 
     @staticmethod
     @always_inline
@@ -80,19 +80,26 @@ struct ComponentManager[
     def contains_components[*Ts: ComponentType]() -> Bool:
         """Checks whether all component types are registered in this manager.
 
+        Parameters:
+            *Ts: The component types to check.
+
         Returns:
             True if all component types are registered, False otherwise.
         """
         comptime for i in range(len(Ts)):
             comptime T = Ts[i]
-            comptime if not reflect[T].name() in Self._registry:
+            comptime if reflect[T].name() not in Self._registry:
                 return False
         return True
 
     @staticmethod
     @always_inline
     def assert_valid_components[*Ts: ComponentType]():
-        """Assert that all component types are valid."""
+        """Assert that all component types are valid.
+
+        Parameters:
+            *Ts: The component types to check.
+        """
         comptime assert Self.contains_components[
             *Ts
         ](), "Not all component types are valid for this component manager."
@@ -124,7 +131,7 @@ struct ComponentManager[
             Ts: The component types.
 
         Returns:
-            An InlineArray with the IDs of the component types.
+            An Array with the IDs of the component types.
 
         Constraints:
             The component types must be pair-wise different.
@@ -132,10 +139,7 @@ struct ComponentManager[
         comptime assert constrain_components_unique[
             *Ts
         ](), "Duplicate component types in get_id_arr are not allowed."
-        ids = InlineArray[ComponentId, len(Ts)](uninitialized=True)
-        comptime assert Self.contains_components[
-            *Ts
-        ](), "Component type not in component manager"
+        ids = Array[ComponentId, len(Ts)](uninitialized=True)
 
         comptime for i in range(len(Ts)):
             ids[i] = Self.get_id[Ts[i]]()
