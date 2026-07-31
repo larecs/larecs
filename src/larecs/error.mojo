@@ -97,13 +97,18 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
     """The entities involved in the error."""
 
     @always_inline
-    def __init__[](out self, variant: Int = 0):
+    def __init__(out self, variant: Int = 0):
         assert variant < 2, "Invalid variant for EntityError"
 
         self._variant = variant
         self.entities = Array[Entity, Self.MAX_ENTITY_COUNT](
             fill=Entity()  # fill with zero Entity
         )
+
+    @always_inline
+    def __init__(out self, *, copy: Self):
+        self._variant = copy._variant
+        self.entities = copy.entities.copy()
 
     @always_inline
     def with_entities[

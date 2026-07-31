@@ -10,7 +10,7 @@ version = "0.4.0"
 plots = { cmd = "mojo run -I ../../src -Xlinker -L\"$CONDA_PREFIX/lib\" -Xlinker -lmojotracy src/aos.mojo", default-environment = "default" }
 
 [dependencies]
-mojo = ">=1.0.0b3.dev2026072806,<2"
+mojo = ">=1.0.0b3.dev2026073014,<2"
 python = "==3.12"
 matplotlib = ">=3.10.0,<4"
 pandas = ">=2.2"

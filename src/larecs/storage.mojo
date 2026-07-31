@@ -1084,11 +1084,15 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
             old_archetype_mask = old_archetype.get_mask()
 
+            var runtime_add_ids = materialize[add_ids]()
+            var runtime_remove_ids = materialize[remove_ids]()
+
             comptime if rem_size:
-                if not old_archetype_mask.contains(BitMask(remove_ids)):
+                var remove_mask = BitMask(runtime_remove_ids)
+                if not old_archetype_mask.contains(remove_mask):
                     raise LarecsError(
                         ComponentError.missing_components_on_remove.with_components(
-                            old_archetype_mask ^ BitMask(remove_ids)
+                            old_archetype_mask ^ remove_mask
                         )
                     )
 
@@ -1096,11 +1100,12 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 compare_mask = old_archetype_mask
 
                 comptime if rem_size:
-                    compare_mask.set(remove_ids, False)
-                if compare_mask.contains(BitMask(add_ids)):
+                    compare_mask.set(runtime_remove_ids, False)
+                var add_mask = BitMask(runtime_add_ids)
+                if compare_mask.contains(add_mask):
                     raise LarecsError(
                         ComponentError.existing_components_on_add.with_components(
-                            compare_mask & BitMask(add_ids)
+                            compare_mask & add_mask
                         )
                     )
 
@@ -1109,11 +1114,13 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
             comptime if add_size and rem_size:
                 comptime concatenated = concatenate_arrays(remove_ids, add_ids)
-                component_ids = concatenated
+                component_ids = materialize[concatenated]()
             elif Bool(add_size) and not rem_size:
-                component_ids = rebind[ComponentIdsType](add_ids)
+                component_ids = rebind_var[ComponentIdsType](runtime_add_ids^)
             elif not add_size and Bool(rem_size):
-                component_ids = rebind[ComponentIdsType](remove_ids)
+                component_ids = rebind_var[ComponentIdsType](
+                    runtime_remove_ids^
+                )
             else:
                 return
 
@@ -1226,6 +1233,12 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             #    individually without checking for edge cases where multiple archetypes get merged into one.
             #    This also enables potential parallelization optimizations.
 
+            var runtime_add_ids = materialize[add_ids]()
+            var runtime_remove_ids = materialize[remove_ids]()
+
+            var add_mask = BitMask(runtime_add_ids)
+            var remove_mask = BitMask(runtime_remove_ids)
+
             comptime if add_size:
                 # If query could match archetypes that already have at least one of the components, raise an error
                 # FIXME: When https://github.com/modular/modular/issues/5347 is fixed, we can use short-circuiting here.
@@ -1234,7 +1247,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
                 comptime if has_without_mask:
                     strict_check_needed = not query.without_mask[].contains(
-                        BitMask(add_ids)
+                        add_mask
                     )
                 else:
                     strict_check_needed = True
@@ -1246,41 +1259,41 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                         archetype_mask = archetype.get_mask()
 
                         comptime if rem_size:
-                            archetype_mask.set(remove_ids, False)
+                            archetype_mask.set(runtime_remove_ids, False)
 
-                        if archetype and archetype_mask.contains_any(
-                            BitMask(add_ids)
-                        ):
+                        if archetype and archetype_mask.contains_any(add_mask):
                             raise LarecsError(
                                 ComponentError.existing_components_on_add_query.with_components(
-                                    archetype_mask & BitMask(add_ids)
+                                    archetype_mask & add_mask
                                 )
                             )
 
             comptime if rem_size:
                 # If query could match archetypes that don't have all of the components, raise an error
-                if not query.mask.contains(BitMask(remove_ids)):
+                if not query.mask.contains(remove_mask):
                     raise LarecsError(
                         ComponentError.missing_components_on_remove_query.with_components(
-                            query.mask ^ BitMask(remove_ids)
+                            query.mask ^ remove_mask
                         )
                     )
 
                 comptime if has_without_mask:
-                    if query.without_mask[].contains_any(BitMask(remove_ids)):
+                    if query.without_mask[].contains_any(remove_mask):
                         raise LarecsError(
                             ComponentError.missing_components_on_remove_query.with_components(
-                                query.without_mask[] & BitMask(remove_ids)
+                                query.without_mask[] & remove_mask
                             )
                         )
 
             comptime if add_size and rem_size:
                 comptime concatenated = concatenate_arrays(remove_ids, add_ids)
-                component_ids = concatenated
+                component_ids = materialize[concatenated]()
             elif Bool(add_size) and not rem_size:
-                component_ids = rebind[ComponentIdsType](add_ids)
+                component_ids = rebind_var[ComponentIdsType](runtime_add_ids^)
             elif not add_size and Bool(rem_size):
-                component_ids = rebind[ComponentIdsType](remove_ids)
+                component_ids = rebind_var[ComponentIdsType](
+                    runtime_remove_ids^
+                )
             else:
                 # Nothing to do. Just return empty iterator.
                 try:
