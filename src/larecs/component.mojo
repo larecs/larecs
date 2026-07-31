@@ -70,6 +70,11 @@ struct ComponentManager[
         Returns:
             A dictionary mapping component type names to their IDs.
         """
+        comptime assert Self.component_count <= Self.max_size, (
+            "Too many component types. See `BitMask.total_bits` for the maximum"
+            " size allowed."
+        )
+
         dict = {}
         comptime for i in range(len(Self.ComponentTypes)):
             comptime T = Self.ComponentTypes[i]
@@ -81,7 +86,7 @@ struct ComponentManager[
         """Checks whether all component types are registered in this manager.
 
         Parameters:
-            *Ts: The component types to check.
+            Ts: The component types to check.
 
         Returns:
             True if all component types are registered, False otherwise.
@@ -98,7 +103,7 @@ struct ComponentManager[
         """Assert that all component types are valid.
 
         Parameters:
-            *Ts: The component types to check.
+            Ts: The component types to check.
         """
         comptime assert Self.contains_components[
             *Ts
