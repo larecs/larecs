@@ -1,4 +1,4 @@
-![CodeQL](https://github.com/samufi/larecs/workflows/CodeQL/badge.svg)
+![CodeQL](https://github.com/larecs/larecs/workflows/CodeQL/badge.svg)
 
 # Larecs🌲 – Lightweight archetype-based ECS
 
