@@ -26,9 +26,9 @@ def _destructor[T: ImplicitlyDeletable](box_storage: UnsafeBox.data_type):
             "Attempting to destroy an empty UnsafeBox.",
         )
 
-        box_storage.unsafe_value().bitcast[T]().unsafe_deinit_pointee()
+        box_storage.unsafe_value().unsafe_bitcast[T]().unsafe_deinit_pointee()
         comptime if size_of[T]() > 0:
-            box_storage.unsafe_value().free()
+            box_storage.unsafe_value().unsafe_free()
 
 
 def _dummy_destructor(box: UnsafeBox.data_type):
@@ -78,13 +78,15 @@ def _copy_initializer[
             self_data = None
             self_data = {
                 UnsafePointer(to=self_data._value)
-                .bitcast[Byte]()
+                .unsafe_bitcast[Byte]()
                 .unsafe_origin_cast[MutUntrackedOrigin]()
             }
         else:
             ptr = alloc[T](1)
-            ptr.unsafe_write(copy=existing_box.unsafe_value().bitcast[T]()[])
-            self_data = ptr.bitcast[Byte]()
+            ptr.unsafe_write(
+                copy=existing_box.unsafe_value().unsafe_bitcast[T]()[]
+            )
+            self_data = ptr.unsafe_bitcast[Byte]()
 
 
 def _dummy_copy_initializer(
@@ -176,13 +178,13 @@ struct UnsafeBox(Copyable, Movable):
                 self._data = None
                 self._data = {
                     UnsafePointer(to=self._data._value)
-                    .bitcast[Byte]()
+                    .unsafe_bitcast[Byte]()
                     .unsafe_origin_cast[MutUntrackedOrigin]()
                 }
             else:
                 var ptr = alloc[T](1)
                 ptr.unsafe_write(data^)
-                self._data = ptr.bitcast[Byte]()
+                self._data = ptr.unsafe_bitcast[Byte]()
 
             self._destructor = _destructor[T]
             self._copy_initializer = _copy_initializer[T]
@@ -234,4 +236,4 @@ struct UnsafeBox(Copyable, Movable):
                     t" an empty UnsafeBox."
                 ),
             )
-            return self._data.unsafe_value().bitcast[T]()[]
+            return self._data.unsafe_value().unsafe_bitcast[T]()[]

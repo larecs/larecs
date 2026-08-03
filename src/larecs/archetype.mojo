@@ -1,7 +1,10 @@
 from std.sys.defines import is_defined
 from std.reflection import reflect
 from std.memory import (
-    UnsafePointer,
+    Layout,
+    ThinAllocation,
+    alloc,
+    dealloc,
     unsafe_uninit_copy_n,
     unsafe_uninit_move_n,
     unsafe_destroy_n,
@@ -186,32 +189,28 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
     """The component manager for the component types. Provides utilities for mapping component types to IDs and validating component types.
     """
 
-    comptime ComponentPointer[T: ComponentType] = Optional[
-        UnsafePointer[T, MutUntrackedOrigin]
-    ]
-    """The type of the component buffer pointer for a given component type T. Is an optional UnsafePointer, where a present pointer indicates an active component with allocated storage, and None indicates an inactive component without storage.
-    """
+    comptime _ColumnTrait = Defaultable & Boolable & RegisterPassable
 
-    comptime _PointerMapper[
+    comptime ColumnType[T: ComponentType]: Self._ColumnTrait = Optional[
+        ThinAllocation[T]
+    ]
+
+    comptime _ColumnMapper[
         T: ComponentType
-    ]: ImplicitlyCopyable & ImplicitlyDeletable & RegisterPassable & Defaultable = Self.ComponentPointer[
-        T
-    ]
-    """Helper type-level function to map component types to their corresponding pointer types in the storage tuple.
+    ]: Self._ColumnTrait = Self.ColumnType[T]
+    """Helper type-level function to map component types to their corresponding ThinAllocation type in the storage tuple.
     """
 
-    comptime _PointerTuple = Tuple[
-        *Self.ComponentTypes.map[Self._PointerMapper]()
-    ]
-    """The type of the tuple storing component pointers for all component types. See the description of [._ComponentStorage] for the layout and semantics of this tuple.
+    comptime _Columns = Tuple[*Self.ComponentTypes.map[Self._ColumnMapper]()]
+    """The type of the tuple storing component ThinAllocations for all component types. See the description of [._ComponentStorage] for the layout and semantics of this tuple.
     """
 
     var _capacity: Int
     """The capacity of the component storage, i.e. how many entities can be stored without reallocating."""
     var _size: Int
     """The current size of the component storage, i.e. how many entities are currently stored."""
-    var _data: Self._PointerTuple
-    """The component data, stored as typed pointers to component buffers."""
+    var _columns: Self._Columns
+    """The component data, storing ThinAllocations of component buffers. The corresponding Layout can be constructed with the ComponentType and the `storage_capacity`."""
 
     var _active_component_mask: BitMask
     """Ids of the active components in the archetype."""
@@ -236,7 +235,7 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
                 " size: Int, capacity: Int)"
             )
         ):
-            self._data = Self._PointerTuple()
+            self._columns = Self._Columns()
             self._capacity = capacity
             self._size = size
             self._active_component_mask = active_component_mask
@@ -250,24 +249,35 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             A deep copy of the component storage with its own allocations.
         """
         with Zone(function_name="_ComponentStorage.__init__(copy: Self)"):
-            self = copy.shallow_copy()
+            self = Self(
+                active_component_mask=BitMask(),
+                capacity=0,
+            )
+            self._capacity = copy._capacity
+            self._size = copy._size
+            self._active_component_mask = copy._active_component_mask
 
-            @always_inline
-            def copy_component[
-                T: ComponentType, id: ComponentId
-            ](
-                storage_size: Int,
-                storage_capacity: Int,
-                comp_ptr: Self.ComponentPointer[T],
-            ) -> Self.ComponentPointer[T]:
-                new_ptr = alloc[T](storage_capacity)
-                if storage_size > 0:
-                    unsafe_uninit_copy_n[overlapping=False](
-                        dest=new_ptr, src=comp_ptr.value(), count=storage_size
+            comptime for id in range(len(Self.ComponentTypes)):
+                comptime T = Self.ComponentTypes[id]
+                if self.has_components[T]():
+                    var new_allocation = alloc(Layout[T](count=self._capacity))
+                    new_allocation.unsafe_span().copy_from(
+                        Span(
+                            unsafe_ptr=rebind[Self.ColumnType[T]](
+                                copy._columns[id]
+                            )
+                            .value()
+                            .unsafe_ptr(),
+                            length=copy._size,
+                        )
                     )
-                return rebind[Self.ComponentPointer[T]](Optional(new_ptr))
 
-            self._apply_mut_to_active_components(copy_component)
+                    rebind[Self.ColumnType[T]](
+                        self._columns[id]
+                    )^.deinit_assert_empty()
+                    self._columns[id] = rebind_var[type_of(self._columns[id])](
+                        Optional(new_allocation^.into_thin())
+                    )
 
     @always_inline
     def __len__(self) -> Int:
@@ -288,45 +298,28 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
 
             @always_inline
             def free_component_storage[
-                T: ComponentType, id: ComponentId
+                tuple_idx: Int,
             ](
-                storage_size: Int,
-                storage_capacity: Int,
-                comp_ptr: UnsafePointer[T, MutUntrackedOrigin],
-            ):
-                unsafe_destroy_n(pointer=comp_ptr, count=storage_size)
-                comp_ptr.free()
+                var tuple_elt: Self._Columns.element_types[tuple_idx]
+            ) capturing -> None:
+                var column = rebind_var[
+                    Self.ColumnType[Self.ComponentTypes[tuple_idx]]
+                ](tuple_elt^)
+                if column:
+                    var allocation = column^.into_inner().unsafe_with_layout(
+                        Layout[Self.ComponentTypes[tuple_idx]](
+                            count=self._capacity
+                        )
+                    )
 
-            self._apply_to_active_components(free_component_storage)
+                    unsafe_destroy_n(
+                        pointer=allocation.unsafe_ptr(), count=self._size
+                    )
+                    dealloc(allocation^)
+                else:
+                    column^.deinit_assert_empty()
 
-    def shallow_copy(self, out new_storage: Self):
-        """Shallow-copies another component storage instance.
-
-        Returns:
-            A shallow copy of the component storage.
-        """
-        with Zone(
-            function_name=(
-                "_ComponentStorage.shallow_copy(out new_storage: Self)"
-            )
-        ):
-            # Initialize with an empty active mask to avoid constructing a temporary
-            # storage whose active components intentionally have empty pointers.
-            new_storage = Self(
-                active_component_mask=BitMask(),
-                capacity=0,
-            )
-            new_storage._capacity = self._capacity
-            new_storage._size = self._size
-            new_storage._active_component_mask = self._active_component_mask
-            comptime assert Self.ComponentTypes.map[
-                Self._PointerMapper
-            ]().all_conforms_to[
-                Copyable
-            ](), (
-                "All component pointer types must be copyable for shallow copy."
-            )
-            new_storage._data = self._data.copy()
+            (self._columns^).deinit_with[free_component_storage]()
 
     def _unsafe_init_components(mut self, imm init_component_mask: BitMask):
         """(Re)Initializes owned component storage while keeping the component layout intact.
@@ -355,16 +348,17 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             ](
                 storage_size: Int,
                 storage_capacity: Int,
-                comp_ptr: Self.ComponentPointer[T],
-            ) {imm} -> Self.ComponentPointer[T]:
+                mut comp_allocation: Self.ColumnType[T],
+            ) {imm} -> Self.ColumnType[T]:
                 if init_component_mask.get(id):
-                    if storage_capacity > 0:
-                        return rebind[Self.ComponentPointer[T]](
-                            alloc[T](storage_capacity)
-                        )
-                    return None
-                else:
-                    return comp_ptr
+                    # Leak the old allocation as it either is not owned by this `_ComponentStorage` anymore or isn't initialized yet
+                    if comp_allocation:
+                        _ = comp_allocation.take().unsafe_leak()
+                    return {
+                        alloc(Layout[T](count=storage_capacity)).into_thin()
+                    }
+
+                return comp_allocation^
 
             self._apply_mut_to_active_components(init_component_ptr)
 
@@ -431,15 +425,23 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             ](
                 storage_size: Int,
                 storage_capacity: Int,
-                old_ptr: Self.ComponentPointer[T],
-            ) {imm} -> Self.ComponentPointer[T]:
-                var new_ptr = alloc[T](new_pow2_capacity)
+                mut old_allocation: Self.ColumnType[T],
+            ) {imm} -> Self.ColumnType[T]:
+                var new_allocation = alloc[T](
+                    Layout[T](count=new_pow2_capacity)
+                ).into_thin()
                 if storage_size > 0:
                     unsafe_uninit_move_n[overlapping=False](
-                        dest=new_ptr, src=old_ptr.value(), count=storage_size
+                        dest=new_allocation.unsafe_ptr(),
+                        src=old_allocation.value().unsafe_ptr(),
+                        count=storage_size,
                     )
-                old_ptr.value().free()
-                return rebind[Self.ComponentPointer[T]](Optional(new_ptr))
+                dealloc(
+                    old_allocation.take().unsafe_with_layout(
+                        Layout[T](count=storage_capacity)
+                    )
+                )
+                return {new_allocation^}
 
             if old_capacity > 0 or self._size == 0:
                 self._apply_mut_to_active_components(resize_component_storage)
@@ -491,13 +493,16 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             ](
                 storage_size: Int,
                 storage_capacity: Int,
-                comp_ptr: UnsafePointer[T, MutUntrackedOrigin],
+                mut comp_allocation: Self.ColumnType[T],
             ) {imm}:
-                unsafe_destroy_n(comp_ptr + remove_idx, count=1)
+                var comp_ptr = comp_allocation.value().unsafe_ptr()
+                unsafe_destroy_n(comp_ptr.unsafe_offset(remove_idx), count=1)
                 if need_swap:
                     unsafe_uninit_move_n[overlapping=False](
-                        dest=comp_ptr + remove_idx,
-                        src=comp_ptr + storage_size,
+                        dest=comp_ptr.unsafe_offset(
+                            remove_idx
+                        ).as_unsafe_any_origin(),
+                        src=comp_ptr.unsafe_offset(storage_size),
                         count=1,
                     )
 
@@ -507,7 +512,9 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
     @always_inline
     def get_component_ptr[
         T: ComponentType,
-    ](ref self) raises LarecsError -> UnsafePointer[T, MutUntrackedOrigin]:
+    ](ref self) raises LarecsError -> Pointer[
+        T, UntrackedOrigin[mut=origin_of(self).mut]
+    ]:
         """Returns the base pointer for the given component type.
 
         Parameters:
@@ -531,7 +538,13 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
 
             self.assert_has_components[T]()
 
-            return rebind[Self.ComponentPointer[T]](self._data[id]).value()
+            ref col = rebind[Self.ColumnType[T]](self._columns[id])
+
+            return (
+                col.value()
+                .unsafe_ptr()
+                .unsafe_origin_cast[UntrackedOrigin[mut=origin_of(self).mut]]()
+            )
 
     @always_inline
     def has_components[*Ts: ComponentType](self) -> Bool:
@@ -701,11 +714,13 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             if count == 0:
                 return
 
-            unsafe_destroy_n(self.get_component_ptr[T]() + to_idx, count=count)
+            unsafe_destroy_n(
+                self.get_component_ptr[T]().unsafe_offset(to_idx), count=count
+            )
 
             unsafe_uninit_copy_n[overlapping=False](
-                dest=self.get_component_ptr[T]() + to_idx,
-                src=storage.get_component_ptr[T]() + from_idx,
+                dest=self.get_component_ptr[T]().unsafe_offset(to_idx),
+                src=storage.get_component_ptr[T]().unsafe_offset(from_idx),
                 count=count,
             )
 
@@ -715,7 +730,7 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
     ](
         mut self,
         to_idx: Int,
-        source: UnsafePointer[Self, source_origin],
+        source: Pointer[Self, source_origin],
         count: Int,
         from_idx: Int = 0,
     ):
@@ -753,11 +768,14 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             if self.has_components[T]() and source[].has_components[T]():
                 try:
                     unsafe_destroy_n(
-                        self.get_component_ptr[T]() + to_idx, count=count
+                        self.get_component_ptr[T]().unsafe_offset(to_idx),
+                        count=count,
                     )
                     unsafe_uninit_copy_n[overlapping=False](
-                        dest=self.get_component_ptr[T]() + to_idx,
-                        src=source[].get_component_ptr[T]() + from_idx,
+                        dest=self.get_component_ptr[T]().unsafe_offset(to_idx),
+                        src=source[]
+                        .get_component_ptr[T]()
+                        .unsafe_offset(from_idx),
                         count=count,
                     )
                 except:
@@ -771,8 +789,8 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
         FuncType: def[T: ComponentType, id: ComponentId](
             storage_size: Int,
             storage_capacity: Int,
-            comp_ptr: Self.ComponentPointer[T],
-        ) -> Self.ComponentPointer[T],
+            mut comp_allocation: Self.ColumnType[T],
+        ) -> Self.ColumnType[T],
     ](mut self, func: FuncType):
         """Applies a function to each active component pointer, allowing mutation of the pointers by returning new pointers.
 
@@ -792,18 +810,21 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             comptime for id in range(len(Self.ComponentTypes)):
                 comptime T = Self.ComponentTypes[id]
                 if self.has_components[T]():
-                    comp_ptr = rebind[Self.ComponentPointer[T]](self._data[id])
-                    self._data[id] = rebind[
-                        Self._PointerTuple.element_types[id]
-                    ](func[T, id](self._size, self._capacity, comp_ptr))
+                    self._columns[id] = rebind_var[type_of(self._columns[id])](
+                        func[T, id](
+                            self._size,
+                            self._capacity,
+                            rebind[Self.ColumnType[T]](self._columns[id]),
+                        )
+                    )
 
     def _apply_to_active_components[
         FuncType: def[T: ComponentType, id: ComponentId](
             storage_size: Int,
             storage_capacity: Int,
-            comp_ptr: UnsafePointer[T, MutUntrackedOrigin],
+            mut comp_allocation: Self.ColumnType[T],
         ),
-    ](self, func: FuncType):
+    ](mut self, func: FuncType):
         """Applies a function to each active component pointer, allowing mutation of the data pointed to by the pointer but not changing the pointers themselves.
 
         Parameters:
@@ -821,9 +842,10 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             comptime for id in range(len(Self.ComponentTypes)):
                 comptime T = Self.ComponentTypes[id]
                 if self.has_components[T]():
-                    comp_ptr = rebind[Self.ComponentPointer[T]](self._data[id])
                     func[T, id](
-                        self._size, self._capacity, comp_ptr.value().copy()
+                        self._size,
+                        self._capacity,
+                        rebind[Self.ColumnType[T]](self._columns[id]),
                     )
 
 
@@ -1079,7 +1101,9 @@ struct Archetype[
         ):
             _assert_index_in_bounds(entity_idx, self._storage._size)
 
-            return self._storage.get_component_ptr[T]()[entity_idx]
+            return self._storage.get_component_ptr[T]()[
+                unsafe_offset=entity_idx
+            ]
 
     @always_inline
     def set_components[
@@ -1160,9 +1184,10 @@ struct Archetype[
                 return
 
             var comp_ptr = self._storage.get_component_ptr[T]()
-            Span(unsafe_ptr=comp_ptr + start_entity_idx, length=count).fill(
-                value
-            )
+            Span(
+                unsafe_ptr=comp_ptr.unsafe_offset(start_entity_idx),
+                length=count,
+            ).fill(value)
 
     @always_inline
     def copy_component_from[
@@ -1300,7 +1325,7 @@ struct Archetype[
         source_origin: Origin,
     ](
         mut self,
-        source: UnsafePointer[Self, source_origin],
+        source: Pointer[Self, source_origin],
         count: Int,
         from_idx: Int = 0,
     ) -> Int:
@@ -1359,10 +1384,14 @@ struct Archetype[
                 if self.has_components[T]() and source[].has_components[T]():
                     try:
                         unsafe_uninit_copy_n[overlapping=False](
-                            dest=self._storage.get_component_ptr[T]()
-                            + start_index,
-                            src=source[]._storage.get_component_ptr[T]()
-                            + from_idx,
+                            dest=self._storage.get_component_ptr[
+                                T
+                            ]().unsafe_offset(start_index),
+                            src=source[]
+                            ._storage.get_component_ptr[T]()
+                            .unsafe_offset(
+                                from_idx,
+                            ),
                             count=count,
                         )
                     except:
