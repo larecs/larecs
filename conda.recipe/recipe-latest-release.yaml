@@ -25,10 +25,10 @@ build:
 
 requirements:
   build:
-    - mojo-compiler >=1.0.0b3.dev2026073014, <2
+    - mojo-compiler >=1.0.0b3.dev2026080206, <2
     - mojo-tracy >= 0.4.0, <0.5.0
   host:
-    - mojo-compiler >=1.0.0b3.dev2026073014, <2
+    - mojo-compiler >=1.0.0b3.dev2026080206, <2
     - mojo-tracy >= 0.4.0, <0.5.0
   run:
     - ${{ pin_compatible('mojo-compiler') }}

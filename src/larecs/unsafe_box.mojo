@@ -201,7 +201,7 @@ struct UnsafeBox(Copyable, Movable):
             self._copy_initializer = copy._copy_initializer
 
     @always_inline
-    def __del__(deinit self):
+    def __deinit__(deinit self):
         """
         Destructor for the UnsafeBox.
 

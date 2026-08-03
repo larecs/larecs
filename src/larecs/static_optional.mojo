@@ -104,7 +104,7 @@ struct StaticOptional[
             self._value = rebind_var[dest_type=Self.Storage](value^)
 
     @always_inline
-    def __del__(deinit self):
+    def __deinit__(deinit self):
         """Destroy the stored value when present."""
         with Zone(function_name="StaticOptional.__del__()"):
             comptime if Self.has_value:

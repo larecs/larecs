@@ -281,7 +281,7 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             return self._size
 
     @always_inline
-    def __del__(deinit self):
+    def __deinit__(deinit self):
         """Destroys and frees all active component buffers."""
 
         with Zone(function_name="_ComponentStorage.__del__()"):

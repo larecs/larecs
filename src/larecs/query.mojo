@@ -833,7 +833,7 @@ struct _WorldEntityIterator[
 
             self._current_archetype_index = 0
 
-    def __del__(deinit self):
+    def __deinit__(deinit self):
         """
         Releases the lock.
         """

@@ -29,7 +29,7 @@ def load[
     Returns:
         The loaded SIMD value.
     """
-    return UnsafePointer(to=val).strided_load[width=simd_width](stride)
+    return UnsafePointer(to=val).unsafe_strided_load[width=simd_width](stride)
 
 
 @always_inline
@@ -52,7 +52,9 @@ def store[
 
     The SIMD values are written through the pointer to `val`.
     """
-    return UnsafePointer(to=val).strided_store[width=simd_width](simd, stride)
+    return UnsafePointer(to=val).unsafe_strided_store[width=simd_width](
+        simd, stride
+    )
 
 
 comptime load2 = load[_, 2]
@@ -122,11 +124,13 @@ def get_random_bitmask_list(
     list = List[BitMask]()
     list.reserve(count)
     for _ in range(count):
-        bytes = Array[Scalar[DType.int], BitMask.total_bytes // 4]()
+        bytes = Array[Scalar[DType.int], BitMask.total_bytes // 4](
+            uninitialized=True
+        )
         random.randint(bytes.unsafe_ptr(), 4, range_start, range_end)
         list.append(
             BitMask(
-                bytes=UnsafePointer(to=bytes).bitcast[BitMask.BytesType]()[]
+                bytes=bytes.unsafe_ptr().unsafe_bitcast[BitMask.BytesType]()[]
             )
         )
 
@@ -522,7 +526,7 @@ struct MemTestStruct[
         self.copy_counter = copy.copy_counter
         self.copy_counter[] += 1
 
-    def __del__(deinit self):
+    def __deinit__(deinit self):
         """Destroy a lifecycle-counting test value.
 
         The delete counter is incremented in place.
@@ -612,6 +616,6 @@ def test_copy_move_del[
     copy_counter.unsafe_deinit_pointee()
     move_counter.unsafe_deinit_pointee()
     del_counter.unsafe_deinit_pointee()
-    copy_counter.free()
-    move_counter.free()
-    del_counter.free()
+    copy_counter.unsafe_free()
+    move_counter.unsafe_free()
+    del_counter.unsafe_free()
