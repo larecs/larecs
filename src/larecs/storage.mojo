@@ -1344,7 +1344,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                         new_archetype_idx
                     )
 
-                    # TODO: Optimization: If `new_archetype` is empty we can just shallow-copy the _ComponentStorage of `old_archetype` to `new_archetype` and reinit `old_archetype`.
+                    # TODO: Optimization: If `new_archetype` is empty we can just shallow-copy the _ComponentTable of `old_archetype` to `new_archetype` and reinit `old_archetype`.
 
                     old_archetype_size = len(old_archetype)
                     if old_archetype_idx == new_archetype_idx:
