@@ -535,7 +535,7 @@ struct MemTestStruct[
 
 
 def test_copy_move_del[
-    Container: Copyable & ImplicitlyDeletable,
+    Container: Copyable & Deinitable,
     //,
     container_factory: def(
         var val: MemTestStruct[

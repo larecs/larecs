@@ -7,7 +7,7 @@ from std.reflection import reflect
 from tracy import Zone, frame_mark
 
 
-trait System(Copyable, ImplicitlyDeletable, Movable):
+trait System(Copyable, Deinitable, Movable):
     """Trait for systems in the scheduler."""
 
     def initialize[

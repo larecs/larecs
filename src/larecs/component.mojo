@@ -10,7 +10,7 @@ from .bitmask import BitMask
 from .types import ComponentId
 
 
-comptime ComponentType = Copyable & ImplicitlyDeletable
+comptime ComponentType = Copyable & Deinitable
 """The trait that components must conform to."""
 
 

@@ -3,7 +3,7 @@ from std.sys import size_of
 from tracy import Zone
 
 
-def _destructor[T: ImplicitlyDeletable](box_storage: UnsafeBox.data_type):
+def _destructor[T: Deinitable](box_storage: UnsafeBox.data_type):
     """
     Destructor for the UnsafeBox.
 
@@ -17,7 +17,7 @@ def _destructor[T: ImplicitlyDeletable](box_storage: UnsafeBox.data_type):
     """
     with Zone(
         function_name=(
-            "unsafe_box._destructor[T: ImplicitlyDeletable](box_storage:"
+            "unsafe_box._destructor[T: Deinitable](box_storage:"
             " UnsafeBox.data_type)"
         )
     ):
@@ -127,7 +127,7 @@ struct UnsafeBox(Copyable, Movable):
     comptime data_type = Optional[UnsafePointer[Byte, MutUntrackedOrigin]]
     """The type of the data stored in the box."""
 
-    comptime EltType = Copyable & ImplicitlyDeletable
+    comptime EltType = Copyable & Deinitable
     """Trait requirements for values that can be stored in the box."""
 
     var _data: Self.data_type

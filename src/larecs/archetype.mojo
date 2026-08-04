@@ -163,7 +163,7 @@ struct EntityAccessor[
             return self._archetype[].has_components[T]()
 
 
-struct _ComponentColumn(Copyable, ImplicitlyDeletable, Movable):
+struct _ComponentColumn(Copyable, Deinitable, Movable):
     """Owns one type-erased component column allocation.
 
     The allocation is erased only while it is stored. Lifecycle operations keep
@@ -441,7 +441,7 @@ struct _ComponentColumn(Copyable, ImplicitlyDeletable, Movable):
 
 
 struct _ComponentTable[*ComponentTypes: ComponentType](
-    Copyable, ImplicitlyDeletable, Movable, Sized
+    Copyable, Deinitable, Movable, Sized
 ):
     """
     Internal struct to store component data for an archetype.

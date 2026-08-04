@@ -5,9 +5,7 @@ from tracy import Zone
 
 
 @fieldwise_init
-struct _EmptyStaticOptionalStorage(
-    Copyable, ImplicitlyDeletable, Movable, Writable
-):
+struct _EmptyStaticOptionalStorage(Copyable, Deinitable, Movable, Writable):
     """Zero-sized backing storage for an absent `StaticOptional` value.
 
     Raises:
@@ -35,7 +33,7 @@ struct _EmptyStaticOptionalStorage(
 
 @fieldwise_init
 struct StaticOptional[
-    ElementType: Copyable & ImplicitlyDeletable,
+    ElementType: Copyable & Deinitable,
     has_value: Bool = True,
 ](
     Boolable,

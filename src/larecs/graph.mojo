@@ -6,7 +6,7 @@ from tracy import Zone
 from .bitmask import BitMask
 
 
-comptime NodeDataType = KeyElement & Copyable & ImplicitlyDeletable
+comptime NodeDataType = KeyElement & Copyable & Deinitable
 """The trait that the data stored in the graph nodes must conform to."""
 
 
