@@ -27,7 +27,6 @@ from .static_optional import StaticOptional
 from .types import ComponentId
 from ._utils import concatenate_arrays, assert_unreachable
 
-from std.memory import UnsafePointer
 from std.sys import size_of
 
 from tracy import Zone
@@ -1360,7 +1359,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                             )
                         continue
 
-                    old_archetype_unsafe = UnsafePointer(
+                    old_archetype_unsafe = Pointer(
                         to=old_archetype
                     ).as_unsafe_any_origin()
                     arch_start_idx = new_archetype.extend_from_archetype_unsafe(
@@ -1537,7 +1536,6 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
     #     ```mojo {doctest="apply"}
     #     from sys.info import simdwidthof
-    #     from memory import LegacyUnsafePointer
 
     #     world = World[Float64]()
     #     e = world.add_entity()
@@ -1558,7 +1556,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
     #             # Get an unsafe pointer to the memory
     #             # location of the component
-    #             ptr = LegacyUnsafePointer(to=component)
+    #             ptr = Pointer(to=component)
     #         except:
     #             return
 

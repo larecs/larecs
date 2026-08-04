@@ -1,9 +1,11 @@
 # Agent Guidelines for Larecs
 
 ## Project Overview
+
 Larecs is a high-performance Entity Component System (ECS) library written in Mojo. It provides efficient data structures and algorithms for game development and simulation applications.
 
 ## Key Components
+
 - **Entities**: Unique identifiers for game objects
 - **Components**: Data containers that can be attached to entities
 - **Systems**: Logic that operates on entities with specific components
@@ -29,40 +31,40 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 - Include comprehensive type hints with Mojo's progressive typing
 - Use `comptime` for compile-time constants, `@always_inline` for critical paths
 - Leverage SIMD types `SIMD[type, width]` for vectorization
-- Apply traits: `Copyable`, `ImplicitlyCopyable`, `Movable`, `Writable`, `ImplicitlyDestructible`, `RegisterPassable`, `TriviallyRegisterPassable` appropriately
-- Use manual memory management with `UnsafePointer` ONLY when needed
+- Apply traits: `Copyable`, `ImplicitlyCopyable`, `Movable`, `Writable`, `Deinitable`, `RegisterPassable`, `TriviallyRegisterPassable` appropriately
+- Use manual memory management with `Allocation[T]` ONLY when needed
 - Every function needs a docstrings including a description of all parameters, raises and returns.
   Use this example as a template:
 
-  ```mojo
-    def <function_name>[<parameters>](<arguments>) raises? -> <return type>:
-        """<short description>
+    ````mojo
+      def <function_name>[<parameters>](<arguments>) raises? -> <return type>:
+          """<short description>
 
-        <long description>(optional)
+          <long description>(optional)
 
-        Parameters:
-            <parameter name>: <description for one parameter>
+          Parameters:
+              <parameter name>: <description for one parameter>
 
-        Args:
-            <argument name>: <description for one argument>
+          Args:
+              <argument name>: <description for one argument>
 
-        Raises:
-            <description when and what Exceptions can be raised>
+          Raises:
+              <description when and what Exceptions can be raised>
 
-        Returns:
-            <description what gets returned>
+          Returns:
+              <description what gets returned>
 
-        Constraints:
-            <description of one comptime constraint (indicated by `comptime assert`)>
+          Constraints:
+              <description of one comptime constraint (indicated by `comptime assert`)>
 
-        Examples:
-          <Include ONLY on end user facing API which isn't easily understable!>
-        ```mojo
-       <example mojo code here>
-        ```
-       """
-  ```
-  - Skip sections that are empty. So for example if a function returns nothing don't specify a `Returns: ...`.
+          Examples:
+            <Include ONLY on end user facing API which isn't easily understable!>
+          ```mojo
+         <example mojo code here>
+          ```
+         """
+    ````
+    - Skip sections that are empty. So for example if a function returns nothing don't specify a `Returns: ...`.
 
 - Reference Mojo docs via the `mojo-syntax` skill
 

@@ -2,7 +2,6 @@ from std.collections.check_bounds import check_bounds
 from std.sys import size_of
 
 from std.collections import Set
-from std.memory import UnsafePointer
 
 from tracy import Zone
 

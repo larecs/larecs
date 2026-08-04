@@ -77,7 +77,7 @@ def _copy_initializer[
         comptime if size_of[T]() == 0:
             self_data = None
             self_data = {
-                UnsafePointer(to=self_data._value)
+                Pointer(to=self_data._value)
                 .unsafe_bitcast[Byte]()
                 .unsafe_origin_cast[MutUntrackedOrigin]()
             }
@@ -109,7 +109,7 @@ def _dummy_copy_initializer(
             " UnsafeBox.data_type)"
         )
     ):
-        return Optional[UnsafePointer[Byte, MutUntrackedOrigin]]()
+        return Optional[Pointer[Byte, MutUntrackedOrigin]]()
 
 
 struct UnsafeBox(Copyable, Movable):
@@ -124,7 +124,7 @@ struct UnsafeBox(Copyable, Movable):
     wrong type is used, it can lead to undefined behavior.
     """
 
-    comptime data_type = Optional[UnsafePointer[Byte, MutUntrackedOrigin]]
+    comptime data_type = Optional[Pointer[Byte, MutUntrackedOrigin]]
     """The type of the data stored in the box."""
 
     comptime EltType = Copyable & Deinitable
@@ -177,7 +177,7 @@ struct UnsafeBox(Copyable, Movable):
             comptime if size_of[T]() == 0:
                 self._data = None
                 self._data = {
-                    UnsafePointer(to=self._data._value)
+                    Pointer(to=self._data._value)
                     .unsafe_bitcast[Byte]()
                     .unsafe_origin_cast[MutUntrackedOrigin]()
                 }

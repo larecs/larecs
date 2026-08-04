@@ -446,8 +446,8 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
     """
     Internal struct to store component data for an archetype.
 
-    UnsafePointers to the component buffers are stored in a sparse tuple indexed by component ID (position in the ComponentTypes TypeList).
-    Only pointers for active components (those contained in the archetype) are allocated and valid; inactive components are stored as None and must not be dereferenced.
+    Optional[ThinAllocation] to the component buffers are stored in a sparse Array indexed by component ID (position in the ComponentTypes TypeList).
+    Only Optional[ThinAllocation] for active components (those contained in the archetype) have a value and are allocated; inactive components are stored as None and must not be dereferenced.
 
     Layout example for 3 component types where only components 0 and 2 are active:
     ```
@@ -899,7 +899,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         with Zone(
             function_name=(
                 "_ComponentTable.copy_shared_components_from_unsafe(to_idx:"
-                " Int, source: UnsafePointer, count: Int, from_idx: Int)"
+                " Int, source: Pointer, count: Int, from_idx: Int)"
             )
         ):
             debug_assert(0 <= count, "Count must be non-negative.")
@@ -1436,13 +1436,13 @@ struct Archetype[
         """
         with Zone(
             function_name=(
-                "Archetype.extend_from_archetype_unsafe(source: UnsafePointer,"
+                "Archetype.extend_from_archetype_unsafe(source: Pointer,"
                 " count: Int, from_idx: Int)"
             )
         ):
             debug_assert(0 <= count, "Count must be non-negative.")
             debug_assert(
-                UnsafePointer(to=self) != source,
+                Pointer(to=self) != source,
                 "Source and destination archetypes must be distinct.",
             )
             _assert_range_in_bounds(from_idx, count, len(source[]))

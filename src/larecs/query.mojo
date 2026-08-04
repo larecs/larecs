@@ -608,7 +608,7 @@ struct _ArchetypeEntityIterator[
         with Zone(
             function_name=(
                 "_ArchetypeEntityIterator.__init__(archetype:"
-                " UnsafePointer[UntrackedOrigin], _index: Int)"
+                " Pointer[UntrackedOrigin], _index: Int)"
             )
         ):
             self.archetype = Pointer(to=archetype)

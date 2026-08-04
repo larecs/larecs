@@ -74,7 +74,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/traitlets-5.15.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-0.5.0-hb0f4dca_0.conda
+      - conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-0.6.0-hb0f4dca_0.conda
       - conda: https://repo.prefix.dev/max-nightly/linux-64/mojo-1.0.0b3.dev2026080406-release.conda
       - conda: https://repo.prefix.dev/max-nightly/linux-64/mojo-compiler-1.0.0b3.dev2026080406-release.conda
       - conda: https://repo.prefix.dev/max-nightly/noarch/mblack-26.5.0.dev2026080406-release.conda
@@ -120,7 +120,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tornado-6.5.7-py314h6c2aa35_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zeromq-4.3.5-h10816f8_11.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
-      - conda: https://prefix.dev/tree-d/osx-arm64/mojo-tracy-0.5.0-h60d57d3_0.conda
+      - conda: https://prefix.dev/tree-d/osx-arm64/mojo-tracy-0.6.0-h60d57d3_0.conda
       - conda: https://repo.prefix.dev/max-nightly/noarch/mblack-26.5.0.dev2026080406-release.conda
       - conda: https://repo.prefix.dev/max-nightly/noarch/mojo-python-1.0.0b3.dev2026080406-release.conda
       - conda: https://repo.prefix.dev/max-nightly/osx-arm64/mojo-1.0.0b3.dev2026080406-release.conda
@@ -216,7 +216,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda: https://prefix.dev/tree-d/linux-64/mogo-tester-2.3.3-hb0f4dca_0.conda
-      - conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-0.5.0-hb0f4dca_0.conda
+      - conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-0.6.0-hb0f4dca_0.conda
       - conda: https://repo.prefix.dev/max-nightly/linux-64/mojo-1.0.0b3.dev2026080406-release.conda
       - conda: https://repo.prefix.dev/max-nightly/linux-64/mojo-compiler-1.0.0b3.dev2026080406-release.conda
       - conda: https://repo.prefix.dev/max-nightly/noarch/mblack-26.5.0.dev2026080406-release.conda
@@ -291,7 +291,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zeromq-4.3.5-h10816f8_11.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
       - conda: https://prefix.dev/tree-d/osx-arm64/mogo-tester-2.3.3-h60d57d3_0.conda
-      - conda: https://prefix.dev/tree-d/osx-arm64/mojo-tracy-0.5.0-h60d57d3_0.conda
+      - conda: https://prefix.dev/tree-d/osx-arm64/mojo-tracy-0.6.0-h60d57d3_0.conda
       - conda: https://repo.prefix.dev/max-nightly/noarch/mblack-26.5.0.dev2026080406-release.conda
       - conda: https://repo.prefix.dev/max-nightly/noarch/mojo-python-1.0.0b3.dev2026080406-release.conda
       - conda: https://repo.prefix.dev/max-nightly/osx-arm64/mojo-1.0.0b3.dev2026080406-release.conda
@@ -2159,21 +2159,21 @@ packages:
   run_exports: {}
   size: 1165611
   timestamp: 1781529734370
-- conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-0.5.0-hb0f4dca_0.conda
-  sha256: 236a15ddb3aec01ecada546d64a04249bcc29c215958c122365b554815ecb02c
-  md5: 50d9cada434f1af22da0e321602cdbfb
+- conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-0.6.0-hb0f4dca_0.conda
+  sha256: 3593151d6192f47163db33b2bd8af61f91dba30b9139c261e3deb35e7c9195c7
+  md5: a634e71b1c6c7b6a10b5423b88413293
   depends:
-  - mojo-compiler >=1.0.0b3.dev2026072806,<2
-  - libgcc >=16
+  - mojo-compiler >=1.0.0b3.dev2026080406,<2
   - libstdcxx >=16
+  - libgcc >=16
   - wayland >=1.26.0,<2.0a0
-  - libxkbcommon >=1.13.2,<2.0a0
-  - libegl >=1.7.0,<2.0a0
   - dbus >=1.16.2,<2.0a0
+  - libegl >=1.7.0,<2.0a0
+  - libxkbcommon >=1.13.2,<2.0a0
   license: MIT
   run_exports: {}
-  size: 7180131
-  timestamp: 1785759833390
+  size: 7128820
+  timestamp: 1785837535425
 - conda: https://prefix.dev/tree-d/osx-arm64/mogo-tester-2.3.3-h60d57d3_0.conda
   sha256: 81ae7a4ef02c3cf36c49df57fbc25e6ee6a2e4cb1aa09a79a28218ff9a82445f
   md5: 1f873fdc394819b331f2a910138c15e0
@@ -2183,16 +2183,16 @@ packages:
   run_exports: {}
   size: 1030360
   timestamp: 1781529736197
-- conda: https://prefix.dev/tree-d/osx-arm64/mojo-tracy-0.5.0-h60d57d3_0.conda
-  sha256: 2b106d9e6f45ea256c63d814bb99a378f8360ca3f178f770f97a9ce1b8476316
-  md5: 30ef30a7b0af4d972771adb3f8405e94
+- conda: https://prefix.dev/tree-d/osx-arm64/mojo-tracy-0.6.0-h60d57d3_0.conda
+  sha256: 06c8f410bfc528f2aef72a82626249e417549104f0bf3f896d230ec22b8a669d
+  md5: 32665eb182117acb803a0776b9076115
   depends:
-  - mojo-compiler >=1.0.0b3.dev2026072806,<2
+  - mojo-compiler >=1.0.0b3.dev2026080406,<2
   - libcxx >=22
   license: MIT
   run_exports: {}
-  size: 6022272
-  timestamp: 1785759836034
+  size: 6020737
+  timestamp: 1785837532896
 - conda: https://repo.prefix.dev/max-nightly/linux-64/mojo-1.0.0b3.dev2026080406-release.conda
   sha256: 6c9ffc14d5e7b4fed3d7207ce4b1dfa90ba259b45ac32909035afa369ae55c0a
   md5: 034da4a69eef572eb3d3b6a5e73a9966

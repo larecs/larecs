@@ -97,9 +97,7 @@ def test_or_else() raises:
     assert_equal(opt2.or_else(42), 10)
     l1 = List([1, 2, 3])
     opt3 = StaticOptional[List[Int], False]()
-    assert_equal(
-        Int(UnsafePointer(to=l1)), Int(UnsafePointer(to=opt3.or_else(l1)))
-    )
+    assert_equal(Int(Pointer(to=l1)), Int(Pointer(to=opt3.or_else(l1))))
 
 
 comptime functions = Tuple(

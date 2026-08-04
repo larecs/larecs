@@ -1,4 +1,3 @@
-from std.memory import UnsafePointer
 from std.utils.type_functions import ConditionalType
 
 from tracy import Zone
@@ -145,18 +144,18 @@ struct StaticOptional[
     @always_inline
     def unsafe_ptr(
         ref self,
-    ) -> UnsafePointer[Self.ElementType, origin_of(self._value)]:
+    ) -> Pointer[Self.ElementType, origin_of(self._value)]:
         """Get a pointer to the stored value.
 
         Returns:
-            An `UnsafePointer` to the contained value.
+            An `Pointer` to the contained value.
         """
         with Zone(function_name="StaticOptional.unsafe_ptr()"):
             comptime assert (
                 Self.has_value
             ), "The value is not present. Use `has_value` to check first."
 
-            return UnsafePointer(to=rebind[Self.ElementType](self._value))
+            return Pointer(to=rebind[Self.ElementType](self._value))
 
     @always_inline
     def __bool__(self) -> Bool:

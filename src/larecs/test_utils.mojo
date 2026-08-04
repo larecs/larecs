@@ -2,7 +2,6 @@
 
 from std.testing import assert_true, assert_false, assert_equal
 from std.random import random
-from std.memory import UnsafePointer
 from .component import ComponentType
 from .bitmask import BitMask
 from .world import World
@@ -29,7 +28,7 @@ def load[
     Returns:
         The loaded SIMD value.
     """
-    return UnsafePointer(to=val).unsafe_strided_load[width=simd_width](stride)
+    return Pointer(to=val).unsafe_strided_load[width=simd_width](stride)
 
 
 @always_inline
@@ -52,9 +51,7 @@ def store[
 
     The SIMD values are written through the pointer to `val`.
     """
-    return UnsafePointer(to=val).unsafe_strided_store[width=simd_width](
-        simd, stride
-    )
+    return Pointer(to=val).unsafe_strided_store[width=simd_width](simd, stride)
 
 
 comptime load2 = load[_, 2]
@@ -491,13 +488,13 @@ struct MemTestStruct[
         del_origin: The origin used for the delete counter pointer.
     """
 
-    var copy_counter: UnsafePointer[Int, Self.copy_origin]
+    var copy_counter: Pointer[Int, Self.copy_origin]
     """The counter incremented on copy initialization."""
 
-    var move_counter: UnsafePointer[Int, Self.move_origin]
+    var move_counter: Pointer[Int, Self.move_origin]
     """The counter incremented on move initialization."""
 
-    var del_counter: UnsafePointer[Int, Self.del_origin]
+    var del_counter: Pointer[Int, Self.del_origin]
     """The counter incremented on deletion."""
 
     def __init__(out self, *, deinit move: Self):
