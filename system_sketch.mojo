@@ -1,3 +1,13 @@
+"""Prototype to sketch out the new architecture for Larecs `System`.
+
+TODO:
+- [ ] Add actual entity & component data storage (see current `archetype._ComponentTable` for reference).
+- [ ] Add GPU execution. We need to add modular MAX for that and initialize and store a `DeviceContext`.
+- [ ] Allow component access via `EntityAccessor` only for components that are part of the kernels's filter.
+- [ ] Add resource access through `KernelContext`.
+
+"""
+
 from larecs.bitmask import BitMask
 from larecs.component import ComponentType, ComponentManager
 from larecs.unsafe_box import UnsafeBox
