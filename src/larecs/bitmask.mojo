@@ -141,7 +141,7 @@ struct _BitMask[total_bits: Int](
         self._bytes = bytes
 
     @always_inline
-    def __init__[size: Int](out self, bits: InlineArray[Int, size]):
+    def __init__[size: Int](out self, bits: Array[Int, size]):
         """Initializes the mask with the bits at the given indices set to True.
 
         Creates a new BitMask with only the specified bit indices set.
@@ -517,7 +517,7 @@ struct _BitMask[total_bits: Int](
             self.set[value](Self(*comps))
 
     @always_inline
-    def set(mut self, comps: InlineArray[Int, ...], value: Bool):
+    def set(mut self, comps: Array[Int, ...], value: Bool):
         """Modifies the [BitMask] to set the components given in the array to the provided value.
 
         Args:
@@ -525,14 +525,12 @@ struct _BitMask[total_bits: Int](
             value: The value to set the bits to (True or False).
         """
         with Zone(
-            function_name=(
-                "BitMask.set(comps: InlineArray[Int, ...], value: Bool)"
-            )
+            function_name="BitMask.set(comps: Array[Int, ...], value: Bool)"
         ):
             self.set(Self(comps), value)
 
     @always_inline
-    def set[value: Bool](mut self, comps: InlineArray[Int, ...]):
+    def set[value: Bool](mut self, comps: Array[Int, ...]):
         """Modifies the [BitMask] to set the components given in the array to the provided value.
 
         Parameters:
@@ -542,9 +540,7 @@ struct _BitMask[total_bits: Int](
             comps: An inline array of bit indices to modify.
         """
         with Zone(
-            function_name=(
-                "BitMask.set[value: Bool](comps: InlineArray[Int, ...])"
-            )
+            function_name="BitMask.set[value: Bool](comps: Array[Int, ...])"
         ):
             self.set[value](Self(comps))
 

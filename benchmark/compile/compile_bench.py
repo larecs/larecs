@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 import subprocess
 from time import perf_counter
 
@@ -9,13 +8,15 @@ from tqdm import tqdm
 def execute_one(component_count):
     start_time = perf_counter()
 
-    subprocess.run(["mojo", "-I", "../../src", f"src/compile_{component_count}.mojo"])
+    subprocess.run(
+        ["mojo", "run", "-I", "../../src", f"src/compile_{component_count}.mojo"], check=True
+    )
 
     return perf_counter() - start_time
 
 
 def clean_compilation():
-    subprocess.run(["mojo", "--clear-cache", "--force"])
+    subprocess.run(["mojo", "--clear-cache", "--force"], check=True)
 
 
 def main():
@@ -26,7 +27,10 @@ def main():
         8,
         16,
         32,
-    ]  # 64, 128, 256]
+        64,
+        128,
+        256,
+    ]
     compile_times = []
 
     clean_compilation()

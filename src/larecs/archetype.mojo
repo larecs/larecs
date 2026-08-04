@@ -1,7 +1,10 @@
 from std.sys.defines import is_defined
 from std.reflection import reflect
 from std.memory import (
-    UnsafePointer,
+    Layout,
+    ThinAllocation,
+    alloc,
+    dealloc,
     unsafe_uninit_copy_n,
     unsafe_uninit_move_n,
     unsafe_destroy_n,
@@ -160,14 +163,291 @@ struct EntityAccessor[
             return self._archetype[].has_components[T]()
 
 
-struct _ComponentStorage[*ComponentTypes: ComponentType](
-    Copyable, ImplicitlyDeletable, Movable, Sized
+struct _ComponentColumn(Copyable, Deinitable, Movable):
+    """Owns one type-erased component column allocation.
+
+    The allocation is erased only while it is stored. Lifecycle operations keep
+    the concrete component type through callbacks installed by the constructor.
+    """
+
+    comptime Data = Optional[ThinAllocation[Byte]]
+    """Type-erased optional allocation used to store component data."""
+
+    var _data: Self.Data
+    """The allocation containing the column's component values."""
+    var _destroy: def(
+        var allocation: ThinAllocation[Byte], length: Int, capacity: Int
+    ) thin
+    """Callback that destroys initialized values and frees a column allocation."""
+    var _copy: def(
+        data: Self.Data, length: Int, capacity: Int
+    ) thin -> Self.Data
+    """Callback that copies initialized values into a new allocation."""
+    var _resize: def(
+        mut data: Self.Data,
+        length: Int,
+        old_capacity: Int,
+        new_capacity: Int,
+    ) thin -> Self.Data
+    """Callback that moves values into an allocation with a new capacity."""
+    var _swap_remove: def(
+        mut data: Self.Data, length: Int, remove_idx: Int
+    ) thin
+    """Callback that removes and destroys one value from a column."""
+
+    @staticmethod
+    def _empty_destroy(
+        var data: ThinAllocation[Byte], length: Int, capacity: Int
+    ):
+        """Frees an empty column allocation without destroying values."""
+        dealloc(data^.unsafe_with_layout(Layout[Byte](count=capacity)))
+
+    @staticmethod
+    def _empty_copy(data: Self.Data, length: Int, capacity: Int) -> Self.Data:
+        """Returns no allocation for an untyped empty column."""
+        return None
+
+    @staticmethod
+    def _empty_resize(
+        mut data: Self.Data,
+        length: Int,
+        old_capacity: Int,
+        new_capacity: Int,
+    ) -> Self.Data:
+        """Leaves an untyped empty column without allocating storage."""
+        return None
+
+    @staticmethod
+    def _empty_swap_remove(mut data: Self.Data, length: Int, remove_idx: Int):
+        """Does nothing because an untyped empty column has no values."""
+        pass
+
+    def __init__(out self):
+        """
+        Initializes an empty _ComponentColumn.
+        """
+        self._data = None
+        self._destroy = Self._empty_destroy
+        self._copy = Self._empty_copy
+        self._resize = Self._empty_resize
+        self._swap_remove = Self._empty_swap_remove
+
+    @staticmethod
+    def _destroy_t[
+        T: ComponentType
+    ](var byte_thin: ThinAllocation[Byte], length: Int, capacity: Int):
+        """Destroys initialized values of type `T` and frees their allocation.
+
+        Parameters:
+            T: The component type stored by this column.
+
+        Args:
+            byte_thin: The type-erased allocation containing the values.
+            length: The number of initialized values.
+            capacity: The allocation capacity.
+        """
+        var allocation = rebind_var[ThinAllocation[T]](
+            byte_thin^
+        ).unsafe_with_layout(Layout[T](count=capacity))
+        unsafe_destroy_n(pointer=allocation.unsafe_ptr(), count=length)
+        dealloc(allocation^)
+
+    @staticmethod
+    def _copy_t[
+        T: ComponentType
+    ](data: Self.Data, length: Int, capacity: Int) -> Self.Data:
+        """Copies initialized values of type `T` into a new allocation.
+
+        Parameters:
+            T: The component type stored by this column.
+
+        Args:
+            data: The source allocation, if present.
+            length: The number of values to copy.
+            capacity: The capacity of the new allocation.
+
+        Returns:
+            A type-erased allocation containing the copied values, or `None`.
+        """
+        if data:
+            var copy_allocation = alloc(Layout[T](count=capacity))
+            unsafe_uninit_copy_n[overlapping=False](
+                dest=copy_allocation.unsafe_ptr(),
+                src=data.value().unsafe_ptr().unsafe_bitcast[T](),
+                count=length,
+            )
+            return {
+                rebind_var[ThinAllocation[Byte]](copy_allocation^.into_thin())
+            }
+        return None
+
+    @staticmethod
+    def _resize_t[
+        T: ComponentType
+    ](
+        mut data: Self.Data,
+        length: Int,
+        old_capacity: Int,
+        new_capacity: Int,
+    ) -> Self.Data:
+        """Moves values of type `T` into storage with a new capacity.
+
+        Parameters:
+            T: The component type stored by this column.
+
+        Args:
+            data: The existing allocation, if present.
+            length: The number of initialized values.
+            old_capacity: The capacity of the existing allocation.
+            new_capacity: The capacity of the new allocation.
+
+        Returns:
+            A type-erased allocation with the moved values.
+        """
+        var new_allocation = alloc[T](Layout[T](count=new_capacity))
+        if data:
+            var old_data = data.take()
+            unsafe_uninit_move_n[overlapping=False](
+                dest=new_allocation.unsafe_ptr(),
+                src=old_data.unsafe_ptr().unsafe_bitcast[T](),
+                count=length,
+            )
+            dealloc(
+                old_data
+                ^.unsafe_with_layout(
+                    Layout[T](count=old_capacity).as_byte_layout()
+                )
+            )
+        return {rebind_var[ThinAllocation[Byte]](new_allocation^.into_thin())}
+
+    @staticmethod
+    def _swap_remove_t[
+        T: ComponentType
+    ](mut data: Self.Data, length: Int, remove_idx: Int):
+        """Destroys one value of type `T` and fills its slot from the end.
+
+        Parameters:
+            T: The component type stored by this column.
+
+        Args:
+            data: The column allocation.
+            length: The current number of values.
+            remove_idx: The index of the value to remove.
+        """
+        var ptr = data.value().unsafe_ptr().unsafe_bitcast[T]()
+        unsafe_destroy_n(ptr.unsafe_offset(remove_idx), count=1)
+        if remove_idx != length - 1:
+            unsafe_uninit_move_n[overlapping=False](
+                dest=ptr.unsafe_offset(remove_idx).as_unsafe_any_origin(),
+                src=ptr.unsafe_offset(length - 1),
+                count=1,
+            )
+
+    @staticmethod
+    def create[
+        T: ComponentType
+    ](out column: Self, *, preallocate: Bool, capacity: Int):
+        """Creates a column whose callbacks operate on component type `T`.
+
+        Parameters:
+            T: The component type stored by this column.
+
+        Args:
+            preallocate: Whether to allocate storage immediately.
+            capacity: The initial allocation capacity.
+        """
+        column = Self()
+        column._destroy = Self._destroy_t[T]
+        column._copy = Self._copy_t[T]
+        column._resize = Self._resize_t[T]
+        column._swap_remove = Self._swap_remove_t[T]
+        var empty: Self.Data = None
+        if preallocate:
+            column._data^.deinit_assert_empty()
+            column._data = Self._resize_t[T](empty, 0, 0, capacity)
+        empty^.deinit_assert_empty()
+
+    def __init__(out self, *, copy: Self):
+        """Initializes an empty column with the source column's callbacks."""
+        self._data = None
+        self._destroy = copy._destroy
+        self._copy = copy._copy
+        self._resize = copy._resize
+        self._swap_remove = copy._swap_remove
+
+    def __deinit__(deinit self):
+        """Asserts that the column allocation was explicitly destroyed."""
+        self._data^.deinit_assert_empty()
+
+    def copy_data_from(mut self, source: Self, length: Int, capacity: Int):
+        """Copies initialized values from another column into this column.
+
+        Args:
+            source: The source column.
+            length: The number of values to copy.
+            capacity: The capacity of the copied allocation.
+        """
+        self._data^.deinit_assert_empty()
+        self._data = self._copy(source._data, length, capacity)
+
+    def resize(mut self, length: Int, old_capacity: Int, new_capacity: Int):
+        """Resizes the column allocation while preserving initialized values.
+
+        Args:
+            length: The number of initialized values.
+            old_capacity: The current allocation capacity.
+            new_capacity: The requested allocation capacity.
+        """
+        var old_data = self._data^
+        self._data = self._resize(old_data, length, old_capacity, new_capacity)
+        old_data^.deinit_assert_empty()
+
+    def swap_remove(mut self, length: Int, remove_idx: Int):
+        """Removes a value by replacing it with the final value in the column.
+
+        Args:
+            length: The current number of values.
+            remove_idx: The index of the value to remove.
+        """
+        self._swap_remove(self._data, length, remove_idx)
+
+    def destroy(mut self, length: Int, capacity: Int):
+        """Destroys initialized values and releases the column allocation.
+
+        Args:
+            length: The number of initialized values.
+            capacity: The allocation capacity.
+        """
+        if self._data:
+            self._destroy(self._data.take(), length, capacity)
+
+    def get_ptr[
+        T: ComponentType
+    ](ref self) -> Pointer[T, UntrackedOrigin[mut=origin_of(self).mut]]:
+        """Returns a typed pointer to the first value in the column.
+
+        Parameters:
+            T: The component type stored by this column.
+
+        Returns:
+            A pointer to the column's component values.
+        """
+        return (
+            self._data.value()
+            .unsafe_ptr()
+            .unsafe_bitcast[T]()
+            .unsafe_origin_cast[UntrackedOrigin[mut=origin_of(self).mut]]()
+        )
+
+
+struct _ComponentTable[*ComponentTypes: ComponentType](
+    Copyable, Deinitable, Movable, Sized
 ):
     """
     Internal struct to store component data for an archetype.
 
-    UnsafePointers to the component buffers are stored in a sparse tuple indexed by component ID (position in the ComponentTypes TypeList).
-    Only pointers for active components (those contained in the archetype) are allocated and valid; inactive components are stored as None and must not be dereferenced.
+    Optional[ThinAllocation] to the component buffers are stored in a sparse Array indexed by component ID (position in the ComponentTypes TypeList).
+    Only Optional[ThinAllocation] for active components (those contained in the archetype) have a value and are allocated; inactive components are stored as None and must not be dereferenced.
 
     Layout example for 3 component types where only components 0 and 2 are active:
     ```
@@ -186,32 +466,15 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
     """The component manager for the component types. Provides utilities for mapping component types to IDs and validating component types.
     """
 
-    comptime ComponentPointer[T: ComponentType] = Optional[
-        UnsafePointer[T, MutUntrackedOrigin]
-    ]
-    """The type of the component buffer pointer for a given component type T. Is an optional UnsafePointer, where a present pointer indicates an active component with allocated storage, and None indicates an inactive component without storage.
-    """
-
-    comptime _PointerMapper[
-        T: ComponentType
-    ]: ImplicitlyCopyable & ImplicitlyDeletable & RegisterPassable & Defaultable = Self.ComponentPointer[
-        T
-    ]
-    """Helper type-level function to map component types to their corresponding pointer types in the storage tuple.
-    """
-
-    comptime _PointerTuple = Tuple[
-        *Self.ComponentTypes.map[Self._PointerMapper]()
-    ]
-    """The type of the tuple storing component pointers for all component types. See the description of [._ComponentStorage] for the layout and semantics of this tuple.
-    """
+    comptime _Columns = Array[_ComponentColumn, length=len(Self.ComponentTypes)]
+    """Homogeneous storage for type-erased component columns."""
 
     var _capacity: Int
     """The capacity of the component storage, i.e. how many entities can be stored without reallocating."""
-    var _size: Int
-    """The current size of the component storage, i.e. how many entities are currently stored."""
-    var _data: Self._PointerTuple
-    """The component data, stored as typed pointers to component buffers."""
+    var _length: Int
+    """The current length of the component storage, i.e. how many entities are currently stored."""
+    var _columns: Self._Columns
+    """The component data, with lifecycle operations erased per column."""
 
     var _active_component_mask: BitMask
     """Ids of the active components in the archetype."""
@@ -220,28 +483,33 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
         out self,
         active_component_mask: BitMask,
         *,
-        size: Int = 0,
+        length: Int = 0,
         capacity: Int = DEFAULT_CAPACITY,
     ):
         """Initializes component storage for a specific archetype mask.
 
         Args:
             active_component_mask: The mask describing which component buffers are active.
-            size: The initial number of populated entity rows.
+            length: The initial number of populated entity rows.
             capacity: The initial storage capacity.
         """
         with Zone(
             function_name=(
-                "_ComponentStorage.__init__(active_component_mask: BitMask,"
-                " size: Int, capacity: Int)"
+                "_ComponentTable.__init__(active_component_mask: BitMask,"
+                " length: Int, capacity: Int)"
             )
         ):
-            self._data = Self._PointerTuple()
+            self._columns = Self._Columns(fill=_ComponentColumn())
             self._capacity = capacity
-            self._size = size
+            self._length = length
             self._active_component_mask = active_component_mask
 
-            self._unsafe_init_components(active_component_mask)
+            comptime for id in range(len(Self.ComponentTypes)):
+                comptime T = Self.ComponentTypes[id]
+                self._columns[id] = _ComponentColumn.create[T](
+                    preallocate=active_component_mask.get(id),
+                    capacity=capacity,
+                )
 
     def __init__(out self, *, copy: Self):
         """Deep-copies the component storage to a new instance, including allocating new buffers and copying component data.
@@ -249,124 +517,46 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
         Returns:
             A deep copy of the component storage with its own allocations.
         """
-        with Zone(function_name="_ComponentStorage.__init__(copy: Self)"):
-            self = copy.shallow_copy()
+        with Zone(function_name="_ComponentTable.__init__(copy: Self)"):
+            self._columns = Self._Columns(fill=_ComponentColumn())
+            self._capacity = copy._capacity
+            self._length = copy._length
+            self._active_component_mask = copy._active_component_mask
 
-            @always_inline
-            def copy_component[
-                T: ComponentType, id: ComponentId
-            ](
-                storage_size: Int,
-                storage_capacity: Int,
-                comp_ptr: Self.ComponentPointer[T],
-            ) -> Self.ComponentPointer[T]:
-                new_ptr = alloc[T](storage_capacity)
-                if storage_size > 0:
-                    unsafe_uninit_copy_n[overlapping=False](
-                        dest=new_ptr, src=comp_ptr.value(), count=storage_size
-                    )
-                return rebind[Self.ComponentPointer[T]](Optional(new_ptr))
-
-            self._apply_mut_to_active_components(copy_component)
+            comptime for id in range(len(Self.ComponentTypes)):
+                comptime T = Self.ComponentTypes[id]
+                self._columns[id] = _ComponentColumn.create[T](
+                    preallocate=False, capacity=self._capacity
+                )
+                self._columns[id].copy_data_from(
+                    copy._columns[id],
+                    self._length,
+                    self._capacity,
+                )
 
     @always_inline
     def __len__(self) -> Int:
         """
-        Gets the current size (number of stored entities) of the component storage.
+        Gets the current length (number of stored entities) of the component storage.
 
         Returns:
-            The current size of the component storage.
+            The current length of the component storage.
         """
-        with Zone(function_name="_ComponentStorage.__len__()"):
-            return self._size
+        with Zone(function_name="_ComponentTable.__len__()"):
+            return self._length
 
     @always_inline
-    def __del__(deinit self):
+    def __deinit__(deinit self):
         """Destroys and frees all active component buffers."""
 
-        with Zone(function_name="_ComponentStorage.__del__()"):
+        with Zone(function_name="_ComponentTable.__del__()"):
+            var capacity = self._capacity
+            var length = self._length
 
-            @always_inline
-            def free_component_storage[
-                T: ComponentType, id: ComponentId
-            ](
-                storage_size: Int,
-                storage_capacity: Int,
-                comp_ptr: UnsafePointer[T, MutUntrackedOrigin],
-            ):
-                unsafe_destroy_n(pointer=comp_ptr, count=storage_size)
-                comp_ptr.free()
+            def destroy_column(var column: _ComponentColumn) {imm}:
+                column.destroy(length, capacity)
 
-            self._apply_to_active_components(free_component_storage)
-
-    def shallow_copy(self, out new_storage: Self):
-        """Shallow-copies another component storage instance.
-
-        Returns:
-            A shallow copy of the component storage.
-        """
-        with Zone(
-            function_name=(
-                "_ComponentStorage.shallow_copy(out new_storage: Self)"
-            )
-        ):
-            # Initialize with an empty active mask to avoid constructing a temporary
-            # storage whose active components intentionally have empty pointers.
-            new_storage = Self(
-                active_component_mask=BitMask(),
-                capacity=0,
-            )
-            new_storage._capacity = self._capacity
-            new_storage._size = self._size
-            new_storage._active_component_mask = self._active_component_mask
-            comptime assert Self.ComponentTypes.map[
-                Self._PointerMapper
-            ]().all_conforms_to[
-                Copyable
-            ](), (
-                "All component pointer types must be copyable for shallow copy."
-            )
-            new_storage._data = self._data.copy()
-
-    def _unsafe_init_components(mut self, imm init_component_mask: BitMask):
-        """(Re)Initializes owned component storage while keeping the component layout intact.
-
-        Important:
-        This is intended for internal ownership-transfer flows where another archetype has
-        taken over the old storage pointers and this archetype must regain valid, uniquely
-        owned allocations before continuing.
-
-        Args:
-            init_component_mask: A bit mask indicating which components should be initialized.
-
-        Note:
-            Only active components in this storage are initialized.
-        """
-
-        with Zone(
-            function_name=(
-                "_ComponentStorage._unsafe_init_components(read"
-                " init_component_mask: BitMask)"
-            )
-        ):
-
-            def init_component_ptr[
-                T: ComponentType, id: ComponentId
-            ](
-                storage_size: Int,
-                storage_capacity: Int,
-                comp_ptr: Self.ComponentPointer[T],
-            ) {imm} -> Self.ComponentPointer[T]:
-                if init_component_mask.get(id):
-                    if storage_capacity > 0:
-                        return rebind[Self.ComponentPointer[T]](
-                            alloc[T](storage_capacity)
-                        )
-                    return None
-                else:
-                    return comp_ptr
-
-            self._apply_mut_to_active_components(init_component_ptr)
+            self._columns^.deinit_with(destroy_column)
 
     @always_inline
     def get_component_count(self) -> Int:
@@ -375,31 +565,31 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
         Returns:
             The number of active component types.
         """
-        with Zone(function_name="_ComponentStorage.get_component_count()"):
+        with Zone(function_name="_ComponentTable.get_component_count()"):
             return self._active_component_mask.total_bits_set()
 
     @always_inline
     def add_entity(mut self) -> Int:
-        """Adds an entity to the storage (increments size, checks capacity).
+        """Adds an entity to the storage (increments length, checks capacity).
 
         Returns:
             The index of the newly added entity.
         """
-        with Zone(function_name="_ComponentStorage.add_entity()"):
-            if self._size == self._capacity:
+        with Zone(function_name="_ComponentTable.add_entity()"):
+            if self._length == self._capacity:
                 self.reserve(max(self._capacity * 2, 8))
-            var idx = self._size
-            self._size += 1
+            var idx = self._length
+            self._length += 1
             return idx
 
     @always_inline
     def clear(mut self):
-        """Removes all entities from the storage (resets size to 0).
+        """Removes all entities from the storage (resets length to 0).
 
         Note: does not free any memory.
         """
-        with Zone(function_name="_ComponentStorage.clear()"):
-            self._size = 0
+        with Zone(function_name="_ComponentTable.clear()"):
+            self._length = 0
 
     @always_inline
     def reserve(mut self, new_capacity: Int):
@@ -414,7 +604,7 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             new_capacity: The minimum required capacity. The actual allocated capacity
                          will be `next_power_of_two(new_capacity)` to maintain power-of-2 growth.
         """
-        with Zone(function_name="_ComponentStorage.reserve(new_capacity: Int)"):
+        with Zone(function_name="_ComponentTable.reserve(new_capacity: Int)"):
             debug_assert(
                 0 < new_capacity, "New capacity must be greater than zero."
             )
@@ -425,24 +615,9 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             var new_pow2_capacity = next_power_of_two(new_capacity)
             var old_capacity = self._capacity
 
-            @always_inline
-            def resize_component_storage[
-                T: ComponentType, id: ComponentId
-            ](
-                storage_size: Int,
-                storage_capacity: Int,
-                old_ptr: Self.ComponentPointer[T],
-            ) {imm} -> Self.ComponentPointer[T]:
-                var new_ptr = alloc[T](new_pow2_capacity)
-                if storage_size > 0:
-                    unsafe_uninit_move_n[overlapping=False](
-                        dest=new_ptr, src=old_ptr.value(), count=storage_size
-                    )
-                old_ptr.value().free()
-                return rebind[Self.ComponentPointer[T]](Optional(new_ptr))
-
-            if old_capacity > 0 or self._size == 0:
-                self._apply_mut_to_active_components(resize_component_storage)
+            if old_capacity > 0 or self._length == 0:
+                for ref column in self._columns:
+                    column.resize(self._length, old_capacity, new_pow2_capacity)
 
             self._capacity = new_pow2_capacity
 
@@ -455,12 +630,12 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             add: The minimum number of additional entities to reserve capacity for.
         """
 
-        with Zone(function_name="_ComponentStorage.reserve(add: Int)"):
+        with Zone(function_name="_ComponentTable.reserve(add: Int)"):
             debug_assert(
                 0 <= add, "Amount of additional entities must be non-negative"
             )
 
-            self.reserve(self._size + add)
+            self.reserve(self._length + add)
 
     @always_inline
     def swap_remove_entity(mut self, remove_idx: Int) -> Bool:
@@ -475,39 +650,25 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             Whether a swap was performed (i.e. idx was not the last entity).
         """
         with Zone(
-            function_name=(
-                "_ComponentStorage.swap_remove_entity(remove_idx: Int)"
-            )
+            function_name="_ComponentTable.swap_remove_entity(remove_idx: Int)"
         ):
-            _assert_index_in_bounds(remove_idx, self._size)
+            _assert_index_in_bounds(remove_idx, self._length)
 
-            self._size -= 1
+            self._length -= 1
 
-            need_swap = remove_idx != self._size
+            need_swap = remove_idx != self._length
 
-            @always_inline
-            def swap_component_data[
-                T: ComponentType, id: ComponentId
-            ](
-                storage_size: Int,
-                storage_capacity: Int,
-                comp_ptr: UnsafePointer[T, MutUntrackedOrigin],
-            ) {imm}:
-                unsafe_destroy_n(comp_ptr + remove_idx, count=1)
-                if need_swap:
-                    unsafe_uninit_move_n[overlapping=False](
-                        dest=comp_ptr + remove_idx,
-                        src=comp_ptr + storage_size,
-                        count=1,
-                    )
-
-            self._apply_to_active_components(swap_component_data)
+            for ref column in self._columns:
+                if column._data:
+                    column.swap_remove(self._length + 1, remove_idx)
             return need_swap
 
     @always_inline
     def get_component_ptr[
         T: ComponentType,
-    ](ref self) raises LarecsError -> UnsafePointer[T, MutUntrackedOrigin]:
+    ](ref self) raises LarecsError -> Pointer[
+        T, UntrackedOrigin[mut=origin_of(self).mut]
+    ]:
         """Returns the base pointer for the given component type.
 
         Parameters:
@@ -521,26 +682,24 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
         """
         with Zone(
             function_name=(
-                "_ComponentStorage.get_component_ptr[T: ComponentType]()"
+                "_ComponentTable.get_component_ptr[T: ComponentType]()"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponent[
+            comptime assert Self.component_manager.contains_components[
                 T
-            ], "Component type not in component manager"
+            ](), "Component type not in component manager"
             comptime id = Self.component_manager.get_id[T]()
 
             self.assert_has_components[T]()
 
-            return rebind[Self.ComponentPointer[T]](self._data[id]).value()
+            return self._columns[id].get_ptr[T]()
 
     @always_inline
     def has_components[*Ts: ComponentType](self) -> Bool:
         """Returns whether the storage contains all the given component types.
         """
         with Zone(
-            function_name=(
-                "_ComponentStorage.has_components[*Ts: ComponentType]()"
-            )
+            function_name="_ComponentTable.has_components[*Ts: ComponentType]()"
         ):
             Self.component_manager.assert_valid_components[*Ts]()
             comptime comp_mask = BitMask(
@@ -560,7 +719,7 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
         """
         with Zone(
             function_name=(
-                "_ComponentStorage.assert_has_components[*Ts: ComponentType]()"
+                "_ComponentTable.assert_has_components[*Ts: ComponentType]()"
             )
         ):
             Self.component_manager.assert_valid_components[*Ts]()
@@ -590,14 +749,14 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
         """
         with Zone(
             function_name=(
-                "_ComponentStorage.set_components[*Ts:"
+                "_ComponentTable.set_components[*Ts:"
                 " ComponentType](entity_idx: Int, var *components: *Ts)"
             )
         ):
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Component types must be unique."
-            _assert_index_in_bounds(entity_idx, self._size)
+            _assert_index_in_bounds(entity_idx, self._length)
 
             Self.component_manager.assert_valid_components[*Ts]()
             self.assert_has_components[*Ts]()
@@ -636,14 +795,14 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
         """
         with Zone(
             function_name=(
-                "_ComponentStorage.init_components[*Ts:"
+                "_ComponentTable.init_components[*Ts:"
                 " ComponentType](entity_idx: Int, var *components: *Ts)"
             )
         ):
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Component types must be unique."
-            _assert_index_in_bounds(entity_idx, self._size)
+            _assert_index_in_bounds(entity_idx, self._length)
 
             Self.component_manager.assert_valid_components[*Ts]()
             self.assert_has_components[*Ts]()
@@ -670,7 +829,7 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
     ](
         mut self,
         to_idx: Int,
-        storage: _ComponentStorage,
+        storage: _ComponentTable,
         count: Int,
         from_idx: Int = 0,
     ) raises LarecsError:
@@ -690,22 +849,24 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
         """
         with Zone(
             function_name=(
-                "_ComponentStorage.copy_component_from[T:"
-                " ComponentType](to_idx: Int, storage: _ComponentStorage,"
+                "_ComponentTable.copy_component_from[T:"
+                " ComponentType](to_idx: Int, storage: _ComponentTable,"
                 " count: Int, from_idx: Int)"
             )
         ):
-            _assert_range_in_bounds(to_idx, count, self._size)
-            _assert_range_in_bounds(from_idx, count, storage._size)
+            _assert_range_in_bounds(to_idx, count, self._length)
+            _assert_range_in_bounds(from_idx, count, storage._length)
 
             if count == 0:
                 return
 
-            unsafe_destroy_n(self.get_component_ptr[T]() + to_idx, count=count)
+            unsafe_destroy_n(
+                self.get_component_ptr[T]().unsafe_offset(to_idx), count=count
+            )
 
             unsafe_uninit_copy_n[overlapping=False](
-                dest=self.get_component_ptr[T]() + to_idx,
-                src=storage.get_component_ptr[T]() + from_idx,
+                dest=self.get_component_ptr[T]().unsafe_offset(to_idx),
+                src=storage.get_component_ptr[T]().unsafe_offset(from_idx),
                 count=count,
             )
 
@@ -715,7 +876,7 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
     ](
         mut self,
         to_idx: Int,
-        source: UnsafePointer[Self, source_origin],
+        source: Pointer[Self, source_origin],
         count: Int,
         from_idx: Int = 0,
     ):
@@ -737,13 +898,13 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
         """
         with Zone(
             function_name=(
-                "_ComponentStorage.copy_shared_components_from_unsafe(to_idx:"
-                " Int, source: UnsafePointer, count: Int, from_idx: Int)"
+                "_ComponentTable.copy_shared_components_from_unsafe(to_idx:"
+                " Int, source: Pointer, count: Int, from_idx: Int)"
             )
         ):
             debug_assert(0 <= count, "Count must be non-negative.")
-            _assert_range_in_bounds(to_idx, count, self._size)
-            _assert_range_in_bounds(from_idx, count, source[]._size)
+            _assert_range_in_bounds(to_idx, count, self._length)
+            _assert_range_in_bounds(from_idx, count, source[]._length)
 
             if count == 0:
                 return
@@ -753,77 +914,20 @@ struct _ComponentStorage[*ComponentTypes: ComponentType](
             if self.has_components[T]() and source[].has_components[T]():
                 try:
                     unsafe_destroy_n(
-                        self.get_component_ptr[T]() + to_idx, count=count
+                        self.get_component_ptr[T]().unsafe_offset(to_idx),
+                        count=count,
                     )
                     unsafe_uninit_copy_n[overlapping=False](
-                        dest=self.get_component_ptr[T]() + to_idx,
-                        src=source[].get_component_ptr[T]() + from_idx,
+                        dest=self.get_component_ptr[T]().unsafe_offset(to_idx),
+                        src=source[]
+                        .get_component_ptr[T]()
+                        .unsafe_offset(from_idx),
                         count=count,
                     )
                 except:
                     assert_unreachable(
                         "Not reachable as component presence was checked"
                         " before."
-                    )
-
-    @always_inline
-    def _apply_mut_to_active_components[
-        FuncType: def[T: ComponentType, id: ComponentId](
-            storage_size: Int,
-            storage_capacity: Int,
-            comp_ptr: Self.ComponentPointer[T],
-        ) -> Self.ComponentPointer[T],
-    ](mut self, func: FuncType):
-        """Applies a function to each active component pointer, allowing mutation of the pointers by returning new pointers.
-
-        Parameters:
-            FuncType: The type of the function to apply to each active component pointer.
-
-        Args:
-            func: A function that takes a component ID and the corresponding typed pointer, and performs some mutating operation.
-                The function can return a new pointer to replace the existing one in the storage (e.g. for reallocations), which will be updated accordingly.
-        """
-        with Zone(
-            function_name=(
-                "_ComponentStorage._apply_mut_to_active_components[FuncType](func:"
-                " FuncType)"
-            )
-        ):
-            comptime for id in range(len(Self.ComponentTypes)):
-                comptime T = Self.ComponentTypes[id]
-                if self.has_components[T]():
-                    comp_ptr = rebind[Self.ComponentPointer[T]](self._data[id])
-                    self._data[id] = rebind[
-                        Self._PointerTuple.element_types[id]
-                    ](func[T, id](self._size, self._capacity, comp_ptr))
-
-    def _apply_to_active_components[
-        FuncType: def[T: ComponentType, id: ComponentId](
-            storage_size: Int,
-            storage_capacity: Int,
-            comp_ptr: UnsafePointer[T, MutUntrackedOrigin],
-        ),
-    ](self, func: FuncType):
-        """Applies a function to each active component pointer, allowing mutation of the data pointed to by the pointer but not changing the pointers themselves.
-
-        Parameters:
-            FuncType: The type of the function to apply to each active component.
-
-        Args:
-            func: A function that takes a component ID and the corresponding typed pointer, and performs some operation.
-        """
-        with Zone(
-            function_name=(
-                "_ComponentStorage._apply_to_active_components[FuncType](func:"
-                " FuncType)"
-            )
-        ):
-            comptime for id in range(len(Self.ComponentTypes)):
-                comptime T = Self.ComponentTypes[id]
-                if self.has_components[T]():
-                    comp_ptr = rebind[Self.ComponentPointer[T]](self._data[id])
-                    func[T, id](
-                        self._size, self._capacity, comp_ptr.value().copy()
                     )
 
 
@@ -849,7 +953,7 @@ struct Archetype[
     ]
     """The type of the entity accessors generated by the archetype."""
 
-    var _storage: _ComponentStorage[*Self.ComponentTypes]
+    var _storage: _ComponentTable[*Self.ComponentTypes]
     """The component storage of the archetype."""
 
     var _entities: List[Entity]
@@ -903,7 +1007,7 @@ struct Archetype[
 
             self._mask = mask
 
-            self._storage = _ComponentStorage[*Self.ComponentTypes](
+            self._storage = _ComponentTable[*Self.ComponentTypes](
                 mask, capacity=capacity
             )
 
@@ -1021,7 +1125,7 @@ struct Archetype[
             A reference to the entity at the given index.
         """
         with Zone(function_name="Archetype.get_entity(idx: Int)"):
-            _assert_index_in_bounds(idx, self._storage._size)
+            _assert_index_in_bounds(idx, self._storage._length)
 
             return self._entities[idx]
 
@@ -1046,7 +1150,7 @@ struct Archetype[
                 " accessor: Self.EntityAccessor)"
             )
         ):
-            _assert_index_in_bounds(idx, self._storage._size)
+            _assert_index_in_bounds(idx, self._storage._length)
 
             accessor = Self.EntityAccessor(
                 self,
@@ -1077,9 +1181,11 @@ struct Archetype[
                 "Archetype.get_component[T: ComponentType](entity_idx: Int)"
             )
         ):
-            _assert_index_in_bounds(entity_idx, self._storage._size)
+            _assert_index_in_bounds(entity_idx, self._storage._length)
 
-            return self._storage.get_component_ptr[T]()[entity_idx]
+            return self._storage.get_component_ptr[T]()[
+                unsafe_offset=entity_idx
+            ]
 
     @always_inline
     def set_components[
@@ -1153,16 +1259,17 @@ struct Archetype[
             )
         ):
             _assert_range_in_bounds(
-                start_entity_idx, count, self._storage._size
+                start_entity_idx, count, self._storage._length
             )
 
             if count == 0:
                 return
 
             var comp_ptr = self._storage.get_component_ptr[T]()
-            Span(unsafe_ptr=comp_ptr + start_entity_idx, length=count).fill(
-                value
-            )
+            Span(
+                unsafe_ptr=comp_ptr.unsafe_offset(start_entity_idx),
+                length=count,
+            ).fill(value)
 
     @always_inline
     def copy_component_from[
@@ -1288,7 +1395,10 @@ struct Archetype[
         with Zone(function_name="Archetype.add(entity: Entity)"):
             debug_assert(
                 len(self._entities) == len(self._storage),
-                "`Archetype._entities` and `Archetype._storage` size mismatch.",
+                (
+                    "`Archetype._entities` and `Archetype._storage` length"
+                    " mismatch."
+                ),
             )
             var idx = self._storage.add_entity()
             self._entities.insert(idx, entity)
@@ -1300,7 +1410,7 @@ struct Archetype[
         source_origin: Origin,
     ](
         mut self,
-        source: UnsafePointer[Self, source_origin],
+        source: Pointer[Self, source_origin],
         count: Int,
         from_idx: Int = 0,
     ) -> Int:
@@ -1326,31 +1436,31 @@ struct Archetype[
         """
         with Zone(
             function_name=(
-                "Archetype.extend_from_archetype_unsafe(source: UnsafePointer,"
+                "Archetype.extend_from_archetype_unsafe(source: Pointer,"
                 " count: Int, from_idx: Int)"
             )
         ):
             debug_assert(0 <= count, "Count must be non-negative.")
             debug_assert(
-                UnsafePointer(to=self) != source,
+                Pointer(to=self) != source,
                 "Source and destination archetypes must be distinct.",
             )
             _assert_range_in_bounds(from_idx, count, len(source[]))
 
-            start_index = self._storage._size
+            start_index = self._storage._length
 
             if count == 0:
                 return start_index
 
             self._storage.reserve(add=count)
-            self._storage._size += count
+            self._storage._length += count
             self._entities.reserve(self._storage._capacity)
 
             for i in range(count):
                 self._entities.append(source[]._entities[from_idx + i])
 
             debug_assert(
-                start_index + count <= self._storage._size,
+                start_index + count <= self._storage._length,
                 "Destination range must be valid after extending the storage.",
             )
 
@@ -1359,10 +1469,14 @@ struct Archetype[
                 if self.has_components[T]() and source[].has_components[T]():
                     try:
                         unsafe_uninit_copy_n[overlapping=False](
-                            dest=self._storage.get_component_ptr[T]()
-                            + start_index,
-                            src=source[]._storage.get_component_ptr[T]()
-                            + from_idx,
+                            dest=self._storage.get_component_ptr[
+                                T
+                            ]().unsafe_offset(start_index),
+                            src=source[]
+                            ._storage.get_component_ptr[T]()
+                            .unsafe_offset(
+                                from_idx,
+                            ),
                             count=count,
                         )
                     except:
@@ -1397,12 +1511,12 @@ struct Archetype[
         ):
             debug_assert(count > 0, "Count must be positive.")
 
-            start_index = self._storage._size
+            start_index = self._storage._length
 
             self._storage.reserve(
                 add=count
             )  # `reserve` handles calculating a good capacity to use
-            self._storage._size += count
+            self._storage._length += count
             self._entities.reserve(
                 self._storage._capacity
             )  # use the capacity calculated by `reserve` for the entities list as well

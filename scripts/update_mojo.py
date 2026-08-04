@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Update Mojo dependency pins across the repository."""
 
 from __future__ import annotations
@@ -10,13 +9,13 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-
 MOJO_VERSION_FILES = [
     Path("pixi.toml"),
     Path("conda.recipe/recipe.yaml"),
     Path("conda.recipe/recipe-latest-release.yaml"),
     Path("examples/satellites/pixi.toml"),
     Path("benchmark/plots/pixi.toml"),
+    Path("benchmark/compile/pixi.toml"),
 ]
 
 MOJO_SEARCH_CHANNELS = [
@@ -40,14 +39,14 @@ def parse_args() -> argparse.Namespace:
         help="Mojo version to use. Defaults to the newest version found by pixi search.",
     )
     parser.add_argument(
-        "--update-locks",
-        action="store_true",
-        help="Run pixi update in each configured Pixi project after editing pins.",
-    )
-    parser.add_argument(
         "--max-version",
         default=DEFAULT_MAX_VERSION,
         help=f"Exclusive upper bound for Mojo constraints. Defaults to {DEFAULT_MAX_VERSION}.",
+    )
+    parser.add_argument(
+        "--no-update-lock",
+        action="store_true",
+        help="Skip running pixi lock in each configured Pixi project after editing pins.",
     )
     return parser.parse_args()
 
@@ -146,16 +145,14 @@ def update_file(path: Path, version: str, max_version: str) -> int:
         toml_match = TOML_MOJO_RE.match(content)
         if toml_match:
             updated_lines.append(
-                f'{toml_match.group(1)}{toml_constraint}{toml_match.group(2)}{newline}'
+                f"{toml_match.group(1)}{toml_constraint}{toml_match.group(2)}{newline}"
             )
             changes += 1
             continue
 
         yaml_match = YAML_MOJO_COMPILER_RE.match(content)
         if yaml_match:
-            updated_lines.append(
-                f"{yaml_match.group(1)}{yaml_constraint}{newline}"
-            )
+            updated_lines.append(f"{yaml_match.group(1)}{yaml_constraint}{newline}")
             changes += 1
             continue
 
@@ -196,7 +193,7 @@ def pixi_project_dirs(root: Path) -> list[Path]:
 def update_locks(root: Path) -> None:
     for project_dir in pixi_project_dirs(root):
         print(f"Updating Pixi lock in {project_dir.relative_to(root)}")
-        run_command(["pixi", "update"], cwd=project_dir)
+        run_command(["pixi", "lock"], cwd=project_dir)
 
 
 def main() -> int:
@@ -205,7 +202,7 @@ def main() -> int:
     version = args.version or newest_mojo_version(root)
 
     changed_files = update_mojo_files(root, version, args.max_version)
-    if args.update_locks:
+    if not args.no_update_lock:
         update_locks(root)
 
     print(f"Updated Mojo dependency pins to >={version}, <{args.max_version}:")

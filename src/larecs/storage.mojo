@@ -27,7 +27,6 @@ from .static_optional import StaticOptional
 from .types import ComponentId
 from ._utils import concatenate_arrays, assert_unreachable
 
-from std.memory import UnsafePointer
 from std.sys import size_of
 
 from tracy import Zone
@@ -307,9 +306,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 "Storage.add_entity[*Ts: ComponentType](var *components: *Ts)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "Not all component types are in the component manager."
+            ](), "Not all component types are in the component manager."
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in add_entity are not allowed."
@@ -409,9 +408,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 " count: Int, out iterator: Self.Iterator)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "Not all component types are in the component manager."
+            ](), "Not all component types are in the component manager."
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in add_entities are not allowed."
@@ -451,9 +450,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
             comptime for i in range(component_count):
                 comptime T = Ts[i]
-                comptime assert Self.component_manager._ContainsComponent[
+                comptime assert Self.component_manager.contains_components[
                     T
-                ], "Component type is not part of the world."
+                ](), "Component type is not part of the world."
                 archetype.set_component_range[T](
                     first_index_in_archetype, count, components[i]
                 )
@@ -651,9 +650,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         with Zone(
             function_name="Storage.has[T: ComponentType](entity: Entity)"
         ):
-            comptime assert Self.component_manager._ContainsComponent[
+            comptime assert Self.component_manager.contains_components[
                 T
-            ], "Component type not in component manager"
+            ](), "Component type not in component manager"
             self._assert_alive(entity)
             return self._archetypes.unsafe_get(
                 index(self._entity_locations[entity.get_id()].archetype_index)
@@ -677,9 +676,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             LarecsError: If the entity is not alive or does not have the component.
         """
-        comptime assert Self.component_manager._ContainsComponent[
+        comptime assert Self.component_manager.contains_components[
             T
-        ], "Component type not in component manager"
+        ](), "Component type not in component manager"
         entity_loc = self._entity_locations[entity.get_id()]
         self._assert_alive(entity)
 
@@ -722,9 +721,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 " component: T)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponent[
+            comptime assert Self.component_manager.contains_components[
                 T
-            ], "Component type not in component manager"
+            ](), "Component type not in component manager"
             self._assert_alive(entity)
             entity_loc = self._entity_locations[entity.get_id()]
             self._archetypes.unsafe_get(
@@ -755,9 +754,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 " *components: *Ts)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "One or more component types not in component manager"
+            ](), "One or more component types not in component manager"
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in set are not allowed."
@@ -886,9 +885,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 " Self.Iterator)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "One or more component types not in component manager"
+            ](), "One or more component types not in component manager"
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in add are not allowed."
@@ -992,9 +991,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in remove are not allowed."
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "One or more component types not in component manager"
+            ](), "One or more component types not in component manager"
 
             return self._batch_remove_and_add[
                 rem_size=len(Ts),
@@ -1060,9 +1059,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 " Entity, var *add_components: *Ts)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "One or more component types not in component manager"
+            ](), "One or more component types not in component manager"
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in remove are not allowed."
@@ -1084,11 +1083,15 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
             old_archetype_mask = old_archetype.get_mask()
 
+            var runtime_add_ids = materialize[add_ids]()
+            var runtime_remove_ids = materialize[remove_ids]()
+
             comptime if rem_size:
-                if not old_archetype_mask.contains(BitMask(remove_ids)):
+                var remove_mask = BitMask(runtime_remove_ids)
+                if not old_archetype_mask.contains(remove_mask):
                     raise LarecsError(
                         ComponentError.missing_components_on_remove.with_components(
-                            old_archetype_mask ^ BitMask(remove_ids)
+                            old_archetype_mask ^ remove_mask
                         )
                     )
 
@@ -1096,11 +1099,12 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 compare_mask = old_archetype_mask
 
                 comptime if rem_size:
-                    compare_mask.set(remove_ids, False)
-                if compare_mask.contains(BitMask(add_ids)):
+                    compare_mask.set(runtime_remove_ids, False)
+                var add_mask = BitMask(runtime_add_ids)
+                if compare_mask.contains(add_mask):
                     raise LarecsError(
                         ComponentError.existing_components_on_add.with_components(
-                            compare_mask & BitMask(add_ids)
+                            compare_mask & add_mask
                         )
                     )
 
@@ -1109,11 +1113,13 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
             comptime if add_size and rem_size:
                 comptime concatenated = concatenate_arrays(remove_ids, add_ids)
-                component_ids = concatenated
+                component_ids = materialize[concatenated]()
             elif Bool(add_size) and not rem_size:
-                component_ids = rebind[ComponentIdsType](add_ids)
+                component_ids = rebind_var[ComponentIdsType](runtime_add_ids^)
             elif not add_size and Bool(rem_size):
-                component_ids = rebind[ComponentIdsType](remove_ids)
+                component_ids = rebind_var[ComponentIdsType](
+                    runtime_remove_ids^
+                )
             else:
                 return
 
@@ -1207,9 +1213,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 " *add_components: *Ts, out iterator: Self.Iterator)"
             )
         ):
-            comptime assert Self.component_manager._ContainsComponents[
+            comptime assert Self.component_manager.contains_components[
                 *Ts
-            ], "One or more component types not in component manager"
+            ](), "One or more component types not in component manager"
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in add are not allowed."
@@ -1226,6 +1232,12 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             #    individually without checking for edge cases where multiple archetypes get merged into one.
             #    This also enables potential parallelization optimizations.
 
+            var runtime_add_ids = materialize[add_ids]()
+            var runtime_remove_ids = materialize[remove_ids]()
+
+            var add_mask = BitMask(runtime_add_ids)
+            var remove_mask = BitMask(runtime_remove_ids)
+
             comptime if add_size:
                 # If query could match archetypes that already have at least one of the components, raise an error
                 # FIXME: When https://github.com/modular/modular/issues/5347 is fixed, we can use short-circuiting here.
@@ -1234,7 +1246,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
                 comptime if has_without_mask:
                     strict_check_needed = not query.without_mask[].contains(
-                        BitMask(add_ids)
+                        add_mask
                     )
                 else:
                     strict_check_needed = True
@@ -1246,41 +1258,41 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                         archetype_mask = archetype.get_mask()
 
                         comptime if rem_size:
-                            archetype_mask.set(remove_ids, False)
+                            archetype_mask.set(runtime_remove_ids, False)
 
-                        if archetype and archetype_mask.contains_any(
-                            BitMask(add_ids)
-                        ):
+                        if archetype and archetype_mask.contains_any(add_mask):
                             raise LarecsError(
                                 ComponentError.existing_components_on_add_query.with_components(
-                                    archetype_mask & BitMask(add_ids)
+                                    archetype_mask & add_mask
                                 )
                             )
 
             comptime if rem_size:
                 # If query could match archetypes that don't have all of the components, raise an error
-                if not query.mask.contains(BitMask(remove_ids)):
+                if not query.mask.contains(remove_mask):
                     raise LarecsError(
                         ComponentError.missing_components_on_remove_query.with_components(
-                            query.mask ^ BitMask(remove_ids)
+                            query.mask ^ remove_mask
                         )
                     )
 
                 comptime if has_without_mask:
-                    if query.without_mask[].contains_any(BitMask(remove_ids)):
+                    if query.without_mask[].contains_any(remove_mask):
                         raise LarecsError(
                             ComponentError.missing_components_on_remove_query.with_components(
-                                query.without_mask[] & BitMask(remove_ids)
+                                query.without_mask[] & remove_mask
                             )
                         )
 
             comptime if add_size and rem_size:
                 comptime concatenated = concatenate_arrays(remove_ids, add_ids)
-                component_ids = concatenated
+                component_ids = materialize[concatenated]()
             elif Bool(add_size) and not rem_size:
-                component_ids = rebind[ComponentIdsType](add_ids)
+                component_ids = rebind_var[ComponentIdsType](runtime_add_ids^)
             elif not add_size and Bool(rem_size):
-                component_ids = rebind[ComponentIdsType](remove_ids)
+                component_ids = rebind_var[ComponentIdsType](
+                    runtime_remove_ids^
+                )
             else:
                 # Nothing to do. Just return empty iterator.
                 try:
@@ -1331,7 +1343,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                         new_archetype_idx
                     )
 
-                    # TODO: Optimization: If `new_archetype` is empty we can just shallow-copy the _ComponentStorage of `old_archetype` to `new_archetype` and reinit `old_archetype`.
+                    # TODO: Optimization: If `new_archetype` is empty we can just shallow-copy the _ComponentTable of `old_archetype` to `new_archetype` and reinit `old_archetype`.
 
                     old_archetype_size = len(old_archetype)
                     if old_archetype_idx == new_archetype_idx:
@@ -1347,7 +1359,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                             )
                         continue
 
-                    old_archetype_unsafe = UnsafePointer(
+                    old_archetype_unsafe = Pointer(
                         to=old_archetype
                     ).as_unsafe_any_origin()
                     arch_start_idx = new_archetype.extend_from_archetype_unsafe(
@@ -1524,7 +1536,6 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
     #     ```mojo {doctest="apply"}
     #     from sys.info import simdwidthof
-    #     from memory import LegacyUnsafePointer
 
     #     world = World[Float64]()
     #     e = world.add_entity()
@@ -1545,7 +1556,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
     #             # Get an unsafe pointer to the memory
     #             # location of the component
-    #             ptr = LegacyUnsafePointer(to=component)
+    #             ptr = Pointer(to=component)
     #         except:
     #             return
 

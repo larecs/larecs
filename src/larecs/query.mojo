@@ -608,7 +608,7 @@ struct _ArchetypeEntityIterator[
         with Zone(
             function_name=(
                 "_ArchetypeEntityIterator.__init__(archetype:"
-                " UnsafePointer[UntrackedOrigin], _index: Int)"
+                " Pointer[UntrackedOrigin], _index: Int)"
             )
         ):
             self.archetype = Pointer(to=archetype)
@@ -833,7 +833,7 @@ struct _WorldEntityIterator[
 
             self._current_archetype_index = 0
 
-    def __del__(deinit self):
+    def __deinit__(deinit self):
         """
         Releases the lock.
         """

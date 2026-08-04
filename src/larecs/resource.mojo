@@ -5,7 +5,7 @@ from tracy import Zone
 
 from .unsafe_box import UnsafeBox
 
-comptime ResourceType = Copyable & ImplicitlyDeletable
+comptime ResourceType = Copyable & Deinitable
 """The trait that resources must conform to."""
 
 

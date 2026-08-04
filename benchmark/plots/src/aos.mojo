@@ -281,10 +281,10 @@ struct AosWorld[components_exp: Int](Copyable, Movable):
 
 @fieldwise_init
 struct AosEntity[components_exp: Int](ImplicitlyCopyable):
-    var comps: InlineArray[Position, 2**Self.components_exp]
+    var comps: Array[Position, 2**Self.components_exp]
 
     def __init__(out self):
-        self.comps = InlineArray[Position, 2**Self.components_exp](
+        self.comps = Array[Position, 2**Self.components_exp](
             fill=Position(1.0, 2.0)
         )
 

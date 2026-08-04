@@ -2,7 +2,6 @@
 
 from std.testing import assert_true, assert_false, assert_equal
 from std.random import random
-from std.memory import UnsafePointer
 from .component import ComponentType
 from .bitmask import BitMask
 from .world import World
@@ -29,7 +28,7 @@ def load[
     Returns:
         The loaded SIMD value.
     """
-    return UnsafePointer(to=val).strided_load[width=simd_width](stride)
+    return Pointer(to=val).unsafe_strided_load[width=simd_width](stride)
 
 
 @always_inline
@@ -52,7 +51,7 @@ def store[
 
     The SIMD values are written through the pointer to `val`.
     """
-    return UnsafePointer(to=val).strided_store[width=simd_width](simd, stride)
+    return Pointer(to=val).unsafe_strided_store[width=simd_width](simd, stride)
 
 
 comptime load2 = load[_, 2]
@@ -122,11 +121,13 @@ def get_random_bitmask_list(
     list = List[BitMask]()
     list.reserve(count)
     for _ in range(count):
-        bytes = InlineArray[Scalar[DType.int], BitMask.total_bytes // 4]()
+        bytes = Array[Scalar[DType.int], BitMask.total_bytes // 4](
+            uninitialized=True
+        )
         random.randint(bytes.unsafe_ptr(), 4, range_start, range_end)
         list.append(
             BitMask(
-                bytes=UnsafePointer(to=bytes).bitcast[BitMask.BytesType]()[]
+                bytes=bytes.unsafe_ptr().unsafe_bitcast[BitMask.BytesType]()[]
             )
         )
 
@@ -487,13 +488,13 @@ struct MemTestStruct[
         del_origin: The origin used for the delete counter pointer.
     """
 
-    var copy_counter: UnsafePointer[Int, Self.copy_origin]
+    var copy_counter: Pointer[Int, Self.copy_origin]
     """The counter incremented on copy initialization."""
 
-    var move_counter: UnsafePointer[Int, Self.move_origin]
+    var move_counter: Pointer[Int, Self.move_origin]
     """The counter incremented on move initialization."""
 
-    var del_counter: UnsafePointer[Int, Self.del_origin]
+    var del_counter: Pointer[Int, Self.del_origin]
     """The counter incremented on deletion."""
 
     def __init__(out self, *, deinit move: Self):
@@ -522,7 +523,7 @@ struct MemTestStruct[
         self.copy_counter = copy.copy_counter
         self.copy_counter[] += 1
 
-    def __del__(deinit self):
+    def __deinit__(deinit self):
         """Destroy a lifecycle-counting test value.
 
         The delete counter is incremented in place.
@@ -531,7 +532,7 @@ struct MemTestStruct[
 
 
 def test_copy_move_del[
-    Container: Copyable & ImplicitlyDeletable,
+    Container: Copyable & Deinitable,
     //,
     container_factory: def(
         var val: MemTestStruct[
@@ -612,6 +613,6 @@ def test_copy_move_del[
     copy_counter.unsafe_deinit_pointee()
     move_counter.unsafe_deinit_pointee()
     del_counter.unsafe_deinit_pointee()
-    copy_counter.free()
-    move_counter.free()
-    del_counter.free()
+    copy_counter.unsafe_free()
+    move_counter.unsafe_free()
+    del_counter.unsafe_free()

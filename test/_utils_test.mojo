@@ -4,8 +4,8 @@ from larecs._utils import concatenate_arrays
 
 
 def test_concatenate_arrays_uint8() raises:
-    left: InlineArray[UInt8, 3] = [1, 2, 3]
-    right: InlineArray[UInt8, 2] = [4, 5]
+    left: Array[UInt8, 3] = [1, 2, 3]
+    right: Array[UInt8, 2] = [4, 5]
 
     result = concatenate_arrays(left, right)
 
@@ -18,8 +18,8 @@ def test_concatenate_arrays_uint8() raises:
 
 
 def test_concatenate_arrays_uint16() raises:
-    left: InlineArray[UInt16, 0] = []
-    right: InlineArray[UInt16, 2] = [3003, 4004]
+    left: Array[UInt16, 0] = []
+    right: Array[UInt16, 2] = [3003, 4004]
 
     result = concatenate_arrays(left, right)
 

@@ -1,13 +1,10 @@
-from std.memory import UnsafePointer
 from std.utils.type_functions import ConditionalType
 
 from tracy import Zone
 
 
 @fieldwise_init
-struct _EmptyStaticOptionalStorage(
-    Copyable, ImplicitlyDeletable, Movable, Writable
-):
+struct _EmptyStaticOptionalStorage(Copyable, Deinitable, Movable, Writable):
     """Zero-sized backing storage for an absent `StaticOptional` value.
 
     Raises:
@@ -35,7 +32,7 @@ struct _EmptyStaticOptionalStorage(
 
 @fieldwise_init
 struct StaticOptional[
-    ElementType: Copyable & ImplicitlyDeletable,
+    ElementType: Copyable & Deinitable,
     has_value: Bool = True,
 ](
     Boolable,
@@ -104,7 +101,7 @@ struct StaticOptional[
             self._value = rebind_var[dest_type=Self.Storage](value^)
 
     @always_inline
-    def __del__(deinit self):
+    def __deinit__(deinit self):
         """Destroy the stored value when present."""
         with Zone(function_name="StaticOptional.__del__()"):
             comptime if Self.has_value:
@@ -147,18 +144,18 @@ struct StaticOptional[
     @always_inline
     def unsafe_ptr(
         ref self,
-    ) -> UnsafePointer[Self.ElementType, origin_of(self._value)]:
+    ) -> Pointer[Self.ElementType, origin_of(self._value)]:
         """Get a pointer to the stored value.
 
         Returns:
-            An `UnsafePointer` to the contained value.
+            An `Pointer` to the contained value.
         """
         with Zone(function_name="StaticOptional.unsafe_ptr()"):
             comptime assert (
                 Self.has_value
             ), "The value is not present. Use `has_value` to check first."
 
-            return UnsafePointer(to=rebind[Self.ElementType](self._value))
+            return Pointer(to=rebind[Self.ElementType](self._value))
 
     @always_inline
     def __bool__(self) -> Bool:

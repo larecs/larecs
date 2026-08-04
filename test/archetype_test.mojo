@@ -36,13 +36,13 @@ comptime tracked_mask = BitMask(0)
 struct LifecycleCounters(Movable):
     """Lifecycle operation counters for non-trivial component tests."""
 
-    var copy_counter: UnsafePointer[Int, MutUntrackedOrigin]
+    var copy_counter: Pointer[Int, MutUntrackedOrigin]
     """The number of copy initializations."""
 
-    var move_counter: UnsafePointer[Int, MutUntrackedOrigin]
+    var move_counter: Pointer[Int, MutUntrackedOrigin]
     """The number of move initializations."""
 
-    var del_counter: UnsafePointer[Int, MutUntrackedOrigin]
+    var del_counter: Pointer[Int, MutUntrackedOrigin]
     """The number of destructor calls."""
 
     def __init__(out self):
@@ -54,14 +54,14 @@ struct LifecycleCounters(Movable):
         self.move_counter.unsafe_write(0)
         self.del_counter.unsafe_write(0)
 
-    def __del__(deinit self):
+    def __deinit__(deinit self):
         """Destroys and frees the allocated lifecycle counters."""
         self.copy_counter.unsafe_deinit_pointee()
         self.move_counter.unsafe_deinit_pointee()
         self.del_counter.unsafe_deinit_pointee()
-        self.copy_counter.free()
-        self.move_counter.free()
-        self.del_counter.free()
+        self.copy_counter.unsafe_free()
+        self.move_counter.unsafe_free()
+        self.del_counter.unsafe_free()
 
     def component(ref self) -> TrackedComponent:
         """Creates a tracked component connected to these counters.
@@ -114,8 +114,8 @@ def init_tracked_component(
         component: The component value to move into the uninitialized row.
     """
     try:
-        (
-            archetype._storage.get_component_ptr[TrackedComponent]() + idx
+        archetype._storage.get_component_ptr[TrackedComponent]().unsafe_offset(
+            idx
         ).unsafe_write(component^)
     except:
         assert_unreachable(
@@ -203,22 +203,26 @@ def test_archetype_move() raises:
         FlexibleComponent[1](4.0, 5.0),
     )
 
-    storage_ptr_large = (
-        archetype._storage.get_component_ptr[LargerComponent]() + idx
-    )
-    storage_ptr_flex = (
-        archetype._storage.get_component_ptr[FlexibleComponent[1]]() + idx
-    )
+    storage_ptr_large = archetype._storage.get_component_ptr[
+        LargerComponent
+    ]().unsafe_offset(idx)
+    storage_ptr_flex = archetype._storage.get_component_ptr[
+        FlexibleComponent[1]
+    ]().unsafe_offset(idx)
 
     var archetype2 = archetype^
 
     assert_equal(
         storage_ptr_large,
-        archetype2._storage.get_component_ptr[LargerComponent]() + idx,
+        archetype2._storage.get_component_ptr[LargerComponent]().unsafe_offset(
+            idx
+        ),
     )
     assert_equal(
         storage_ptr_flex,
-        archetype2._storage.get_component_ptr[FlexibleComponent[1]]() + idx,
+        archetype2._storage.get_component_ptr[
+            FlexibleComponent[1]
+        ]().unsafe_offset(idx),
     )
     assert_equal(archetype2.get_component[LargerComponent](idx).x, 1.0)
     assert_equal(archetype2.get_component[FlexibleComponent[1]](idx).x, 4.0)
@@ -236,12 +240,20 @@ def test_archetype_copy() raises:
     var archetype2 = archetype.copy()
 
     assert_not_equal(
-        archetype._storage.get_component_ptr[LargerComponent]() + idx,
-        archetype2._storage.get_component_ptr[LargerComponent]() + idx,
+        archetype._storage.get_component_ptr[LargerComponent]().unsafe_offset(
+            idx
+        ),
+        archetype2._storage.get_component_ptr[LargerComponent]().unsafe_offset(
+            idx
+        ),
     )
     assert_not_equal(
-        archetype._storage.get_component_ptr[FlexibleComponent[1]]() + idx,
-        archetype2._storage.get_component_ptr[FlexibleComponent[1]]() + idx,
+        archetype._storage.get_component_ptr[
+            FlexibleComponent[1]
+        ]().unsafe_offset(idx),
+        archetype2._storage.get_component_ptr[
+            FlexibleComponent[1]
+        ]().unsafe_offset(idx),
     )
     assert_equal(archetype2.get_component[LargerComponent](idx).x, 1.0)
     assert_equal(archetype2.get_component[FlexibleComponent[1]](idx).x, 4.0)
@@ -446,9 +458,7 @@ def test_archetype_extend_from_archetype_unsafe_non_trivial_component() raises:
     var base_moves = counters.move_counter[]
     var base_dels = counters.del_counter[]
 
-    var start = destination.extend_from_archetype_unsafe(
-        UnsafePointer(to=source), 2
-    )
+    var start = destination.extend_from_archetype_unsafe(Pointer(to=source), 2)
 
     assert_equal(start, 0)
     assert_equal(len(destination), 2)

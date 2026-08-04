@@ -6,7 +6,7 @@ from tracy import Zone
 from .bitmask import BitMask
 
 
-comptime NodeDataType = KeyElement & Copyable & ImplicitlyDeletable
+comptime NodeDataType = KeyElement & Copyable & Deinitable
 """The trait that the data stored in the graph nodes must conform to."""
 
 
@@ -29,7 +29,7 @@ struct Node[DataType: NodeDataType](ImplicitlyCopyable):
     # The indices of the neighbouring nodes.
     # The node at index i difffers from the
     # current node by the i-th bit.
-    var neighbours: InlineArray[Int, 256]
+    var neighbours: Array[Int, 256]
     """Neighbour node indices keyed by the bit that differs."""
 
     # The mask of the node.
@@ -49,7 +49,7 @@ struct Node[DataType: NodeDataType](ImplicitlyCopyable):
             )
         ):
             self.value = value^
-            self.neighbours = InlineArray[Int, 256](fill=Self.null_index)
+            self.neighbours = Array[Int, 256](fill=Self.null_index)
             self.bit_mask = bit_mask
 
     def __init__(out self, *, copy: Self):
@@ -176,7 +176,7 @@ struct BitMaskGraph[
         size: Int
     ](
         mut self,
-        different_bits: InlineArray[Int, size],
+        different_bits: Array[Int, size],
         start_node_index: Int = 0,
     ) -> Int:
         """Returns the index of the node differing from the start node
@@ -197,7 +197,7 @@ struct BitMaskGraph[
         with Zone(
             function_name=(
                 "BitMaskGraph.get_node_index[size: Int](different_bits:"
-                " InlineArray[Int, size], start_node_index: Int)"
+                " Array[Int, size], start_node_index: Int)"
             )
         ):
             comptime assert 0 <= size, "Size must be non-negative"

@@ -24,7 +24,6 @@ Below, we need some advanced Mojo and
 Larecs🌲 features, which we can import as follows:
 
 ```mojo {doctest="guide_simd_apply" global=true}
-from memory import UnsafePointer
 from sys.info import simdwidthof, sizeof
 from larecs import World, MutableEntityAccessor
 ```
@@ -137,13 +136,13 @@ to be stored in contiguous memory, respectively.
 However, loading a components' individual
 attributes in a batch is an "unsafe" operation, as it requires
 us to specify the stride manually.
-Hence, we need `UnsafePointer`s to the components.
+Hence, we need `Pointer`s to the components.
 
 ```mojo {doctest="guide_simd_apply"}
-    pos_x_ptr = UnsafePointer(to=pos[].x)
-    pos_y_ptr = UnsafePointer(to=pos[].y)
-    vel_x_ptr = UnsafePointer(to=vel[].dx)
-    vel_y_ptr = UnsafePointer(to=vel[].dy)
+    pos_x_ptr = Pointer(to=pos[].x)
+    pos_y_ptr = Pointer(to=pos[].y)
+    vel_x_ptr = Pointer(to=vel[].dx)
+    vel_y_ptr = Pointer(to=vel[].dy)
 ```
 
 Now we can load `simd_width` values of `x` and `y`
