@@ -250,7 +250,7 @@ The remaining work is the work explicitly identified by `system_sketch.mojo`:
 
 - [ ] Add actual entity and component data storage. Use the current
       `archetype._ComponentTable` as a reference.
-- [ ] Add GPU execution only if the project later adopts Modular MAX. The first
+- [x] Add GPU execution only if the project later adopts Modular MAX. The first
       step would be initializing and storing a `DeviceContext`.
 - [ ] Restrict `EntityAccessor.get[T]()` to components included by the kernel's
       filter, including the `# MUST fail!` case.
