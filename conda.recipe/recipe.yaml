@@ -24,13 +24,13 @@ build:
 
 requirements:
   build:
-    - mojo-compiler >=1.0.0b3.dev2026080406, <2
+    - mojo-compiler ==1.0.0b3.dev2026080406, <2
     - mojo-tracy >= 0.6.0, <0.7.0
   host:
-    - mojo-compiler >=1.0.0b3.dev2026080406, <2
+    - mojo-compiler ==1.0.0b3.dev2026080406, <2
     - mojo-tracy >= 0.6.0, <0.7.0
   run:
-    - mojo-compiler >=1.0.0b3.dev2026080406, <2
+    - mojo-compiler ==1.0.0b3.dev2026080406, <2
     - mojo-tracy >= 0.6.0, <0.7.0
 
 tests:
