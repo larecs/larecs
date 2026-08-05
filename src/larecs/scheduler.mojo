@@ -104,7 +104,7 @@ def _finalize_system[
         S.finalize[*ComponentTypes](concrete_system, world)
 
 
-struct Scheduler[*ComponentTypes: ComponentType](Movable):
+struct Scheduler[*ComponentTypes: ComponentType](Copyable):
     """
     Manages the execution of systems in a world.
 
