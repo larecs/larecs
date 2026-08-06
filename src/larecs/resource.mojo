@@ -195,7 +195,9 @@ struct Resources(Copyable, Movable, Sized):
     def get[
         T: ResourceType
     ](ref self) raises -> ref[
-        origin_of(self._storage)._get_owned_interior["value"]
+        origin_of(self._storage[reflect[T].name()])._get_owned_interior[
+            "unsafe_box"
+        ]
     ] T:
         """Gets a resource.
 
@@ -207,7 +209,11 @@ struct Resources(Copyable, Movable, Sized):
         """
         with Zone(function_name="Resources.get[T: ResourceType]()"):
             try:
-                return self._storage[reflect[T].name()].unsafe_get[T]()
+                return Pointer(
+                    to=self._storage[reflect[T].name()].unsafe_get[T]()
+                )._get_ref_with_unsafe_interior_origin[
+                    "unsafe_box", origin_of(self._storage[reflect[T].name()])
+                ]()
             except DictKeyError:
                 raise Error(
                     t"The resource `{reflect[T].name()}` does not exist."
