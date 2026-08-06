@@ -190,10 +190,11 @@ struct Resources(Copyable, Movable, Sized):
             except DictKeyError:
                 raise Error(t"The resource `{id}` does not exist.")
 
+    @__unsafe_nested_origins_read_only
     @always_inline
     def get[
         T: ResourceType
-    ](mut self) raises -> ref[
+    ](ref self) raises -> ref[
         origin_of(self._storage)._get_owned_interior["value"]
     ] T:
         """Gets a resource.
