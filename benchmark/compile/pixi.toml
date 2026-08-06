@@ -11,6 +11,6 @@ compile-bench = "python compile_bench.py"
 [dependencies]
 python = ">=3.14.6,<3.15"
 matplotlib = ">=3.11.1,<4"
-mojo = ">=1.0.0b3.dev2026080406,<2"
-mojo-tracy = ">=0.6.0,<0.7"
+mojo = ">=1.1.0.dev2026080606,<2"
+mojo-tracy = ">=0.7.0,<0.8"
 tqdm = ">=4.70.0,<5"

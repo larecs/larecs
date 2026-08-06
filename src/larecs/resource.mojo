@@ -54,7 +54,7 @@ struct Resources(Copyable, Movable, Sized):
                 "Resources.add[*Ts: ResourceType](var *resources: *Ts)"
             )
         ):
-            conflicting_ids = List[StringSlice[ImmStaticOrigin]](capacity=0)
+            var conflicting_ids = List[StringSlice[ImmStaticOrigin]](capacity=0)
 
             comptime for idx in range(len(Ts)):
                 comptime id = reflect[Ts[idx]].name()
@@ -110,7 +110,7 @@ struct Resources(Copyable, Movable, Sized):
             )
         ):
             comptime if not add_if_not_found:
-                conflicting_ids = List[StringSlice[ImmStaticOrigin]]()
+                var conflicting_ids = List[StringSlice[ImmStaticOrigin]]()
 
                 comptime for idx in range(len(Ts)):
                     comptime id = reflect[Ts[idx]].name()

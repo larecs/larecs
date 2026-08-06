@@ -24,8 +24,8 @@ satellites = { cmd = "cd examples/satellites && pixi run satellites" }
 plots = { cmd = "cd benchmark/plots && pixi run plots" }
 
 [dependencies]
-mojo = ">=1.0.0b3.dev2026080406,<2"
-mojo-tracy = ">=0.6.0,<0.7"
+mojo = ">=1.1.0.dev2026080606,<2"
+mojo-tracy = ">=0.7.0,<0.8"
 
 [feature.test.dependencies]
 clang = ">=22.1.8,<23"

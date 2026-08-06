@@ -64,7 +64,7 @@ def test_component_manager_get_id_arr() raises:
     comptime assert constrain_components_unique[
         TestPosition, TestVelocity
     ](), "Component types not unique"
-    ids = component_manager.get_id_arr[TestPosition, TestVelocity]()
+    var ids = component_manager.get_id_arr[TestPosition, TestVelocity]()
 
     assert_equal(len(ids), 2)
     assert_equal(Int(ids[0]), 1)

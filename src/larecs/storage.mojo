@@ -209,13 +209,13 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             )
         ):
             comptime assert 0 <= size, "Size must be non-negative."
-            node_index = self._archetype_map.get_node_index(
+            var node_index = self._archetype_map.get_node_index(
                 components, start_node_index
             )
             if self._archetype_map.has_value(node_index):
                 return self._archetype_map[node_index]
 
-            archetype_index = len(self._archetypes)
+            var archetype_index = len(self._archetypes)
             self._archetypes.insert(
                 archetype_index,
                 Self.Archetype(
@@ -247,8 +247,8 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 if self._archetypes[i].get_mask() == mask:
                     return i
 
-            node_index = self._archetype_map.add_node(mask.copy())
-            archetype_index = len(self._archetypes)
+            var node_index = self._archetype_map.add_node(mask.copy())
+            var archetype_index = len(self._archetypes)
             self._archetypes.append(Self.Archetype(node_index, mask^))
             self._archetype_map[node_index] = archetype_index
             return archetype_index
@@ -317,6 +317,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
             comptime component_count = len(Ts)
 
+            var archetype_index: Int
             comptime if component_count:
                 archetype_index = self._get_archetype_index(
                     Self.component_manager.get_id_arr[*Ts]()
@@ -324,7 +325,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             else:
                 archetype_index = 0
 
-            entity_index = self._create_entities(archetype_index, 1)
+            var entity_index = self._create_entities(archetype_index, 1)
 
             comptime if component_count:
                 self._archetypes[archetype_index].init_components[*Ts](
@@ -435,6 +436,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
             comptime component_count = len(Ts)
 
+            var archetype_index: Int
             comptime if component_count:
                 archetype_index = self._get_archetype_index(
                     Self.component_manager.get_id_arr[*Ts]()
@@ -442,7 +444,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             else:
                 archetype_index = 0
 
-            first_index_in_archetype = self._create_entities(
+            var first_index_in_archetype = self._create_entities(
                 archetype_index, count
             )
 
@@ -484,8 +486,8 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         ):
             debug_assert(count > 0, "Count must be positive.")
             ref archetype = self._archetypes.unsafe_get(archetype_index)
-            arch_start_idx = archetype.extend(count, self._entity_pool)
-            entities_size = (
+            var arch_start_idx = archetype.extend(count, self._entity_pool)
+            var entities_size = (
                 archetype.get_entity(arch_start_idx + count - 1).get_id() + 1
             )
             if entities_size > len(self._entity_locations):
@@ -501,7 +503,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 )
 
             for i in range(arch_start_idx, arch_start_idx + count):
-                entity_id = archetype.get_entity(i).get_id()
+                var entity_id = archetype.get_entity(i).get_id()
                 self._entity_locations[
                     entity_id
                 ].archetype_index = archetype_index
@@ -525,7 +527,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         self._assert_alive(entity)
 
         with Zone(function_name="Storage.remove_entity(entity: Entity)"):
-            entity_loc = self._entity_locations[entity.get_id()]
+            var entity_loc = self._entity_locations[entity.get_id()]
             ref old_archetype = self._archetypes.unsafe_get(
                 entity_loc.archetype_index
             )
@@ -546,7 +548,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             #         self._listener.Notify(self, EntityEventEntity: entity, Removed: old_archetype.Mask, RemovedIDs: oldIds, OldRelation: oldRel, OldTarget: old_archetype.RelationTarget, EventTypes: bits)
             #         self.unlock(lock)
 
-            swapped = old_archetype.remove(entity_loc.entity_index)
+            var swapped = old_archetype.remove(entity_loc.entity_index)
 
             try:
                 self._entity_pool.recycle(entity)
@@ -557,7 +559,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 )
 
             if swapped:
-                swap_entity = old_archetype.get_entity(entity_loc.entity_index)
+                var swap_entity = old_archetype.get_entity(
+                    entity_loc.entity_index
+                )
                 self._entity_locations[
                     swap_entity.get_id()
                 ].entity_index = entity_loc.entity_index
@@ -679,7 +683,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         comptime assert Self.component_manager.contains_components[
             T
         ](), "Component type not in component manager"
-        entity_loc = self._entity_locations[entity.get_id()]
+        var entity_loc = self._entity_locations[entity.get_id()]
         self._assert_alive(entity)
 
         with Zone(
@@ -725,7 +729,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 T
             ](), "Component type not in component manager"
             self._assert_alive(entity)
-            entity_loc = self._entity_locations[entity.get_id()]
+            var entity_loc = self._entity_locations[entity.get_id()]
             self._archetypes.unsafe_get(
                 entity_loc.archetype_index
             ).set_components[T](entity_loc.entity_index, component^)
@@ -762,7 +766,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             ](), "Duplicate component types in set are not allowed."
 
             self._assert_alive(entity)
-            entity_loc = self._entity_locations[entity.get_id()]
+            var entity_loc = self._entity_locations[entity.get_id()]
             self._archetypes.unsafe_get(
                 entity_loc.archetype_index
             ).set_components[*Ts](entity_loc.entity_index, *components^)
@@ -1077,11 +1081,11 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             # therefore all pointers to the current memory space stay valid!
             self._archetypes.reserve(len(self._archetypes) + 1)
 
-            entity_loc = self._entity_locations[entity.get_id()]
+            var entity_loc = self._entity_locations[entity.get_id()]
 
-            old_archetype_idx = entity_loc.archetype_index
+            var old_archetype_idx = entity_loc.archetype_index
             ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
-            old_archetype_mask = old_archetype.get_mask()
+            var old_archetype_mask = old_archetype.get_mask()
 
             var runtime_add_ids = materialize[add_ids]()
             var runtime_remove_ids = materialize[remove_ids]()
@@ -1096,7 +1100,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                     )
 
             comptime if add_size:
-                compare_mask = old_archetype_mask
+                var compare_mask = old_archetype_mask
 
                 comptime if rem_size:
                     compare_mask.set(runtime_remove_ids, False)
@@ -1111,6 +1115,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             comptime ComponentIdsType = Array[ComponentId, add_size + rem_size]
             comptime assert 0 <= add_size + rem_size
 
+            var component_ids: ComponentIdsType
             comptime if add_size and rem_size:
                 comptime concatenated = concatenate_arrays(remove_ids, add_ids)
                 component_ids = materialize[concatenated]()
@@ -1123,13 +1128,13 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             else:
                 return
 
-            index_in_old_archetype = entity_loc.entity_index
-            new_archetype_idx = self._get_archetype_index(
+            var index_in_old_archetype = entity_loc.entity_index
+            var new_archetype_idx = self._get_archetype_index(
                 component_ids, old_archetype.get_node_index()
             )
             ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
             ref new_archetype = self._archetypes.unsafe_get(new_archetype_idx)
-            index_in_new_archetype = new_archetype.add_entity(entity)
+            var index_in_new_archetype = new_archetype.add_entity(entity)
 
             # Move component data from old archetype to new archetype.
             comptime for id in range(Self.component_manager.component_count):
@@ -1152,7 +1157,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 index_in_new_archetype, *add_components^
             )
 
-            swapped = old_archetype.remove(index_in_old_archetype)
+            var swapped = old_archetype.remove(index_in_old_archetype)
             if swapped:
                 var swap_entity = old_archetype.get_entity(
                     entity_loc.entity_index
@@ -1255,7 +1260,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                     for archetype in self._get_archetype_iterator(
                         query.mask, query.without_mask
                     ):
-                        archetype_mask = archetype.get_mask()
+                        var archetype_mask = archetype.get_mask()
 
                         comptime if rem_size:
                             archetype_mask.set(runtime_remove_ids, False)
@@ -1284,6 +1289,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                             )
                         )
 
+            var component_ids: ComponentIdsType
             comptime if add_size and rem_size:
                 comptime concatenated = concatenate_arrays(remove_ids, add_ids)
                 component_ids = materialize[concatenated]()
@@ -1310,10 +1316,10 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             self._assert_unlocked()
 
             comptime _2kb_of_UInt_or_Int = (1024 * 2) // size_of[UInt]()
-            arch_start_idcs = List[Int](
+            var arch_start_idcs = List[Int](
                 capacity=min(len(self._archetypes), _2kb_of_UInt_or_Int)
             )
-            changed_archetype_idcs = List[Int](
+            var changed_archetype_idcs = List[Int](
                 capacity=min(len(self._archetypes), _2kb_of_UInt_or_Int)
             )
 
@@ -1327,14 +1333,14 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                     #    and insert new component data for moved entities.
                     # 2. If an archetype with the new component combination does not exist yet,
                     #    create new archetype B = A.different_by(component_ids) and move entities and component data from A to B.
-                    old_node_index = old_archetype1.get_node_index()
-                    new_archetype_idx = self._get_archetype_index[
+                    var old_node_index = old_archetype1.get_node_index()
+                    var new_archetype_idx = self._get_archetype_index[
                         add_size + rem_size
                     ](component_ids, old_node_index)
 
                     # We need to update the pointer to the old archetype, because the `self._archetypes` list may have been
                     # resized during the call to `_get_archetype_index`.
-                    old_archetype_idx = self._archetype_map[old_node_index]
+                    var old_archetype_idx = self._archetype_map[old_node_index]
                     ref old_archetype = self._archetypes.unsafe_get(
                         index(old_archetype_idx)
                     )
@@ -1345,7 +1351,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
                     # TODO: Optimization: If `new_archetype` is empty we can just shallow-copy the _ComponentTable of `old_archetype` to `new_archetype` and reinit `old_archetype`.
 
-                    old_archetype_size = len(old_archetype)
+                    var old_archetype_size = len(old_archetype)
                     if old_archetype_idx == new_archetype_idx:
                         arch_start_idcs.append(0)
                         changed_archetype_idcs.append(new_archetype_idx)
@@ -1359,11 +1365,13 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                             )
                         continue
 
-                    old_archetype_unsafe = Pointer(
+                    var old_archetype_unsafe = Pointer(
                         to=old_archetype
                     ).as_unsafe_any_origin()
-                    arch_start_idx = new_archetype.extend_from_archetype_unsafe(
-                        old_archetype_unsafe, old_archetype_size
+                    var arch_start_idx = (
+                        new_archetype.extend_from_archetype_unsafe(
+                            old_archetype_unsafe, old_archetype_size
+                        )
                     )
                     arch_start_idcs.append(arch_start_idx)
                     changed_archetype_idcs.append(new_archetype_idx)
@@ -1378,7 +1386,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
                     # Update entity index mappings for the moved entity range.
                     for entity_idx in range(old_archetype_size):
-                        entity = old_archetype.get_entity(entity_idx)
+                        var entity = old_archetype.get_entity(entity_idx)
                         self._entity_locations[
                             entity.get_id()
                         ] = EntityLocation(

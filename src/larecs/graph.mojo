@@ -158,9 +158,10 @@ struct BitMaskGraph[
             check_bounds(from_node_index, len(self._nodes))
             check_bounds(changed_bit, BitMask.total_bits)
 
-            new_mask = self._nodes[from_node_index].bit_mask
+            var new_mask = self._nodes[from_node_index].bit_mask
             new_mask.flip(changed_bit)
-            optional_to_index = self._map.get(new_mask)
+            var optional_to_index = self._map.get(new_mask)
+            var to_node_index: Int
             if optional_to_index:
                 to_node_index = optional_to_index.value()
             else:

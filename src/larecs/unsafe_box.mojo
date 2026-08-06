@@ -82,7 +82,7 @@ def _copy_initializer[
                 .unsafe_origin_cast[MutUntrackedOrigin]()
             }
         else:
-            ptr = alloc[T](1)
+            var ptr = alloc[T](1)
             ptr.unsafe_write(
                 copy=existing_box.unsafe_value().unsafe_bitcast[T]()[]
             )

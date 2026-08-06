@@ -18,7 +18,7 @@ struct Resource3(ResourceType):
 
 
 def test_reseource_init() raises:
-    resources = Resources()
+    var resources = Resources()
     with assert_raises():
         _ = resources.get[Resource1]()
         _ = resources.get[Resource2]()
@@ -39,7 +39,7 @@ def test_reseource_init() raises:
 
 
 def test_resources_add_set() raises:
-    resources = Resources()
+    var resources = Resources()
 
     with assert_raises():
         resources.set(Resource1(10))
@@ -64,7 +64,7 @@ def test_resources_add_set() raises:
 
 
 def test_reseource_has() raises:
-    resources = Resources()
+    var resources = Resources()
 
     assert_false(resources.has[Resource1]())
     assert_false(resources.has[Resource2]())
@@ -77,7 +77,7 @@ def test_reseource_has() raises:
 
 
 def test_resources_get() raises:
-    resources = Resources()
+    var resources = Resources()
     resources.add(Resource1(value=10), Resource2(value=20))
 
     assert_equal(resources.get[Resource1]().value, 10)
@@ -103,7 +103,7 @@ def test_resources_get() raises:
 
 
 def test_resource_remove() raises:
-    resources = Resources()
+    var resources = Resources()
     resources.add(Resource1(10), Resource2(20))
     resources.remove[Resource1]()
     with assert_raises():
