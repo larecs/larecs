@@ -9,6 +9,27 @@ comptime ResourceType = Copyable & Deinitable
 """The trait that resources must conform to."""
 
 
+@always_inline("nodebug")
+def _as_kgen_string[
+    value: StaticString, *extra: StaticString
+]() -> __mlir_type.`!kgen.string`:
+    """Reify compile-time static strings as one raw MLIR string."""
+    return __mlir_attr[
+        `#kgen.param.expr<data_to_str,`,
+        value,
+        `,`,
+        extra.values,
+        `> : !kgen.string`,
+    ]
+
+
+def _to_literal[
+    value: StaticString
+]() -> StringLiteral[_as_kgen_string[value]()]:
+    """Convert a compile-time StaticString into its StringLiteral type."""
+    return StringLiteral[_as_kgen_string[value]()]()
+
+
 @fieldwise_init
 struct Resources(Copyable, Movable, Sized):
     """Manages resources."""
@@ -194,7 +215,9 @@ struct Resources(Copyable, Movable, Sized):
     def get[
         T: ResourceType
     ](mut self) raises -> ref[
-        origin_of(self._storage)._get_owned_interior["value"]
+        origin_of(self._storage)._get_owned_interior[
+            _to_literal[reflect[T].name()]()
+        ]
     ] T:
         """Gets a resource.
 
