@@ -95,6 +95,12 @@ def test_resources_get() raises:
     resource.value = 50
     assert_equal(resources.get[Resource1]().value, 50)
 
+    ref res1 = resources.get[Resource1]()
+    ref res2 = resources.get[Resource2]()
+
+    assert_equal(res1.value, 50)
+    assert_equal(res2.value, 40)
+
 
 def test_resource_remove() raises:
     resources = Resources()
