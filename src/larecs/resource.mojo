@@ -211,12 +211,13 @@ struct Resources(Copyable, Movable, Sized):
             except DictKeyError:
                 raise Error(t"The resource `{id}` does not exist.")
 
+    @__unsafe_nested_origins_read_only
     @always_inline
     def get[
         T: ResourceType
-    ](mut self) raises -> ref[
-        origin_of(self._storage)._get_owned_interior[
-            _to_literal[reflect[T].name()]()
+    ](ref self) raises -> ref[
+        origin_of(self._storage[reflect[T].name()])._get_owned_interior[
+            "unsafe_box"
         ]
     ] T:
         """Gets a resource.
@@ -229,7 +230,11 @@ struct Resources(Copyable, Movable, Sized):
         """
         with Zone(function_name="Resources.get[T: ResourceType]()"):
             try:
-                return self._storage[reflect[T].name()].unsafe_get[T]()
+                return Pointer(
+                    to=self._storage[reflect[T].name()].unsafe_get[T]()
+                )._get_ref_with_unsafe_interior_origin[
+                    "unsafe_box", origin_of(self._storage[reflect[T].name()])
+                ]()
             except DictKeyError:
                 raise Error(
                     t"The resource `{reflect[T].name()}` does not exist."
