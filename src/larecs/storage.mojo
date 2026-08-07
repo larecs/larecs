@@ -659,9 +659,10 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             ).has_components[T]()
 
     @always_inline
+    @__unsafe_nested_origins_read_only
     def get[
         T: ComponentType
-    ](mut self, entity: Entity) raises LarecsError -> ref[
+    ](ref self, entity: Entity) raises LarecsError -> ref[
         origin_of(
             self._archetypes.unsafe_get(
                 self._entity_locations[entity.get_id()].archetype_index
@@ -675,11 +676,14 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
         Raises:
             LarecsError: If the entity is not alive or does not have the component.
+
+        Returns:
+            A reference to the component.
         """
         comptime assert Self.component_manager.contains_components[
             T
         ](), "Component type not in component manager"
-        entity_loc = self._entity_locations[entity.get_id()]
+        var entity_loc = self._entity_locations[entity.get_id()]
         self._assert_alive(entity)
 
         with Zone(

@@ -195,6 +195,25 @@ def test_entity_get() raises:
     assert_equal(world.storage.get[Position](entity).x, 456)
 
 
+def test_storage_get_keeps_different_component_references_alive() raises:
+    """Keeps references to two components from Storage.get alive together."""
+    var world = SmallWorld()
+    var entity = world.storage.add_entity(
+        Position(1.0, 2.0), Velocity(0.1, 0.2)
+    )
+
+    ref position = world.storage.get[Position](entity)
+    ref velocity = world.storage.get[Velocity](entity)
+
+    position.x += velocity.dx
+    position.y += velocity.dy
+
+    assert_equal(position.x, 1.1)
+    assert_equal(position.y, 2.2)
+    assert_equal(velocity.dx, 0.1)
+    assert_equal(velocity.dy, 0.2)
+
+
 def test_get_archetype_index() raises:
     world = SmallWorld()
     pos = Position(12, 654)
