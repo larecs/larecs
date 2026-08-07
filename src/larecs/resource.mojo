@@ -195,9 +195,9 @@ struct Resources(Copyable, Movable, Sized):
     def get[
         T: ResourceType
     ](ref self) raises -> ref[
-        origin_of(self._storage[reflect[T].name()])._get_owned_interior[
-            "unsafe_box"
-        ]
+        origin_of(self._storage)
+        ._get_owned_interior["value"]
+        ._get_owned_interior["unsafe_box"]
     ] T:
         """Gets a resource.
 
@@ -212,7 +212,8 @@ struct Resources(Copyable, Movable, Sized):
                 return Pointer(
                     to=self._storage[reflect[T].name()].unsafe_get[T]()
                 )._get_ref_with_unsafe_interior_origin[
-                    "unsafe_box", origin_of(self._storage[reflect[T].name()])
+                    "unsafe_box",
+                    origin_of(self._storage)._get_owned_interior["value"],
                 ]()
             except DictKeyError:
                 raise Error(
