@@ -1145,7 +1145,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                     if not new_archetype.has_components[T]():
                         continue
 
-                new_archetype.set_components[T](
+                new_archetype.init_components[T](
                     index_in_new_archetype,
                     old_archetype.get_component[T](
                         index_in_old_archetype
