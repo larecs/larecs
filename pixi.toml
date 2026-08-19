@@ -1,10 +1,14 @@
 [workspace]
 authors = [
-    "Samuel M. Fischer <samufi@web.de>",
-    "Martin Lange <martin_lange_@gmx.net>",
-    "Mose Schmiedel <mose@schmiednet.de>",
+  "Samuel M. Fischer <samufi@web.de>",
+  "Martin Lange <martin_lange_@gmx.net>",
+  "Mose Schmiedel <mose@schmiednet.de>",
 ]
-channels = ["conda-forge", "https://repo.prefix.dev/max-nightly", "https://prefix.dev/tree-d"]
+channels = [
+  "conda-forge",
+  "https://repo.prefix.dev/max",
+  "https://prefix.dev/tree-d",
+]
 description = "Larecs🌲 is a performance-oriented archetype-based ECS for Mojo🔥."
 name = "larecs"
 platforms = ["linux-64", "osx-arm64"]
@@ -24,8 +28,8 @@ satellites = { cmd = "cd examples/satellites && pixi run satellites" }
 plots = { cmd = "cd benchmark/plots && pixi run plots" }
 
 [dependencies]
-mojo = ">=1.1.0.dev2026080606,<2"
-mojo-tracy = ">=0.7.0,<0.8"
+mojo = ">=1.0.0b2,<2"
+mojo-tracy = ">=1.0.0,<2"
 
 [feature.test.dependencies]
 clang = ">=22.1.8,<23"
@@ -43,13 +47,17 @@ sysroot_linux-64 = ">=2.34,<3"
 test = ["test"] # An environment covering the "test" feature
 
 [package]
-name = {workspace = true}
-version = {workspace = true}
+name = { workspace = true }
+version = { workspace = true }
 
 [package.build.backend]
 name = "pixi-build-rattler-build"
 version = "*"
-channels = ["conda-forge", "https://repo.prefix.dev/max-nightly", "https://prefix.dev/tree-d"]
+channels = [
+  "conda-forge",
+  "https://repo.prefix.dev/max-nightly",
+  "https://prefix.dev/tree-d",
+]
 
 [package.build.config]
 recipe = "conda.recipe/recipe.yaml"

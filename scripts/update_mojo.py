@@ -19,7 +19,7 @@ MOJO_VERSION_FILES = [
 ]
 
 MOJO_SEARCH_CHANNELS = [
-    "https://repo.prefix.dev/max-nightly",
+    "https://repo.prefix.dev/max",
     "conda-forge",
 ]
 

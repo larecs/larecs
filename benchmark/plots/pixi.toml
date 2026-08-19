@@ -1,6 +1,6 @@
 [workspace]
 authors = ["samufi <samufi@web.de>", "Martin Lange <martin_lange_@gmx.net>"]
-channels = ["conda-forge", "https://repo.prefix.dev/max-nightly", "https://prefix.dev/tree-d"]
+channels = ["conda-forge", "https://repo.prefix.dev/max", "https://prefix.dev/tree-d"]
 description = "Benchmarking plots for Larecs🌲"
 name = "plots"
 platforms = ["linux-64", "osx-arm64"]
@@ -10,8 +10,8 @@ version = "0.4.0"
 plots = { cmd = "mojo run -I ../../src -Xlinker -L\"$CONDA_PREFIX/lib\" -Xlinker -lmojotracy src/aos.mojo", default-environment = "default" }
 
 [dependencies]
-mojo = ">=1.1.0.dev2026080606,<2"
+mojo = ">=1.0.0b2,<2"
 python = "==3.12"
 matplotlib = ">=3.10.0,<4"
 pandas = ">=2.2"
-mojo-tracy = ">=0.7.0,<0.8"
+mojo-tracy = ">=1.0.0,<2"
