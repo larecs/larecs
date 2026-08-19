@@ -190,15 +190,10 @@ struct Resources(Copyable, Movable, Sized):
             except DictKeyError:
                 raise Error(t"The resource `{id}` does not exist.")
 
-    @__unsafe_nested_origins_read_only
     @always_inline
     def get[
         T: ResourceType
-    ](ref self) raises -> ref[
-        origin_of(self._storage)
-        ._get_owned_interior["value"]
-        ._get_owned_interior["unsafe_box"]
-    ] T:
+    ](ref self) raises -> ref[UnsafeAnyOrigin[mut=origin_of(self).mut]] T:
         """Gets a resource.
 
         Parameters:
@@ -211,10 +206,7 @@ struct Resources(Copyable, Movable, Sized):
             try:
                 return Pointer(
                     to=self._storage[reflect[T].name()].unsafe_get[T]()
-                )._get_ref_with_unsafe_interior_origin[
-                    "unsafe_box",
-                    origin_of(self._storage)._get_owned_interior["value"],
-                ]()
+                ).as_unsafe_any_origin()[]
             except DictKeyError:
                 raise Error(
                     t"The resource `{reflect[T].name()}` does not exist."

@@ -70,11 +70,10 @@ def test_resources_add_set() raises:
 
     resources.set[Resource2](Resource2(res1.value))
 
-    ref new_res2 = resources.get[Resource2]()
-    assert_equal(new_res2.value, 50)
+    assert_equal(resources.get[Resource2]().value, 50)
 
 
-def test_reseource_has() raises:
+def test_resource_has() raises:
     var resources = Resources()
 
     assert_false(resources.has[Resource1]())
