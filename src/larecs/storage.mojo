@@ -662,6 +662,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 index(self._entity_locations[entity.get_id()].archetype_index)
             ).has_components[T]()
 
+    @__unsafe_nested_origins_read_only
     @always_inline
     def get[
         T: ComponentType
