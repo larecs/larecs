@@ -49,11 +49,8 @@ struct Entity(
             id: The entity ID.
             generation: The entity generation.
         """
-        with Zone(
-            function_name="Entity.__init__(id: EntityId, generation: UInt32)"
-        ):
-            self._id = id
-            self._generation = generation
+        self._id = id
+        self._generation = generation
 
     @implicit
     @always_inline
