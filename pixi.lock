@@ -83,7 +83,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/traitlets-5.16.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-1.0.0-hb0f4dca_0.conda
+      - conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-1.0.0-hb0f4dca_1.conda
       - conda: https://repo.prefix.dev/max/linux-64/mojo-1.0.0-release.conda
       - conda: https://repo.prefix.dev/max/linux-64/mojo-compiler-1.0.0-release.conda
       - conda: https://repo.prefix.dev/max/noarch/mblack-26.5.0-release.conda
@@ -225,7 +225,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda: https://prefix.dev/tree-d/linux-64/mogo-tester-2.3.3-hb0f4dca_0.conda
-      - conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-1.0.0-hb0f4dca_0.conda
+      - conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-1.0.0-hb0f4dca_1.conda
       - conda: https://repo.prefix.dev/max/linux-64/mojo-1.0.0-release.conda
       - conda: https://repo.prefix.dev/max/linux-64/mojo-compiler-1.0.0-release.conda
       - conda: https://repo.prefix.dev/max/noarch/mblack-26.5.0-release.conda
@@ -2211,21 +2211,21 @@ packages:
   run_exports: {}
   size: 1165611
   timestamp: 1781529734370
-- conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-1.0.0-hb0f4dca_0.conda
-  sha256: b1cd7e940f9afd6945663592cdebbd8a3a1eef716e1add3456fba2dc97299bdc
-  md5: 8ddc1a9a509cbdd24ff78191e204100f
+- conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-1.0.0-hb0f4dca_1.conda
+  sha256: e58d2f8a53a1ce06af062f0cb956e2097dbf88a1d971fb894f52e1055102e1da
+  md5: 1901c2447196471df2acc633d60c1981
   depends:
   - mojo-compiler >=1.0.0,<2
-  - libstdcxx >=16
   - libgcc >=16
+  - libstdcxx >=16
   - dbus >=1.16.2,<2.0a0
   - wayland >=1.26.0,<2.0a0
   - libegl >=1.7.0,<2.0a0
   - libxkbcommon >=1.13.2,<2.0a0
   license: MIT
   run_exports: {}
-  size: 7130795
-  timestamp: 1786572102761
+  size: 7129439
+  timestamp: 1787134008816
 - conda: https://prefix.dev/tree-d/osx-arm64/mogo-tester-2.3.3-h60d57d3_0.conda
   sha256: 81ae7a4ef02c3cf36c49df57fbc25e6ee6a2e4cb1aa09a79a28218ff9a82445f
   md5: 1f873fdc394819b331f2a910138c15e0
