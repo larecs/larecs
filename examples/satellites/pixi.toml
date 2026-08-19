@@ -1,6 +1,6 @@
 [workspace]
 authors = ["samufi <samufi@web.de>"]
-channels = ["conda-forge", "https://repo.prefix.dev/max-nightly", "https://prefix.dev/tree-d"]
+channels = ["conda-forge", "https://repo.prefix.dev/max", "https://prefix.dev/tree-d"]
 description = "Example for the usage of the larecs ECS"
 name = "satellites"
 platforms = ["linux-64", "osx-arm64"]

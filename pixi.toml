@@ -55,7 +55,7 @@ name = "pixi-build-rattler-build"
 version = "*"
 channels = [
   "conda-forge",
-  "https://repo.prefix.dev/max-nightly",
+  "https://repo.prefix.dev/max",
   "https://prefix.dev/tree-d",
 ]
 
