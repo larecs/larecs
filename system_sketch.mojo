@@ -804,11 +804,13 @@ struct Move(System):
 
 def _update_system[
     S: System, *ComponentTypes: ComponentType
-](mut system: UnsafeBox, mut world: _World[*ComponentTypes]) raises:
-    """Updates one type-erased system with a borrowed GPU world context."""
+](
+    mut system: UnsafeBox, ref[MutUntrackedOrigin] world: _World[*ComponentTypes]
+) raises:
+    """Updates one type-erased system with a mutable borrowed world reference."""
     with Zone(function_name=String(t"{reflect[S].name()}.update()")):
         ref concrete_system = system.unsafe_get[S]()
-        var context = Context[origin_of(world), *ComponentTypes](world)
+        var context = Context[MutUntrackedOrigin, *ComponentTypes](world)
         S.update[*ComponentTypes](concrete_system, context)
 
 
@@ -816,7 +818,7 @@ def _update_system[
 struct Scheduler[*WorldComponentTypes: ComponentType]:
     comptime World = _World[*Self.WorldComponentTypes]
     comptime FunctionType = def(
-        mut system: UnsafeBox, mut world: Self.World
+        mut system: UnsafeBox, ref[MutUntrackedOrigin] world: Self.World
     ) thin raises
 
     comptime _system_index = 0
@@ -840,8 +842,11 @@ struct Scheduler[*WorldComponentTypes: ComponentType]:
         """Runs all registered systems for the requested number of steps."""
         for _ in range(steps):
             for ref system_info in self._systems:
+                var world_ptr = Pointer(to=self.world).unsafe_origin_cast[
+                    MutUntrackedOrigin
+                ]()
                 system_info[Self._update_index](
-                    system_info[Self._system_index], self.world
+                    system_info[Self._system_index], world_ptr[]
                 )
         frame_mark()
 
@@ -856,15 +861,18 @@ def main() raises:
         scheduler.add_system(Move())
         scheduler.update()
 
+        # Capture the host value before copying the device buffer. The device
+        # copy returns a separate list and must not be used as a host-storage
+        # synchronization operation.
+        var host_position_ptr = scheduler.world.host_storage.get_component_ptr[
+            Position
+        ]()
+        var host_position = host_position_ptr[unsafe_offset=0].copy()
+        print(t"Host position[0] = ({ host_position.x }, { host_position.y })")
+
         var gpu_positions = scheduler.world.device_storage.copy_to_host[
             Position
         ]()
-
-        ref host_position = scheduler.world.host_storage.get_component_ptr[
-            Position
-        ]()[unsafe_offset=0]
-
-        print(t"Host position[0] = ({ host_position.x }, { host_position.y })")
         print(
             t"GPU position[0] = ({ gpu_positions[0].x },"
             t" { gpu_positions[0].y })"
