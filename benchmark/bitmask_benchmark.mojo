@@ -48,7 +48,9 @@ def benchmark_bitmask_flip_1_000_000(mut bencher: Bencher):
 
 def benchmark_bitmask_contains_1_000_000(mut bencher: Bencher):
     var mask = get_random_bitmask()
-    var val = BitMask(Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1))))
+    var val = BitMask(
+        Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1)))
+    )
 
     @always_inline
     def bench_fn() {mut}:
@@ -60,7 +62,9 @@ def benchmark_bitmask_contains_1_000_000(mut bencher: Bencher):
 
 def benchmark_bitmask_contains_any_1_000_000(mut bencher: Bencher):
     var mask = get_random_bitmask()
-    var val = BitMask(Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1))))
+    var val = BitMask(
+        Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1)))
+    )
 
     @always_inline
     def bench_fn() {mut}:
