@@ -15,24 +15,24 @@ def update(mut world: World, step: Float64) raises:
 
 
 def main() raises:
-    world = World[Position, Velocity]()
+    var world = World[Position, Velocity]()
 
     world.resources.add(Parameters(dt=0.1, mass=5.972e24))
 
     add_satellites(world, 300)
-    plt = Python.import_module("matplotlib.pyplot")
-    fig = plt.figure()
-    ax = plt.gca()
+    var plt = Python.import_module("matplotlib.pyplot")
+    var fig = plt.figure()
+    var ax = plt.gca()
     plt.show(block=False)
 
     for _ in range(1000):
         # Update every 600s = 10 minutes
         update(world, 600)
-        data = position_to_numpy(world)
+        var data = position_to_numpy(world)
 
         ax.clear()
         ax.scatter(data.T[0], data.T[1], s=0.1)
-        scale = 1e8
+        var scale = 1e8
         ax.set_xlim(Python.tuple(-scale, scale))
         ax.set_ylim(Python.tuple(-scale, scale))
         fig.canvas.draw()
