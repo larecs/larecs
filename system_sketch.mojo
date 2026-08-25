@@ -529,6 +529,7 @@ struct _DeviceComponentStorage[*ComponentTypes: ComponentType](Movable):
             gpu_value.unsafe_ptr().unsafe_bitcast[Scalar[device_type.dtype]]()[]
         )
         self._device_context.synchronize()
+        self._length = self._capacity
 
     def copy_to_host[T: ComponentType](self, out data: List[T]) raises:
         comptime id = Self.component_manager.get_id[T]()
@@ -560,10 +561,14 @@ struct _World[*WorldTs: ComponentType]:
         """Creates and initializes the demo component columns on the GPU."""
         self.device = DeviceContext()
 
-        self.device_storage = Self.device_storage_type(self.device)
+        # This demo owns one row for every logical entity. Keep the backing
+        # allocations and the logical lengths in sync with that row count.
+        self.device_storage = Self.device_storage_type(
+            self.device, capacity=entity_count
+        )
         self.device.synchronize()
 
-        self.host_storage = Self.host_storage_type()
+        self.host_storage = Self.host_storage_type(capacity=entity_count)
 
         self.host_storage.init_component[Position]()
         self.host_storage.init_component[Velocity]()
@@ -575,6 +580,7 @@ struct _World[*WorldTs: ComponentType]:
             var y = Float32(-i)
             host_position[unsafe_offset=i] = Position(x=x, y=y)
             host_velocity[unsafe_offset=i] = Velocity(dx=2.0, dy=-2.0)
+        self.host_storage._length = entity_count
 
 
 @fieldwise_init
@@ -622,6 +628,7 @@ struct EntityAccessorIterator(Iterator, Movable):
     comptime Element = EntityAccessor
 
     var _entity: EntityAccessor
+    var _length: Int32
     var _done: Bool
     var _one_entity: Bool
 
@@ -631,6 +638,7 @@ struct EntityAccessorIterator(Iterator, Movable):
             _position=context.position,
             _velocity=context.velocity,
         )
+        self._length = context.length
         self._done = False
         self._one_entity = True
 
@@ -638,7 +646,7 @@ struct EntityAccessorIterator(Iterator, Movable):
         return self^
 
     def __next__(mut self) raises StopIteration -> Self.Element:
-        if self._done or self._entity.id >= entity_count:
+        if self._done or self._entity.id >= self._length:
             raise StopIteration()
         var entity = self._entity.copy()
         if self._one_entity:
@@ -650,6 +658,7 @@ struct EntityAccessorIterator(Iterator, Movable):
 
 @fieldwise_init
 struct KernelContext(Copyable, RegisterPassable):
+    var length: Int32
     var position: Pointer[UInt8, MutUntrackedOrigin]
     var velocity: Pointer[UInt8, MutUntrackedOrigin]
 
@@ -668,6 +677,7 @@ struct HostKernelContext(Copyable, DevicePassable, RegisterPassable):
         """Returns the host type name used in device diagnostics."""
         return "KernelContext"
 
+    var length: Int32
     var position: DevicePointer[
         mut=True, dtype=DType.uint8, origin=MutUntrackedOrigin
     ]
@@ -711,6 +721,7 @@ struct Context[
         """Runs a system function over generic host component columns."""
         comptime if on_gpu:
             var kernel_context = HostKernelContext(
+                length=Int32(self._world[].device_storage._length),
                 position=rebind[
                     DevicePointer[
                         mut=True, dtype=DType.uint8, origin=MutUntrackedOrigin
@@ -746,6 +757,7 @@ struct Context[
             self._world[].device.synchronize()
         else:
             var kernel_context = KernelContext(
+                length=Int32(self._world[].host_storage._length),
                 position=self._world[].host_storage.get_component_bytes[
                     Position
                 ](),
