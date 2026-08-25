@@ -18,7 +18,7 @@ def prevent_inlining_add_remove_batch() raises:
 def benchmark_add_remove_1_comp_batch_1_000_000(
     mut bencher: Bencher,
 ):
-    world = SmallWorld()
+    var world = SmallWorld()
     try:
         # create 1_000_000 entities that initially do not have FlexibleComponent[1]
         _ = world.storage.add_entities(Position(1.0, 2.0), count=1_000_000)
@@ -45,7 +45,7 @@ def benchmark_add_remove_1_comp_batch_1_000_000(
 def benchmark_add_remove_1_comp_1_000_batch_1_000(
     mut bencher: Bencher,
 ):
-    world = SmallWorld()
+    var world = SmallWorld()
 
     try:
         # create 1_000 entities that initially do not have FlexibleComponent[1]
@@ -75,7 +75,7 @@ def benchmark_add_remove_1_comp_1_000_batch_1_000(
 
 
 def run_all_world_component_single_batch_benchmarks() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     run_all_world_component_single_batch_benchmarks(bench)
     bench.dump_report()
 

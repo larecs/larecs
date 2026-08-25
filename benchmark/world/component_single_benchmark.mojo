@@ -5,8 +5,8 @@ from larecs.entity import Entity
 
 
 def _add_remove_1_comp_workload() raises:
-    world = SmallWorld()
-    entities = List[Entity]()
+    var world = SmallWorld()
+    var entities = List[Entity]()
     for _ in range(1000):
         entities.append(
             world.storage.add_entity(FlexibleComponent[0](1.0, 2.0))
@@ -36,16 +36,16 @@ def benchmark_add_remove_1_comp_1_000_000(
 
 
 def prevent_inlining_add_remove() raises:
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    world = SmallWorld()
-    entity = world.storage.add_entity(pos)
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
+    var entity = world.storage.add_entity(pos)
     world.storage.add(entity, vel)
     world.storage.remove[Velocity](entity)
 
 
 def run_all_world_component_single_benchmarks() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     run_all_world_component_single_benchmarks(bench)
     bench.dump_report()
 
