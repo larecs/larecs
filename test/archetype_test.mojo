@@ -1,5 +1,6 @@
 from std.testing import *
 from std.sys.info import size_of
+from std.memory import alloc, Layout, Allocation
 
 from larecs.archetype import Archetype as _Archetype
 from larecs.bitmask import BitMask
@@ -27,7 +28,7 @@ comptime Archetype = _Archetype[
 comptime mask2 = BitMask(1, 2)
 comptime mask3 = BitMask(1, 2, 3)
 comptime TrackedComponent = MemTestStruct[
-    MutUntrackedOrigin, MutUntrackedOrigin, MutUntrackedOrigin
+    MutUnsafeAnyOrigin, MutUnsafeAnyOrigin, MutUnsafeAnyOrigin
 ]
 comptime NonTrivialArchetype = _Archetype[TrackedComponent]
 comptime tracked_mask = BitMask(0)
@@ -36,32 +37,44 @@ comptime tracked_mask = BitMask(0)
 struct LifecycleCounters(Movable):
     """Lifecycle operation counters for non-trivial component tests."""
 
-    var copy_counter: Pointer[Int, MutUntrackedOrigin]
+    var _copy_counter: Allocation[Int]
     """The number of copy initializations."""
 
-    var move_counter: Pointer[Int, MutUntrackedOrigin]
+    var _move_counter: Allocation[Int]
     """The number of move initializations."""
 
-    var del_counter: Pointer[Int, MutUntrackedOrigin]
+    var _del_counter: Allocation[Int]
     """The number of destructor calls."""
 
     def __init__(out self):
         """Initializes copy, move, and delete counters to zero."""
-        self.copy_counter = alloc[Int](1)
-        self.move_counter = alloc[Int](1)
-        self.del_counter = alloc[Int](1)
-        self.copy_counter.unsafe_write(0)
-        self.move_counter.unsafe_write(0)
-        self.del_counter.unsafe_write(0)
+        self._copy_counter = alloc(Layout[Int].single())
+        self._move_counter = alloc(Layout[Int].single())
+        self._del_counter = alloc(Layout[Int].single())
+        self._copy_counter.unsafe_ptr().unsafe_write(0)
+        self._move_counter.unsafe_ptr().unsafe_write(0)
+        self._del_counter.unsafe_ptr().unsafe_write(0)
 
     def __deinit__(deinit self):
         """Destroys and frees the allocated lifecycle counters."""
-        self.copy_counter.unsafe_deinit_pointee()
-        self.move_counter.unsafe_deinit_pointee()
-        self.del_counter.unsafe_deinit_pointee()
-        self.copy_counter.unsafe_free()
-        self.move_counter.unsafe_free()
-        self.del_counter.unsafe_free()
+        self._copy_counter.unsafe_ptr().unsafe_deinit_pointee()
+        self._move_counter.unsafe_ptr().unsafe_deinit_pointee()
+        self._del_counter.unsafe_ptr().unsafe_deinit_pointee()
+        dealloc(self._copy_counter^)
+        dealloc(self._move_counter^)
+        dealloc(self._del_counter^)
+
+    def copy_counter(ref self) -> Int:
+        """Returns the current copy counter value."""
+        return self._copy_counter.unsafe_ptr()[]
+
+    def move_counter(ref self) -> Int:
+        """Returns the current move counter value."""
+        return self._move_counter.unsafe_ptr()[]
+
+    def del_counter(ref self) -> Int:
+        """Returns the current delete counter value."""
+        return self._del_counter.unsafe_ptr()[]
 
     def component(ref self) -> TrackedComponent:
         """Creates a tracked component connected to these counters.
@@ -71,7 +84,15 @@ struct LifecycleCounters(Movable):
             this counter set.
         """
         return TrackedComponent(
-            self.copy_counter, self.move_counter, self.del_counter
+            self._copy_counter.unsafe_ptr()
+            .as_unsafe_any_origin()
+            .mut_cast[True](),
+            self._move_counter.unsafe_ptr()
+            .as_unsafe_any_origin()
+            .mut_cast[True](),
+            self._del_counter.unsafe_ptr()
+            .as_unsafe_any_origin()
+            .mut_cast[True](),
         )
 
     def assert_delta(
@@ -96,9 +117,9 @@ struct LifecycleCounters(Movable):
         Raises:
             AssertionError: If any lifecycle delta differs from expectation.
         """
-        assert_equal(self.copy_counter[] - base_copies, expected_copies)
-        assert_equal(self.move_counter[] - base_moves, expected_moves)
-        assert_equal(self.del_counter[] - base_dels, expected_dels)
+        assert_equal(self.copy_counter() - base_copies, expected_copies)
+        assert_equal(self.move_counter() - base_moves, expected_moves)
+        assert_equal(self.del_counter() - base_dels, expected_dels)
 
 
 def init_tracked_component(
@@ -332,9 +353,9 @@ def test_archetype_reserve_non_trivial_component() raises:
     var idx1 = archetype.add_entity(Entity(1, 0))
     init_tracked_component(archetype, idx1, counters.component())
 
-    var base_copies = counters.copy_counter[]
-    var base_moves = counters.move_counter[]
-    var base_dels = counters.del_counter[]
+    var base_copies = counters.copy_counter()
+    var base_moves = counters.move_counter()
+    var base_dels = counters.del_counter()
 
     archetype.reserve(4)
 
@@ -362,9 +383,9 @@ def test_archetype_copy_non_trivial_component() raises:
     var idx1 = archetype.add_entity(Entity(1, 0))
     init_tracked_component(archetype, idx1, counters.component())
 
-    var base_copies = counters.copy_counter[]
-    var base_moves = counters.move_counter[]
-    var base_dels = counters.del_counter[]
+    var base_copies = counters.copy_counter()
+    var base_moves = counters.move_counter()
+    var base_dels = counters.del_counter()
 
     var archetype2 = archetype.copy()
 
@@ -397,9 +418,9 @@ def test_archetype_remove_non_trivial_component() raises:
     var idx1 = archetype.add_entity(Entity(1, 0))
     init_tracked_component(archetype, idx1, counters.component())
 
-    var base_copies = counters.copy_counter[]
-    var base_moves = counters.move_counter[]
-    var base_dels = counters.del_counter[]
+    var base_copies = counters.copy_counter()
+    var base_moves = counters.move_counter()
+    var base_dels = counters.del_counter()
 
     var swapped = archetype.remove(0)
 
@@ -430,9 +451,9 @@ def test_archetype_copy_component_from_non_trivial_component() raises:
     var destination_idx = destination.add_entity(Entity(1, 0))
     init_tracked_component(destination, destination_idx, counters.component())
 
-    var base_copies = counters.copy_counter[]
-    var base_moves = counters.move_counter[]
-    var base_dels = counters.del_counter[]
+    var base_copies = counters.copy_counter()
+    var base_moves = counters.move_counter()
+    var base_dels = counters.del_counter()
 
     destination.copy_component_from[TrackedComponent](0, source, 1)
 
@@ -462,9 +483,9 @@ def test_archetype_extend_from_archetype_unsafe_non_trivial_component() raises:
     var idx1 = source.add_entity(Entity(1, 0))
     init_tracked_component(source, idx1, counters.component())
 
-    var base_copies = counters.copy_counter[]
-    var base_moves = counters.move_counter[]
-    var base_dels = counters.del_counter[]
+    var base_copies = counters.copy_counter()
+    var base_moves = counters.move_counter()
+    var base_dels = counters.del_counter()
 
     var start = destination.extend_from_archetype_unsafe(Pointer(to=source), 2)
 
