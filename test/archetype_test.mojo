@@ -347,7 +347,9 @@ def test_archetype_reserve_non_trivial_component() raises:
         expected_dels=0,
     )
     _ = archetype^
-    _ = counters.del_counter[]
+    # Keep `counters` live until after the archetype is destroyed: its
+    # components hold unsafe pointers to these counter allocations.
+    _ = counters.del_counter()
 
 
 def test_archetype_copy_non_trivial_component() raises:
@@ -380,7 +382,9 @@ def test_archetype_copy_non_trivial_component() raises:
     )
     _ = archetype2^
     _ = archetype^
-    _ = counters.del_counter[]
+    # Keep `counters` live until after both archetypes are destroyed: their
+    # components hold unsafe pointers to these counter allocations.
+    _ = counters.del_counter()
 
 
 def test_archetype_remove_non_trivial_component() raises:
@@ -410,7 +414,9 @@ def test_archetype_remove_non_trivial_component() raises:
         expected_dels=1,
     )
     _ = archetype^
-    _ = counters.del_counter[]
+    # Keep `counters` live until after the archetype is destroyed: its
+    # components hold unsafe pointers to these counter allocations.
+    _ = counters.del_counter()
 
 
 def test_archetype_copy_component_from_non_trivial_component() raises:
@@ -440,7 +446,9 @@ def test_archetype_copy_component_from_non_trivial_component() raises:
     )
     _ = destination^
     _ = source^
-    _ = counters.del_counter[]
+    # Keep `counters` live until after both archetypes are destroyed: their
+    # components hold unsafe pointers to these counter allocations.
+    _ = counters.del_counter()
 
 
 def test_archetype_extend_from_archetype_unsafe_non_trivial_component() raises:
@@ -472,7 +480,9 @@ def test_archetype_extend_from_archetype_unsafe_non_trivial_component() raises:
     )
     _ = destination^
     _ = source^
-    _ = counters.del_counter[]
+    # Keep `counters` live until after both archetypes are destroyed: their
+    # components hold unsafe pointers to these counter allocations.
+    _ = counters.del_counter()
 
 
 comptime functions = __functions_in_module()
