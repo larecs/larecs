@@ -247,7 +247,7 @@ and returns a host lease.
 
 ## Component eligibility and layout
 
-`ComponentType = Copyable & ImplicitlyDeletable` is sufficient for the current
+`ComponentType = Copyable & Deinitable` is sufficient for the current
 host backend but does not prove device compatibility. Eligibility belongs to
 the backend or a component storage policy, not to the base ECS component trait.
 
