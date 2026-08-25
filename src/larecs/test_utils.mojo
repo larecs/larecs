@@ -2,6 +2,7 @@
 
 from std.testing import assert_true, assert_false, assert_equal
 from std.random import random
+from std.memory import Layout, alloc, dealloc
 from .component import ComponentType
 from .bitmask import BitMask
 from .world import World
@@ -536,7 +537,7 @@ def test_copy_move_del[
     //,
     container_factory: def(
         var val: MemTestStruct[
-            MutUntrackedOrigin, MutUntrackedOrigin, MutUntrackedOrigin
+            MutUnsafeAnyOrigin, MutUnsafeAnyOrigin, MutUnsafeAnyOrigin
         ]
     ) thin -> Container,
 ](*, init_moves: Int = 0, copy_moves: Int = 0, move_moves: Int = 0) raises:
@@ -560,59 +561,58 @@ def test_copy_move_del[
         AssertionError: If any copy, move, or delete count differs from the expected value.
     """
 
-    var copy_counter = alloc[Int](1)
-    var move_counter = alloc[Int](1)
-    var del_counter = alloc[Int](1)
-    copy_counter.unsafe_write(0)
-    move_counter.unsafe_write(0)
-    del_counter.unsafe_write(0)
+    var copy_counter = alloc(Layout[Int].single()).into_managed()
+    var move_counter = alloc(Layout[Int].single()).into_managed()
+    var del_counter = alloc(Layout[Int].single()).into_managed()
+    copy_counter.unsafe_ptr().unsafe_write(0)
+    move_counter.unsafe_ptr().unsafe_write(0)
+    del_counter.unsafe_ptr().unsafe_write(0)
 
     var test_del_counter = 0
     var test_move_counter = init_moves
     var test_copy_counter = 0
     var container = container_factory(
-        MemTestStruct[
-            MutUntrackedOrigin, MutUntrackedOrigin, MutUntrackedOrigin
-        ](copy_counter, move_counter, del_counter)
+        MemTestStruct(
+            copy_counter.unsafe_ptr().as_unsafe_any_origin(),
+            move_counter.unsafe_ptr().as_unsafe_any_origin(),
+            del_counter.unsafe_ptr().as_unsafe_any_origin(),
+        )
     )
 
     # Initialize
-    assert_equal(del_counter[], test_del_counter)
-    assert_equal(move_counter[], test_move_counter)
-    assert_equal(copy_counter[], test_copy_counter)
+    assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
+    assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
+    assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
 
     # Copy
     var container2 = container.copy()
     test_copy_counter += 1
     test_move_counter += copy_moves
-    assert_equal(del_counter[], test_del_counter)
-    assert_equal(move_counter[], test_move_counter)
-    assert_equal(copy_counter[], test_copy_counter)
+    assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
+    assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
+    assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
 
     # Delete
     _ = container2^
     test_del_counter += 1
-    assert_equal(del_counter[], test_del_counter)
-    assert_equal(move_counter[], test_move_counter)
-    assert_equal(copy_counter[], test_copy_counter)
+    assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
+    assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
+    assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
 
     # Move
     container2 = container^
     test_move_counter += move_moves
-    assert_equal(del_counter[], test_del_counter)
-    assert_equal(move_counter[], test_move_counter)
-    assert_equal(copy_counter[], test_copy_counter)
+    assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
+    assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
+    assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
 
     # Delete
     _ = container2^
     test_del_counter += 1
-    assert_equal(del_counter[], test_del_counter)
-    assert_equal(move_counter[], test_move_counter)
-    assert_equal(copy_counter[], test_copy_counter)
+    assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
+    assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
+    assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
 
-    copy_counter.unsafe_deinit_pointee()
-    move_counter.unsafe_deinit_pointee()
-    del_counter.unsafe_deinit_pointee()
-    copy_counter.unsafe_free()
-    move_counter.unsafe_free()
-    del_counter.unsafe_free()
+    copy_counter.unsafe_ptr().unsafe_deinit_pointee()
+    move_counter.unsafe_ptr().unsafe_deinit_pointee()
+    del_counter.unsafe_ptr().unsafe_deinit_pointee()
