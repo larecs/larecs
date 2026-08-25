@@ -18,13 +18,13 @@ def move(mut world: World) raises:
 
 def accelerate(mut world: World) raises:
     ref parameters = world.resources.get[Parameters]()
-    constant = -GRAVITATIONAL_CONSTANT * parameters.mass * parameters.dt
+    var constant = -GRAVITATIONAL_CONSTANT * parameters.mass * parameters.dt
 
     for entity in world.storage.query[Position, Velocity]():
         ref position = entity.get[Position]()
         ref velocity = entity.get[Velocity]()
 
-        multiplier = constant * (position.x**2 + position.y**2) ** (-1.5)
+        var multiplier = constant * (position.x**2 + position.y**2) ** (-1.5)
 
         velocity.x += position.x * multiplier
         velocity.y += position.y * multiplier
@@ -53,14 +53,14 @@ def add_satellites(mut world: World, count: Int) raises:
 
 
 def position_to_numpy(mut world: World, out numpy_array: PythonObject) raises:
-    iterator = world.storage.query[Position]()
+    var iterator = world.storage.query[Position]()
 
-    np = Python.import_module("numpy")
+    var np = Python.import_module("numpy")
     numpy_array = np.zeros(Python.tuple(len(iterator), 2))
 
-    i = 0
+    var i = 0
     for entity in iterator:
-        position = entity.get[Position]()
+        var position = entity.get[Position]()
 
         numpy_array[i, 0] = position.x
         numpy_array[i, 1] = position.y
