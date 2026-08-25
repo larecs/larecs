@@ -61,7 +61,3 @@ def run_all_resource_benchmarks(mut bench: Bench) raises:
         benchmark_get_resource_1_000,
         BenchId("10^3 * get resource (1000 Float64)"),
     )
-
-
-def main() raises:
-    run_all_resource_benchmarks()

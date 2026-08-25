@@ -326,7 +326,3 @@ def run_all_component_benchmarks(mut bench: Bench) raises:
         benchmark_get_5_id_arr_1_000_000,
         BenchId("10^6 * component_get_id_arr (5 components)"),
     )
-
-
-def main() raises:
-    run_all_component_benchmarks()
