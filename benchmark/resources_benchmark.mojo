@@ -12,11 +12,11 @@ struct TestResource[size: Int = 1000](ResourceType):
 
 
 def benchmark_add_remove_resource_1_000(mut bencher: Bencher):
-    resources = Resources()
+    var resources = Resources()
 
     @always_inline
     def bench_fn() {mut}:
-        test_resource = TestResource()
+        var test_resource = TestResource()
         for _ in range(1_000):
             try:
                 resources.add(test_resource.copy())
@@ -28,7 +28,7 @@ def benchmark_add_remove_resource_1_000(mut bencher: Bencher):
 
 
 def benchmark_get_resource_1_000(mut bencher: Bencher):
-    resources = Resources()
+    var resources = Resources()
 
     try:
         resources.add(TestResource())
@@ -47,7 +47,7 @@ def benchmark_get_resource_1_000(mut bencher: Bencher):
 
 
 def run_all_resource_benchmarks() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     run_all_resource_benchmarks(bench)
     bench.dump_report()
 

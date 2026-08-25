@@ -6,7 +6,7 @@ from larecs.test_utils import *
 def benchmark_add_remove_5_comp_batch_1_000_000(
     mut bencher: Bencher,
 ):
-    world = SmallWorld()
+    var world = SmallWorld()
 
     @always_inline
     def bench_fn() {mut world}:
@@ -53,7 +53,7 @@ def benchmark_add_remove_5_comp_batch_1_000_000(
 def benchmark_add_remove_5_comp_1_000_batch_1_000(
     mut bencher: Bencher,
 ):
-    world = SmallWorld()
+    var world = SmallWorld()
 
     @always_inline
     def bench_fn() {mut world}:
@@ -99,7 +99,7 @@ def benchmark_add_remove_5_comp_1_000_batch_1_000(
 
 
 def run_all_world_component_multi_batch_benchmarks() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     run_all_world_component_multi_batch_benchmarks(bench)
     bench.dump_report()
 

@@ -29,27 +29,27 @@ struct BenchConfig[max_comp_exp: Int](ImplicitlyCopyable):
 
 
 def plot(config: BenchConfig, results: List[BenchResult]) raises:
-    plt = Python.import_module("matplotlib.pyplot")
+    var plt = Python.import_module("matplotlib.pyplot")
 
     var component_ticks: PythonObject = [2, 4, 8, 16, 32]
     var legend_point: PythonObject = [0]
 
-    csv_file = os.path.join(RESULTS_DIR, FILE_NAME + ".csv")
+    var csv_file = os.path.join(RESULTS_DIR, FILE_NAME + ".csv")
 
-    df = to_dataframe(results)
+    var df = to_dataframe(results)
     df.to_csv(csv_file, index=False)
 
-    fig_and_ax = plt.subplots(ncols=2, figsize=Python.tuple(10, 4))
-    fig = fig_and_ax[0]
-    ax = fig_and_ax[1]
+    var fig_and_ax = plt.subplots(ncols=2, figsize=Python.tuple(10, 4))
+    var fig = fig_and_ax[0]
+    var ax = fig_and_ax[1]
 
-    ax1 = ax[0]
-    ax2 = ax[1]
+    var ax1 = ax[0]
+    var ax2 = ax[1]
 
     var handles: PythonObject = []
     var labels: PythonObject = []
     for comp_exp in range(1, config.max_comp_exp + 1):
-        comp = 2**comp_exp
+        var comp = 2**comp_exp
         var entities: PythonObject = []
         var nanos_ecs: PythonObject = []
         var nanos_aos: PythonObject = []
@@ -59,7 +59,7 @@ def plot(config: BenchConfig, results: List[BenchResult]) raises:
                 nanos_ecs.append(row.nanos_ecs)
                 nanos_aos.append(row.nanos_aos)
 
-        lw = 0.5 + Float64(comp_exp) / 4
+        var lw = 0.5 + Float64(comp_exp) / 4
         ax1.plot(
             entities,
             nanos_ecs,
@@ -115,7 +115,7 @@ def plot(config: BenchConfig, results: List[BenchResult]) raises:
     handles = []
     labels = []
     for entity_exp in range(2, config.max_entity_exp + 1):
-        num_entities = 10**entity_exp
+        var num_entities = 10**entity_exp
         var components: PythonObject = []
         var nanos_ecs: PythonObject = []
         var nanos_aos: PythonObject = []
@@ -125,7 +125,7 @@ def plot(config: BenchConfig, results: List[BenchResult]) raises:
                 nanos_ecs.append(row.nanos_ecs)
                 nanos_aos.append(row.nanos_aos)
 
-        lw = 0.5 + Float64(entity_exp) / 4
+        var lw = 0.5 + Float64(entity_exp) / 4
         ax2.plot(
             components,
             nanos_ecs,
@@ -186,7 +186,7 @@ def plot(config: BenchConfig, results: List[BenchResult]) raises:
 
 
 def to_dataframe(results: List[BenchResult]) raises -> PythonObject:
-    pd = Python.import_module("pandas")
+    var pd = Python.import_module("pandas")
     var entities: PythonObject = []
     var components: PythonObject = []
     var nanos_ecs: PythonObject = []
@@ -210,19 +210,19 @@ def run_benchmarks(config: BenchConfig, out results: List[BenchResult]) raises:
     results = List[BenchResult]()
 
     for ent_exp in range(2, config.max_entity_exp + 1):
-        entities = 10**ent_exp
-        rounds = config.target_iters // entities
+        var entities = 10**ent_exp
+        var rounds = config.target_iters // entities
         print(entities, "entities")
 
         comptime for compExp in range(1, config.max_comp_exp + 1):
-            result = benchmark[compExp](rounds, entities)
+            var result = benchmark[compExp](rounds, entities)
             results.append(result)
 
 
 def benchmark[
     components_exp: Int
 ](rounds: Int, entities: Int) raises -> BenchResult:
-    w1 = create_ecs_world[components_exp](entities)
+    var w1 = create_ecs_world[components_exp](entities)
     var start_ecs = perf_counter_ns()
     for _ in range(rounds):
         for entity in w1.storage.query[Position, Velocity]():
@@ -230,15 +230,15 @@ def benchmark[
             ref velocity = entity.get[Velocity]()
             position.x += velocity.x
             position.y += velocity.y
-    dur_ecs = Float64(perf_counter_ns() - start_ecs) / Float64(
+    var dur_ecs = Float64(perf_counter_ns() - start_ecs) / Float64(
         entities * rounds
     )
 
-    w2 = AosWorld[components_exp](entities)
+    var w2 = AosWorld[components_exp](entities)
     var start_aos = perf_counter_ns()
     for _ in range(rounds):
         w2.update()
-    dur_aos = Float64(perf_counter_ns() - start_aos) / Float64(
+    var dur_aos = Float64(perf_counter_ns() - start_aos) / Float64(
         entities * rounds
     )
 
@@ -338,11 +338,11 @@ comptime World = lx.World[
 
 
 def main() raises:
-    config = BenchConfig[max_comp_exp=4](
+    var config = BenchConfig[max_comp_exp=4](
         max_entity_exp=6, target_iters=TARGET_ITERATIONS
     )
 
-    results = run_benchmarks(config)
+    var results = run_benchmarks(config)
 
     if not os.path.exists(RESULTS_DIR):
         os.mkdir(RESULTS_DIR)

@@ -5,8 +5,8 @@ from larecs.entity import Entity
 
 
 def _replace_5_comp_workload() raises:
-    world = FullWorld()
-    entities = List[Entity]()
+    var world = FullWorld()
+    var entities = List[Entity]()
     for _ in range(1000):
         entities.append(
             world.storage.add_entity(
@@ -61,7 +61,7 @@ def benchmark_replace_5_comp_1_000_000(
 
 
 def run_all_world_replace_multi_benchmarks() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     run_all_world_replace_multi_benchmarks(bench)
     bench.dump_report()
 

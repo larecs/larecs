@@ -297,7 +297,7 @@ def benchmark_get_5_id_arr_1_000_000(mut bencher: Bencher):
     @always_inline
     def bench_fn() {imm}:
         for _ in range(1_000_000):
-            arr = FullManager.get_id_arr[
+            var arr = FullManager.get_id_arr[
                 FlexibleComponent[1],
                 FlexibleComponent[0],
                 FlexibleComponent[2],
@@ -310,7 +310,7 @@ def benchmark_get_5_id_arr_1_000_000(mut bencher: Bencher):
 
 
 def run_all_component_benchmarks() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     run_all_component_benchmarks(bench)
     bench.dump_report()
 
