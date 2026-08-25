@@ -10,7 +10,7 @@ def benchmark_replace_5_comp_1_000_batch_1_000(
     Args:
         bencher: Benchmark harness that executes the measured closure.
     """
-    world = SmallWorld()
+    var world = SmallWorld()
     try:
         _ = world.storage.add_entities(
             FlexibleComponent[0](1.0, 2.0),
@@ -29,7 +29,7 @@ def benchmark_replace_5_comp_1_000_batch_1_000(
         """Run 1,000-entity batch replacements in both component directions."""
         try:
             for _ in range(500):
-                entity56789 = world.storage.add_entity(
+                var entity56789 = world.storage.add_entity(
                     FlexibleComponent[5](11.0, 12.0),
                     FlexibleComponent[6](13.0, 14.0),
                     FlexibleComponent[7](15.0, 16.0),
@@ -59,7 +59,7 @@ def benchmark_replace_5_comp_1_000_batch_1_000(
                 world.storage.remove_entity(
                     entity56789
                 )  # cleanup deoptimization entity to not increase amount of entities moved during replace in next iterations
-                entity01234 = world.storage.add_entity(
+                var entity01234 = world.storage.add_entity(
                     FlexibleComponent[0](1.0, 2.0),
                     FlexibleComponent[1](3.0, 4.0),
                     FlexibleComponent[2](5.0, 6.0),

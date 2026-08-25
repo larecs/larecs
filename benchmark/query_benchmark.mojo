@@ -24,8 +24,8 @@ def benchmark_add_entity_1_000_000(mut bencher: Bencher):
 def benchmark_query_1_comp_1_000_000(
     mut bencher: Bencher,
 ):
-    pos = Position(1.0, 2.0)
-    world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var world = SmallWorld()
 
     @always_inline
     def bench_fn() {imm, mut world}:
@@ -44,9 +44,9 @@ def benchmark_query_1_comp_1_000_000(
 def benchmark_query_2_comp_1_000_000(
     mut bencher: Bencher,
 ):
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
 
     @always_inline
     def bench_fn() {imm, mut world}:
@@ -67,12 +67,12 @@ def benchmark_query_2_comp_1_000_000(
 def benchmark_query_5_comp_1_000_000(
     mut bencher: Bencher,
 ):
-    c1 = FlexibleComponent[1](3.0, 4.0)
-    c2 = FlexibleComponent[2](5.0, 6.0)
-    c3 = FlexibleComponent[3](7.0, 8.0)
-    c4 = FlexibleComponent[4](9.0, 10.0)
-    c5 = FlexibleComponent[5](11.0, 12.0)
-    world = FullWorld()
+    var c1 = FlexibleComponent[1](3.0, 4.0)
+    var c2 = FlexibleComponent[2](5.0, 6.0)
+    var c3 = FlexibleComponent[3](7.0, 8.0)
+    var c4 = FlexibleComponent[4](9.0, 10.0)
+    var c5 = FlexibleComponent[5](11.0, 12.0)
+    var world = FullWorld()
 
     @always_inline
     def bench_fn() {imm, mut world}:
@@ -102,12 +102,12 @@ def benchmark_query_5_comp_1_000_000(
 def benchmark_query_get_iter_1_000_000(
     mut bencher: Bencher,
 ):
-    c1 = FlexibleComponent[1](3.0, 4.0)
-    c2 = FlexibleComponent[2](5.0, 6.0)
-    c3 = FlexibleComponent[3](7.0, 8.0)
-    c4 = FlexibleComponent[4](9.0, 10.0)
-    c5 = FlexibleComponent[5](11.0, 12.0)
-    world = FullWorld()
+    var c1 = FlexibleComponent[1](3.0, 4.0)
+    var c2 = FlexibleComponent[2](5.0, 6.0)
+    var c3 = FlexibleComponent[3](7.0, 8.0)
+    var c4 = FlexibleComponent[4](9.0, 10.0)
+    var c5 = FlexibleComponent[5](11.0, 12.0)
+    var world = FullWorld()
 
     @always_inline
     def bench_fn() {imm, mut world}:
@@ -127,12 +127,12 @@ def benchmark_query_get_iter_1_000_000(
 def benchmark_query_has_1_000_000(
     mut bencher: Bencher,
 ):
-    c1 = FlexibleComponent[1](3.0, 4.0)
-    c2 = FlexibleComponent[2](5.0, 6.0)
-    c3 = FlexibleComponent[3](7.0, 8.0)
-    c4 = FlexibleComponent[4](9.0, 10.0)
-    c5 = FlexibleComponent[5](11.0, 12.0)
-    world = FullWorld()
+    var c1 = FlexibleComponent[1](3.0, 4.0)
+    var c2 = FlexibleComponent[2](5.0, 6.0)
+    var c3 = FlexibleComponent[3](7.0, 8.0)
+    var c4 = FlexibleComponent[4](9.0, 10.0)
+    var c5 = FlexibleComponent[5](11.0, 12.0)
+    var world = FullWorld()
 
     @always_inline
     def bench_fn() {imm, mut world}:
@@ -149,7 +149,7 @@ def benchmark_query_has_1_000_000(
 
 
 def run_all_query_benchmarks() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     run_all_query_benchmarks(bench)
     bench.dump_report()
 

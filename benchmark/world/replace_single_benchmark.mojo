@@ -5,23 +5,23 @@ from larecs.entity import Entity
 
 
 def prevent_inlining_replace() raises:
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    world = SmallWorld()
-    entity = world.storage.add_entity(pos)
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
+    var entity = world.storage.add_entity(pos)
     _ = world.storage.replace[Position]().by(vel, entity=entity)
 
 
 def _replace_1_comp_workload() raises:
-    world = SmallWorld()
-    entities = List[Entity]()
-    component0 = FlexibleComponent[0](1.0, 2.0)
+    var world = SmallWorld()
+    var entities = List[Entity]()
+    var component0 = FlexibleComponent[0](1.0, 2.0)
     for _ in range(1000):
         entities.append(world.storage.add_entity(component0))
 
     for _ in range(100):
         comptime for i in range(10):
-            component = FlexibleComponent[(i + 1) % 10](Float64(i), 2.0)
+            var component = FlexibleComponent[(i + 1) % 10](Float64(i), 2.0)
             for entity in entities:
                 world.storage.replace[FlexibleComponent[i]]().by(
                     component, entity=entity
@@ -42,7 +42,7 @@ def benchmark_replace_1_comp_1_000_000(
 
 
 def run_all_world_replace_single_benchmarks() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     run_all_world_replace_single_benchmarks(bench)
     bench.dump_report()
 

@@ -7,8 +7,8 @@ from larecs.test_utils import get_random_bitmask
 
 
 def benchmark_bitmask_get_1_000_000(mut bencher: Bencher):
-    mask = get_random_bitmask()
-    val = Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1)))
+    var mask = get_random_bitmask()
+    var val = Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1)))
 
     @always_inline
     def bench_fn() {mut}:
@@ -19,12 +19,12 @@ def benchmark_bitmask_get_1_000_000(mut bencher: Bencher):
 
 
 def benchmark_bitmask_set_1_000_000(mut bencher: Bencher):
-    mask = get_random_bitmask()
-    val = Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1)))
+    var mask = get_random_bitmask()
+    var val = Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1)))
 
     @always_inline
     def bench_fn() {mut}:
-        bit_val = True
+        var bit_val = True
         for _ in range(1_000_000):
             mask.set(val, bit_val)
             keep(mask._bytes)
@@ -34,8 +34,8 @@ def benchmark_bitmask_set_1_000_000(mut bencher: Bencher):
 
 
 def benchmark_bitmask_flip_1_000_000(mut bencher: Bencher):
-    mask = get_random_bitmask()
-    val = Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1)))
+    var mask = get_random_bitmask()
+    var val = Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1)))
 
     @always_inline
     def bench_fn() {mut}:
@@ -47,8 +47,8 @@ def benchmark_bitmask_flip_1_000_000(mut bencher: Bencher):
 
 
 def benchmark_bitmask_contains_1_000_000(mut bencher: Bencher):
-    mask = get_random_bitmask()
-    val = BitMask(Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1))))
+    var mask = get_random_bitmask()
+    var val = BitMask(Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1))))
 
     @always_inline
     def bench_fn() {mut}:
@@ -59,8 +59,8 @@ def benchmark_bitmask_contains_1_000_000(mut bencher: Bencher):
 
 
 def benchmark_bitmask_contains_any_1_000_000(mut bencher: Bencher):
-    mask = get_random_bitmask()
-    val = BitMask(Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1))))
+    var mask = get_random_bitmask()
+    var val = BitMask(Int(std.random.random_si64(0, Int64(BitMask.total_bits - 1))))
 
     @always_inline
     def bench_fn() {mut}:
@@ -71,9 +71,9 @@ def benchmark_bitmask_contains_any_1_000_000(mut bencher: Bencher):
 
 
 def benchmark_bitmask_eq_1_000_000(mut bencher: Bencher):
-    mask1 = get_random_bitmask()
-    mask2 = mask1
-    mask3 = get_random_bitmask()
+    var mask1 = get_random_bitmask()
+    var mask2 = mask1
+    var mask3 = get_random_bitmask()
 
     @always_inline
     def bench_fn() {mut}:
@@ -99,7 +99,7 @@ def benchmark_bitmask_get_indices_1_000_000(mut bencher: Bencher):
 
 
 def benchmark_bitmask_get_each_1_000_000(mut bencher: Bencher):
-    mask = get_random_bitmask()
+    var mask = get_random_bitmask()
 
     @always_inline
     def bench_fn() {mut}:
@@ -155,7 +155,7 @@ def benchmark_bitmask_get_each_1_000_000(mut bencher: Bencher):
 #     v = !v
 #     _ = v
 def run_all_bitmask_benchmarks() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     run_all_bitmask_benchmarks(bench)
     bench.dump_report()
 

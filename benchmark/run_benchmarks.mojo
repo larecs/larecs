@@ -7,7 +7,7 @@ from custom_benchmark import DefaultBench
 
 
 def main() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     world_benchmark.run_all_world_benchmarks(bench)
     query_benchmark.run_all_query_benchmarks(bench)
     bitmask_benchmark.run_all_bitmask_benchmarks(bench)

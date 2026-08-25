@@ -11,7 +11,7 @@ def benchmark_replace_1_comp_1_000_batch_1_000(
     Args:
         bencher: The benchmark harness runner.
     """
-    world = SmallWorld()
+    var world = SmallWorld()
     try:
         _ = world.storage.add_entities(
             FlexibleComponent[0](1.0, 2.0), count=1_000
