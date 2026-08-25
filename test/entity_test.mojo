@@ -4,10 +4,10 @@ from larecs.test_utils import SmallWorld, Position
 
 
 def test_entity_as_index() raises:
-    entity = Entity(1, 0)
-    arr: List[Int] = [0, 1, 2]
+    var entity = Entity(1, 0)
+    var arr: List[Int] = [0, 1, 2]
 
-    val = arr[entity.get_id()]
+    var val = arr[entity.get_id()]
     assert_equal(val, 1)
     _ = val
 
@@ -18,9 +18,9 @@ def test_zero_entity() raises:
 
 
 def test_implicit_constructor() raises:
-    world = SmallWorld()
-    entity = world.storage.add_entity(Position(1, 0))
-    storage = List[Entity]()
+    var world = SmallWorld()
+    var entity = world.storage.add_entity(Position(1, 0))
+    var storage = List[Entity]()
     for e in world.storage.query[Position]():
         storage.append(e)
 

@@ -54,7 +54,7 @@ struct Resources(Copyable, Movable, Sized):
                 "Resources.add[*Ts: ResourceType](var *resources: *Ts)"
             )
         ):
-            conflicting_ids = List[StringSlice[ImmStaticOrigin]](capacity=0)
+            var conflicting_ids = List[StringSlice[ImmStaticOrigin]](capacity=0)
 
             comptime for idx in range(len(Ts)):
                 comptime id = reflect[Ts[idx]].name()
@@ -110,7 +110,7 @@ struct Resources(Copyable, Movable, Sized):
             )
         ):
             comptime if not add_if_not_found:
-                conflicting_ids = List[StringSlice[ImmStaticOrigin]]()
+                var conflicting_ids = List[StringSlice[ImmStaticOrigin]]()
 
                 comptime for idx in range(len(Ts)):
                     comptime id = reflect[Ts[idx]].name()
@@ -193,9 +193,7 @@ struct Resources(Copyable, Movable, Sized):
     @always_inline
     def get[
         T: ResourceType
-    ](mut self) raises -> ref[
-        origin_of(self._storage)._get_owned_interior["value"]
-    ] T:
+    ](ref self) raises -> ref[UnsafeAnyOrigin[mut=origin_of(self).mut]] T:
         """Gets a resource.
 
         Parameters:
@@ -206,7 +204,9 @@ struct Resources(Copyable, Movable, Sized):
         """
         with Zone(function_name="Resources.get[T: ResourceType]()"):
             try:
-                return self._storage[reflect[T].name()].unsafe_get[T]()
+                return Pointer(
+                    to=self._storage[reflect[T].name()].unsafe_get[T]()
+                ).as_unsafe_any_origin()[]
             except DictKeyError:
                 raise Error(
                     t"The resource `{reflect[T].name()}` does not exist."

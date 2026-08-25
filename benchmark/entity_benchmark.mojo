@@ -24,7 +24,3 @@ def run_all_entity_benchmarks(mut bench: Bench) raises:
     bench.bench_function(
         benchmark_entity_is_zero, BenchId("10^6 * entity is zero")
     )
-
-
-def main() raises:
-    run_all_entity_benchmarks()

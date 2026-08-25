@@ -4,9 +4,9 @@ from larecs.graph import Node, BitMaskGraph
 
 
 def test_node_initialization() raises:
-    bit_mask = BitMask(1, 3, 4)
-    value = 42
-    node = Node(bit_mask, value)
+    var bit_mask = BitMask(1, 3, 4)
+    var value = 42
+    var node = Node(bit_mask, value)
     assert_equal(node.value, value)
     assert_equal(node.bit_mask, bit_mask)
     assert_equal(len(node.neighbours), 256)
@@ -15,16 +15,16 @@ def test_node_initialization() raises:
 
 
 def test_graph_initialization() raises:
-    graph = BitMaskGraph[-1]()
+    var graph = BitMaskGraph[-1]()
     assert_equal(len(graph._nodes), 1)
     assert_equal(len(graph._map), 1)
 
 
 def test_add_node() raises:
-    graph = BitMaskGraph[-1]()
-    bit_mask = BitMask(0, 2)
-    value = 42
-    node_index = graph.add_node(bit_mask, value)
+    var graph = BitMaskGraph[-1]()
+    var bit_mask = BitMask(0, 2)
+    var value = 42
+    var node_index = graph.add_node(bit_mask, value)
     assert_equal(node_index, 1)
     assert_equal(len(graph._nodes), 2)
     assert_equal(graph._nodes[1].value, value)
@@ -34,10 +34,10 @@ def test_add_node() raises:
 
 def test_getitem() raises:
     comptime null_value = -1
-    graph = BitMaskGraph[null_value]()
-    bit_mask = BitMask(0, 2)
-    value = 42
-    node_index = graph.add_node(bit_mask, value)
+    var graph = BitMaskGraph[null_value]()
+    var bit_mask = BitMask(0, 2)
+    var value = 42
+    var node_index = graph.add_node(bit_mask, value)
     assert_equal(graph[node_index], value)
     bit_mask = BitMask(0, 2, 3)
     node_index = graph.add_node(bit_mask)
@@ -46,7 +46,7 @@ def test_getitem() raises:
 
 def test_create_link() raises:
     comptime null_value = -1
-    graph = BitMaskGraph[null_value]()
+    var graph = BitMaskGraph[null_value]()
     var bitmask_root = BitMask()
     var bm_root_index = 0
 
@@ -95,11 +95,11 @@ def test_create_link() raises:
 
 
 def test_get_node_index() raises:
-    graph = BitMaskGraph[-1]()
-    bit_mask2 = BitMask(0, 2)
-    bit_mask1 = BitMask(0)
-    different_bits: Array[Int, 2] = [0, 2]
-    node_index = graph.get_node_index(different_bits)
+    var graph = BitMaskGraph[-1]()
+    var bit_mask2 = BitMask(0, 2)
+    var bit_mask1 = BitMask(0)
+    var different_bits: Array[Int, 2] = [0, 2]
+    var node_index = graph.get_node_index(different_bits)
     assert_equal(node_index, 2)
     assert_equal(graph._nodes[1].bit_mask, bit_mask1)
     assert_equal(graph._nodes[node_index].bit_mask, bit_mask2)
@@ -110,9 +110,9 @@ def test_get_node_index() raises:
 
 
 def test_get_node_mask() raises:
-    graph = BitMaskGraph[-1]()
-    bit_mask = BitMask(0, 2)
-    node_index = graph.add_node(bit_mask, 42)
+    var graph = BitMaskGraph[-1]()
+    var bit_mask = BitMask(0, 2)
+    var node_index = graph.add_node(bit_mask, 42)
     assert_equal(graph.get_node_mask(node_index), bit_mask)
 
 
@@ -128,10 +128,10 @@ struct S:
 
 
 def test_has_value() raises:
-    graph = BitMaskGraph[-1]()
-    bit_mask = BitMask(0, 2)
-    value = 42
-    node_index = graph.add_node(bit_mask, value)
+    var graph = BitMaskGraph[-1]()
+    var bit_mask = BitMask(0, 2)
+    var value = 42
+    var node_index = graph.add_node(bit_mask, value)
     assert_equal(graph.has_value(node_index), True)
     assert_equal(graph.has_value(0), False)
 

@@ -10,7 +10,7 @@ from std.io.write import Writable, Writer
 
 @always_inline
 def get_random_bitmask() -> BitMask:
-    mask = BitMask()
+    var mask = BitMask()
     for i in range(mask.total_bits):
         if std.random.random_float64() < 0.5:
             mask.set(i, True)
@@ -33,7 +33,7 @@ def get_random_int_list(size: Int, out vals: List[Int]):
 
 
 def unique(l: List[Int], out result: List[Int]):
-    mask = Array[Bool, 256](fill=False)
+    var mask = Array[Bool, 256](fill=False)
     result = List[Int]()
     for v in l:
         if not mask[v]:
@@ -60,7 +60,7 @@ def write_to_string[T: Writable](value: T) -> String:
     Returns:
         The string representation produced by value.write_to(...).
     """
-    writer = StringWriter("")
+    var writer = StringWriter("")
     value.write_to(writer)
     return writer.value
 
@@ -130,13 +130,13 @@ def test_bit_mask() raises:
 
 
 def test_bit_mask_without_exclusive() raises:
-    mask = BitMask(1, 2, 13)
+    var mask = BitMask(1, 2, 13)
     assert_true(mask.matches(BitMask(1, 2, 13)))
     assert_true(mask.matches(BitMask(1, 2, 13, 27)))
 
     assert_false(mask.matches(BitMask(1, 2)))
 
-    excl = mask.exclusive()
+    var excl = mask.exclusive()
 
     assert_true(excl.matches(BitMask(1, 2, 13)))
     assert_false(excl.matches(BitMask(1, 2, 13, 27)))
@@ -144,8 +144,8 @@ def test_bit_mask_without_exclusive() raises:
 
 
 def test_bit_mask_eq() raises:
-    mask1 = get_random_bitmask()
-    mask2 = mask1
+    var mask1 = get_random_bitmask()
+    var mask2 = mask1
 
     assert_true(mask1 == mask2)
 
@@ -156,11 +156,11 @@ def test_bit_mask_eq() raises:
 
 def test_bit_mask_256() raises:
     for i in range(BitMask.total_bits):
-        mask = BitMask(i)
+        var mask = BitMask(i)
         assert_equal(1, mask.total_bits_set())
         assert_true(mask.get(i))
 
-    mask = BitMask()
+    var mask = BitMask()
     assert_equal(0, mask.total_bits_set())
 
     for i in range(mask.total_bits - 1):
@@ -186,13 +186,13 @@ def test_bit_mask_256() raises:
 
 
 def test_bitmask_get_indices() raises:
-    size = 100
+    var size = 100
     std.random.seed(0)
-    indices = get_random_int_list(size)
+    var indices = get_random_int_list(size)
     var mask = BitMask()
     for index in indices:
         mask.set(index, True)
-    unique_indices = unique(indices)
+    var unique_indices = unique(indices)
 
     assert_equal(len(unique_indices), len(mask.get_indices()))
     size = 0
@@ -200,7 +200,7 @@ def test_bitmask_get_indices() raises:
         keep(idx)
 
     for value in unique_indices:
-        found = False
+        var found = False
         for idx in mask.get_indices():
             if value == idx:
                 found = True
@@ -214,15 +214,15 @@ def test_bitmask_get_indices() raises:
 def test_bitmask_get_indices_non_256() raises:
     """A non-default bitmask yields indices from all of its bytes."""
     comptime SmallBitMask = _BitMask[64]
-    mask = SmallBitMask(0, 7, 8, 31, 32, 63)
-    actual = List[Int]()
+    var mask = SmallBitMask(0, 7, 8, 31, 32, 63)
+    var actual = List[Int]()
     for idx in mask.get_indices():
         actual.append(idx)
 
     assert_equal(6, len(actual))
-    expected: List[Int] = [0, 7, 8, 31, 32, 63]
+    var expected: List[Int] = [0, 7, 8, 31, 32, 63]
     for expected_idx in expected:
-        found = False
+        var found = False
         for idx in actual:
             if idx == expected_idx:
                 found = True
@@ -231,10 +231,10 @@ def test_bitmask_get_indices_non_256() raises:
 
 
 def test_bitmask_writable() raises:
-    mask = BitMask(1, 2, 13, 27)
+    var mask = BitMask(1, 2, 13, 27)
     assert_equal(String(mask), write_to_string(mask))
 
-    empty_mask = BitMask()
+    var empty_mask = BitMask()
     assert_equal(String(empty_mask), write_to_string(empty_mask))
 
 

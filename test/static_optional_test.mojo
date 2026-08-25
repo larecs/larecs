@@ -6,22 +6,22 @@ from larecs.static_optional import StaticOptional
 
 
 def test_comptime_optional_init() raises:
-    opt = StaticOptional[Int, False]()
+    var opt = StaticOptional[Int, False]()
     assert_false(opt.has_value)
     _ = opt._value
-    l: List[Int] = [42]
-    opt_with_value: StaticOptional[List[Int], True] = l^
+    var l: List[Int] = [42]
+    var opt_with_value: StaticOptional[List[Int], True] = l^
     assert_true(opt_with_value.has_value)
     assert_equal(opt_with_value[][0], 42)
 
 
 def test_comptime_optional_copy() raises:
-    opt_with_value = StaticOptional(42)
-    opt_copy = opt_with_value.copy()
+    var opt_with_value = StaticOptional(42)
+    var opt_copy = opt_with_value.copy()
     assert_true(opt_copy.has_value)
     assert_equal(opt_copy[], 42)
-    opt_without_value = StaticOptional[Int, False]()
-    opt_copy_without = opt_without_value.copy()
+    var opt_without_value = StaticOptional[Int, False]()
+    var opt_copy_without = opt_without_value.copy()
     _ = opt_copy_without._value
 
 
@@ -43,7 +43,7 @@ def test_comptime_optional_move_del() raises:
 
 
 def test_comptime_optional_value() raises:
-    opt_with_value = StaticOptional[Int, True](42)
+    var opt_with_value = StaticOptional[Int, True](42)
     assert_equal(opt_with_value[], 42)
 
 
@@ -91,12 +91,12 @@ def test_optional_argument_application() raises:
 
 
 def test_or_else() raises:
-    opt = StaticOptional[Int, False]()
+    var opt = StaticOptional[Int, False]()
     assert_equal(opt.or_else(42), 42)
-    opt2 = StaticOptional(10)
+    var opt2 = StaticOptional(10)
     assert_equal(opt2.or_else(42), 10)
-    l1 = List([1, 2, 3])
-    opt3 = StaticOptional[List[Int], False]()
+    var l1 = List([1, 2, 3])
+    var opt3 = StaticOptional[List[Int], False]()
     assert_equal(Int(Pointer(to=l1)), Int(Pointer(to=opt3.or_else(l1))))
 
 
@@ -113,5 +113,5 @@ comptime functions = Tuple(
 
 
 def main() raises:
-    suite = TestSuite.discover_tests[functions]()
+    var suite = TestSuite.discover_tests[functions]()
     suite^.run()

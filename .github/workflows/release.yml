@@ -60,7 +60,7 @@ jobs:
           build-args: >
             --target-platform ${{ matrix.target-platform }}
             --channel conda-forge
-            --channel https://repo.prefix.dev/max-nightly
+            --channel https://repo.prefix.dev/max
             --channel https://repo.prefix.dev/modular-community
             --channel https://prefix.dev/tree-d
             ${{ case(github.event_name == 'release', '', '--no-test') }}

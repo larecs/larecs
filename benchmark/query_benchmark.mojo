@@ -170,7 +170,3 @@ def run_all_query_benchmarks(mut bench: Bench) raises:
     bench.bench_function(
         benchmark_query_get_iter_1_000_000, BenchId("10^6 * get query iter")
     )
-
-
-def main() raises:
-    run_all_query_benchmarks()
