@@ -401,16 +401,16 @@ struct Context[
             length += len(archetype)
 
         comptime if on_gpu:
+            self._world[].device_storage = Self.World.device_storage_type(self._world[].device, length)
+
             var kernel_columns = HostKernelContext[filter].Columns(uninitialized=True)
 
             comptime for i in range(len(filter)):
                 comptime T = filter._include.ComponentTypes[i]
 
-                self._world[].device_storage = Self.World.device_storage_type(self._world[].device, length)
                 for ref archetype in matching_archetypes.copy():
                     self._world[].device_storage.copy_from_host[T](archetype._storage.get_component_span[T]())
 
-                self._world[].device.synchronize()
                 kernel_columns[i] = self._world[].device_storage.get_device_ptr[T]()
 
             var grid_dim = ceildiv(length, block_size)
@@ -474,10 +474,10 @@ struct Move(System):
         *WorldTs: ComponentType
     ](mut self, mut context: Context[_, *WorldTs]) raises:
         """Runs the movement kernel for entities with position and velocity."""
-        # context.run[
-        #     move_positions[context.filter.include[Position, Velocity]()],
-        #     on_gpu=True,
-        # ]()
+        context.run[
+            move_positions[context.filter.include[Position, Velocity]()],
+            on_gpu=True,
+        ]()
 
         context.run[
             move_positions[context.filter.include[Position, Velocity]()],
@@ -574,16 +574,6 @@ def main() raises:
         assert host_index == entity_count
         assert scheduler.world.host_storage.get[Position](static_entity).x == 1000.0
         assert scheduler.world.host_storage.get[Position](static_entity).y == -1000.0
-
-        var positions: List[Position] = []
-        for i in range(entity_count):
-            positions.append(Position(x=Float32(i + 1), y=-Float32(i + 1)))
-
-        scheduler.world.device_storage.copy_from_host[
-            Position
-        ](positions)
-
-        scheduler.world.device.synchronize()
 
         var gpu_positions = scheduler.world.device_storage.copy_to_host[
             Position
