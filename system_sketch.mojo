@@ -81,6 +81,44 @@ struct Filter[
     ]
 
 
+@always_inline
+def filter_includes[
+    T: ComponentType, *Included: ComponentType
+]() -> Bool:
+    """Returns whether a filter includes component ``T``.
+
+    Parameters:
+        T: The component type to search for.
+        Included: The component types included by the filter.
+
+    Returns:
+        ``True`` when ``T`` is included; otherwise ``False``.
+    """
+    comptime for i in range(len(Included)):
+        comptime if Included[i] == T:
+            return True
+    return False
+
+
+@always_inline
+def filter_excludes[
+    T: ComponentType, *Excluded: ComponentType
+]() -> Bool:
+    """Returns whether a filter excludes component ``T``.
+
+    Parameters:
+        T: The component type to search for.
+        Excluded: The component types excluded by the filter.
+
+    Returns:
+        ``True`` when ``T`` is excluded; otherwise ``False``.
+    """
+    comptime for i in range(len(Excluded)):
+        comptime if Excluded[i] == T:
+            return True
+    return False
+
+
 struct _ComponentColumn(Boolable, Copyable, Deinitable, Movable):
     """Owns one type-erased component column allocation.
 
@@ -391,6 +429,21 @@ struct _HostComponentStorage[*ComponentTypes: ComponentType](
 
         self._columns^.deinit_with(destroy_column)
 
+    def has_component[T: ComponentType](self) -> Bool:
+        """Returns whether the host column for ``T`` is initialized.
+
+        Parameters:
+            T: The component type to check.
+
+        Returns:
+            ``True`` when the component has an initialized host column.
+        """
+        comptime assert Self.component_manager.contains_components[
+            T
+        ](), "Component type not in component manager"
+        comptime id = Self.component_manager.get_id[T]()
+        return Bool(self._columns[id])
+
     def init_component[T: ComponentType](mut self):
         """Initializes the host column for component ``T``."""
         comptime id = Self.component_manager.get_id[T]()
@@ -531,6 +584,21 @@ struct _DeviceComponentStorage[*ComponentTypes: ComponentType](Movable):
         self._device_context.synchronize()
         self._length = self._capacity
 
+    def has_component[T: ComponentType](self) -> Bool:
+        """Returns whether the device column for ``T`` is initialized.
+
+        Parameters:
+            T: The component type to check.
+
+        Returns:
+            ``True`` when the component has an initialized device column.
+        """
+        comptime assert Self.component_manager.contains_components[
+            T
+        ](), "Component type not in component manager"
+        comptime id = Self.component_manager.get_id[T]()
+        return Bool(self._columns[id])
+
     def copy_to_host[T: ComponentType](self, out data: List[T]) raises:
         comptime id = Self.component_manager.get_id[T]()
         comptime device_type = to_device_type[T]()
@@ -584,7 +652,7 @@ struct _World[*WorldTs: ComponentType]:
 
 
 @fieldwise_init
-struct EntityAccessor(Copyable):
+struct EntityAccessor[KernelFilter: Filter](Copyable):
     """Device-side accessor for one logical entity row."""
 
     var id: Int32
@@ -592,7 +660,10 @@ struct EntityAccessor(Copyable):
     var _velocity: Pointer[UInt8, MutUntrackedOrigin]
 
     def get[T: ComponentType](self) -> ref[MutUntrackedOrigin] T:
-        """Loads a component value for this entity from device storage."""
+        """Loads an included component value for this entity."""
+        comptime assert filter_includes[
+            T, *Self.KernelFilter._include.ComponentTypes
+        ](), "Component type is not included by the kernel filter"
         comptime if T == Position:
             var position = rebind[Pointer[Position, MutUntrackedOrigin]](
                 self._position.unsafe_offset(Int(self.id) * size_of[Position]())
@@ -624,23 +695,21 @@ struct EntityAccessor(Copyable):
             comptime assert False, "Component is not available in this kernel."
 
 
-struct EntityAccessorIterator(Iterator, Movable):
-    comptime Element = EntityAccessor
+struct EntityAccessorIterator[KernelFilter: Filter](Iterator, Movable):
+    comptime Element = EntityAccessor[Self.KernelFilter]
 
-    var _entity: EntityAccessor
+    var _entity: EntityAccessor[Self.KernelFilter]
     var _length: Int32
     var _done: Bool
-    var _one_entity: Bool
 
-    def __init__(out self, context: KernelContext):
-        self._entity = EntityAccessor(
+    def __init__(out self, context: KernelContext[Self.KernelFilter]):
+        self._entity = EntityAccessor[Self.KernelFilter](
             id=0,
             _position=context.position,
             _velocity=context.velocity,
         )
         self._length = context.length
         self._done = False
-        self._one_entity = True
 
     def __iter__(deinit self) -> Self:
         return self^
@@ -649,28 +718,27 @@ struct EntityAccessorIterator(Iterator, Movable):
         if self._done or self._entity.id >= self._length:
             raise StopIteration()
         var entity = self._entity.copy()
-        if self._one_entity:
-            self._done = True
-        else:
-            self._entity.id += 1
+        self._entity.id += 1
         return entity^
 
 
 @fieldwise_init
-struct KernelContext(Copyable, RegisterPassable):
+struct KernelContext[KernelFilter: Filter](Copyable, RegisterPassable):
     var length: Int32
     var position: Pointer[UInt8, MutUntrackedOrigin]
     var velocity: Pointer[UInt8, MutUntrackedOrigin]
 
-    def __iter__(self) -> EntityAccessorIterator:
-        return EntityAccessorIterator(self)
+    def __iter__(self) -> EntityAccessorIterator[Self.KernelFilter]:
+        return EntityAccessorIterator[Self.KernelFilter](self)
 
 
 @fieldwise_init
-struct HostKernelContext(Copyable, DevicePassable, RegisterPassable):
+struct HostKernelContext[KernelFilter: Filter](
+    Copyable, DevicePassable, RegisterPassable
+):
     """Device-passable view of the component columns used by a kernel."""
 
-    comptime device_type = KernelContext
+    comptime device_type = KernelContext[Self.KernelFilter]
 
     @staticmethod
     def get_type_name() -> String:
@@ -713,15 +781,54 @@ struct Context[
         self._world = Pointer(to=world)
 
     def run[
-        KernelFunc: def(KernelContext) thin -> None,
         filter: Filter,
+        //,
+        KernelFunc: def(KernelContext[filter]) thin -> None,
         *,
         on_gpu: Bool = False,
     ](mut self) raises:
-        """Runs a system function over generic host component columns."""
+        """Runs a system function over rows matching ``filter``.
+
+        Parameters:
+            filter: Compile-time component inclusion and exclusion constraints.
+            KernelFunc: The kernel specialized for ``filter``.
+            on_gpu: Whether to execute the kernel against device storage.
+        """
         comptime if on_gpu:
-            var kernel_context = HostKernelContext(
-                length=Int32(self._world[].device_storage._length),
+            var length = self._world[].device_storage._length
+            comptime if filter_includes[
+                Position, *filter._include.ComponentTypes
+            ]():
+                if not self._world[].device_storage.has_component[Position]():
+                    length = 0
+            comptime if filter_includes[
+                Velocity, *filter._include.ComponentTypes
+            ]():
+                if not self._world[].device_storage.has_component[Velocity]():
+                    length = 0
+            comptime if filter_excludes[
+                Position, *filter._exclude.ComponentTypes
+            ]():
+                if self._world[].device_storage.has_component[Position]():
+                    length = 0
+            comptime if filter_excludes[
+                Velocity, *filter._exclude.ComponentTypes
+            ]():
+                if self._world[].device_storage.has_component[Velocity]():
+                    length = 0
+            comptime if filter_includes[
+                Name, *filter._include.ComponentTypes
+            ]():
+                if not self._world[].device_storage.has_component[Name]():
+                    length = 0
+            comptime if filter_excludes[
+                Name, *filter._exclude.ComponentTypes
+            ]():
+                if self._world[].device_storage.has_component[Name]():
+                    length = 0
+
+            var kernel_context = HostKernelContext[filter](
+                length=Int32(length),
                 position=rebind[
                     DevicePointer[
                         mut=True, dtype=DType.uint8, origin=MutUntrackedOrigin
@@ -756,8 +863,40 @@ struct Context[
             )
             self._world[].device.synchronize()
         else:
-            var kernel_context = KernelContext(
-                length=Int32(self._world[].host_storage._length),
+            var length = self._world[].host_storage._length
+            comptime if filter_includes[
+                Position, *filter._include.ComponentTypes
+            ]():
+                if not self._world[].host_storage.has_component[Position]():
+                    length = 0
+            comptime if filter_includes[
+                Velocity, *filter._include.ComponentTypes
+            ]():
+                if not self._world[].host_storage.has_component[Velocity]():
+                    length = 0
+            comptime if filter_excludes[
+                Position, *filter._exclude.ComponentTypes
+            ]():
+                if self._world[].host_storage.has_component[Position]():
+                    length = 0
+            comptime if filter_excludes[
+                Velocity, *filter._exclude.ComponentTypes
+            ]():
+                if self._world[].host_storage.has_component[Velocity]():
+                    length = 0
+            comptime if filter_includes[
+                Name, *filter._include.ComponentTypes
+            ]():
+                if not self._world[].host_storage.has_component[Name]():
+                    length = 0
+            comptime if filter_excludes[
+                Name, *filter._exclude.ComponentTypes
+            ]():
+                if self._world[].host_storage.has_component[Name]():
+                    length = 0
+
+            var kernel_context = KernelContext[filter](
+                length=Int32(length),
                 position=self._world[].host_storage.get_component_bytes[
                     Position
                 ](),
@@ -775,7 +914,9 @@ trait System(Copyable, Deinitable):
         ...
 
 
-def move_positions(context: KernelContext):
+def move_positions[KernelFilter: Filter](
+    context: KernelContext[KernelFilter]
+):
     for entity in context:
         ref position = entity.get[Position]()
         ref velocity = entity.get[Velocity]()
@@ -790,14 +931,12 @@ struct Move(System):
     ](mut self, mut context: Context[_, *WorldTs]) raises:
         """Runs the movement kernel for entities with position and velocity."""
         context.run[
-            move_positions,
-            context.filter.include[Position, Velocity](),
+            move_positions[context.filter.include[Position, Velocity]()],
             on_gpu=True,
         ]()
 
         context.run[
-            move_positions,
-            context.filter.include[Position, Velocity](),
+            move_positions[context.filter.include[Position, Velocity]()],
             on_gpu=False,
         ]()
 
@@ -869,6 +1008,12 @@ def main() raises:
         ]()
         var host_position = host_position_ptr[unsafe_offset=0].copy()
         print(t"Host position[0] = ({ host_position.x }, { host_position.y })")
+        assert host_position.x == 2.0
+        assert host_position.y == -2.0
+
+        var host_position_1 = host_position_ptr[unsafe_offset=1].copy()
+        assert host_position_1.x == 3.0
+        assert host_position_1.y == -3.0
 
         var gpu_positions = scheduler.world.device_storage.copy_to_host[
             Position
@@ -877,3 +1022,7 @@ def main() raises:
             t"GPU position[0] = ({ gpu_positions[0].x },"
             t" { gpu_positions[0].y })"
         )
+        assert gpu_positions[0].x == 1.0
+        assert gpu_positions[0].y == -1.0
+        assert gpu_positions[1].x == 1.0
+        assert gpu_positions[1].y == -1.0
