@@ -453,38 +453,6 @@ trait System(Copyable, Deinitable):
         ...
 
 
-def move_positions[KernelFilter: Filter](
-    context: KernelContext[KernelFilter]
-):
-    """Moves every position in the kernel's assigned row range.
-
-    Args:
-        context: The CPU or GPU execution context for the filtered rows.
-    """
-    for entity in context:
-        ref position = entity.get[Position]()
-        ref velocity = entity.get[Velocity]()
-        position.x += velocity.dx
-        position.y += velocity.dy
-
-
-@fieldwise_init
-struct Move(System):
-    def update[
-        *WorldTs: ComponentType
-    ](mut self, mut context: Context[_, *WorldTs]) raises:
-        """Runs the movement kernel for entities with position and velocity."""
-        context.run[
-            move_positions[context.filter.include[Position, Velocity]()],
-            on_gpu=True,
-        ]()
-
-        context.run[
-            move_positions[context.filter.include[Position, Velocity]()],
-            on_gpu=False,
-        ]()
-
-
 def _update_system[
     S: System, *ComponentTypes: ComponentType
 ](
@@ -534,13 +502,44 @@ struct Scheduler[*WorldComponentTypes: ComponentType]:
         frame_mark()
 
 
+@fieldwise_init
+struct Move(System):
+    def update[
+        *WorldTs: ComponentType
+    ](mut self, mut context: Context[_, *WorldTs]) raises:
+        """Runs the movement kernel for entities with position and velocity."""
+
+        def move_positions[KernelFilter: Filter](
+            context: KernelContext[KernelFilter]
+        ):
+            """Moves every position in the kernel's assigned row range.
+
+            Args:
+                context: The CPU or GPU execution context for the filtered rows.
+            """
+            for entity in context:
+                ref position = entity.get[Position]()
+                ref velocity = entity.get[Velocity]()
+                position.x += velocity.dx
+                position.y += velocity.dy
+
+
+        context.run[
+            move_positions[context.filter.include[Position, Velocity]()],
+            on_gpu=True,
+        ]()
+
+        context.run[
+            move_positions[context.filter.include[Position, Velocity]()],
+            on_gpu=False,
+        ]()
+
+
 def main() raises:
     comptime if not has_accelerator():
         print("No compatible GPU found")
     else:
         var scheduler = Scheduler[Position, Velocity, Name]()
-        # scheduler.world.device_storage.fill[Position](Position(0.0, 0.0))
-        # scheduler.world.device_storage.fill[Velocity](Velocity(1.0, -1.0))
 
         # Add an entity with a different component composition. The CPU
         # filter must skip this archetype while still updating the matching
