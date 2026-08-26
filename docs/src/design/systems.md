@@ -248,28 +248,26 @@ not assume them as part of this design.
 
 The remaining work is the work explicitly identified by `system_sketch.mojo`:
 
-- [ ] Add actual entity and component data storage. Use the current
-      `archetype._ComponentTable` as a reference.
+- [x] Add actual entity and component data storage for the CPU prototype.
+      The sketch now uses the archetype-backed `Storage` implementation.
 - [x] Add GPU execution only if the project later adopts Modular MAX. The first
       step would be initializing and storing a `DeviceContext`.
 - [ ] Restrict `EntityAccessor.get[T]()` to components included by the kernel's
       filter, including the `# MUST fail!` case.
 - [ ] Add resource access through `KernelContext`.
 
-The first and third items are required to make the CPU prototype functional.
+The access restriction is required to make the CPU prototype safe to use.
 The GPU item is deliberately not a dependency of the CPU API. Resource access
 should be added only after its ownership and borrowing rules are defined.
 
 ## Prototype Status
 
 `system_sketch.mojo` demonstrates the intended compile-time filter syntax and
-the type-erased scheduler adapter. It does not yet demonstrate real entity
-selection or storage access:
+the type-erased scheduler adapter. The CPU path now uses real archetype-backed
+storage:
 
-- `EntityAccessorIterator` yields five hard-coded entities.
-- `EntityAccessor.get[T]()` returns fabricated component values.
-- `Context.run` invokes the kernel once without consulting a world.
-- `Scheduler` owns a world, but the context does not yet reference its storage.
-
-The prototype should be treated as an API sketch until these limitations are
-removed.
+- `Context.run` visits each matching archetype independently.
+- `EntityAccessor` points into the matching archetype's component columns.
+- Filters can skip entities in archetypes with a different composition.
+- The GPU path remains a dense device-storage sketch until device-side entity
+  and archetype work planning is implemented.
