@@ -695,6 +695,39 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             return self._columns[id].get_ptr[T]()
 
     @always_inline
+    def get_component_span[
+        T: ComponentType,
+    ](ref self) raises LarecsError -> Span[
+        T, UntrackedOrigin[mut=origin_of(self).mut]
+    ]:
+        """Returns a span over all instances in `_ComponentTable` for the given component type.
+
+        Parameters:
+            T: The type of the component.
+
+        Returns:
+            The span over the component.
+
+        Raises:
+            LarecsError: If the component is not contained in the storage.
+        """
+        with Zone(
+            function_name=(
+                "_ComponentTable.get_component_span[T: ComponentType]()"
+            )
+        ):
+            comptime assert Self.component_manager.contains_components[
+                T
+            ](), "Component type not in component manager"
+            comptime id = Self.component_manager.get_id[T]()
+
+            self.assert_has_components[T]()
+
+            return Span(
+                unsafe_ptr=self._columns[id].get_ptr[T](), length=len(self)
+            )
+
+    @always_inline
     def has_components[*Ts: ComponentType](self) -> Bool:
         """Returns whether the storage contains all the given component types.
         """
