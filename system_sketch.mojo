@@ -453,9 +453,11 @@ struct _HostComponentStorage[*ComponentTypes: ComponentType](
                 preallocate=True, capacity=self._capacity
             )
 
-    def get_component_ptr[
-        T: ComponentType
-    ](ref self) -> Pointer[T, UntrackedOrigin[mut=origin_of(self).mut]]:
+    def get_component_column[
+        T: ComponentType,
+        *,
+        only_initialized: Bool = False,
+    ](ref self) -> Span[T, UntrackedOrigin[mut=origin_of(self).mut]]:
         """Returns the typed host column for component ``T``."""
         comptime assert Self.component_manager.contains_components[
             T
@@ -463,7 +465,10 @@ struct _HostComponentStorage[*ComponentTypes: ComponentType](
 
         comptime id = Self.component_manager.get_id[T]()
 
-        return self._columns[id].get_ptr[T]()
+        comptime if only_initialized:
+            return Span(unsafe_ptr=self._columns[id].get_ptr[T](), length=self._length)
+        else:
+            return Span(unsafe_ptr=self._columns[id].get_ptr[T](), length=self._capacity)
 
     def get_component_bytes[
         T: ComponentType
@@ -641,13 +646,13 @@ struct _World[*WorldTs: ComponentType]:
         self.host_storage.init_component[Position]()
         self.host_storage.init_component[Velocity]()
 
-        var host_position = self.host_storage.get_component_ptr[Position]()
-        var host_velocity = self.host_storage.get_component_ptr[Velocity]()
+        var host_position = self.host_storage.get_component_column[Position]()
+        var host_velocity = self.host_storage.get_component_column[Velocity]()
         for i in range(entity_count):
             var x = Float32(i)
             var y = Float32(-i)
-            host_position[unsafe_offset=i] = Position(x=x, y=y)
-            host_velocity[unsafe_offset=i] = Velocity(dx=2.0, dy=-2.0)
+            host_position[i] = Position(x=x, y=y)
+            host_velocity[i] = Velocity(dx=2.0, dy=-2.0)
         self.host_storage._length = entity_count
 
 
