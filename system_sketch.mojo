@@ -46,9 +46,8 @@ struct Name(Copyable):
 
 
 comptime DEFAULT_CAPACITY = 32
-comptime entity_count = 256
+comptime entity_count = 255
 comptime block_size = 128
-comptime block_count = ceildiv(entity_count, block_size)
 
 # The kernel body is independent of the execution backend. The backend adapter
 # below is responsible for constructing the matching context and launching it.
@@ -1032,17 +1031,21 @@ def main() raises:
         # Capture the host value before copying the device buffer. The device
         # copy returns a separate list and must not be used as a host-storage
         # synchronization operation.
-        var host_position_ptr = scheduler.world.host_storage.get_component_ptr[
+        var host_positions = scheduler.world.host_storage.get_component_column[
             Position
         ]()
-        var host_position = host_position_ptr[unsafe_offset=0].copy()
-        print(t"Host position[0] = ({ host_position.x }, { host_position.y })")
-        assert host_position.x == 2.0
-        assert host_position.y == -2.0
+        print(t"Host position[0] = ({ host_positions[0].x }, { host_positions[0].y })")
+        assert host_positions[0].x == 2.0
+        assert host_positions[0].y == -2.0
 
-        var host_position_1 = host_position_ptr[unsafe_offset=1].copy()
-        assert host_position_1.x == 3.0
-        assert host_position_1.y == -3.0
+        assert host_positions[1].x == 3.0
+        assert host_positions[1].y == -3.0
+        assert host_positions[
+            entity_count - 1
+        ].x == Float32(entity_count + 1)
+        assert host_positions[
+            entity_count - 1
+        ].y == -Float32(entity_count + 1)
 
         var gpu_positions = scheduler.world.device_storage.copy_to_host[
             Position
@@ -1055,3 +1058,5 @@ def main() raises:
         assert gpu_positions[0].y == -1.0
         assert gpu_positions[1].x == 1.0
         assert gpu_positions[1].y == -1.0
+        assert gpu_positions[entity_count - 1].x == 1.0
+        assert gpu_positions[entity_count - 1].y == -1.0
