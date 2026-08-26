@@ -2,14 +2,14 @@
 
 ## Goal
 
-Ensure that a GPU system processes each matching entity exactly once. The current
-`system_sketch.mojo` gives every GPU thread an iterator starting at entity `0`.
-Each thread therefore walks the complete entity range, causing every entity to be
-updated once per launched thread.
+Ensure that a GPU system processes each matching entity exactly once. Before
+this work, `system_sketch.mojo` gave every GPU thread an iterator starting at
+entity `0`. Each thread therefore walked the complete entity range, causing every
+entity to be updated once per launched thread.
 
-The iterator should partition the matching rows across the launched threads while
-preserving the same `KernelContext` and `EntityAccessor` API for CPU and GPU
-execution.
+The implemented iterator partitions the matching rows across the launched
+threads while preserving the same `KernelContext` and `EntityAccessor` API for
+CPU and GPU execution.
 
 ## Current state
 
@@ -19,17 +19,18 @@ The sketch currently has:
 - A compile-time `Filter` type.
 - A filter-specialized `KernelContext` and `EntityAccessor`.
 - A logical row length passed to each kernel context.
-- A fixed launch configuration based on `entity_count`.
-- A CPU iterator that can walk all rows sequentially.
+- A launch configuration derived from the current matching row count.
+- A grid-stride iterator for GPU execution.
+- A sequential iterator for CPU execution.
 
 The filter currently describes the storage as a whole. Since the prototype has no
 per-entity archetype composition, a filter either matches the complete dense row
 range or matches no rows. Per-archetype and sparse matching should be added later
 through a prepared query/work plan.
 
-## Proposed design
+## Implemented design
 
-Use a grid-stride iterator on the GPU:
+The sketch now uses a grid-stride iterator on the GPU:
 
 ```text
 thread 0: 0, total_threads, 2 * total_threads, ...
@@ -59,6 +60,8 @@ GPU-target check so the host implementation does not attempt to evaluate the GPU
 builtin.
 
 ## Implementation steps
+
+The following steps are implemented in `system_sketch.mojo`.
 
 ### 1. Add execution partition metadata
 
@@ -155,6 +158,11 @@ An invalid filter that both includes and excludes the same component should eith
 be rejected at compile time or produce zero matching rows.
 
 ## Testing plan
+
+The sketch's `main` function asserts rows `0`, `1`, and the final partial-grid
+row. The dedicated `test/grid_stride_iterator_test.mojo` trace test also records
+the owning thread and atomically counts visits for every row. It uses a small,
+intentionally under-subscribed grid so that each thread processes multiple rows.
 
 ### CPU regression coverage
 
