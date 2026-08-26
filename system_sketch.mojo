@@ -20,6 +20,7 @@ from std.memory import (
     unsafe_destroy_n,
 )
 from std.sys import has_accelerator, size_of
+from std.sys.info import is_gpu
 
 from larecs.component import ComponentType, ComponentManager
 from larecs.unsafe_box import UnsafeBox
@@ -705,15 +706,23 @@ struct EntityAccessorIterator[KernelFilter: Filter](Iterator, Movable):
 
     var _entity: EntityAccessor[Self.KernelFilter]
     var _length: Int32
+    var _stride: Int32
     var _done: Bool
 
     def __init__(out self, context: KernelContext[Self.KernelFilter]):
+        var start: Int32 = 0
+        var stride: Int32 = 1
+        comptime if is_gpu():
+            start = Int32(global_idx.x)
+            stride = context.thread_count
+
         self._entity = EntityAccessor[Self.KernelFilter](
-            id=0,
+            id=start,
             _position=context.position,
             _velocity=context.velocity,
         )
         self._length = context.length
+        self._stride = stride
         self._done = False
 
     def __iter__(deinit self) -> Self:
@@ -723,13 +732,14 @@ struct EntityAccessorIterator[KernelFilter: Filter](Iterator, Movable):
         if self._done or self._entity.id >= self._length:
             raise StopIteration()
         var entity = self._entity.copy()
-        self._entity.id += 1
+        self._entity.id += self._stride
         return entity^
 
 
 @fieldwise_init
 struct KernelContext[KernelFilter: Filter](Copyable, RegisterPassable):
     var length: Int32
+    var thread_count: Int32
     var position: Pointer[UInt8, MutUntrackedOrigin]
     var velocity: Pointer[UInt8, MutUntrackedOrigin]
 
@@ -751,6 +761,7 @@ struct HostKernelContext[KernelFilter: Filter](
         return "KernelContext"
 
     var length: Int32
+    var thread_count: Int32
     var position: DevicePointer[
         mut=True, dtype=DType.uint8, origin=MutUntrackedOrigin
     ]
@@ -832,41 +843,48 @@ struct Context[
                 if self._world[].device_storage.has_component[Name]():
                     length = 0
 
-            var kernel_context = HostKernelContext[filter](
-                length=Int32(length),
-                position=rebind[
-                    DevicePointer[
-                        mut=True, dtype=DType.uint8, origin=MutUntrackedOrigin
-                    ]
-                ](
-                    DevicePointer(
-                        self._world[]
-                        .device_storage._columns[
-                            Self.World.component_manager.get_id[Position]()
+            var grid_dim = ceildiv(length, block_size)
+            if length > 0:
+                var kernel_context = HostKernelContext[filter](
+                    length=Int32(length),
+                    thread_count=Int32(grid_dim * block_size),
+                    position=rebind[
+                        DevicePointer[
+                            mut=True,
+                            dtype=DType.uint8,
+                            origin=MutUntrackedOrigin,
                         ]
-                        .unsafe_value()
-                    )
-                ),
-                velocity=rebind[
-                    DevicePointer[
-                        mut=True, dtype=DType.uint8, origin=MutUntrackedOrigin
-                    ]
-                ](
-                    DevicePointer(
-                        self._world[]
-                        .device_storage._columns[
-                            Self.World.component_manager.get_id[Velocity]()
+                    ](
+                        DevicePointer(
+                            self._world[]
+                            .device_storage._columns[
+                                Self.World.component_manager.get_id[Position]()
+                            ]
+                            .unsafe_value()
+                        )
+                    ),
+                    velocity=rebind[
+                        DevicePointer[
+                            mut=True,
+                            dtype=DType.uint8,
+                            origin=MutUntrackedOrigin,
                         ]
-                        .unsafe_value()
-                    )
-                ),
-            )
-            self._world[].device.enqueue_function[KernelFunc](
-                kernel_context,
-                grid_dim=block_count,
-                block_dim=block_size,
-            )
-            self._world[].device.synchronize()
+                    ](
+                        DevicePointer(
+                            self._world[]
+                            .device_storage._columns[
+                                Self.World.component_manager.get_id[Velocity]()
+                            ]
+                            .unsafe_value()
+                        )
+                    ),
+                )
+                self._world[].device.enqueue_function[KernelFunc](
+                    kernel_context,
+                    grid_dim=grid_dim,
+                    block_dim=block_size,
+                )
+                self._world[].device.synchronize()
         else:
             var length = self._world[].host_storage._length
             comptime if filter_includes[
@@ -902,6 +920,7 @@ struct Context[
 
             var kernel_context = KernelContext[filter](
                 length=Int32(length),
+                thread_count=1,
                 position=self._world[].host_storage.get_component_bytes[
                     Position
                 ](),
@@ -922,6 +941,11 @@ trait System(Copyable, Deinitable):
 def move_positions[KernelFilter: Filter](
     context: KernelContext[KernelFilter]
 ):
+    """Moves every position in the kernel's assigned row range.
+
+    Args:
+        context: The CPU or GPU execution context for the filtered rows.
+    """
     for entity in context:
         ref position = entity.get[Position]()
         ref velocity = entity.get[Velocity]()
