@@ -175,6 +175,14 @@ struct _DeviceComponentStorage[*ComponentTypes: ComponentType](Movable):
         self._device_context.synchronize()
         data = rebind_var[List[T]](bytes^)
 
+    def copy_to_host[T: ComponentType](self, column_ptr: Pointer[T, MutUntrackedOrigin], *, offset: Int = 0, length: Int = -1) raises:
+        comptime id = Self.component_manager.get_id[T]()
+
+        if self._columns[id] is None:
+            return
+
+        self._columns[id].unsafe_value().create_sub_buffer[DType.uint8](offset * size_of[T](), length * size_of[T]()).enqueue_copy_to(column_ptr.unsafe_bitcast[UInt8]())
+
     def copy_from_host[mut: Bool, origin: Origin[mut=mut], // , T: ComponentType](mut self, data: Span[T, origin], *, offset: Int = 0) raises:
         comptime id = Self.component_manager.get_id[T]()
 
@@ -425,7 +433,17 @@ struct Context[
                     grid_dim=grid_dim,
                     block_dim=block_size,
                 )
+
+                comptime for i in range(len(filter)):
+                    comptime T = filter._include.ComponentTypes[i]
+
+                    var offset = 0
+                    for ref archetype in matching_archetypes.copy():
+                        self._world[].device_storage.copy_to_host[T](archetype._storage.get_component_ptr[T](), offset=offset, length=len(archetype))
+                        offset += len(archetype)
+
                 self._world[].device.synchronize()
+
         else:
             # A filter can match multiple archetypes. Run the kernel once per
             # matching archetype so each component pointer refers to a
