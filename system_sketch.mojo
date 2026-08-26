@@ -400,7 +400,7 @@ struct Context[
         for ref archetype in matching_archetypes.copy():
             length += len(archetype)
 
-        comptime if on_gpu:
+        comptime if has_accelerator() and on_gpu:
             self._world[].device_storage = Self.World.device_storage_type(self._world[].device, length)
 
             var kernel_columns = HostKernelContext[filter].Columns(uninitialized=True)
