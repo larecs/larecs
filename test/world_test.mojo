@@ -341,7 +341,7 @@ def test_world_batch_add() raises:
             FlexibleComponent[0](1.0, 2.0),
         )
 
-    # Check that this raises no error, despite there is no `without_mask`
+    # Check that this raises no error, despite there is no `exclude_mask`
     _ = world.storage.add(
         world.storage.query[Position](),
         LargerComponent(0.3, 0.4, 0.5),

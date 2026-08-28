@@ -283,7 +283,7 @@ def test_archetype_copy() raises:
 def test_entity_accessor_set_components() raises:
     var archetype = Archetype(0, mask2)
     var entity_idx = archetype.add_entity(Entity(10, 3))
-    var entity = archetype.get_entity_accessor(entity_idx)
+    var entity = archetype.get_row_accessor(entity_idx)
 
     entity.set(
         LargerComponent(1.0, 2.0, 3.0),

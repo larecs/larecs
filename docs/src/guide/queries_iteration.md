@@ -15,8 +15,8 @@ conforming to a query.
 {{< api Query Queries >}} allow to iterate over all
 entities with or without a specific
 set of components. To create a query, we can use
-the {{< api Storage.query query >}} method of
-{{< api Storage >}}. The parameters used in this method are the components
+the {{< api HostStorage.query query >}} method of
+{{< api HostStorage >}}. The parameters used in this method are the components
 that each entity we look for must have. For example, if we want to
 iterate over all entities with a `Position` and a `Velocity` component,
 we can do this as follows:

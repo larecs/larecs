@@ -13,6 +13,13 @@ comptime ComponentType = Copyable & Deinitable
 """The trait that components must conform to."""
 
 
+@fieldwise_init
+struct Components[*ComponentTypes: ComponentType](Sized):
+    def __len__(self) -> Int:
+        """Returns the number of component types included by the filter."""
+        return len(self.ComponentTypes)
+
+
 @always_inline
 def constrain_components_unique[*Ts: ComponentType]() -> Bool:
     """Checks whether all component types are unique.
@@ -60,6 +67,9 @@ struct ComponentManager[
     comptime _registry = Self._create_registry()
     """The registry mapping component type names to their IDs."""
 
+    comptime _component_size = Self._calc_component_sizes()
+    """A mapping from component ID to their size."""
+
     @staticmethod
     @always_inline
     def _create_registry(out dict: Dict[String, ComponentId]):
@@ -78,6 +88,21 @@ struct ComponentManager[
         comptime for i in range(len(Self.ComponentTypes)):
             comptime T = Self.ComponentTypes[i]
             dict[reflect[T].name()] = ComponentId(i)
+
+    @staticmethod
+    @always_inline
+    def _calc_component_sizes(out sizes: Array[Int, Self.component_count]):
+        """Calculate the size of each component type."""
+        sizes = Array[Int, Self.component_count](fill=0)
+        comptime for i in range(len(Self.ComponentTypes)):
+            comptime T = Self.ComponentTypes[i]
+            sizes[i] = size_of[T]()
+
+    @staticmethod
+    @always_inline
+    def get_size(component_id: ComponentId) -> Int:
+        """Get the size of a component type."""
+        return materialize[Self._component_size]()[component_id]
 
     @staticmethod
     @always_inline
@@ -156,8 +181,16 @@ struct ComponentManager[
         """
         writer.write("ComponentManager[")
         comptime if len(Self.ComponentTypes) > 0:
-            writer.write(reflect[Self.ComponentTypes[0]].name())
+            writer.write(self.get_type_name(0))
         comptime for i in range(1, len(Self.ComponentTypes)):
             writer.write(", ")
-            writer.write(reflect[Self.ComponentTypes[i]].name())
+            writer.write(self.get_type_name(i))
         writer.write("]")
+
+    @staticmethod
+    def get_type_name(id: ComponentId) -> StaticString:
+        comptime for i in range(len(Self.ComponentTypes)):
+            if id == i:
+                return reflect[Self.ComponentTypes[i]].name()
+
+        return "<UNKNOWN_COMPONENT>"

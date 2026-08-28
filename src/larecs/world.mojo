@@ -1,39 +1,30 @@
 from tracy import Zone
 
-from .pool import EntityPool
-from .entity import Entity, EntityLocation
-from .archetype import (
-    Archetype as _Archetype,
-    MutableEntityAccessor,
-)
+from max.gpu.host import DeviceContext
+
 from .component import (
-    ComponentManager,
     ComponentType,
-    constrain_components_unique,
 )
-from .storage import Storage
-from .static_optional import StaticOptional
+from .host_storage import HostStorage
+from .device_storage import DeviceStorage
 from .resource import Resources
-from .error import (
-    LarecsError,
-    UnknownError,
-    ComponentError,
-    WorldError,
-    EntityError,
-)
 
 
 struct World[*component_types: ComponentType](Copyable, Sized):
     """
     World is the central type holding entity and component data, as well as resources.
 
-    The World provides all the basic ECS functionality of Larecs through it's member [..storage.Storage storage].
-    These include functions like [..storage.Storage.query], [..storage.Storage.add_entity], [..storage.Storage.add], [..storage.Storage.remove], [..storage.Storage.get] or [..storage.Storage.remove_entity].
+    The World provides all the basic ECS functionality of Larecs through it's member [..host_storage.HostStorage storage].
+    These include functions like [..host_storage.HostStorage.query], [..host_storage.HostStorage.add_entity], [..host_storage.HostStorage.add], [..host_storage.HostStorage.remove], [..host_storage.HostStorage.get] or [..host_storage.HostStorage.remove_entity].
     """
 
-    comptime Storage = Storage[*Self.component_types]
-    var storage: Self.Storage
-    """[..storage.Storage Component Storage] associated with the world."""
+    comptime HostStorage = HostStorage[*Self.component_types]
+    var storage: Self.HostStorage
+    """[..host_storage.HostStorage Component Storage] associated with the world."""
+
+    comptime DeviceStorage = DeviceStorage[*Self.component_types]
+    var _device_storage: Optional[Self.DeviceStorage]
+    """[..device_storage.DeviceStorage Component Storage] associated with the world."""
 
     var resources: Resources  # The resources of the world.
     """[..resource.Resources Resource Storage] associated with the world."""
@@ -43,7 +34,11 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         Creates a new [.World].
         """
         with Zone(function_name="World.__init__()"):
-            self.storage = Self.Storage()
+            self.storage = Self.HostStorage()
+            try:
+                self._device_storage = Self.DeviceStorage(DeviceContext(), 0)
+            except:
+                self._device_storage = None
             self.resources = Resources()
 
     def __len__(self, out size: Int):
