@@ -1,107 +1,17 @@
 from .component import ComponentType
 from .resource import Resources
 from .world import World
+from .system import (
+    System,
+    SystemContext,
+    _initialize_system,
+    _update_system,
+    _finalize_system,
+)
 from .unsafe_box import UnsafeBox
 
 from std.reflection import reflect
 from tracy import Zone, frame_mark
-
-
-trait System(Copyable, Deinitable, Movable):
-    """Trait for systems in the scheduler."""
-
-    def initialize[
-        *ComponentTypes: ComponentType
-    ](mut self, mut world: World[*ComponentTypes]) raises:
-        """Optionally initializes the system with the given world.
-
-        Parameters:
-            ComponentTypes: The component types in the world.
-
-        Args:
-            world: The world to use for initialization.
-        """
-        pass
-
-    def update[
-        *ComponentTypes: ComponentType
-    ](mut self, mut world: World[*ComponentTypes]) raises:
-        """Updates the system with the given world.
-
-        Parameters:
-            ComponentTypes: The component types in the world.
-
-        Args:
-            world: The world to use for the update.
-        """
-        ...
-
-    def finalize[
-        *ComponentTypes: ComponentType
-    ](mut self, mut world: World[*ComponentTypes]) raises:
-        """Optionally finalizes the system with the given world.
-
-        Parameters:
-            ComponentTypes: The component types in the world.
-
-        Args:
-            world: The world to use for the finalization.
-        """
-        pass
-
-
-def _update_system[
-    S: System, *ComponentTypes: ComponentType
-](mut system: UnsafeBox, mut world: World[*ComponentTypes]) raises:
-    """Updates the system with the given world.
-
-    Parameters:
-        S: The type of the system.
-        ComponentTypes: The types of the components in the world.
-
-    Args:
-        system: The system to update.
-        world: The world to use for the update.
-    """
-    with Zone(function_name=String(t"{reflect[S].name()}.update()")):
-        ref concrete_system = system.unsafe_get[S]()
-        S.update[*ComponentTypes](concrete_system, world)
-
-
-def _initialize_system[
-    S: System, *ComponentTypes: ComponentType
-](mut system: UnsafeBox, mut world: World[*ComponentTypes]) raises:
-    """Initializes the system with the given world.
-
-    Parameters:
-        S: The type of the system.
-        ComponentTypes: The types of the components in the world.
-
-    Args:
-        system: The system to initialize.
-        world: The world to use for the initialization.
-    """
-    with Zone(function_name=String(t"{reflect[S].name()}.initialize()")):
-        ref concrete_system = system.unsafe_get[S]()
-        S.initialize[*ComponentTypes](concrete_system, world)
-
-
-def _finalize_system[
-    S: System, *ComponentTypes: ComponentType
-](mut system: UnsafeBox, mut world: World[*ComponentTypes]) raises:
-    """Finalizes the system with the given world.
-
-    Parameters:
-        S: The type of the system.
-        ComponentTypes: The types of the components in the world.
-
-    Args:
-        system: The system to finalize.
-        world: The world to use for the finalization.
-    """
-    with Zone(function_name=String(t"{reflect[S].name()}.finalize()")):
-        ref concrete_system = system.unsafe_get[S]()
-        S.finalize[*ComponentTypes](concrete_system, world)
 
 
 struct Scheduler[*ComponentTypes: ComponentType](Movable):
@@ -166,8 +76,11 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
     comptime World = World[*Self.ComponentTypes]
     """The world type used by the scheduler."""
 
+    comptime SystemContext = SystemContext[*Self.ComponentTypes]
+    """The system context type used by the scheduler."""
+
     comptime FunctionType = def(
-        mut system: UnsafeBox, mut world: Self.World
+        mut system: UnsafeBox, mut context: Self.SystemContext
     ) thin raises
     """The type of system functions."""
 
@@ -246,9 +159,10 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
     def initialize(mut self) raises:
         """Initializes all systems in the scheduler."""
         with Zone(function_name="Scheduler.initialize()"):
+            var context = Self.SystemContext(self.world)
             for ref system_info in self._systems:
                 system_info[Self._initialize_index](
-                    system_info[Self._system_index], self.world
+                    system_info[Self._system_index], context
                 )
         frame_mark()
 
@@ -259,19 +173,24 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
             steps: How often the systems should be updated.
         """
         with Zone(function_name="Scheduler.update(steps: Int)"):
+            var context = Self.SystemContext(self.world)
             for _ in range(steps):
                 for ref system_info in self._systems:
                     system_info[Self._update_index](
-                        system_info[Self._system_index], self.world
+                        system_info[Self._system_index], context
                     )
         frame_mark()
 
     def finalize(mut self) raises:
         """Finalizes all systems in the scheduler."""
         with Zone(function_name="Scheduler.finalize()"):
+            var world_ptr = Pointer(to=self.world).unsafe_origin_cast[
+                MutUntrackedOrigin
+            ]()
+            var context = Self.SystemContext(world_ptr[])
             for ref system_info in self._systems:
                 system_info[Self._finalize_index](
-                    system_info[Self._system_index], self.world
+                    system_info[Self._system_index], context
                 )
         frame_mark()
 
