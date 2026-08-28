@@ -10,7 +10,7 @@ from .component import (
     constrain_components_unique,
 )
 from .archetype import Archetype as _Archetype
-from .storage import Storage
+from .host_storage import HostStorage
 from .lock import LockManager
 from .debug_utils import debug_warn
 from .static_optional import StaticOptional
@@ -27,7 +27,7 @@ struct Query[
 ](ImplicitlyCopyable, SizedRaising):
     """Query builder for entities with and without specific components.
 
-    This type should not be used directly, but through the [..storage.Storage.query] method:
+    This type should not be used directly, but through the [..host_storage.HostStorage.query] method:
 
     ```mojo {doctest="query_init" global=true hide=true}
     from larecs import World, Resources, MutableEntityAccessor
@@ -51,7 +51,7 @@ struct Query[
         has_without_mask: Whether the query has excluded components.
     """
 
-    comptime Storage = Storage[*Self.ComponentTypes]
+    comptime HostStorage = HostStorage[*Self.ComponentTypes]
     """The world type for this query."""
     comptime ArchetypeIterator = _ArchetypeIterator[
         _,
@@ -67,7 +67,7 @@ struct Query[
     ]
     """The query type with an active exclusion mask."""
 
-    var _archetypes: Pointer[Self.Storage.Archetypes, Self.archetypes_origin]
+    var _archetypes: Pointer[Self.HostStorage.Archetypes, Self.archetypes_origin]
     """Pointer to the world's archetypes."""
     var _lock_ptr: Pointer[LockManager, Self.locks_origin]
     """Pointer to the world's lock manager."""
@@ -78,7 +78,7 @@ struct Query[
     @doc_hidden
     def __init__(
         out self,
-        archetypes: Pointer[Self.Storage.Archetypes, Self.archetypes_origin],
+        archetypes: Pointer[Self.HostStorage.Archetypes, Self.archetypes_origin],
         lock_ptr: Pointer[LockManager, Self.locks_origin],
         var mask: BitMask,
         var without_mask: StaticOptional[BitMask, Self.has_without_mask] = None,
@@ -86,7 +86,7 @@ struct Query[
         """
         Creates a new query.
 
-        The constructors should not be used directly, but through the [..storage.Storage.query] method.
+        The constructors should not be used directly, but through the [..host_storage.HostStorage.query] method.
 
         Args:
             archetypes: A pointer to the world's archetypes.
@@ -110,14 +110,14 @@ struct Query[
     @doc_hidden
     def __init__(
         out self,
-        archetypes: Pointer[Self.Storage.Archetypes, Self.archetypes_origin],
+        archetypes: Pointer[Self.HostStorage.Archetypes, Self.archetypes_origin],
         lock_ptr: Pointer[LockManager, Self.locks_origin],
         var info: QueryInfo[has_without_mask=Self.has_without_mask],
     ):
         """
         Creates a new query from existing query information.
 
-        The constructors should not be used directly, but through the [..storage.Storage.query] method.
+        The constructors should not be used directly, but through the [..host_storage.HostStorage.query] method.
 
         Args:
             archetypes: A pointer to the world's archetypes.
@@ -230,7 +230,7 @@ struct Query[
                 self._lock_ptr,
                 self._info
                 ^.without(
-                    BitMask(Self.Storage.component_manager.get_id_arr[*Ts]())
+                    BitMask(Self.HostStorage.component_manager.get_id_arr[*Ts]())
                 ),
             )
 

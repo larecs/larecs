@@ -249,7 +249,7 @@ not assume them as part of this design.
 The remaining work is the work explicitly identified by `system_sketch.mojo`:
 
 - [x] Add actual entity and component data storage for the CPU prototype.
-      The sketch now uses the archetype-backed `Storage` implementation.
+      The sketch now uses the archetype-backed `HostStorage` implementation.
 - [x] Add GPU execution only if the project later adopts Modular MAX. The first
       step would be initializing and storing a `DeviceContext`.
 - [ ] Restrict `EntityAccessor.get[T]()` to components included by the kernel's
