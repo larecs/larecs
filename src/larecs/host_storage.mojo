@@ -32,7 +32,7 @@ from std.sys import size_of
 from tracy import Zone
 
 
-struct Storage[*ComponentTypes: ComponentType](Copyable):
+struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     """
     Holds all the component and entity data for a world.
 
@@ -79,7 +79,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         has_start_indices=has_start_indices,
     ]
     """
-    Primary entity iterator type comptime for mask-based Storage queries.
+    Primary entity iterator type comptime for mask-based HostStorage queries.
 
     Parameters:
         archetype_mutability: Whether the iterator allows mutable access to archetypes.
@@ -121,7 +121,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     """Type alias for the list of archetypes owned by this storage."""
 
     var _archetypes: Self.Archetypes
-    """Storage for all archetypes owned by this storage."""
+    """Archetype list owned by this HostStorage."""
 
     var _archetype_map: BitMaskGraph[-1]
     """Graph mapping component masks to archetype indices."""
@@ -259,7 +259,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """Returns a new or recycled [..entity.Entity].
 
         The given component types are added to the entity.
-        Do not use during [.Storage.query] iteration!
+        Do not use during [.HostStorage.query] iteration!
 
         ⚠️ Important:
         Entities are intended to be stored and passed around via copy, not via pointers! See [..entity.Entity].
@@ -295,7 +295,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             components: The components to add to the entity.
 
         Raises:
-            Error: If the world is [.Storage.is_locked locked].
+            Error: If the world is [.HostStorage.is_locked locked].
 
         Returns:
             The new or recycled [..entity.Entity].
@@ -303,7 +303,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "Storage.add_entity[*Ts: ComponentType](var *components: *Ts)"
+                "HostStorage.add_entity[*Ts: ComponentType](var *components: *Ts)"
             )
         ):
             comptime assert Self.component_manager.contains_components[
@@ -360,7 +360,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """Adds a batch of [..entity.Entity Entities].
 
         The given component types are added to the entities.
-        Do not use during [.Storage.query] iteration!
+        Do not use during [.HostStorage.query] iteration!
 
         Example:
 
@@ -397,7 +397,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             count: The number of entities to add.
 
         Raises:
-            LarecsError: If the world is [.Storage.is_locked locked].
+            LarecsError: If the world is [.HostStorage.is_locked locked].
 
         Returns:
             An iterator to the new or recycled [..entity.Entity Entities].
@@ -405,7 +405,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "Storage.add_entities[*Ts: ComponentType](*components: *Ts,"
+                "HostStorage.add_entities[*Ts: ComponentType](*components: *Ts,"
                 " count: Int, out iterator: Self.Iterator)"
             )
         ):
@@ -481,7 +481,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "Storage._create_entities(archetype_index: Int, count: Int)"
+                "HostStorage._create_entities(archetype_index: Int, count: Int)"
             )
         ):
             debug_assert(count > 0, "Count must be positive.")
@@ -515,7 +515,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         Removes an [..entity.Entity], making it eligible for recycling.
 
-        Do not use during [.Storage.query] iteration!
+        Do not use during [.HostStorage.query] iteration!
 
         Args:
             entity: The entity to remove.
@@ -526,7 +526,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         self._assert_unlocked()
         self._assert_alive(entity)
 
-        with Zone(function_name="Storage.remove_entity(entity: Entity)"):
+        with Zone(function_name="HostStorage.remove_entity(entity: Entity)"):
             var entity_loc = self._entity_locations[entity.get_id()]
             ref old_archetype = self._archetypes.unsafe_get(
                 entity_loc.archetype_index
@@ -596,7 +596,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         self._assert_unlocked()
 
-        with Zone(function_name="Storage.remove_entities(query: QueryInfo)"):
+        with Zone(function_name="HostStorage.remove_entities(query: QueryInfo)"):
             for ref archetype in self._get_archetype_iterator(
                 query.mask, query.without_mask
             ):
@@ -634,7 +634,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Args:
             entity: The entity to check.
         """
-        with Zone(function_name="Storage.is_alive(entity: Entity)"):
+        with Zone(function_name="HostStorage.is_alive(entity: Entity)"):
             return self._entity_pool.is_alive(entity)
 
     @always_inline
@@ -652,7 +652,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: If the entity does not exist.
         """
         with Zone(
-            function_name="Storage.has[T: ComponentType](entity: Entity)"
+            function_name="HostStorage.has[T: ComponentType](entity: Entity)"
         ):
             comptime assert Self.component_manager.contains_components[
                 T
@@ -688,7 +688,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         self._assert_alive(entity)
 
         with Zone(
-            function_name="Storage.get[T: ComponentType](entity: Entity)"
+            function_name="HostStorage.get[T: ComponentType](entity: Entity)"
         ):
             if not self._archetypes.unsafe_get(
                 entity_loc.archetype_index
@@ -722,7 +722,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "Storage.set[T: ComponentType](entity: Entity, var"
+                "HostStorage.set[T: ComponentType](entity: Entity, var"
                 " component: T)"
             )
         ):
@@ -755,7 +755,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "Storage.set[*Ts: ComponentType](entity: Entity, var"
+                "HostStorage.set[*Ts: ComponentType](entity: Entity, var"
                 " *components: *Ts)"
             )
         ):
@@ -788,11 +788,11 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be added because they are already present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
-                "Storage.add[*Ts: ComponentType](entity: Entity, var"
+                "HostStorage.add[*Ts: ComponentType](entity: Entity, var"
                 " *add_components: *Ts)"
             )
         ):
@@ -814,11 +814,11 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be added because they are already present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
-                "Storage.add[*Ts: ComponentType](var *add_components: *Ts,"
+                "HostStorage.add[*Ts: ComponentType](var *add_components: *Ts,"
                 " entity: Entity)"
             )
         ):
@@ -879,13 +879,13 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             add_components: The components to add.
 
         Raises:
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
             Error: when called with a query that could match existing entities that already have at least one of the
                 components to add.
         """
         with Zone(
             function_name=(
-                "Storage.add[has_without_mask: Bool, *Ts: ComponentType](query:"
+                "HostStorage.add[has_without_mask: Bool, *Ts: ComponentType](query:"
                 " QueryInfo, var *add_components: *Ts, out iterator:"
                 " Self.Iterator)"
             )
@@ -915,10 +915,10 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
-            function_name="Storage.remove[*Ts: ComponentType](entity: Entity)"
+            function_name="HostStorage.remove[*Ts: ComponentType](entity: Entity)"
         ):
             comptime assert constrain_components_unique[
                 *Ts
@@ -978,13 +978,13 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             query: The query to determine which entities to modify.
 
         Raises:
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
             Error: when called with a query that could match entities that don't have all of the components to remove.
         """
 
         with Zone(
             function_name=(
-                "Storage.remove[*Ts: ComponentType, has_without_mask:"
+                "HostStorage.remove[*Ts: ComponentType, has_without_mask:"
                 " Bool](query: QueryInfo, out iterator: Self.Iterator)"
             )
         ):
@@ -1024,7 +1024,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Parameters:
             Ts: The types of the components to remove.
         """
-        with Zone(function_name="Storage.replace[*Ts: ComponentType]()"):
+        with Zone(function_name="HostStorage.replace[*Ts: ComponentType]()"):
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in replace are not allowed."
@@ -1055,11 +1055,11 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be added because they are already present.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
-                "Storage._remove_and_add[*Ts: ComponentType, rem_size: Int,"
+                "HostStorage._remove_and_add[*Ts: ComponentType, rem_size: Int,"
                 " remove_ids: Array[ComponentId, rem_size]](entity:"
                 " Entity, var *add_components: *Ts)"
             )
@@ -1209,11 +1209,11 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: when called with a query that could match existing entities that already have at least one of the
                 components to add.
             LarecsError: when called with a query that could match entities that don't have all of the components to remove.
-            LarecsError: when called on a locked world. Do not use during [.Storage.query] iteration.
+            LarecsError: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
-                "Storage._batch_remove_and_add[*Ts: ComponentType, rem_size:"
+                "HostStorage._batch_remove_and_add[*Ts: ComponentType, rem_size:"
                 " Int, remove_ids: Array[ComponentId, rem_size],"
                 " has_without_mask: Bool](query: QueryInfo, var"
                 " *add_components: *Ts, out iterator: Self.Iterator)"
@@ -1416,7 +1416,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: If the world is locked.
         """
-        with Zone(function_name="Storage._assert_unlocked()"):
+        with Zone(function_name="HostStorage._assert_unlocked()"):
             if self.is_locked():
                 raise LarecsError(WorldError.world_is_locked)
 
@@ -1431,7 +1431,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: If the entity does not exist.
         """
-        with Zone(function_name="Storage._assert_alive(entity: Entity)"):
+        with Zone(function_name="HostStorage._assert_alive(entity: Entity)"):
             if not self._entity_pool.is_alive(entity):
                 raise LarecsError(
                     EntityError.non_existent_entity.with_entities(entity)
@@ -1469,7 +1469,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
         with Zone(
             function_name=(
-                "Storage.apply[OperationType, has_without_mask: Bool, *,"
+                "HostStorage.apply[OperationType, has_without_mask: Bool, *,"
                 " unroll_factor: Int](query: QueryInfo, operation:"
                 " OperationType)"
             )
@@ -1488,7 +1488,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                         except:
                             raise LarecsError(UnknownError())
 
-    # BUG: Mojo cannot correctly infer the simd_width for `Storage.apply` therefore disable this for now.
+    # BUG: Mojo cannot correctly infer the simd_width for `HostStorage.apply` therefore disable this for now.
     #
     # def apply[
     #     OperationType: def[simd_width: Int](
@@ -1583,7 +1583,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     #     ```
 
     #     """
-    #     with TraceGuard(name="Storage.apply simd"):
+    #     with TraceGuard(name="HostStorage.apply simd"):
     #         self._assert_unlocked()
 
     #         with self._locked():
@@ -1633,7 +1633,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "Storage._get_entity_iterator[has_without_mask: Bool,"
+                "HostStorage._get_entity_iterator[has_without_mask: Bool,"
                 " has_start_indices: Bool](mask: BitMask, without_mask:"
                 " StaticOptional[BitMask, has_without_mask], var start_indices:"
                 " StaticOptional[List[Int], has_start_indices], out iterator:"
@@ -1676,7 +1676,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "Storage._get_archetype_iterator[has_without_mask: Bool](mask:"
+                "HostStorage._get_archetype_iterator[has_without_mask: Bool](mask:"
                 " BitMask, without_mask: StaticOptional[BitMask,"
                 " has_without_mask], out iterator: Self.ArchetypeIterator)"
             )
@@ -1692,9 +1692,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     @always_inline
     def is_locked(self, out result: Bool):
         """
-        Returns whether the world is locked by any [.Storage.query queries].
+        Returns whether the world is locked by any [.HostStorage.query queries].
         """
-        with Zone(function_name="Storage.is_locked(out result: Bool)"):
+        with Zone(function_name="HostStorage.is_locked(out result: Bool)"):
             return self._locks.is_locked()
 
     @always_inline
@@ -1708,7 +1708,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             LarecsError: when the world is already locked by the maximum number of locks (256 in the current implementation).
         """
-        with Zone(function_name="Storage._lock(out lock: Int)"):
+        with Zone(function_name="HostStorage._lock(out lock: Int)"):
             try:
                 return self._locks.lock()
             except:
@@ -1722,7 +1722,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Args:
             lock: The lock bit to unlock.
         """
-        with Zone(function_name="Storage._unlock(lock: Int)"):
+        with Zone(function_name="HostStorage._unlock(lock: Int)"):
             try:
                 self._locks.unlock(lock)
             except e:
@@ -1739,7 +1739,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             A context manager that unlocks the world when it goes out of scope.
         """
-        with Zone(function_name="Storage._locked()"):
+        with Zone(function_name="HostStorage._locked()"):
             return LockedContext(Pointer(to=self._locks))
 
 
@@ -1824,10 +1824,10 @@ struct Replacer[
         remove_ids: The IDs of the components to remove.
     """
 
-    comptime Storage = Storage[*Self.ComponentTypes]
-    """The Storage type modified by this replacer."""
+    comptime HostStorage = HostStorage[*Self.ComponentTypes]
+    """The HostStorage type modified by this replacer."""
 
-    var _storage: Pointer[Self.Storage, Self.storage_origin]
+    var _storage: Pointer[Self.HostStorage, Self.storage_origin]
     """Pointer to the storage modified by this replacer."""
 
     def by(self, entity: Entity) raises LarecsError:
@@ -1840,7 +1840,7 @@ struct Replacer[
         Raises:
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(function_name="Replacer.by(entity: Entity)"):
             self._storage[]._remove_and_add[
@@ -1865,7 +1865,7 @@ struct Replacer[
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be added because they are already present.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
@@ -1896,7 +1896,7 @@ struct Replacer[
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be added because they are already present.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
@@ -1917,7 +1917,7 @@ struct Replacer[
         self,
         query: QueryInfo[has_without_mask=has_without_mask],
         var *components: *AddTs,
-        out iterator: Self.Storage.Iterator[
+        out iterator: Self.HostStorage.Iterator[
             origin_of(self._storage[]._archetypes),
             origin_of(self._storage[]._locks),
             has_start_indices=True,
@@ -1937,13 +1937,13 @@ struct Replacer[
         Raises:
             Error: when called with components that can't be added because they are already present.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
                 "Replacer.by[*AddTs: ComponentType, has_without_mask:"
                 " Bool](query: QueryInfo, var *components: *AddTs, out"
-                " iterator: Self.Storage.Iterator)"
+                " iterator: Self.HostStorage.Iterator)"
             )
         ):
             return self.by(
@@ -1958,7 +1958,7 @@ struct Replacer[
         self,
         var *components: *AddTs,
         query: QueryInfo[has_without_mask=has_without_mask],
-        out iterator: Self.Storage.Iterator[
+        out iterator: Self.HostStorage.Iterator[
             origin_of(self._storage[]._archetypes),
             origin_of(self._storage[]._locks),
             has_start_indices=True,
@@ -1978,14 +1978,14 @@ struct Replacer[
         Raises:
             Error: when called with components that can't be added because they are already present.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
 
         with Zone(
             function_name=(
                 "Replacer.by[*AddTs: ComponentType, has_without_mask: Bool](var"
                 " *components: *AddTs, query: QueryInfo, out iterator:"
-                " Self.Storage.Iterator)"
+                " Self.HostStorage.Iterator)"
             )
         ):
             return self._storage[]._batch_remove_and_add[

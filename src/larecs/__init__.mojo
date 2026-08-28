@@ -69,7 +69,7 @@ Exports:
  - error.ComponentError
  - error.EntityError
  - error.UnknownError
- - storage.Storage
+ - host_storage.HostStorage
  - component.ComponentType
  - types.ComponentId
  - archetype.MutableEntityAccessor
@@ -83,6 +83,7 @@ Exports:
  - scheduler.System
 """
 from .world import World
+from .host_storage import HostStorage
 from .error import (
     LarecsError,
     WorldError,

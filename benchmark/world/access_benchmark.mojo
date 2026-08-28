@@ -143,7 +143,7 @@ def benchmark_apply_expexp_1_comp_100_000(
     bencher.iter(bench_fn)
 
 
-# BUG: Mojo cannot correctly infer simd_width for `Storage.apply` therefore disable this for now.
+# BUG: Mojo cannot correctly infer simd_width for `HostStorage.apply` therefore disable this for now.
 #
 # def benchmark_apply_simd_expexp_1_comp_100_000(
 #     mut bencher: Bencher,
