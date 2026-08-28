@@ -1,8 +1,11 @@
+from std.gpu import global_idx
+
 from std.utils.type_functions import ConditionalType
+from std.sys import is_gpu
 
 from tracy import Zone
 
-from .entity import Entity
+from .entity import Entity, EntityAccessor
 from .bitmask import BitMask
 from .component import (
     ComponentType,
@@ -15,6 +18,8 @@ from .lock import LockManager
 from .debug_utils import debug_warn
 from .static_optional import StaticOptional
 from .error import LarecsError, WorldError
+from .filter import Filter, BitMaskFilter
+from .system import KernelContext
 
 
 struct Query[
@@ -23,7 +28,7 @@ struct Query[
     archetypes_origin: Origin[mut=archetype_mutability],
     locks_origin: MutOrigin,
     *ComponentTypes: ComponentType,
-    has_without_mask: Bool = False,
+    has_exclude_mask: Bool = False,
 ](ImplicitlyCopyable, SizedRaising):
     """Query builder for entities with and without specific components.
 
@@ -48,7 +53,7 @@ struct Query[
         archetypes_origin: The origin of the archetypes.
         locks_origin: The origin of the lock manager.
         ComponentTypes: The types of the components to include in the query.
-        has_without_mask: Whether the query has excluded components.
+        has_exclude_mask: Whether the query has excluded components.
     """
 
     comptime HostStorage = HostStorage[*Self.ComponentTypes]
@@ -63,25 +68,29 @@ struct Query[
         Self.archetypes_origin,
         Self.locks_origin,
         *Self.ComponentTypes,
-        has_without_mask=True,
+        has_exclude_mask=True,
     ]
     """The query type with an active exclusion mask."""
 
-    var _archetypes: Pointer[Self.HostStorage.Archetypes, Self.archetypes_origin]
+    var _archetypes: Pointer[
+        Self.HostStorage.Archetypes, Self.archetypes_origin
+    ]
     """Pointer to the world's archetypes."""
     var _lock_ptr: Pointer[LockManager, Self.locks_origin]
     """Pointer to the world's lock manager."""
 
-    var _info: QueryInfo[has_without_mask=Self.has_without_mask]
+    var _filter: BitMaskFilter[is_excluding=Self.has_exclude_mask]
     """Component matching information for this query."""
 
     @doc_hidden
     def __init__(
         out self,
-        archetypes: Pointer[Self.HostStorage.Archetypes, Self.archetypes_origin],
+        archetypes: Pointer[
+            Self.HostStorage.Archetypes, Self.archetypes_origin
+        ],
         lock_ptr: Pointer[LockManager, Self.locks_origin],
-        var mask: BitMask,
-        var without_mask: StaticOptional[BitMask, Self.has_without_mask] = None,
+        var include_mask: BitMask,
+        var exclude_mask: StaticOptional[BitMask, Self.has_exclude_mask] = None,
     ):
         """
         Creates a new query.
@@ -91,28 +100,30 @@ struct Query[
         Args:
             archetypes: A pointer to the world's archetypes.
             lock_ptr: A pointer to the world's lock manager.
-            mask: The mask of the components to iterate over.
-            without_mask: The mask for components to exclude.
+            include_mask: The mask of the components to iterate over.
+            exclude_mask: The mask for components to exclude.
         """
         with Zone(
             function_name=(
                 "Query.__init__(archetypes: Pointer, lock_ptr: Pointer, var"
-                " mask: BitMask, var without_mask: StaticOptional[BitMask,"
-                " Self.has_without_mask])"
+                " include_mask: BitMask, var exclude_mask:"
+                " StaticOptional[BitMask, Self.has_exclude_mask])"
             )
         ):
             self._archetypes = archetypes
             self._lock_ptr = lock_ptr
-            self._info = QueryInfo[has_without_mask=Self.has_without_mask](
-                mask^, without_mask^
+            self._filter = BitMaskFilter[is_excluding=Self.has_exclude_mask](
+                include_mask^, exclude_mask^
             )
 
     @doc_hidden
     def __init__(
         out self,
-        archetypes: Pointer[Self.HostStorage.Archetypes, Self.archetypes_origin],
+        archetypes: Pointer[
+            Self.HostStorage.Archetypes, Self.archetypes_origin
+        ],
         lock_ptr: Pointer[LockManager, Self.locks_origin],
-        var info: QueryInfo[has_without_mask=Self.has_without_mask],
+        var filter: BitMaskFilter[is_excluding=Self.has_exclude_mask],
     ):
         """
         Creates a new query from existing query information.
@@ -122,17 +133,17 @@ struct Query[
         Args:
             archetypes: A pointer to the world's archetypes.
             lock_ptr: A pointer to the world's lock manager.
-            info: The query information to use for matching.
+            filter: The filter to use for matching.
         """
         with Zone(
             function_name=(
                 "Query.__init__(archetypes: Pointer, lock_ptr: Pointer, var"
-                " info: QueryInfo)"
+                " filter: BitMaskFilter)"
             )
         ):
             self._archetypes = archetypes
             self._lock_ptr = lock_ptr
-            self._info = info^
+            self._filter = filter^
 
     def __init__(out self, *, copy: Self):
         """
@@ -144,7 +155,7 @@ struct Query[
         with Zone(function_name="Query.__init__(copy: Self)"):
             self._archetypes = copy._archetypes
             self._lock_ptr = copy._lock_ptr
-            self._info = copy._info.copy()
+            self._filter = copy._filter.copy()
 
     def __len__(self, out size: Int):
         """
@@ -158,7 +169,7 @@ struct Query[
             size = 0
             for i in range(len(self._archetypes[])):
                 ref archetype = self._archetypes[].unsafe_get(i)
-                if archetype and self._info.matches(archetype.get_mask()):
+                if archetype and self._filter.matches(archetype.get_mask()):
                     size += len(archetype)
 
     @always_inline
@@ -183,7 +194,7 @@ struct Query[
         with Zone(function_name="Query.__iter__(out iterator: _WorldIterator)"):
             iterator = {
                 self._archetypes,
-                self._info^,
+                self._filter^,
                 self._lock_ptr,
                 None,
             }
@@ -228,9 +239,11 @@ struct Query[
             query = Self.QueryWithWithout(
                 self._archetypes,
                 self._lock_ptr,
-                self._info
+                self._filter
                 ^.without(
-                    BitMask(Self.HostStorage.component_manager.get_id_arr[*Ts]())
+                    BitMask(
+                        Self.HostStorage.component_manager.get_id_arr[*Ts]()
+                    )
                 ),
             )
 
@@ -260,154 +273,8 @@ struct Query[
             function_name="Query.exclusive(out query: Self.QueryWithWithout)"
         ):
             query = Self.QueryWithWithout(
-                self._archetypes, self._lock_ptr, self._info^.exclusive()
+                self._archetypes, self._lock_ptr, self._filter^.exclusive()
             )
-
-
-struct QueryInfo[
-    has_without_mask: Bool = False,
-](ImplicitlyCopyable):
-    """
-    Class that holds the same information as a query but no reference to the world.
-
-    This struct can be constructed implicitly from a [.Query] instance.
-    Therefore, [.Query] instances can be used instead of QueryInfo in function
-    arguments.
-
-    Parameters:
-        has_without_mask: Whether the query has excluded components.
-    """
-
-    var mask: BitMask
-    """Component mask that matching archetypes must contain."""
-    var without_mask: StaticOptional[BitMask, Self.has_without_mask]
-    """Optional component mask that matching archetypes must not contain."""
-
-    comptime QueryInfoWithWithout = QueryInfo[has_without_mask=True]
-    """Query information type with an active exclusion mask."""
-
-    @implicit
-    def __init__(
-        out self,
-        query: Query[..., has_without_mask=Self.has_without_mask],
-    ):
-        """
-        Takes the query info from an existing query.
-
-        Args:
-            query: The query the information should be taken from.
-        """
-        with Zone(function_name="QueryInfo.__init__(query: Query)"):
-            self.mask = query._info.mask
-            self.without_mask = query._info.without_mask.copy()
-
-    def __init__(
-        out self,
-        mask: BitMask,
-        without_mask: StaticOptional[BitMask, Self.has_without_mask] = None,
-    ):
-        """
-        Takes the query info from an existing query.
-
-        Args:
-            mask: The mask of the components to include.
-            without_mask: The optional mask of the components to exclude.
-        """
-        with Zone(
-            function_name=(
-                "QueryInfo.__init__(mask: BitMask, without_mask:"
-                " StaticOptional[BitMask, Self.has_without_mask])"
-            )
-        ):
-            self.mask = mask
-
-            comptime if Self.has_without_mask:
-                self.without_mask = without_mask.copy()
-            else:
-                self.without_mask = None
-
-    def __init__(out self, *, copy: Self):
-        """
-        Copy constructor.
-
-        Args:
-            copy: The query to copy.
-        """
-        with Zone(function_name="QueryInfo.__init__(copy: Self)"):
-            self.mask = copy.mask
-            self.without_mask = copy.without_mask.copy()
-
-    @always_inline
-    def without(
-        deinit self,
-        var without_mask: BitMask,
-        out query_info: Self.QueryInfoWithWithout,
-    ):
-        """
-        Adds excluded components to the query information.
-
-        Args:
-            without_mask: The component mask to exclude.
-
-        Returns:
-            Query information with an active exclusion mask.
-        """
-        with Zone(
-            function_name=(
-                "QueryInfo.without(var without_mask: BitMask, out query_info:"
-                " Self.QueryInfoWithWithout)"
-            )
-        ):
-            comptime if Self.has_without_mask:
-                self.without_mask[] |= without_mask
-                query_info = Self.QueryInfoWithWithout(
-                    self.mask^, self.without_mask[]
-                )
-            else:
-                query_info = Self.QueryInfoWithWithout(
-                    self.mask^, without_mask^
-                )
-
-    @always_inline
-    def exclusive(deinit self, out query_info: Self.QueryInfoWithWithout):
-        """
-        Makes the query information match exactly the included components.
-
-        Returns:
-            Query information with an exclusion mask for all non-included components.
-        """
-        with Zone(
-            function_name=(
-                "QueryInfo.exclusive(out query_info: Self.QueryInfoWithWithout)"
-            )
-        ):
-            comptime if Self.has_without_mask:
-                self.without_mask = ~self.mask
-                query_info = Self.QueryInfoWithWithout(
-                    self.mask^, self.without_mask[]
-                )
-            else:
-                query_info = Self.QueryInfoWithWithout(self.mask^, ~self.mask)
-
-    def matches(self, archetype_mask: BitMask, out is_valid: Bool):
-        """
-        Checks whether the given archetype mask matches the query.
-
-        Args:
-            archetype_mask: The mask of the archetype to check.
-
-        Returns:
-            Whether the archetype matches the query.
-        """
-        with Zone(
-            function_name=(
-                "QueryInfo.matches(archetype_mask: BitMask, out is_valid: Bool)"
-            )
-        ):
-            is_valid = archetype_mask.contains(self.mask)
-
-            comptime if Self.has_without_mask:
-                is_valid &= not archetype_mask.contains_any(self.without_mask[])
 
 
 struct _ArchetypeIterator[
@@ -459,7 +326,7 @@ struct _ArchetypeIterator[
     def __init__(
         out self,
         archetypes: Pointer[List[Self.Archetype], Self.archetype_origin],
-        var query_info: QueryInfo[has_without_mask=_],
+        var filter: BitMaskFilter[_],
     ):
         """
         Creates an archetype iterator from a list of archetypes and a query info.
@@ -467,7 +334,7 @@ struct _ArchetypeIterator[
         with Zone(
             function_name=(
                 "_ArchetypeIterator.__init__(archetypes:"
-                " Pointer[List[Self.Archetype]], var query_info: QueryInfo)"
+                " Pointer[List[Self.Archetype]], var filter: BitMaskFilter[_])"
             )
         ):
             self._archetypes = archetypes
@@ -476,7 +343,7 @@ struct _ArchetypeIterator[
 
             for i in range(len(self._archetypes[])):
                 ref archetype = self._archetypes[].unsafe_get(i)
-                if archetype and query_info.matches(archetype.get_mask()):
+                if archetype and filter.matches(archetype.get_mask()):
                     self._archetype_indices.append(i)
 
     @doc_hidden
@@ -568,6 +435,82 @@ struct _ArchetypeIterator[
             return self._has_next()
 
 
+struct EntityAccessorIterator[filter: Filter](Iterator, Movable):
+    """Iterates filtered component rows with CPU or GPU-appropriate strides.
+
+    The iterator does not enumerate entity IDs or archetypes. It walks the
+    dense rows described by ``KernelContext`` and yields an
+    ``EntityAccessor`` containing a row offset and one byte-addressed pointer
+    per included component. The accessor's ``get`` and ``set`` methods use the
+    filter's compile-time component order to select a column, then use the
+    row offset to access that column's structure-of-arrays (SoA) element.
+
+    On the CPU, iteration starts at row ``0`` and advances by ``1``. The
+    context therefore describes one homogeneous component range, normally a
+    single matching archetype. On a GPU, ``is_gpu()`` removes the CPU path at
+    compile time: each thread starts at ``global_idx.x`` and advances by the
+    total number of threads in the launch. This gives every thread the rows
+    ``global_idx.x``, ``global_idx.x + thread_count``, and so on, while the
+    bounds check stops at ``context.length``.
+
+    The same kernel source is consequently valid on both targets. CPU
+    contexts contain host pointers, while the device-passable host context is
+    converted to device pointers before a GPU launch. The iterator itself
+    performs no host/device copy or synchronization; callers must ensure the
+    columns are initialized, have at least ``context.length`` rows, and that
+    each row is written by at most one concurrent thread.
+    """
+
+    comptime Element = EntityAccessor[Self.filter]
+
+    var _entity: EntityAccessor[Self.filter]
+    var _length: Int32
+    var _stride: Int32
+    var _done: Bool
+
+    def __init__(out self, context: KernelContext[Self.filter]):
+        """Initializes row traversal for the current execution target.
+
+        Args:
+            context: The component-column pointers, row count, and GPU launch
+                thread count used by the iterator.
+        """
+        var start: Int32 = 0
+        var stride: Int32 = 1
+        comptime if is_gpu():
+            start = Int32(global_idx.x)
+            stride = context.thread_count
+
+        self._entity = EntityAccessor[Self.filter](
+            idx=start,
+            _component_table_base=context._columns.copy(),
+        )
+        self._length = context.length
+        self._stride = stride
+        self._done = False
+
+    def __iter__(deinit self) -> Self:
+        """Returns this iterator for use in a ``for`` loop."""
+        return self^
+
+    def __next__(mut self) raises StopIteration -> Self.Element:
+        """Returns the next row accessor and advances by the target stride.
+
+        Raises:
+            ``StopIteration``: When all rows assigned to this iterator have
+                been visited.
+
+        Returns:
+            An accessor whose ``id`` is the current row offset into every
+            included component column.
+        """
+        if self._done or self._entity.idx >= self._length:
+            raise StopIteration()
+        var entity = self._entity.copy()
+        self._entity.idx += self._stride
+        return entity^
+
+
 struct _ArchetypeEntityIterator[
     archetype_mutability: Bool,
     //,
@@ -644,9 +587,7 @@ struct _ArchetypeEntityIterator[
     @__unsafe_nested_origins_read_only
     def __next__(
         mut self,
-        out accessor: type_of(
-            self.archetype[].get_entity_accessor(self._index)
-        ),
+        out accessor: type_of(self.archetype[].get_row_accessor(self._index)),
     ) raises StopIteration:
         """
         Returns the next entity in the iteration.
@@ -655,17 +596,17 @@ struct _ArchetypeEntityIterator[
             StopIteration: If there are no more entities to iterate.
 
         Returns:
-            An [..archetype.EntityAccessor] to the entity.
+            An [..archetype.ArchetypeRowAccessor] to the entity.
         """
         with Zone(
             function_name=(
                 "_ArchetypeEntityIterator.__next__[archetype_origin:"
-                " Origin](out accessor: Self.Archetype.EntityAccessor)"
+                " Origin](out accessor: Self.Archetype.RowAccessor)"
             )
         ):
             if not self._has_next():
                 raise StopIteration()
-            accessor = self.archetype[].get_entity_accessor(self._index)
+            accessor = self.archetype[].get_row_accessor(self._index)
             self._index += 1
 
 
@@ -696,7 +637,7 @@ struct _WorldEntityIterator[
         *Self.ComponentTypes,
     ]
 
-    # comptime Element = Self.Archetype.EntityAccessor[
+    # comptime Element = Self.Archetype.RowAccessor[
     #     Self.archetype_list_origin._get_owned_interior["element"]
     # ]
 
@@ -786,7 +727,7 @@ struct _WorldEntityIterator[
     def __init__(
         out self,
         archetypes: Pointer[List[Self.Archetype], Self.archetype_list_origin],
-        var query_info: QueryInfo[has_without_mask=_],
+        var filter: BitMaskFilter[_],
         lock_ptr: Pointer[LockManager, Self.lock_origin],
         var start_indices: Self.StartIndices = None,
     ) raises LarecsError:
@@ -795,7 +736,7 @@ struct _WorldEntityIterator[
 
         Args:
             archetypes: A pointer to the world's archetypes.
-            query_info: The query information used to select archetypes.
+            filter: The filter used to select archetypes.
             lock_ptr: A pointer to the world's locks.
             start_indices: The indices where the iterator starts iterating the
                            archetypes. Caution: the index order must match the
@@ -807,7 +748,7 @@ struct _WorldEntityIterator[
         with Zone(
             function_name=(
                 "_WorldEntityIterator.__init__(archetypes:"
-                " Pointer[List[Self.Archetype]], var query_info: QueryInfo,"
+                " Pointer[List[Self.Archetype]], var filter: BitMaskFilter,"
                 " lock_ptr: Pointer, var start_indices: Self.StartIndices)"
             )
         ):
@@ -819,7 +760,7 @@ struct _WorldEntityIterator[
             self._start_indices = start_indices^
 
             self._archetype_iterator = Self.ArchetypeIterator(
-                archetypes, query_info^
+                archetypes, filter^
             )
             var archetype_list_ptr = archetypes.unsafe_origin_cast[
                 UntrackedOrigin[mut=Self.archetype_list_mutability]
@@ -863,7 +804,7 @@ struct _WorldEntityIterator[
     @always_inline
     def __next__(
         mut self,
-        out accessor: Self.Archetype.EntityAccessor[Self.archetype_list_origin],
+        out accessor: Self.Archetype.RowAccessor[Self.archetype_list_origin],
     ) raises StopIteration:
         """
         Returns the next entity in the iteration.
@@ -872,7 +813,7 @@ struct _WorldEntityIterator[
             StopIteration: If there are no more entities to iterate.
 
         Returns:
-            An [..archetype.EntityAccessor] to the entity.
+            An [..archetype.ArchetypeRowAccessor] to the entity.
         """
 
         # Implementation note:

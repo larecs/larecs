@@ -17,12 +17,12 @@ from .error import (
 from .graph import BitMaskGraph
 from .lock import LockManager
 from .pool import EntityPool
-from .query import (
+from .iteration import (
     Query,
-    QueryInfo,
     _WorldEntityIterator,
     _ArchetypeIterator,
 )
+from .filter import BitMaskFilter
 from .static_optional import StaticOptional
 from .types import ComponentId
 from ._utils import concatenate_arrays, assert_unreachable
@@ -61,7 +61,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         _,
         _,
         *Self.ComponentTypes,
-        has_without_mask=_,
+        has_exclude_mask=_,
     ]
     """Query builder type for this world's component type set."""
 
@@ -92,7 +92,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         archetype_mutability: Bool,
         //,
         archetype_origin: Origin[mut=archetype_mutability],
-        has_without_mask: Bool = False,
+        has_exclude_mask: Bool = False,
     ] = _ArchetypeIterator[
         archetype_origin,
         *Self.ComponentTypes,
@@ -103,7 +103,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     Parameters:
         archetype_mutability: Whether the iterator allows mutable access to archetypes.
         archetype_origin: The origin of the archetype data accessed by the iterator.
-        has_without_mask: Whether the query has a without mask, which requires additional checks during iteration.
+        has_exclude_mask: Whether the query has a without mask, which requires additional checks during iteration.
     """
 
     var _locks: LockManager
@@ -145,7 +145,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Query[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_without_mask=False,
+            has_exclude_mask=False,
         ],
     ):
         """
@@ -174,7 +174,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             else:
                 bitmask = BitMask(Self.component_manager.get_id_arr[*Ts]())
 
-            iterator = Self.Query[has_without_mask=False](
+            iterator = Self.Query[has_exclude_mask=False](
                 Pointer(to=self._archetypes), Pointer(to=self._locks), bitmask
             )
 
@@ -303,7 +303,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "HostStorage.add_entity[*Ts: ComponentType](var *components: *Ts)"
+                "HostStorage.add_entity[*Ts: ComponentType](var *components:"
+                " *Ts)"
             )
         ):
             comptime assert Self.component_manager.contains_components[
@@ -423,7 +424,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     iterator = {
                         Self.ArchetypeIterator[
                             origin_of(self._archetypes),
-                            has_without_mask=False,
+                            has_exclude_mask=False,
                         ](Pointer(to=self._archetypes), []),
                         Pointer(to=self._locks),
                         {[]},
@@ -463,7 +464,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 iterator = {
                     Self.ArchetypeIterator[
                         origin_of(self._archetypes),
-                        has_without_mask=False,
+                        has_exclude_mask=False,
                     ](Pointer(to=self._archetypes), [archetype_index]),
                     Pointer(to=self._locks),
                     {[first_index_in_archetype]},
@@ -566,7 +567,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     swap_entity.get_id()
                 ].entity_index = entity_loc.entity_index
 
-    def remove_entities(mut self, query: QueryInfo) raises LarecsError:
+    def remove_entities(mut self, filter: BitMaskFilter) raises LarecsError:
         """
         Removes multiple [..entity.Entity Entities] based on the provided query, making them eligible for recycling.
 
@@ -588,17 +589,18 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         ```
 
         Args:
-            query: The query to determine which entities to remove. Note, you can
-                    either use [..query.Query] or [..query.QueryInfo].
+            filter: The filter to determine which entities to remove.
 
         Raises:
             LarecsError: If the world is locked.
         """
         self._assert_unlocked()
 
-        with Zone(function_name="HostStorage.remove_entities(query: QueryInfo)"):
+        with Zone(
+            function_name="HostStorage.remove_entities(query: QueryInfo)"
+        ):
             for ref archetype in self._get_archetype_iterator(
-                query.mask, query.without_mask
+                filter.include_mask, filter.exclude_mask
             ):
                 for entity in archetype.get_entities():
                     try:
@@ -825,10 +827,11 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             self._remove_and_add(entity, *add_components^)
 
     def add[
-        has_without_mask: Bool, //, *Ts: ComponentType
+        *Ts: ComponentType
     ](
         mut self,
-        query: QueryInfo[has_without_mask=has_without_mask],
+        filter: BitMaskFilter[_],
+        query: QueryInfo[has_exclude_mask=has_exclude_mask],
         var *add_components: *Ts,
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
@@ -837,8 +840,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         ],
     ) raises LarecsError:
         """
-        Adds components to multiple [..entity.Entity Entities] at once that are specified by a [..query.Query].
-        The provided query must ensure that matching entities do not already have one or more of the
+        Adds components to multiple [..entity.Entity Entities] at once that are matched by the [..filter.BitMaskFilter].
+        The provided filter must ensure that matching entities do not already have one or more of the
         components to add.
 
         **Example:**
@@ -860,7 +863,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         _ = world.add_entities(Position(0, 0), 100)
 
         for entity in world.storage.add[Velocity](
-            world.storage.query[Position]().without_mask[Velocity](),
+            world.storage.query[Position]().exclude_mask[Velocity](),
             Velocity(0.5, -0.5),
         ):
             velocity = entity.get[Velocity]()
@@ -870,24 +873,24 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         ```
 
         Parameters:
-            has_without_mask: Whether the query has a without mask.
+            has_exclude_mask: Whether the query has a without mask.
             Ts: The types of the components to add. Constraints: Must be in the component manager and contain no duplicates.
 
         Args:
-            query: The query specifying which entities to modify. The query must explicitly exclude existing entities
+            filter: The filter specifying which entities to modify. The filter must explicitly exclude existing entities
                 that already have some of the components to add.
             add_components: The components to add.
 
         Raises:
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
-            Error: when called with a query that could match existing entities that already have at least one of the
+            Error: when called with a filter that could match existing entities that already have at least one of the
                 components to add.
         """
         with Zone(
             function_name=(
-                "HostStorage.add[has_without_mask: Bool, *Ts: ComponentType](query:"
-                " QueryInfo, var *add_components: *Ts, out iterator:"
-                " Self.Iterator)"
+                "HostStorage.add[has_exclude_mask: Bool, *Ts:"
+                " ComponentType](filter: BitMaskFilter, var *add_components:"
+                " *Ts, out iterator: Self.Iterator)"
             )
         ):
             comptime assert Self.component_manager.contains_components[
@@ -898,7 +901,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             ](), "Duplicate component types in add are not allowed."
 
             return self._batch_remove_and_add(
-                query,
+                filter,
                 *add_components^,
             )
 
@@ -918,7 +921,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
-            function_name="HostStorage.remove[*Ts: ComponentType](entity: Entity)"
+            function_name=(
+                "HostStorage.remove[*Ts: ComponentType](entity: Entity)"
+            )
         ):
             comptime assert constrain_components_unique[
                 *Ts
@@ -932,10 +937,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             )
 
     def remove[
-        *Ts: ComponentType, has_without_mask: Bool = False
+        *Ts: ComponentType
     ](
         mut self,
-        query: QueryInfo[has_without_mask=has_without_mask],
+        filter: BitMaskFilter[_],
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
@@ -943,8 +948,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         ],
     ) raises LarecsError:
         """
-        Removes components from multiple entities at once, specified by a [..query.Query].
-        The provided query must ensure that matching entities have all of the components that should get removed.
+        Removes components from entities matched by the [..filter.BitMaskFilter] at once.
+        The filter must ensure that matching entities have all of the components that should get removed.
 
         Example:
 
@@ -972,25 +977,24 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         Parameters:
             Ts: The types of the components to remove. Constraints: Must be in the component manager and contain no duplicates.
-            has_without_mask: Whether the query has a without mask.
 
         Args:
-            query: The query to determine which entities to modify.
+            filter: The filter to determine which entities to modify.
 
         Raises:
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
-            Error: when called with a query that could match entities that don't have all of the components to remove.
+            Error: when called with a filter that could match entities that don't have all of the components to remove.
         """
 
         with Zone(
             function_name=(
-                "HostStorage.remove[*Ts: ComponentType, has_without_mask:"
-                " Bool](query: QueryInfo, out iterator: Self.Iterator)"
+                "HostStorage.remove[*Ts: ComponentType](filter: BitMaskFilter,"
+                " out iterator: Self.Iterator)"
             )
         ):
             # Note:
             #     This operation can never map multiple archetypes onto one, due to the requirement that components to remove
-            #     must be already present on archetypes matched by the query. Therefore, we can apply the transformation to
+            #     must be already present on archetypes matched by the filter. Therefore, we can apply the transformation to
             #     each matching archetype individually, without checking for edge cases where multiple archetypes get merged
             #     into one.  This also enables potential parallelization optimizations.
             comptime assert constrain_components_unique[
@@ -1003,7 +1007,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             return self._batch_remove_and_add[
                 rem_size=len(Ts),
                 remove_ids=Self._optional_component_ids[*Ts],
-            ](query)
+            ](filter)
 
     @always_inline
     def replace[
@@ -1178,10 +1182,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         remove_ids: Array[ComponentId, rem_size] = Array[ComponentId, rem_size](
             uninitialized=True
         ),
-        has_without_mask: Bool = False,
     ](
         mut self,
-        query: QueryInfo[has_without_mask=has_without_mask],
+        filter: BitMaskFilter[_],
         var *add_components: *Ts,
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
@@ -1190,32 +1193,31 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         ],
     ) raises LarecsError:
         """
-        Adds and removes components to multiple [..entity.Entity Entities] specified by a [..query.QueryInfo].
+        Adds and removes components to multiple [..entity.Entity Entities] matched by the [..filter.BitMaskFilter].
 
         Parameters:
             Ts:                 The types of the components to add. Constraints: Must be in the component manager and contain no duplicates.
             rem_size:           The number of components to remove.
             remove_ids:         The IDs of the components to remove.
-            has_without_mask:   Whether the query has a without mask.
 
         Args:
-            query:          The query to determine which entities to modify.
+            filter:          The filter to determine which entities to modify.
             add_components: The components to add.
 
         Returns:
             An iterator over the modified entities.
 
         Raises:
-            LarecsError: when called with a query that could match existing entities that already have at least one of the
+            LarecsError: when called with a filter that could match existing entities that already have at least one of the
                 components to add.
-            LarecsError: when called with a query that could match entities that don't have all of the components to remove.
+            LarecsError: when called with a filter that could match entities that don't have all of the components to remove.
             LarecsError: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
-                "HostStorage._batch_remove_and_add[*Ts: ComponentType, rem_size:"
-                " Int, remove_ids: Array[ComponentId, rem_size],"
-                " has_without_mask: Bool](query: QueryInfo, var"
+                "HostStorage._batch_remove_and_add[*Ts: ComponentType,"
+                " rem_size: Int, remove_ids: Array[ComponentId, rem_size],"
+                " has_exclude_mask: Bool](filter: BitMaskFilter, var"
                 " *add_components: *Ts, out iterator: Self.Iterator)"
             )
         ):
@@ -1245,13 +1247,13 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             var remove_mask = BitMask(runtime_remove_ids)
 
             comptime if add_size:
-                # If query could match archetypes that already have at least one of the components, raise an error
+                # If the filter could match archetypes that already have at least one of the components, raise an error
                 # FIXME: When https://github.com/modular/modular/issues/5347 is fixed, we can use short-circuiting here.
 
                 var strict_check_needed: Bool
 
-                comptime if has_without_mask:
-                    strict_check_needed = not query.without_mask[].contains(
+                comptime if has_exclude_mask:
+                    strict_check_needed = not filter.exclude_mask[].contains(
                         add_mask
                     )
                 else:
@@ -1259,7 +1261,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
                 if strict_check_needed:
                     for archetype in self._get_archetype_iterator(
-                        query.mask, query.without_mask
+                        filter.include_mask, filter.exclude_mask
                     ):
                         var archetype_mask = archetype.get_mask()
 
@@ -1274,19 +1276,19 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                             )
 
             comptime if rem_size:
-                # If query could match archetypes that don't have all of the components, raise an error
-                if not query.mask.contains(remove_mask):
+                # If the filter could match archetypes that don't have all of the components, raise an error
+                if not filter.include_mask.contains(remove_mask):
                     raise LarecsError(
                         ComponentError.missing_components_on_remove_query.with_components(
-                            query.mask ^ remove_mask
+                            filter.include_mask ^ remove_mask
                         )
                     )
 
-                comptime if has_without_mask:
-                    if query.without_mask[].contains_any(remove_mask):
+                comptime if has_exclude_mask:
+                    if filter.exclude_mask[].contains_any(remove_mask):
                         raise LarecsError(
                             ComponentError.missing_components_on_remove_query.with_components(
-                                query.without_mask[] & remove_mask
+                                filter.exclude_mask[] & remove_mask
                             )
                         )
 
@@ -1324,10 +1326,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 capacity=min(len(self._archetypes), _2kb_of_UInt_or_Int)
             )
 
-            # Search for the archetype that matches the query mask
+            # Search for the archetypes that match the filter
             with self._locked():
                 for ref old_archetype1 in self._get_archetype_iterator(
-                    query.mask, query.without_mask
+                    filter.include_mask, filter.exclude_mask
                 ):
                     # Two cases per matching archetype A:
                     # 1. If an archetype B with the new component combination exists, move entities from A to B
@@ -1441,12 +1443,11 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     def apply[
         OperationType: def(accessor: MutableEntityAccessor) raises -> None,
         //,
-        has_without_mask: Bool = False,
         *,
         unroll_factor: Int = 1,
     ](
         mut self,
-        query: QueryInfo[has_without_mask=has_without_mask],
+        filter: BitMaskFilter[_],
         operation: OperationType,
     ) raises LarecsError:
         """
@@ -1454,12 +1455,11 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         Parameters:
             OperationType: The type of the operation to apply.
-            has_without_mask: Whether the query has a without mask.
             unroll_factor: The unroll factor for the operation
                 (see [vectorize doc](https://docs.modular.com/mojo/stdlib/algorithm/functional/vectorize)).
 
         Args:
-            query: The query to determine which entities to apply the operation to.
+            filter: The filter to determine which entities to apply the operation to.
             operation: The operation to apply.
 
         Raises:
@@ -1469,8 +1469,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         with Zone(
             function_name=(
-                "HostStorage.apply[OperationType, has_without_mask: Bool, *,"
-                " unroll_factor: Int](query: QueryInfo, operation:"
+                "HostStorage.apply[OperationType, *,"
+                " unroll_factor: Int](filter: BitMaskFilter, operation:"
                 " OperationType)"
             )
         ):
@@ -1479,11 +1479,11 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             with self._locked():
                 for ref archetype in Self.ArchetypeIterator(
                     Pointer(to=self._archetypes),
-                    query.copy(),
+                    filter.copy(),
                 ):
                     for i in range(len(archetype)):
                         try:
-                            ref entity = archetype.get_entity_accessor(i)
+                            ref entity = archetype.get_row_accessor(i)
                             operation(entity)
                         except:
                             raise LarecsError(UnknownError())
@@ -1495,13 +1495,13 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     #         accessor: MutableEntityAccessor
     #     ) raises -> None,
     #     //,
-    #     has_without_mask: Bool = False,
+    #     has_exclude_mask: Bool = False,
     #     *,
     #     simd_width: Int = 1,
     #     unroll_factor: Int = 1,
     # ](
     #     mut self,
-    #     query: QueryInfo[has_without_mask=has_without_mask],
+    #     query: QueryInfo[has_exclude_mask=has_exclude_mask],
     #     operation: OperationType,
     # ) raises LarecsError:
     #     """
@@ -1522,7 +1522,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
     #     Parameters:
     #         OperationType: The type of the operation to apply.
-    #         has_without_mask: Whether the query has a without mask.
+    #         has_exclude_mask: Whether the query has a without mask.
     #         simd_width: The SIMD width for the operation
     #             (see [vectorize doc](https://docs.modular.com/mojo/stdlib/algorithm/backend/vectorize/vectorize)).
     #         unroll_factor: The unroll factor for the operation
@@ -1594,7 +1594,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
     #                 @always_inline
     #                 def closure[width: Int](i: Int) {read}:
-    #                     accessor = archetype[].get_entity_accessor(i)
+    #                     accessor = archetype[].get_row_accessor(i)
     #                     try:
     #                         operation[width](accessor)
     #                     except:
@@ -1606,11 +1606,11 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     #                 )
 
     def _get_entity_iterator[
-        has_without_mask: Bool = False, has_start_indices: Bool = False
+        has_exclude_mask: Bool = False, has_start_indices: Bool = False
     ](
         mut self,
-        mask: BitMask,
-        without_mask: StaticOptional[BitMask, has_without_mask],
+        include_mask: BitMask,
+        exclude_mask: StaticOptional[BitMask, has_exclude_mask],
         var start_indices: StaticOptional[List[Int], has_start_indices] = None,
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
@@ -1622,20 +1622,20 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Creates an iterator over all [..entity.Entity Entities] that have / do not have the components in the provided masks.
 
         Parameters:
-            has_without_mask: Whether a without_mask is provided.
+            has_exclude_mask: Whether an exclude_mask is provided.
             has_start_indices: Whether start_indices are provided.
 
 
         Args:
-            mask:          The mask of components to include.
-            without_mask:  The mask of components to exclude.
-            start_indices: The start indices of the iterator. See [..query._WorldEntityIterator].
+            include_mask:   The mask of components to include.
+            exclude_mask:   The mask of components to exclude.
+            start_indices: The start indices of the iterator. See [..iteration._WorldEntityIterator].
         """
         with Zone(
             function_name=(
-                "HostStorage._get_entity_iterator[has_without_mask: Bool,"
-                " has_start_indices: Bool](mask: BitMask, without_mask:"
-                " StaticOptional[BitMask, has_without_mask], var start_indices:"
+                "HostStorage._get_entity_iterator[has_exclude_mask: Bool,"
+                " has_start_indices: Bool](include_mask: BitMask, exclude_mask:"
+                " StaticOptional[BitMask, has_exclude_mask], var start_indices:"
                 " StaticOptional[List[Int], has_start_indices], out iterator:"
                 " Self.Iterator)"
             )
@@ -1647,9 +1647,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     has_start_indices=has_start_indices,
                 ](
                     Pointer(to=self._archetypes),
-                    QueryInfo(
-                        mask,
-                        without_mask.copy(),
+                    BitMaskFilter(
+                        include_mask,
+                        exclude_mask.copy(),
                     ),
                     Pointer(to=self._locks),
                     start_indices^,
@@ -1659,33 +1659,34 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
     @always_inline
     def _get_archetype_iterator[
-        has_without_mask: Bool = False
+        has_exclude_mask: Bool = False
     ](
         ref self,
-        mask: BitMask,
-        without_mask: StaticOptional[BitMask, has_without_mask] = None,
+        include_mask: BitMask,
+        exclude_mask: StaticOptional[BitMask, has_exclude_mask] = None,
         out iterator: Self.ArchetypeIterator[
-            origin_of(self._archetypes), has_without_mask=has_without_mask
+            origin_of(self._archetypes), has_exclude_mask=has_exclude_mask
         ],
     ):
         """
-        Creates an iterator over all archetypes that match the query.
+        Creates an iterator over all archetypes that are matched by the filter.
 
         Returns:
-            An iterator over all archetypes that match the query.
+            An iterator over all archetypes that are matched by the filter.
         """
         with Zone(
             function_name=(
-                "HostStorage._get_archetype_iterator[has_without_mask: Bool](mask:"
-                " BitMask, without_mask: StaticOptional[BitMask,"
-                " has_without_mask], out iterator: Self.ArchetypeIterator)"
+                "HostStorage._get_archetype_iterator[has_exclude_mask_mask:"
+                " Bool](include_mask: BitMask, exclude_mask:"
+                " StaticOptional[BitMask, has_exclude_mask], out iterator:"
+                " Self.ArchetypeIterator)"
             )
         ):
             iterator = Self.ArchetypeIterator(
                 Pointer(to=self._archetypes),
-                QueryInfo(
-                    mask,
-                    without_mask.copy(),
+                BitMaskFilter(
+                    include_mask,
+                    exclude_mask.copy(),
                 ),
             )
 
@@ -1912,10 +1913,9 @@ struct Replacer[
 
     def by[
         *AddTs: ComponentType,
-        has_without_mask: Bool = False,
     ](
         self,
-        query: QueryInfo[has_without_mask=has_without_mask],
+        filter: BitMaskFilter[_],
         var *components: *AddTs,
         out iterator: Self.HostStorage.Iterator[
             origin_of(self._storage[]._archetypes),
@@ -1924,14 +1924,13 @@ struct Replacer[
         ],
     ) raises LarecsError:
         """
-        Removes and adds the components to multiple [..entity.Entity Entities] specified by a [..query.Query].
+        Removes and adds the components to multiple [..entity.Entity Entities] matched by the [..filter.BitMaskFilter].
 
         Parameters:
             AddTs: The types of the components to add.
-            has_without_mask: Whether the query has a without mask.
 
         Args:
-            query:     The query to determine which entities to modify.
+            filter:     The filter to determine which entities to modify.
             components: The components to add.
 
         Raises:
@@ -1941,23 +1940,21 @@ struct Replacer[
         """
         with Zone(
             function_name=(
-                "Replacer.by[*AddTs: ComponentType, has_without_mask:"
-                " Bool](query: QueryInfo, var *components: *AddTs, out"
-                " iterator: Self.HostStorage.Iterator)"
+                "Replacer.by[*AddTs: ComponentType](filter: BitMaskFilter, var"
+                " *components: *AddTs, out iterator: Self.HostStorage.Iterator)"
             )
         ):
             return self.by(
                 *components^,
-                query=query,
+                filter=filter,
             )
 
     def by[
-        *AddTs: ComponentType,
-        has_without_mask: Bool = False,
+        *AddTs: ComponentType
     ](
         self,
         var *components: *AddTs,
-        query: QueryInfo[has_without_mask=has_without_mask],
+        filter: BitMaskFilter[_],
         out iterator: Self.HostStorage.Iterator[
             origin_of(self._storage[]._archetypes),
             origin_of(self._storage[]._locks),
@@ -1965,15 +1962,14 @@ struct Replacer[
         ],
     ) raises LarecsError:
         """
-        Removes and adds the components to multiple [..entity.Entity Entities] specified by a [..query.Query].
+        Removes and adds the components to multiple [..entity.Entity Entities] matched by the [..filter.BitMaskFilter].
 
         Parameters:
             AddTs: The types of the components to add.
-            has_without_mask: Whether the query has a without mask.
 
         Args:
             components: The components to add.
-            query:     The query to determine which entities to modify.
+            filter:     The filter to determine which entities to modify.
 
         Raises:
             Error: when called with components that can't be added because they are already present.
@@ -1983,7 +1979,7 @@ struct Replacer[
 
         with Zone(
             function_name=(
-                "Replacer.by[*AddTs: ComponentType, has_without_mask: Bool](var"
+                "Replacer.by[*AddTs: ComponentType, has_exclude_mask: Bool](var"
                 " *components: *AddTs, query: QueryInfo, out iterator:"
                 " Self.HostStorage.Iterator)"
             )
@@ -1992,6 +1988,6 @@ struct Replacer[
                 rem_size=Self.size,
                 remove_ids=Self.remove_ids,
             ](
-                query,
+                filter,
                 *components^,
             )

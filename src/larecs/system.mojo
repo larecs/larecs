@@ -5,9 +5,12 @@ from std.time import perf_counter
 
 from max.gpu.host import DevicePointer
 
+from tracy import Zone
+
 from .world import World
 from .component import ComponentType
 from .filter import Filter
+from .iteration import EntityAccessorIterator
 from .unsafe_box import UnsafeBox
 
 
@@ -16,7 +19,7 @@ trait System(Copyable, Deinitable, Movable):
 
     def initialize[
         *WorldTs: ComponentType
-    ](mut self, mut context: SystemContext[_, *WorldTs]) raises:
+    ](mut self, mut context: SystemContext[*WorldTs]) raises:
         """Optionally initializes the system with the given world.
 
         Parameters:
@@ -29,7 +32,7 @@ trait System(Copyable, Deinitable, Movable):
 
     def update[
         *WorldTs: ComponentType
-    ](mut self, mut context: SystemContext[_, *WorldTs]) raises:
+    ](mut self, mut context: SystemContext[*WorldTs]) raises:
         """Updates the system with the given world.
 
         Parameters:
@@ -42,7 +45,7 @@ trait System(Copyable, Deinitable, Movable):
 
     def finalize[
         *WorldTs: ComponentType
-    ](mut self, mut context: SystemContext[_, *WorldTs]) raises:
+    ](mut self, mut context: SystemContext[*WorldTs]) raises:
         """Optionally finalizes the system with the given world.
 
         Parameters:
@@ -56,7 +59,7 @@ trait System(Copyable, Deinitable, Movable):
 
 def _update_system[
     S: System, *WorldTs: ComponentType
-](mut system: UnsafeBox, mut context: SystemContext[_, *WorldTs]) raises:
+](mut system: UnsafeBox, mut context: SystemContext[*WorldTs]) raises:
     """Updates the system with the given world.
 
     Parameters:
@@ -74,7 +77,7 @@ def _update_system[
 
 def _initialize_system[
     S: System, *WorldTs: ComponentType
-](mut system: UnsafeBox, mut context: SystemContext[_, *WorldTs]) raises:
+](mut system: UnsafeBox, mut context: SystemContext[*WorldTs]) raises:
     """Initializes the system with the given SystemContext.
 
     Parameters:
@@ -92,7 +95,7 @@ def _initialize_system[
 
 def _finalize_system[
     S: System, *WorldTs: ComponentType
-](mut system: UnsafeBox, mut context: SystemContext[_, *WorldTs]) raises:
+](mut system: UnsafeBox, mut context: SystemContext[*WorldTs]) raises:
     """Finalizes the system with the given SystemContext.
 
     Parameters:
@@ -106,20 +109,6 @@ def _finalize_system[
     with Zone(function_name=String(t"{reflect[S].name()}.finalize()")):
         ref concrete_system = system.unsafe_get[S]()
         S.finalize[*WorldTs](concrete_system, context)
-
-
-def _update_system[
-    S: System, *ComponentTypes: ComponentType
-](
-    mut system: UnsafeBox,
-    ref[MutUntrackedOrigin] world: _World[*ComponentTypes],
-) raises:
-    """Updates one type-erased system with a mutable borrowed world reference.
-    """
-    with Zone(function_name=String(t"{reflect[S].name()}.update()")):
-        ref concrete_system = system.unsafe_get[S]()
-        var context = Context[MutUntrackedOrigin, *ComponentTypes](world)
-        S.update[*ComponentTypes](concrete_system, context)
 
 
 comptime BLOCK_SIZE = 2**4
@@ -146,8 +135,8 @@ struct KernelContext[filter: Filter](Copyable):
         self.thread_count = thread_count
         self._columns = columns^
 
-    def __iter__(self) -> EntityAccessorIterator[Self.kernel_filter]:
-        return EntityAccessorIterator[Self.kernel_filter](self)
+    def __iter__(self) -> EntityAccessorIterator[Self.filter]:
+        return EntityAccessorIterator[Self.filter](self)
 
 
 @fieldwise_init

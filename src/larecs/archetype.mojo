@@ -32,11 +32,13 @@ from .error import LarecsError, ComponentError
 comptime DEFAULT_CAPACITY = 32
 """Default capacity of an archetype."""
 
-comptime MutableEntityAccessor = EntityAccessor[archetype_mutability=True, ...]
-"""An entity accessor with mutable references to the components."""
+comptime MutArchetypeRowAccessor = ArchetypeRowAccessor[
+    archetype_mutability=True, ...
+]
+"""An accessor with mutable references to an archetype row and its components."""
 
 
-struct EntityAccessor[
+struct ArchetypeRowAccessor[
     archetype_mutability: Bool,
     //,
     archetype_origin: Origin[mut=archetype_mutability],
@@ -63,7 +65,9 @@ struct EntityAccessor[
 
     @doc_hidden
     def __init__(
-        out self: EntityAccessor[Self.archetype_origin, *Self.ComponentTypes],
+        out self: ArchetypeRowAccessor[
+            Self.archetype_origin, *Self.ComponentTypes
+        ],
         ref[Self.archetype_origin] archetype: Self.Archetype,
         index_in_archetype: Int,
     ):
@@ -74,7 +78,7 @@ struct EntityAccessor[
         """
         with Zone(
             function_name=(
-                "EntityAccessor.__init__(ref archetype: Self.Archetype,"
+                "ArchetypeRowAccessor.__init__(ref archetype: Self.Archetype,"
                 " index_in_archetype: Int)"
             )
         ):
@@ -89,7 +93,7 @@ struct EntityAccessor[
             The entity of the accessor.
         """
 
-        with Zone(function_name="EntityAccessor.get_entity()"):
+        with Zone(function_name="ArchetypeRowAccessor.get_entity()"):
             return self._archetype[].get_entity(self._index_in_archetype)
 
     @__unsafe_nested_origins_read_only
@@ -109,7 +113,7 @@ struct EntityAccessor[
             A reference to the component of the entity.
         """
 
-        with Zone(function_name="EntityAccessor.get[T: ComponentType]()"):
+        with Zone(function_name="ArchetypeRowAccessor.get[T: ComponentType]()"):
             self._archetype[].assert_has_components[T]()
 
             return self._archetype[].get_component[T](
@@ -136,7 +140,8 @@ struct EntityAccessor[
         """
         with Zone(
             function_name=(
-                "EntityAccessor.set[*Ts: ComponentType](var *components: *Ts)"
+                "ArchetypeRowAccessor.set[*Ts: ComponentType](var *components:"
+                " *Ts)"
             )
         ):
             comptime assert constrain_components_unique[
@@ -159,7 +164,7 @@ struct EntityAccessor[
         Returns:
             Whether the entity has the component.
         """
-        with Zone(function_name="EntityAccessor.has[T: ComponentType]()"):
+        with Zone(function_name="ArchetypeRowAccessor.has[T: ComponentType]()"):
             return self._archetype[].has_components[T]()
 
 
@@ -986,7 +991,7 @@ struct Archetype[
     comptime max_size = BitMask.total_bits
     """The maximal number of components in the archetype."""
 
-    comptime EntityAccessor = EntityAccessor[
+    comptime RowAccessor = ArchetypeRowAccessor[
         _,
         *Self.ComponentTypes,
     ]
@@ -1170,10 +1175,10 @@ struct Archetype[
 
     @__unsafe_nested_origins_read_only
     @always_inline
-    def get_entity_accessor(
+    def get_row_accessor(
         ref self,
         idx: Int,
-        out accessor: Self.EntityAccessor[archetype_origin=origin_of(self)],
+        out accessor: Self.RowAccessor[archetype_origin=origin_of(self)],
     ):
         """Returns an accessor for the entity at the given index.
 
@@ -1185,13 +1190,13 @@ struct Archetype[
         """
         with Zone(
             function_name=(
-                "Archetype.get_entity_accessor[mut: Bool](idx: Int, out"
-                " accessor: Self.EntityAccessor)"
+                "Archetype.get_row_accessor[mut: Bool](idx: Int, out"
+                " accessor: Self.RowAccessor)"
             )
         ):
             _assert_index_in_bounds(idx, self._storage._length)
 
-            accessor = Self.EntityAccessor(
+            accessor = Self.RowAccessor(
                 self,
                 idx,
             )
