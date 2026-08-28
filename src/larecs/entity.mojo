@@ -3,8 +3,10 @@ from std.hashlib import Hasher
 
 from tracy import Zone
 
+from .component import ComponentType
+from .filter import Filter
 from .types import EntityId
-from .archetype import Archetype, EntityAccessor
+from .archetype import Archetype, ArchetypeRowAccessor
 
 # # Reflection type of an [Entity].
 # var entityType = reflect.TypeOf(Entity{})
@@ -55,14 +57,16 @@ struct Entity(
 
     @implicit
     @always_inline
-    def __init__(out self, accessor: EntityAccessor):
+    def __init__(out self, accessor: ArchetypeRowAccessor):
         """
-        Initializes the entity from an [..archetype.EntityAccessor].
+        Initializes the entity from an [..archetype.ArchetypeRowAccessor].
 
         Args:
             accessor: The entity accessor to initialize from.
         """
-        with Zone(function_name="Entity.__init__(accessor: EntityAccessor)"):
+        with Zone(
+            function_name="Entity.__init__(accessor: ArchetypeRowAccessor)"
+        ):
             self = accessor.get_entity()
 
     @always_inline
@@ -149,3 +153,40 @@ struct EntityLocation(ImplicitlyCopyable, TrivialRegisterPassable):
     # Entity's current archetype
     var archetype_index: Int
     """Index of the archetype currently storing the entity."""
+
+
+@fieldwise_init
+struct EntityAccessor[filter: Filter](Copyable):
+    """Non-owning mutable accessor for a single entity.
+
+    Parameters:
+        filter: The comptime [.filter.Filter] controlling which components are accessible via this accessor.
+    """
+
+    var idx: Int32
+    """The index of the entity row in the component table."""
+
+    var _component_table_base: Array[
+        Pointer[UInt8, MutUntrackedOrigin], len(Self.filter)
+    ]
+    """The base pointers to the component columns in the component table."""
+
+    def get[T: ComponentType](self) -> ref[MutUntrackedOrigin] T:
+        """Loads an included component value for this entity."""
+        comptime comp_idx = Self.filter.includes[T]()
+        comptime assert (
+            comp_idx != -1
+        ), "Component type is not included by the kernel filter"
+        return self._component_table_base[comp_idx].unsafe_bitcast[T]()[
+            unsafe_offset=self.idx
+        ]
+
+    def set[T: ComponentType](self, var component: T):
+        """Stores a component value for this entity in device storage."""
+        comptime comp_idx = Self.filter.includes[T]()
+        comptime assert (
+            comp_idx != -1
+        ), "Component type is not included by the kernel filter"
+        self._component_table_base[comp_idx].unsafe_bitcast[T]()[
+            unsafe_offset=self.idx
+        ] = (component^)

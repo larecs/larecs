@@ -72,15 +72,18 @@ Exports:
  - host_storage.HostStorage
  - component.ComponentType
  - types.ComponentId
- - archetype.MutableEntityAccessor
- - archetype.EntityAccessor
+ - archetype.MutArchetypeRowAccessor
+ - archetype.ArchetypeRowAccessor
  - entity.Entity
- - query.Query
- - query.QueryInfo
+ - iteration.Query
+ - filter.Filter
+ - filter.BitMaskFilter
  - resource.Resources
  - resource.ResourceType
  - scheduler.Scheduler
- - scheduler.System
+ - system.System
+ - system.SystemContext
+ - system.KernelContext
 """
 from .world import World
 from .host_storage import HostStorage
@@ -93,8 +96,10 @@ from .error import (
 )
 from .component import ComponentType
 from .types import ComponentId
-from .archetype import MutableEntityAccessor
+from .archetype import MutArchetypeRowAccessor, ArchetypeRowAccessor
 from .resource import Resources, ResourceType
 from .entity import Entity
-from .query import Query
-from .scheduler import Scheduler, System
+from .iteration import Query
+from .filter import Filter, BitMaskFilter
+from .system import System, SystemContext, KernelContext
+from .scheduler import Scheduler
