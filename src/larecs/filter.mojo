@@ -1,67 +1,73 @@
 from tracy import Zone
 
-from .bitmask import _BitMask
-
-
-# Filter is the interface for logic filters.
-# Filters are required to query entities using [Storage.Query].
-#
-# See [BitMask], [MaskFilter] anf [RelationFilter] for basic filters.
-# For type-safe generics queries, see package [github.com/mlange-42/arche/generic].
-# For advanced filtering, see package [github.com/mlange-42/arche/filter].
-
-# type Filter interface:
-#     # matches the filter against a mask, i.e. a component composition.
-#     matches(bits BitMask): Bool
+from .bitmask import BitMask
+from .component import Components, ComponentType, ComponentManager
 
 
 @fieldwise_init
-struct MaskFilter[total_bits: Int]:
-    """MaskFilter is a filter for including and excluding certain components."""
+struct Filter[
+    _include: Components = Components[](), _exclude: Components = Components[]()
+](Sized):
+    comptime include[*ComponentTypes: ComponentType] = Filter[
+        Components[
+            *TypeList._concat[
+                Self._include.ComponentTypes.values, ComponentTypes.values
+            ]()
+        ](),
+        Self._exclude,
+    ]
+    comptime exclude[*ComponentTypes: ComponentType] = Filter[
+        Self._include,
+        Components[
+            *TypeList._concat[
+                Self._exclude.ComponentTypes.values, ComponentTypes.values
+            ]()
+        ](),
+    ]
 
-    comptime bitmask = _BitMask[Self.total_bits]
-    """The concrete bitmask type matched by this filter."""
+    def __len__(self) -> Int:
+        """Returns the number of components included by the filter."""
+        comptime include_length = len(self._include)
+        return include_length
 
-    var include: Self.bitmask  # Components to include.
-    """Component bits that must be present."""
-    var exclude: Self.bitmask  # Components to exclude.
-    """Component bits that must be absent."""
+    def includes[T: ComponentType](self) -> Int:
+        """Returns whether a filter includes component ``T``.
 
-    def matches(self, bits: Self.bitmask) -> Bool:
-        """Matches the filter against a mask."""
-        with Zone(function_name="MaskFilter.matches(bits: Self.bitmask)"):
-            return bits.contains(self.include) and (
-                self.exclude.is_zero() or not bits.contains_any(self.exclude)
-            )
+        Parameters:
+            T: The component type to search for.
 
+        Returns:
+            The component index when ``T`` is included; otherwise ``-1``.
+        """
+        comptime for i in range(len(Self._include)):
+            comptime if Self._include.ComponentTypes[i] == T:
+                return i
+        return -1
 
-# # RelationFilter is a [Filter] for a [Relation] target, in addition to components.
-# #
-# # See [Relation] for details and examples.
-# struct RelationFilter:
-#     Filter Filter # Components filter.
-#     Target Entity # Relation target entity.
+    def excludes[
+        T: ComponentType,
+    ](self) -> Int:
+        """Returns whether a filter excludes component ``T``.
 
-# # NewRelationFilter creates a new [RelationFilter].
-# # It is a [Filter] for a [Relation] target, in addition to components.
-# def NewRelationFilter(filter Filter, target Entity) RelationFilter:
-#     return RelationFilter{
-#         Filter: filter,
-#         Target: target,
+        Parameters:
+            T: The component type to search for.
 
+        Returns:
+            The component index when ``T`` is excluded; otherwise ``-1``.
+        """
+        comptime for i in range(len(Self._exclude)):
+            comptime if Self._exclude.ComponentTypes[i] == T:
+                return i
+        return -1
 
-# # matches the filter against a mask.
-# def (f *RelationFilter) matches(bits BitMask): Bool:
-#     return f.Filter.matches(bits)
+    def get_include_mask[*ComponentTypes: ComponentType](self) -> BitMask:
+        comptime component_manager = ComponentManager[*ComponentTypes]
+        return BitMask(
+            component_manager.get_id_arr[*Self._include.ComponentTypes]()
+        )
 
-# # CachedFilter is a filter that is cached by the world.
-# #
-# # Create a cached filter from any other filter using [Cache.Register].
-# # For details on caching, see [Cache].
-# type CachedFilter struct:
-#     filter Filter
-#     id     uint32
-
-# # matches the filter against a mask.
-# def (f *CachedFilter) matches(bits BitMask): Bool:
-#     return f.filter.matches(bits)
+    def get_exclude_mask[*ComponentTypes: ComponentType](self) -> BitMask:
+        comptime component_manager = ComponentManager[*ComponentTypes]
+        return BitMask(
+            component_manager.get_id_arr[*Self._exclude.ComponentTypes]()
+        )

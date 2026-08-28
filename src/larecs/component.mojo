@@ -13,6 +13,13 @@ comptime ComponentType = Copyable & Deinitable
 """The trait that components must conform to."""
 
 
+@fieldwise_init
+struct Components[*ComponentTypes: ComponentType](Sized):
+    def __len__(self) -> Int:
+        """Returns the number of component types included by the filter."""
+        return len(self.ComponentTypes)
+
+
 @always_inline
 def constrain_components_unique[*Ts: ComponentType]() -> Bool:
     """Checks whether all component types are unique.
