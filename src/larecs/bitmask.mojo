@@ -1,6 +1,5 @@
 from std.bit import pop_count, bit_not
 from std.collections.check_bounds import check_bounds
-from .filter import MaskFilter
 from .types import ComponentId
 from std.hashlib import Hasher
 from std.io.write import Writable, Writer
@@ -423,22 +422,6 @@ struct _BitMask[total_bits: Int](
         """
         with Zone(function_name="BitMask.matches(bits: Self)"):
             return bits.contains(self)
-
-    @always_inline
-    def exclusive(self) -> MaskFilter[Self.total_bits]:
-        """Creates a [..filter.MaskFilter] which filters for exactly the mask's components.
-
-        Matches only entities that have exactly the given components, and no other.
-        This creates a filter that excludes all components not in this mask.
-
-        Returns:
-            A [..filter.MaskFilter] configured for exact component matching.
-        """
-        with Zone(function_name="BitMask.exclusive()"):
-            return MaskFilter[Self.total_bits](
-                include=self,
-                exclude=~self,
-            )
 
     @always_inline
     def get(self, bit: Int) -> Bool:
