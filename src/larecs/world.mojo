@@ -8,6 +8,7 @@ from .component import (
 from .host_storage import HostStorage
 from .device_storage import DeviceStorage
 from .resource import Resources
+from .filter import Filter, BitMaskFilter
 
 
 struct World[*component_types: ComponentType](Copyable, Sized):
@@ -47,8 +48,35 @@ struct World[*component_types: ComponentType](Copyable, Sized):
 
         Note that this requires iterating over all archetypes and
         may be an expensive operation.
+
+        Returns:
+            The number of entities in the world.
         """
         with Zone(function_name="World.__len__(out size: Int)"):
             size = 0
             for archetype in self.storage._archetypes:
                 size += len(archetype)
+
+    def filter[
+        filter: Filter
+    ](self) -> BitMaskFilter[len(filter._exclude) > 0 or filter._is_exclusive]:
+        """
+        Returns a bitmask filter for querying entities matching the given filter criteria.
+
+        Parameters:
+            filter: The comptime filter specifying which components to match against.
+
+        Returns:
+            A bitmask filter representing the query result.
+        """
+        with Zone(
+            function_name=(
+                "World.filter[filter: Filter](self) ->"
+                " BitMaskFilter[len(filter._exclude) > 0 or"
+                " filter._is_exclusive]"
+            )
+        ):
+            comptime bitmask = filter.get_bitmask_filter[
+                *Self.component_types
+            ]()
+            return bitmask

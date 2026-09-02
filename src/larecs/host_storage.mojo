@@ -832,7 +832,6 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     ](
         mut self,
         filter: BitMaskFilter[_],
-        query: QueryInfo[has_exclude_mask=has_exclude_mask],
         var *add_components: *Ts,
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
@@ -874,7 +873,6 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         ```
 
         Parameters:
-            has_exclude_mask: Whether the query has a without mask.
             Ts: The types of the components to add. Constraints: Must be in the component manager and contain no duplicates.
 
         Args:
@@ -1183,9 +1181,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         remove_ids: Array[ComponentId, rem_size] = Array[ComponentId, rem_size](
             uninitialized=True
         ),
+        has_exclude_mask: Bool = False,
     ](
         mut self,
-        filter: BitMaskFilter[_],
+        filter: BitMaskFilter[is_excluding=has_exclude_mask],
         var *add_components: *Ts,
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
@@ -1200,6 +1199,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             Ts:                 The types of the components to add. Constraints: Must be in the component manager and contain no duplicates.
             rem_size:           The number of components to remove.
             remove_ids:         The IDs of the components to remove.
+            has_exclude_mask:   Whether the query has a without mask.
 
         Args:
             filter:          The filter to determine which entities to modify.
