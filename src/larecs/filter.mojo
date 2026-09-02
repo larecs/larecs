@@ -7,7 +7,9 @@ from .static_optional import StaticOptional
 
 @fieldwise_init
 struct Filter[
-    _include: Components = Components[](), _exclude: Components = Components[]()
+    _include: Components = Components[](),
+    _exclude: Components = Components[](),
+    _is_exclusive: Bool = False,
 ](Sized):
     comptime include[*ComponentTypes: ComponentType] = Filter[
         Components[
@@ -16,6 +18,7 @@ struct Filter[
             ]()
         ](),
         Self._exclude,
+        Self._is_exclusive,
     ]
     comptime exclude[*ComponentTypes: ComponentType] = Filter[
         Self._include,
@@ -24,6 +27,13 @@ struct Filter[
                 Self._exclude.ComponentTypes.values, ComponentTypes.values
             ]()
         ](),
+        Self._is_exclusive,
+    ]
+
+    comptime exclusive = Filter[
+        Self._include,
+        Components[](),
+        True,
     ]
 
     def __len__(self) -> Int:
@@ -86,27 +96,53 @@ struct Filter[
         ):
             comptime component_manager = ComponentManager[*ComponentTypes]
 
-            return BitMask(
-                component_manager.get_id_arr[*Self._exclude.ComponentTypes]()
-            )
+            comptime if Self._is_exclusive:
+                return ~BitMask(
+                    component_manager.get_id_arr[
+                        *Self._include.ComponentTypes
+                    ]()
+                )
+            else:
+                return BitMask(
+                    component_manager.get_id_arr[
+                        *Self._exclude.ComponentTypes
+                    ]()
+                )
 
     def get_bitmask_filter[
         *ComponentTypes: ComponentType
-    ](self) -> BitMaskFilter[len(Self._exclude) > 0]:
+    ](self) -> BitMaskFilter[len(Self._exclude) > 0 or Self._is_exclusive]:
+        """Returns a BitMaskFilter for this filter.
+
+        Parameters:
+            ComponentTypes: The component types to query against.
+
+        Returns:
+            A BitMaskFilter with the appropriate include and exclude masks.
+        """
         with Zone(
             function_name=(
                 "Filter.get_bitmask_filter[*ComponentTypes: ComponentType]()"
-                " -> BitMaskFilter[len(Self._exclude) > 0]"
+                " -> BitMaskFilter[len(Self._exclude) > 0 or"
+                " Self._is_exclusive]"
             )
         ):
-            comptime if len(Self._exclude) > 0:
-                return BitMaskFilter[len(Self._exclude) > 0](
-                    include=self.get_include_mask[*ComponentTypes](),
-                    exclude=self.get_exclude_mask[*ComponentTypes](),
+            comptime if len(Self._exclude) > 0 or Self._is_exclusive:
+                return rebind[
+                    BitMaskFilter[len(Self._exclude) > 0 or Self._is_exclusive]
+                ](
+                    BitMaskFilter[True](
+                        include=self.get_include_mask[*ComponentTypes](),
+                        exclude=self.get_exclude_mask[*ComponentTypes](),
+                    )
                 )
             else:
-                return BitMaskFilter[len(Self._exclude) > 0](
-                    include=self.get_include_mask[*ComponentTypes](),
+                return rebind[
+                    BitMaskFilter[len(Self._exclude) > 0 or Self._is_exclusive]
+                ](
+                    BitMaskFilter[False](
+                        include=self.get_include_mask[*ComponentTypes](),
+                    )
                 )
 
 
@@ -174,7 +210,7 @@ struct BitMaskFilter[
         Adds excluded components to the filter.
 
         Args:
-            exclude_mask: The component mask to exclude.
+            mask: The component mask to exclude.
 
         Returns:
             BitMaskFilter with an active exclusion mask.
