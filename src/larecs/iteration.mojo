@@ -240,7 +240,7 @@ struct Query[
                 self._archetypes,
                 self._lock_ptr,
                 self._filter
-                ^.without(
+                ^.exclude(
                     BitMask(
                         Self.HostStorage.component_manager.get_id_arr[*Ts]()
                     )

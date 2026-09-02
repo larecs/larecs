@@ -1,4 +1,4 @@
-from .archetype import Archetype, MutableEntityAccessor
+from .archetype import Archetype, MutArchetypeRowAccessor
 from .bitmask import BitMask
 from .debug_utils import debug_warn
 from .component import (
@@ -575,7 +575,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Example:
 
         ```mojo {doctest="apply" global=true hide=true}
-        from larecs import World, MutableEntityAccessor
+        from larecs import World, MutArchetypeRowAccessor
         from testing import assert_equal, assert_false
         ```
 
@@ -1442,7 +1442,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
     @always_inline
     def apply[
-        OperationType: def(accessor: MutableEntityAccessor) raises -> None,
+        OperationType: def(accessor: MutArchetypeRowAccessor) raises -> None,
         //,
         *,
         unroll_factor: Int = 1,
@@ -1493,7 +1493,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     #
     # def apply[
     #     OperationType: def[simd_width: Int](
-    #         accessor: MutableEntityAccessor
+    #         accessor: MutArchetypeRowAccessor
     #     ) raises -> None,
     #     //,
     #     has_exclude_mask: Bool = False,
@@ -1541,7 +1541,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
     #     Example:
     #     ```mojo {doctest="apply" global=true hide=true}
-    #     from larecs import World, MutableEntityAccessor
+    #     from larecs import World, MutArchetypeRowAccessor
     #     ```
 
     #     ```mojo {doctest="apply"}
@@ -1550,7 +1550,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     #     world = World[Float64]()
     #     e = world.add_entity()
 
-    #     def operation[simd_width: Int](accessor: MutableEntityAccessor) capturing:
+    #     def operation[simd_width: Int](accessor: MutArchetypeRowAccessor) capturing:
     #         # Define the operation to apply here.
     #         # Note that due to the immature
     #         # capturing system of Mojo, the world may be
