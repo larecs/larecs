@@ -98,7 +98,7 @@ struct DeviceStorage[*ComponentTypes: ComponentType](Copyable):
             comptime id = Self.component_manager.get_id[T]()
 
             if self._columns[id] is None:
-                raise "Column not initialized"
+                raise Error("Column not initialized")
 
             assert len(self._columns[id].unsafe_value()) <= len(src)
 
@@ -199,7 +199,7 @@ struct DeviceStorage[*ComponentTypes: ComponentType](Copyable):
         ):
             comptime id = Self.component_manager.get_id[T]()
             if self._columns[id] is None:
-                raise "Column not initialized"
+                raise Error("Column not initialized")
             return rebind[
                 DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
             ](self._columns[id].unsafe_value().device_ptr())
