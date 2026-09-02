@@ -103,7 +103,7 @@ struct StaticOptional[
     @always_inline
     def __deinit__(deinit self):
         """Destroy the stored value when present."""
-        with Zone(function_name="StaticOptional.__del__()"):
+        with Zone(function_name="StaticOptional.__deinit__()"):
             comptime if Self.has_value:
                 _ = self._value^
 

@@ -24,10 +24,16 @@ def _assert_index_in_bounds(index: Int, size: Int):
 def assert_unreachable[
     MsgType: Writable & Movable
 ](reason: Optional[MsgType] = None):
-    if reason is None:
-        assert False, "Executed code that should be unreachable!"
-    else:
-        assert False, t"Executed code that should be unreachable: {reason}"
+    with Zone(
+        function_name=(
+            "_utils.assert_unreachable[MsgType: Writable & Movable](reason:"
+            " Optional[MsgType])"
+        )
+    ):
+        if reason is None:
+            assert False, "Executed code that should be unreachable!"
+        else:
+            assert False, t"Executed code that should be unreachable: {reason}"
 
 
 @always_inline
@@ -52,17 +58,24 @@ def concatenate_arrays[
     Returns:
         The output array containing `a` followed by `b`.
     """
-    result = {uninitialized = True}
+    with Zone(
+        function_name=(
+            "_utils.concatenate_arrays[ElementType: Copyable, a_size: Int,"
+            " b_size: Int](a: Array[ElementType, a_size], b: Array[ElementType,"
+            " b_size], out result: Array[ElementType, a_size + b_size])"
+        )
+    ):
+        result = {uninitialized = True}
 
-    unsafe_uninit_copy_n[overlapping=False](
-        dest=result.unsafe_ptr(), src=a.unsafe_ptr(), count=a_size
-    )
+        unsafe_uninit_copy_n[overlapping=False](
+            dest=result.unsafe_ptr(), src=a.unsafe_ptr(), count=a_size
+        )
 
-    unsafe_uninit_copy_n[overlapping=False](
-        dest=result.unsafe_ptr().unsafe_offset(a_size),
-        src=b.unsafe_ptr(),
-        count=b_size,
-    )
+        unsafe_uninit_copy_n[overlapping=False](
+            dest=result.unsafe_ptr().unsafe_offset(a_size),
+            src=b.unsafe_ptr(),
+            count=b_size,
+        )
 
 
 @always_inline

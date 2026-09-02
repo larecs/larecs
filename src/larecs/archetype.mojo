@@ -205,12 +205,24 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         var data: ThinAllocation[Byte], length: Int, capacity: Int
     ):
         """Frees an empty column allocation without destroying values."""
-        dealloc(data^.unsafe_with_layout(Layout[Byte](count=capacity)))
+        with Zone(
+            function_name=(
+                "_ComponentColumn._empty_destroy(var data:"
+                " ThinAllocation[Byte], length: Int, capacity: Int)"
+            )
+        ):
+            dealloc(data^.unsafe_with_layout(Layout[Byte](count=capacity)))
 
     @staticmethod
     def _empty_copy(data: Self.Data, length: Int, capacity: Int) -> Self.Data:
         """Returns no allocation for an untyped empty column."""
-        return None
+        with Zone(
+            function_name=(
+                "_ComponentColumn._empty_copy(data: Self.Data, length: Int,"
+                " capacity: Int)"
+            )
+        ):
+            return None
 
     @staticmethod
     def _empty_resize(
@@ -220,22 +232,35 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         new_capacity: Int,
     ) -> Self.Data:
         """Leaves an untyped empty column without allocating storage."""
-        return None
+        with Zone(
+            function_name=(
+                "_ComponentColumn._empty_resize(mut data: Self.Data, length:"
+                " Int, old_capacity: Int, new_capacity: Int)"
+            )
+        ):
+            return None
 
     @staticmethod
     def _empty_swap_remove(mut data: Self.Data, length: Int, remove_idx: Int):
         """Does nothing because an untyped empty column has no values."""
-        pass
+        with Zone(
+            function_name=(
+                "_ComponentColumn._empty_swap_remove(mut data: Self.Data,"
+                " length: Int, remove_idx: Int)"
+            )
+        ):
+            pass
 
     def __init__(out self):
         """
         Initializes an empty _ComponentColumn.
         """
-        self._data = None
-        self._destroy = Self._empty_destroy
-        self._copy = Self._empty_copy
-        self._resize = Self._empty_resize
-        self._swap_remove = Self._empty_swap_remove
+        with Zone(function_name="_ComponentColumn.__init__()"):
+            self._data = None
+            self._destroy = Self._empty_destroy
+            self._copy = Self._empty_copy
+            self._resize = Self._empty_resize
+            self._swap_remove = Self._empty_swap_remove
 
     @staticmethod
     def _destroy_t[
@@ -251,11 +276,17 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             length: The number of initialized values.
             capacity: The allocation capacity.
         """
-        var allocation = rebind_var[ThinAllocation[T]](
-            byte_thin^
-        ).unsafe_with_layout(Layout[T](count=capacity))
-        unsafe_destroy_n(pointer=allocation.unsafe_ptr(), count=length)
-        dealloc(allocation^)
+        with Zone(
+            function_name=(
+                "_ComponentColumn._destroy_t[T: ComponentType](var byte_thin:"
+                " ThinAllocation[Byte], length: Int, capacity: Int)"
+            )
+        ):
+            var allocation = rebind_var[ThinAllocation[T]](
+                byte_thin^
+            ).unsafe_with_layout(Layout[T](count=capacity))
+            unsafe_destroy_n(pointer=allocation.unsafe_ptr(), count=length)
+            dealloc(allocation^)
 
     @staticmethod
     def _copy_t[
@@ -274,17 +305,25 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         Returns:
             A type-erased allocation containing the copied values, or `None`.
         """
-        if data:
-            var copy_allocation = alloc(Layout[T](count=capacity))
-            unsafe_uninit_copy_n[overlapping=False](
-                dest=copy_allocation.unsafe_ptr(),
-                src=data.value().unsafe_ptr().unsafe_bitcast[T](),
-                count=length,
+        with Zone(
+            function_name=(
+                "_ComponentColumn._copy_t[T: ComponentType](data: Self.Data,"
+                " length: Int, capacity: Int)"
             )
-            return {
-                rebind_var[ThinAllocation[Byte]](copy_allocation^.into_thin())
-            }
-        return None
+        ):
+            if data:
+                var copy_allocation = alloc(Layout[T](count=capacity))
+                unsafe_uninit_copy_n[overlapping=False](
+                    dest=copy_allocation.unsafe_ptr(),
+                    src=data.value().unsafe_ptr().unsafe_bitcast[T](),
+                    count=length,
+                )
+                return {
+                    rebind_var[ThinAllocation[Byte]](
+                        copy_allocation^.into_thin()
+                    )
+                }
+            return None
 
     @staticmethod
     def _resize_t[
@@ -309,21 +348,29 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         Returns:
             A type-erased allocation with the moved values.
         """
-        var new_allocation = alloc[T](Layout[T](count=new_capacity))
-        if data:
-            var old_data = data.take()
-            unsafe_uninit_move_n[overlapping=False](
-                dest=new_allocation.unsafe_ptr(),
-                src=old_data.unsafe_ptr().unsafe_bitcast[T](),
-                count=length,
+        with Zone(
+            function_name=(
+                "_ComponentColumn._resize_t[T: ComponentType](mut data:"
+                " Self.Data, length: Int, old_capacity: Int, new_capacity: Int)"
             )
-            dealloc(
-                old_data
-                ^.unsafe_with_layout(
-                    Layout[T](count=old_capacity).as_byte_layout()
+        ):
+            var new_allocation = alloc[T](Layout[T](count=new_capacity))
+            if data:
+                var old_data = data.take()
+                unsafe_uninit_move_n[overlapping=False](
+                    dest=new_allocation.unsafe_ptr(),
+                    src=old_data.unsafe_ptr().unsafe_bitcast[T](),
+                    count=length,
                 )
-            )
-        return {rebind_var[ThinAllocation[Byte]](new_allocation^.into_thin())}
+                dealloc(
+                    old_data
+                    ^.unsafe_with_layout(
+                        Layout[T](count=old_capacity).as_byte_layout()
+                    )
+                )
+            return {
+                rebind_var[ThinAllocation[Byte]](new_allocation^.into_thin())
+            }
 
     @staticmethod
     def _swap_remove_t[
@@ -339,14 +386,20 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             length: The current number of values.
             remove_idx: The index of the value to remove.
         """
-        var ptr = data.value().unsafe_ptr().unsafe_bitcast[T]()
-        unsafe_destroy_n(ptr.unsafe_offset(remove_idx), count=1)
-        if remove_idx != length - 1:
-            unsafe_uninit_move_n[overlapping=False](
-                dest=ptr.unsafe_offset(remove_idx).as_unsafe_any_origin(),
-                src=ptr.unsafe_offset(length - 1),
-                count=1,
+        with Zone(
+            function_name=(
+                "_ComponentColumn._swap_remove_t[T: ComponentType](mut data:"
+                " Self.Data, length: Int, remove_idx: Int)"
             )
+        ):
+            var ptr = data.value().unsafe_ptr().unsafe_bitcast[T]()
+            unsafe_destroy_n(ptr.unsafe_offset(remove_idx), count=1)
+            if remove_idx != length - 1:
+                unsafe_uninit_move_n[overlapping=False](
+                    dest=ptr.unsafe_offset(remove_idx).as_unsafe_any_origin(),
+                    src=ptr.unsafe_offset(length - 1),
+                    count=1,
+                )
 
     @staticmethod
     def create[
@@ -361,28 +414,36 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             preallocate: Whether to allocate storage immediately.
             capacity: The initial allocation capacity.
         """
-        column = Self()
-        column._destroy = Self._destroy_t[T]
-        column._copy = Self._copy_t[T]
-        column._resize = Self._resize_t[T]
-        column._swap_remove = Self._swap_remove_t[T]
-        var empty: Self.Data = None
-        if preallocate:
-            column._data^.deinit_assert_empty()
-            column._data = Self._resize_t[T](empty, 0, 0, capacity)
-        empty^.deinit_assert_empty()
+        with Zone(
+            function_name=(
+                "_ComponentColumn.create[T: ComponentType](out column: Self,"
+                " preallocate: Bool, capacity: Int)"
+            )
+        ):
+            column = Self()
+            column._destroy = Self._destroy_t[T]
+            column._copy = Self._copy_t[T]
+            column._resize = Self._resize_t[T]
+            column._swap_remove = Self._swap_remove_t[T]
+            var empty: Self.Data = None
+            if preallocate:
+                column._data^.deinit_assert_empty()
+                column._data = Self._resize_t[T](empty, 0, 0, capacity)
+            empty^.deinit_assert_empty()
 
     def __init__(out self, *, copy: Self):
         """Initializes an empty column with the source column's callbacks."""
-        self._data = None
-        self._destroy = copy._destroy
-        self._copy = copy._copy
-        self._resize = copy._resize
-        self._swap_remove = copy._swap_remove
+        with Zone(function_name="_ComponentColumn.__init__(copy: Self)"):
+            self._data = None
+            self._destroy = copy._destroy
+            self._copy = copy._copy
+            self._resize = copy._resize
+            self._swap_remove = copy._swap_remove
 
     def __deinit__(deinit self):
         """Asserts that the column allocation was explicitly destroyed."""
-        self._data^.deinit_assert_empty()
+        with Zone(function_name="_ComponentColumn.__del__()"):
+            self._data^.deinit_assert_empty()
 
     def copy_data_from(mut self, source: Self, length: Int, capacity: Int):
         """Copies initialized values from another column into this column.
@@ -392,8 +453,14 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             length: The number of values to copy.
             capacity: The capacity of the copied allocation.
         """
-        self._data^.deinit_assert_empty()
-        self._data = self._copy(source._data, length, capacity)
+        with Zone(
+            function_name=(
+                "_ComponentColumn.copy_data_from(source: Self, length: Int,"
+                " capacity: Int)"
+            )
+        ):
+            self._data^.deinit_assert_empty()
+            self._data = self._copy(source._data, length, capacity)
 
     def resize(mut self, length: Int, old_capacity: Int, new_capacity: Int):
         """Resizes the column allocation while preserving initialized values.
@@ -403,9 +470,17 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             old_capacity: The current allocation capacity.
             new_capacity: The requested allocation capacity.
         """
-        var old_data = self._data^
-        self._data = self._resize(old_data, length, old_capacity, new_capacity)
-        old_data^.deinit_assert_empty()
+        with Zone(
+            function_name=(
+                "_ComponentColumn.resize(length: Int, old_capacity: Int,"
+                " new_capacity: Int)"
+            )
+        ):
+            var old_data = self._data^
+            self._data = self._resize(
+                old_data, length, old_capacity, new_capacity
+            )
+            old_data^.deinit_assert_empty()
 
     def swap_remove(mut self, length: Int, remove_idx: Int):
         """Removes a value by replacing it with the final value in the column.
@@ -414,7 +489,12 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             length: The current number of values.
             remove_idx: The index of the value to remove.
         """
-        self._swap_remove(self._data, length, remove_idx)
+        with Zone(
+            function_name=(
+                "_ComponentColumn.swap_remove(length: Int, remove_idx: Int)"
+            )
+        ):
+            self._swap_remove(self._data, length, remove_idx)
 
     def destroy(mut self, length: Int, capacity: Int):
         """Destroys initialized values and releases the column allocation.
@@ -423,8 +503,11 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             length: The number of initialized values.
             capacity: The allocation capacity.
         """
-        if self._data:
-            self._destroy(self._data.take(), length, capacity)
+        with Zone(
+            function_name="_ComponentColumn.destroy(length: Int, capacity: Int)"
+        ):
+            if self._data:
+                self._destroy(self._data.take(), length, capacity)
 
     def get_ptr[
         T: ComponentType
@@ -437,12 +520,13 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         Returns:
             A pointer to the column's component values.
         """
-        return (
-            self._data.value()
-            .unsafe_ptr()
-            .unsafe_bitcast[T]()
-            .unsafe_origin_cast[UntrackedOrigin[mut=origin_of(self).mut]]()
-        )
+        with Zone(function_name="_ComponentColumn.get_ptr[T: ComponentType]()"):
+            return (
+                self._data.value()
+                .unsafe_ptr()
+                .unsafe_bitcast[T]()
+                .unsafe_origin_cast[UntrackedOrigin[mut=origin_of(self).mut]]()
+            )
 
 
 struct _ComponentTable[*ComponentTypes: ComponentType](

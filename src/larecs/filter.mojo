@@ -28,8 +28,9 @@ struct Filter[
 
     def __len__(self) -> Int:
         """Returns the number of components included by the filter."""
-        comptime include_length = len(self._include)
-        return include_length
+        with Zone(function_name="Filter.__len__()"):
+            comptime include_length = len(self._include)
+            return include_length
 
     def includes[T: ComponentType](self) -> Int:
         """Returns whether a filter includes component ``T``.
@@ -40,10 +41,11 @@ struct Filter[
         Returns:
             The component index when ``T`` is included; otherwise ``-1``.
         """
-        comptime for i in range(len(Self._include)):
-            comptime if Self._include.ComponentTypes[i] == T:
-                return i
-        return -1
+        with Zone(function_name="Filter.includes[T: ComponentType]()"):
+            comptime for i in range(len(Self._include)):
+                comptime if Self._include.ComponentTypes[i] == T:
+                    return i
+            return -1
 
     def excludes[
         T: ComponentType,
@@ -56,35 +58,56 @@ struct Filter[
         Returns:
             The component index when ``T`` is excluded; otherwise ``-1``.
         """
-        comptime for i in range(len(Self._exclude)):
-            comptime if Self._exclude.ComponentTypes[i] == T:
-                return i
-        return -1
+        with Zone(function_name="Filter.excludes[T: ComponentType]()"):
+            comptime for i in range(len(Self._exclude)):
+                comptime if Self._exclude.ComponentTypes[i] == T:
+                    return i
+            return -1
 
     def get_include_mask[*ComponentTypes: ComponentType](self) -> BitMask:
-        comptime component_manager = ComponentManager[*ComponentTypes]
-        return BitMask(
-            component_manager.get_id_arr[*Self._include.ComponentTypes]()
-        )
+        with Zone(
+            function_name=(
+                "Filter.get_include_mask[*ComponentTypes:"
+                " ComponentType]() -> BitMask"
+            )
+        ):
+            comptime component_manager = ComponentManager[*ComponentTypes]
+
+            return BitMask(
+                component_manager.get_id_arr[*Self._include.ComponentTypes]()
+            )
 
     def get_exclude_mask[*ComponentTypes: ComponentType](self) -> BitMask:
-        comptime component_manager = ComponentManager[*ComponentTypes]
-        return BitMask(
-            component_manager.get_id_arr[*Self._exclude.ComponentTypes]()
-        )
+        with Zone(
+            function_name=(
+                "Filter.get_exclude_mask[*ComponentTypes:"
+                " ComponentType]() -> BitMask"
+            )
+        ):
+            comptime component_manager = ComponentManager[*ComponentTypes]
+
+            return BitMask(
+                component_manager.get_id_arr[*Self._exclude.ComponentTypes]()
+            )
 
     def get_bitmask_filter[
         *ComponentTypes: ComponentType
     ](self) -> BitMaskFilter[len(Self._exclude) > 0]:
-        comptime if len(Self._exclude) > 0:
-            return BitMaskFilter[len(Self._exclude) > 0](
-                include=self.get_include_mask[*ComponentTypes](),
-                exclude=self.get_exclude_mask[*ComponentTypes](),
+        with Zone(
+            function_name=(
+                "Filter.get_bitmask_filter[*ComponentTypes: ComponentType]()"
+                " -> BitMaskFilter[len(Self._exclude) > 0]"
             )
-        else:
-            return BitMaskFilter[len(Self._exclude) > 0](
-                include=self.get_include_mask[*ComponentTypes](),
-            )
+        ):
+            comptime if len(Self._exclude) > 0:
+                return BitMaskFilter[len(Self._exclude) > 0](
+                    include=self.get_include_mask[*ComponentTypes](),
+                    exclude=self.get_exclude_mask[*ComponentTypes](),
+                )
+            else:
+                return BitMaskFilter[len(Self._exclude) > 0](
+                    include=self.get_include_mask[*ComponentTypes](),
+                )
 
 
 struct BitMaskFilter[
@@ -137,7 +160,7 @@ struct BitMaskFilter[
         Args:
             copy: The query to copy.
         """
-        with Zone(function_name="BitMaskFilter.__init__(copy: Self)"):
+        with Zone(function_name="BitMaskFilter.__init__(*, copy: Self)"):
             self.include_mask = copy.include_mask
             self.exclude_mask = copy.exclude_mask.copy()
 

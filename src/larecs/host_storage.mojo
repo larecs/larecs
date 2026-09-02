@@ -130,12 +130,13 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         """
         Initializes the storage with the zero archetype and zero entity location.
         """
-        self._entity_locations = [EntityLocation(0, 0)]
-        self._entity_pool = EntityPool()
+        with Zone(function_name="HostStorage.__init__()"):
+            self._entity_locations = [EntityLocation(0, 0)]
+            self._entity_pool = EntityPool()
 
-        self._archetype_map = BitMaskGraph[-1](0)
-        self._archetypes = [Self.Archetype()]
-        self._locks = LockManager()
+            self._archetype_map = BitMaskGraph[-1](0)
+            self._archetypes = [Self.Archetype()]
+            self._locks = LockManager()
 
     @always_inline
     def query[

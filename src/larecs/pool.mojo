@@ -210,6 +210,7 @@ struct BitPool(Copyable, Movable):
         All previously handed-out indices are invalidated from the pool's point
         of view. The next allocation starts again at index 0.
         """
-        self._next = 0
-        self._length = 0
-        self._available = 0
+        with Zone(function_name="BitPool.reset()"):
+            self._next = 0
+            self._length = 0
+            self._available = 0

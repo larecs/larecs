@@ -1,3 +1,6 @@
+from tracy import Zone
+
+
 @fieldwise_init
 struct InternalError(Equatable, ImplicitlyCopyable, Writable):
     """
@@ -36,4 +39,7 @@ struct InternalError(Equatable, ImplicitlyCopyable, Writable):
         Args:
             writer: The writer to write to.
         """
-        writer.write("InternalError.", self.variant_name, ": ", self.msg)
+        with Zone(
+            function_name="InternalError.write_to(mut writer: Some[Writer])"
+        ):
+            writer.write("InternalError.", self.variant_name, ": ", self.msg)
