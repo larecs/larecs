@@ -217,7 +217,7 @@ struct SystemContext[
 ](Copyable):
     comptime World = World[*Self.WorldTs]
 
-    var _world: Pointer[Self.World, MutUntrackedOrigin]
+    var world: Pointer[Self.World, MutUntrackedOrigin]
 
     def __init__(out self, ref world: Self.World):
         """Creates a context borrowing the scheduler's world."""
@@ -226,7 +226,7 @@ struct SystemContext[
         ):
             comptime assert origin_of(world).mut, "world must be mutable"
 
-            self._world = (
+            self.world = (
                 Pointer(to=world)
                 .mut_cast[True]()
                 .unsafe_origin_cast[MutUntrackedOrigin]()
@@ -255,16 +255,45 @@ struct SystemContext[
             var length = 0
             comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
             comptime exclude_mask = filter.get_exclude_mask[*Self.WorldTs]()
-            var matching_archetypes = self._world[].storage._get_archetype_iterator(
-                include_mask,
-                exclude_mask,
+            var matching_archetypes = (
+                self.world[].storage._get_archetype_iterator(
+                    include_mask,
+                    exclude_mask,
+                )
             )
             for ref archetype in matching_archetypes.copy():
                 length += len(archetype)
 
-            comptime if has_accelerator() and on_gpu:
-                ref device_storage = self._world[]._device_storage[]
-                self._world[]._device_storage = Self.World.DeviceStorage(
+            comptime if not has_accelerator() or not on_gpu:
+                # A filter can match multiple archetypes. Run the kernel once
+                # per matching archetype so each component pointer refers to a
+                # homogeneous SoA range and the accessor's row id remains
+                # local to that archetype.
+                for ref archetype in matching_archetypes^:
+                    var kernel_columns = KernelContext[filter].Columns(
+                        uninitialized=True
+                    )
+
+                    comptime for i in range(len(filter)):
+                        comptime T = filter._include.ComponentTypes[i]
+                        kernel_columns[
+                            i
+                        ] = archetype._storage.get_component_ptr[
+                            T
+                        ]().unsafe_bitcast[
+                            UInt8
+                        ]()
+
+                    var kernel_context = KernelContext[filter](
+                        kernel_columns^,
+                        length=Int32(length),
+                        thread_count=1,
+                    )
+                    KernelFunc(kernel_context)
+
+            else:
+                ref device_storage = self.world[]._device_storage[]
+                self.world[]._device_storage = Self.World.DeviceStorage(
                     device_storage._device_context, length
                 )
 
@@ -309,25 +338,57 @@ struct SystemContext[
 
                     device_storage.synchronize()
 
-            else:
-                # A filter can match multiple archetypes. Run the kernel once per
-                # matching archetype so each component pointer refers to a
-                # homogeneous SoA range and the accessor's row id remains local to
-                # that archetype.
-                for ref archetype in matching_archetypes^:
-                    var kernel_columns = KernelContext[filter].Columns(
-                        uninitialized=True
-                    )
+    def run[
+        filter: Filter,
+        //,
+        KernelFunc: def(KernelContext[filter]) -> None,
+        *,
+        on_gpu: Bool = False,
+    ](mut self, kernel_func: KernelFunc) raises where not on_gpu:
+        """Runs a system function over rows matching ``filter``.
 
-                    comptime for i in range(len(filter)):
-                        comptime T = filter._include.ComponentTypes[i]
-                        kernel_columns[i] = archetype._storage.get_component_ptr[
-                            T
-                        ]().unsafe_bitcast[UInt8]()
+        Parameters:
+            filter: Compile-time component inclusion and exclusion constraints.
+            KernelFunc: The kernel specialized for ``filter``.
+            on_gpu: Whether to execute the kernel against device storage.
+        """
+        with Zone(
+            function_name=(
+                "SystemContext.run[filter: Filter, //, KernelFunc:"
+                " def(KernelContext[filter]) -> None, *, on_gpu:"
+                " Bool](kernel_func: KernelFunc)"
+            )
+        ):
+            var length = 0
+            comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
+            comptime exclude_mask = filter.get_exclude_mask[*Self.WorldTs]()
+            var matching_archetypes = (
+                self.world[].storage._get_archetype_iterator(
+                    include_mask,
+                    exclude_mask,
+                )
+            )
+            for ref archetype in matching_archetypes.copy():
+                length += len(archetype)
 
-                    var kernel_context = KernelContext[filter](
-                        kernel_columns^,
-                        length=Int32(length),
-                        thread_count=1,
-                    )
-                    KernelFunc(kernel_context)
+            # A filter can match multiple archetypes. Run the kernel once per
+            # matching archetype so each component pointer refers to a
+            # homogeneous SoA range and the accessor's row id remains local to
+            # that archetype.
+            for ref archetype in matching_archetypes^:
+                var kernel_columns = KernelContext[filter].Columns(
+                    uninitialized=True
+                )
+
+                comptime for i in range(len(filter)):
+                    comptime T = filter._include.ComponentTypes[i]
+                    kernel_columns[i] = archetype._storage.get_component_ptr[
+                        T
+                    ]().unsafe_bitcast[UInt8]()
+
+                var kernel_context = KernelContext[filter](
+                    kernel_columns^,
+                    length=Int32(length),
+                    thread_count=1,
+                )
+                kernel_func(kernel_context)
