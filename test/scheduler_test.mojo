@@ -3,6 +3,7 @@ from larecs import (
     Scheduler,
     System,
     ResourceType,
+    Resources,
     ComponentType,
     SystemContext,
     KernelContext,
@@ -96,6 +97,36 @@ def test_test_system() raises:
         scheduler.world.resources.get[MeanState]().value,
         6,
     )
+
+
+@fieldwise_init
+struct Scale(ResourceType):
+    var value: Int
+
+
+def scale_entities(
+    context: KernelContext[Filter().include[Int](), Resources[Scale]()]
+):
+    """Multiplies every matching entity's value by the `Scale` resource."""
+    ref scale = context.resources.get[Scale]()
+    for entity in context:
+        entity.get[Int]() *= scale.value
+
+
+def test_kernel_context_required_resources() raises:
+    """A kernel can declare and read a resource via `KernelContext.resources`."""
+    var world = World[Int]()
+    world.resources.add(Scale(3))
+    _ = world.storage.add_entities(1, count=5)
+
+    var context = SystemContext(world)
+    context.run[scale_entities]()
+
+    var total = 0
+    for entity in world.storage.query[Int]():
+        total += entity.get[Int]()
+
+    assert_equal(total, 15)
 
 
 comptime functions = __functions_in_module()
