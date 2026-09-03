@@ -482,7 +482,7 @@ struct EntityAccessorIterator[filter: Filter](Iterator, Movable):
             stride = context.thread_count
 
         self._entity = EntityAccessor[Self.filter](
-            idx=start,
+            idx=Int(start),
             _component_table_base=context._columns.copy(),
         )
         self._length = context.length
@@ -504,10 +504,10 @@ struct EntityAccessorIterator[filter: Filter](Iterator, Movable):
             An accessor whose ``id`` is the current row offset into every
             included component column.
         """
-        if self._done or self._entity.idx >= self._length:
+        if self._done or self._entity.idx >= Int(self._length):
             raise StopIteration()
         var entity = self._entity.copy()
-        self._entity.idx += self._stride
+        self._entity.idx += Int(self._stride)
         return entity^
 
 
