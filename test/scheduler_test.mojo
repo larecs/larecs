@@ -23,13 +23,8 @@ struct UpdateOnlySystem(System):
         """Construct an update-only system."""
         self.updates = 0
 
-    def update[
-        *ComponentTypes: ComponentType
-    ](mut self, mut context: SystemContext[*ComponentTypes]) raises:
+    def update(mut self, mut context: SystemContext[...]) raises:
         """Adds one entity during each update.
-
-        Parameters:
-            ComponentTypes: The component types in the world.
 
         Args:
             context: The system context.

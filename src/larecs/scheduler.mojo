@@ -1,5 +1,5 @@
 from .component import ComponentType
-from .resource import Resources
+from .resource import ResourceStorage
 from .world import World
 from .system import (
     System,
@@ -24,7 +24,7 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
     Example:
 
     ```mojo {doctest="scheduler" global=true hide=true}
-    from larecs import World, Scheduler, System
+    from larecs import World, Scheduler, System, SystemContext
 
     @fieldwise_init
     struct Position(Copyable, Movable):
@@ -43,25 +43,21 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
         var internal_variable: Int
 
         # This is executed once at the beginning
-        def initialize[
-            *ComponentTypes: ComponentType
-        ](mut self, mut world: World[*ComponentTypes]) raises:
-            _ = world.add_entities(Position(0.0, 0.0), Velocity(1.0, 1.0), count=10)
+        def initialize(mut self, mut context: SystemContext[...]) raises:
+            _ = context.world[].storage.add_entities(
+                Position(0.0, 0.0), Velocity(1.0, 1.0), count=10
+            )
 
         # This is executed in each step
-        def update[
-            *ComponentTypes: ComponentType
-        ](mut self, mut world: World[*ComponentTypes]) raises:
-            for entity in world.storage.query[Position, Velocity]():
+        def update(mut self, mut context: SystemContext[...]) raises:
+            for entity in context.world[].storage.query[Position, Velocity]():
                 entity.get[Position]().x += entity.get[Velocity]().x
                 entity.get[Position]().y += entity.get[Velocity]().y
 
         # This is executed at the end
-        def finalize[
-            *ComponentTypes: ComponentType
-        ](mut self, mut world: World[*ComponentTypes]) raises:
+        def finalize(mut self, mut context: SystemContext[...]) raises:
             print("Final positions")
-            for entity in world.storage.query[Position]():
+            for entity in context.world[].storage.query[Position]():
                 print(entity.get[Position]().x, entity.get[Position]().y)
     ```
 
@@ -76,8 +72,20 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
     comptime World = World[*Self.ComponentTypes]
     """The world type used by the scheduler."""
 
-    comptime SystemContext = SystemContext[*Self.ComponentTypes]
-    """The system context type used by the scheduler."""
+    comptime SystemContext = SystemContext[
+        MutUntrackedOrigin, *Self.ComponentTypes
+    ]
+    """The system context type used by the scheduler.
+
+    Bound to `MutUntrackedOrigin` rather than a real tracked origin: the
+    scheduler owns `world` itself and stores its systems type-erased
+    (`UnsafeBox` plus a fixed `FunctionType`), so there is no single borrow
+    of `self` that all of `initialize`/`update`/`finalize`'s calls could
+    share -- `world`'s origin is re-borrowed fresh on every call. `world` is
+    a long-lived field of `Self`, never a short-lived temporary, so casting
+    away its origin here is safe (unlike casting the origin of a `ref` into
+    `ResourceStorage`'s Dict/`UnsafeBox`-backed entries, which is not).
+    """
 
     comptime FunctionType = def(
         mut system: UnsafeBox, mut context: Self.SystemContext
@@ -150,16 +158,25 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
             self._systems.append(
                 (
                     UnsafeBox(system^),
-                    _initialize_system[S, *Self.ComponentTypes],
-                    _update_system[S, *Self.ComponentTypes],
-                    _finalize_system[S, *Self.ComponentTypes],
+                    _initialize_system[
+                        S, MutUntrackedOrigin, *Self.ComponentTypes
+                    ],
+                    _update_system[
+                        S, MutUntrackedOrigin, *Self.ComponentTypes
+                    ],
+                    _finalize_system[
+                        S, MutUntrackedOrigin, *Self.ComponentTypes
+                    ],
                 )
             )
 
     def initialize(mut self) raises:
         """Initializes all systems in the scheduler."""
         with Zone(function_name="Scheduler.initialize()"):
-            var context = Self.SystemContext(self.world)
+            var world_ptr = Pointer(to=self.world).unsafe_origin_cast[
+                MutUntrackedOrigin
+            ]()
+            var context = Self.SystemContext(world_ptr[])
             for ref system_info in self._systems:
                 system_info[Self._initialize_index](
                     system_info[Self._system_index], context
@@ -173,7 +190,10 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
             steps: How often the systems should be updated.
         """
         with Zone(function_name="Scheduler.update(steps: Int)"):
-            var context = Self.SystemContext(self.world)
+            var world_ptr = Pointer(to=self.world).unsafe_origin_cast[
+                MutUntrackedOrigin
+            ]()
+            var context = Self.SystemContext(world_ptr[])
             for _ in range(steps):
                 for ref system_info in self._systems:
                     system_info[Self._update_index](
