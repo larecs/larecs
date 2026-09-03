@@ -1,16 +1,19 @@
 from std.python import Python
 from std.sys import argv
-from larecs import World, Resources
+from larecs import World, ResourceStorage, SystemContext
 from tracy import frame_mark
 from parameters import Parameters
 from systems import move, accelerate, add_satellites, position_to_numpy
 from components import Position, Velocity
 
 
-def update(mut world: World, step: Float64) raises:
-    for _ in range(Int(step / world.resources.get[Parameters]().dt)):
-        move(world)
-        accelerate(world)
+def update(
+    mut context: SystemContext[_, Position, Velocity], step: Float64
+) raises:
+    ref parameters = context.world[].resources.get[Parameters]()
+    for _ in range(Int(step / parameters.dt)):
+        context.run[move]()
+        context.run[accelerate]()
         frame_mark()
 
 
@@ -20,6 +23,8 @@ def main() raises:
     world.resources.add(Parameters(dt=0.1, mass=5.972e24))
 
     add_satellites(world, 300)
+    var context = SystemContext(world)
+
     var plt = Python.import_module("matplotlib.pyplot")
     var fig = plt.figure()
     var ax = plt.gca()
@@ -27,8 +32,8 @@ def main() raises:
 
     for _ in range(1000):
         # Update every 600s = 10 minutes
-        update(world, 600)
-        var data = position_to_numpy(world)
+        update(context, 600)
+        var data = position_to_numpy(context)
 
         ax.clear()
         ax.scatter(data.T[0], data.T[1], s=0.1)
