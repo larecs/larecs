@@ -1,5 +1,8 @@
 from std.collections.dict import Dict, DictKeyError
 from std.reflection import reflect
+from std.sys import size_of
+
+from max.gpu.host import DeviceBuffer, DeviceContext, DevicePointer
 
 from tracy import Zone
 
@@ -7,6 +10,129 @@ from .unsafe_box import UnsafeBox
 
 comptime ResourceType = Copyable & Deinitable
 """The trait that resources must conform to."""
+
+
+@fieldwise_init
+struct Resources[*ResourceTypes: ResourceType](Sized):
+    def __len__(self) -> Int:
+        """Returns the number of component types included by the filter."""
+        with Zone(function_name="Resources.__len__()"):
+            return len(self.ResourceTypes)
+
+    @staticmethod
+    def index_of[T: ResourceType]() -> Int:
+        """Returns the position of resource type ``T`` in this list.
+
+        Parameters:
+            T: The resource type to search for.
+
+        Returns:
+            The index of ``T`` if present; otherwise -1.
+        """
+        with Zone(function_name="Resources.index_of[T: ResourceType]()"):
+            comptime for i in range(len(Self.ResourceTypes)):
+                comptime if Self.ResourceTypes[i] == T:
+                    return i
+            return -1
+
+    @staticmethod
+    def contains[T: ResourceType]() -> Bool:
+        return Self.index_of[T]() != -1
+
+
+struct DeviceResourceStorage[resources: Resources](Copyable):
+    """Owns one byte-addressed device buffer per resource type required by
+    a kernel.
+
+    Mirrors [.DeviceStorage], but keyed by position in ``resources`` instead
+    of by a [.ComponentManager]-assigned id: each kernel invocation uploads
+    exactly the (small, fixed) set of resources it declared as required,
+    rather than mirroring the whole resource table to the device.
+    """
+
+    comptime Buffers = Array[
+        Optional[DeviceBuffer[DType.uint8]], len(Self.resources)
+    ]
+    var _buffers: Self.Buffers
+    var _device_context: DeviceContext
+
+    def __init__(out self, var device_context: DeviceContext):
+        """Creates a device resource storage with no buffers uploaded yet.
+
+        Args:
+            device_context: The device context to allocate buffers on.
+        """
+        with Zone(
+            function_name=(
+                "DeviceResourceStorage.__init__(var device_context:"
+                " DeviceContext)"
+            )
+        ):
+            self._buffers = Self.Buffers(fill=None)
+            self._device_context = device_context^
+
+    def upload[T: ResourceType](mut self, ref value: T) raises:
+        """Copies ``value`` into a freshly allocated device buffer.
+
+        Takes ``value`` by `ref` and copies from it immediately, in the
+        same call -- callers must pass the result of a resource lookup
+        directly (e.g. ``device_resources.upload[T](world.resources.get[T]())``)
+        rather than routing it through a variable that outlives the call,
+        since a `ref` returned by a `raises` accessor is only guaranteed
+        valid for immediate use at its own call site.
+
+        Parameters:
+            T: The type of the resource to upload. Must be part of
+                ``resources``.
+
+        Args:
+            value: The host-side resource value to copy to the device.
+        """
+        with Zone(
+            function_name=(
+                "DeviceResourceStorage.upload[T: ResourceType](ref value: T)"
+            )
+        ):
+            comptime id = Self.resources.index_of[T]()
+            comptime assert id != -1, "T is not part of `resources`"
+
+            self._buffers[id] = self._device_context.create_buffer_sync[
+                DType.uint8
+            ](size_of[T]())
+            self._buffers[id].unsafe_value().enqueue_copy_from(
+                Pointer(to=value).unsafe_bitcast[UInt8]()
+            )
+
+    def get_device_ptr[
+        T: ResourceType
+    ](self) raises -> DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]:
+        """Returns the device pointer backing resource ``T``.
+
+        Parameters:
+            T: The type of the resource to look up. Must have been
+                [.upload]ed already.
+
+        Returns:
+            A device pointer to the uploaded resource's bytes.
+        """
+        with Zone(
+            function_name=(
+                "DeviceResourceStorage.get_device_ptr[T: ResourceType]()"
+            )
+        ):
+            comptime id = Self.resources.index_of[T]()
+            comptime assert id != -1, "T is not part of `resources`"
+
+            if self._buffers[id] is None:
+                raise Error("Resource not uploaded: " + reflect[T].name())
+
+            return rebind[
+                DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
+            ](self._buffers[id].unsafe_value().device_ptr())
+
+    def synchronize(self) raises:
+        with Zone(function_name="DeviceResourceStorage.synchronize()"):
+            self._device_context.synchronize()
 
 
 @fieldwise_init
