@@ -78,6 +78,7 @@ Exports:
  - iteration.Query
  - filter.Filter
  - filter.BitMaskFilter
+ - resource.Resources
  - resource.ResourceStorage
  - resource.ResourceType
  - scheduler.Scheduler
@@ -97,7 +98,7 @@ from .error import (
 from .component import ComponentType
 from .types import ComponentId
 from .archetype import MutArchetypeRowAccessor, ArchetypeRowAccessor
-from .resource import ResourceStorage, ResourceType
+from .resource import Resources, ResourceStorage, ResourceType
 from .entity import Entity
 from .iteration import Query
 from .filter import Filter, BitMaskFilter
