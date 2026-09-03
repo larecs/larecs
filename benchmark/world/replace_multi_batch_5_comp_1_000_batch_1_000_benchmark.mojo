@@ -1,4 +1,5 @@
 from std.benchmark import Bencher
+from larecs.filter import Filter
 from larecs.test_utils import *
 
 
@@ -43,18 +44,20 @@ def benchmark_replace_5_comp_1_000_batch_1_000(
                     FlexibleComponent[3],
                     FlexibleComponent[4],
                 ]().by(
-                    world.storage.query[
-                        FlexibleComponent[0],
-                        FlexibleComponent[1],
-                        FlexibleComponent[2],
-                        FlexibleComponent[3],
-                        FlexibleComponent[4],
-                    ](),
                     FlexibleComponent[5](11.0, 12.0),
                     FlexibleComponent[6](13.0, 14.0),
                     FlexibleComponent[7](15.0, 16.0),
                     FlexibleComponent[8](17.0, 18.0),
                     FlexibleComponent[9](19.0, 20.0),
+                    filter=world.filter[
+                        Filter().include[
+                            FlexibleComponent[0],
+                            FlexibleComponent[1],
+                            FlexibleComponent[2],
+                            FlexibleComponent[3],
+                            FlexibleComponent[4],
+                        ]()
+                    ](),
                 )
                 world.storage.remove_entity(
                     entity56789
@@ -73,18 +76,20 @@ def benchmark_replace_5_comp_1_000_batch_1_000(
                     FlexibleComponent[8],
                     FlexibleComponent[9],
                 ]().by(
-                    world.storage.query[
-                        FlexibleComponent[5],
-                        FlexibleComponent[6],
-                        FlexibleComponent[7],
-                        FlexibleComponent[8],
-                        FlexibleComponent[9],
-                    ](),
                     FlexibleComponent[0](1.0, 2.0),
                     FlexibleComponent[1](3.0, 4.0),
                     FlexibleComponent[2](5.0, 6.0),
                     FlexibleComponent[3](7.0, 8.0),
                     FlexibleComponent[4](9.0, 0.0),
+                    filter=world.filter[
+                        Filter().include[
+                            FlexibleComponent[5],
+                            FlexibleComponent[6],
+                            FlexibleComponent[7],
+                            FlexibleComponent[8],
+                            FlexibleComponent[9],
+                        ]()
+                    ](),
                 )
                 world.storage.remove_entity(
                     entity01234

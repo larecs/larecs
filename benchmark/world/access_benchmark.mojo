@@ -1,8 +1,9 @@
 from std.benchmark import Bench, Bencher, keep, BenchId
 from std.math import exp
 from custom_benchmark import DefaultBench
+from larecs.filter import Filter
 from larecs.test_utils import *
-from larecs import MutableEntityAccessor
+from larecs import MutArchetypeRowAccessor
 
 
 def benchmark_get_1_000_000(mut bencher: Bencher):
@@ -124,7 +125,7 @@ def benchmark_apply_expexp_1_comp_100_000(
                 _ = world.storage.add_entity(pos, vel)
 
             @always_inline
-            def operation_plus(accessor: MutableEntityAccessor):
+            def operation_plus(accessor: MutArchetypeRowAccessor):
                 try:
                     ref pos2 = accessor.get[Position]()
                     pos2.x = exp(1 - exp(pos2.x))
@@ -134,7 +135,8 @@ def benchmark_apply_expexp_1_comp_100_000(
 
             for _ in range(100):
                 world.storage.apply[unroll_factor=3](
-                    world.storage.query[Position](), operation_plus
+                    world.filter[Filter().include[Position]()](),
+                    operation_plus,
                 )
 
         except e:
