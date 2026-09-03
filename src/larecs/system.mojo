@@ -445,10 +445,20 @@ struct SystemContext[
                 comptime for i in range(len(filter)):
                     comptime T = filter._include.ComponentTypes[i]
 
+                    # A filter can match multiple archetypes; each is a
+                    # separate homogeneous host range that must land at its
+                    # own offset in the flat device column, matching how the
+                    # download loop below reads them back. Uploading every
+                    # archetype at the default `offset=0` would overwrite
+                    # each archetype with the next, corrupting every column
+                    # but the last.
+                    var offset = 0
                     for ref archetype in matching_archetypes.copy():
                         device_storage.copy_from_host[T](
-                            archetype._storage.get_component_span[T]()
+                            archetype._storage.get_component_span[T](),
+                            offset=offset,
                         )
+                        offset += len(archetype)
 
                     kernel_columns[i] = device_storage.get_device_ptr[T]()
 
