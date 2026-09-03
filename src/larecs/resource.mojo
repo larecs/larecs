@@ -1,3 +1,9 @@
+"""Resource types and host-side resource storage.
+
+Provides `Resources`, a compile-time list of resource types, and
+`ResourceStorage`, which holds one instance of each resource by type.
+"""
+
 from std.collections.dict import Dict, DictKeyError
 from std.reflection import reflect
 from std.sys import size_of
@@ -14,8 +20,18 @@ comptime ResourceType = Copyable & Deinitable
 
 @fieldwise_init
 struct Resources[*ResourceTypes: ResourceType](Sized):
+    """A compile-time list of resource types.
+
+    Parameters:
+        ResourceTypes: The listed resource types.
+    """
+
     def __len__(self) -> Int:
-        """Returns the number of component types included by the filter."""
+        """Returns the number of component types included by the filter.
+
+        Returns:
+            The number of resource types.
+        """
         with Zone(function_name="Resources.__len__()"):
             return len(self.ResourceTypes)
 
@@ -239,6 +255,9 @@ struct ResourceStorage(Copyable, Movable, Sized):
 
         Parameters:
             T: The type of the resource to get.
+
+        Raises:
+            Error: If the resource does not exist.
 
         Returns:
             A reference to the resource.

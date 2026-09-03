@@ -1,3 +1,9 @@
+"""Recyclable ID pools used for entities and lock bits.
+
+Provides `EntityPool`, which hands out and recycles entity IDs, and
+`BitPool`, which does the same for bit indices.
+"""
+
 from std.collections.check_bounds import check_bounds
 
 from tracy import Zone
@@ -30,7 +36,11 @@ struct EntityPool(Copyable, Movable, Sized):
             self._available = 0
 
     def get(mut self) -> Entity:
-        """Returns a fresh or recycled entity."""
+        """Returns a fresh or recycled entity.
+
+        Returns:
+            The acquired entity.
+        """
         with Zone(function_name="EntityPool.get()"):
             if self._available == 0:
                 return self._get_new()
@@ -52,7 +62,14 @@ struct EntityPool(Copyable, Movable, Sized):
 
     @always_inline
     def recycle(mut self, entity: Entity) raises InternalError:
-        """Hands an entity back for recycling."""
+        """Hands an entity back for recycling.
+
+        Args:
+            entity: The entity to recycle.
+
+        Raises:
+            InternalError: If `entity` is the reserved zero entity.
+        """
         with Zone(function_name="EntityPool.recycle(entity: Entity)"):
             if entity.get_id() == 0:
                 raise InternalError.mutation_of_zero_entity
@@ -76,6 +93,12 @@ struct EntityPool(Copyable, Movable, Sized):
     @always_inline
     def is_alive(self, entity: Entity) -> Bool:
         """Returns whether an entity is still alive, based on the entity's generations.
+
+        Args:
+            entity: The entity to check.
+
+        Returns:
+            True if `entity`'s generation matches the pool's current generation for its ID.
         """
         with Zone(function_name="EntityPool.is_alive(entity: Entity)"):
             return (
@@ -85,19 +108,31 @@ struct EntityPool(Copyable, Movable, Sized):
 
     @always_inline
     def __len__(self) -> Int:
-        """Returns the current number of used entities."""
+        """Returns the current number of used entities.
+
+        Returns:
+            The number of entities currently in use.
+        """
         with Zone(function_name="EntityPool.__len__()"):
             return len(self._entities) - 1 - self._available
 
     @always_inline
     def capacity(self) -> Int:
-        """Returns the current capacity (used and recycled entities)."""
+        """Returns the current capacity (used and recycled entities).
+
+        Returns:
+            The total number of entities allocated so far, used or recycled.
+        """
         with Zone(function_name="EntityPool.capacity()"):
             return len(self._entities) - 1
 
     @always_inline
     def available(self) -> Int:
-        """Returns the current number of available/recycled entities."""
+        """Returns the current number of available/recycled entities.
+
+        Returns:
+            The number of recycled entities available for reuse.
+        """
         with Zone(function_name="EntityPool.available()"):
             return self._available
 

@@ -1,3 +1,9 @@
+"""Fixed-size bitmasks used to identify component sets.
+
+Provides `BitMask`, a 256-bit mask used throughout the ECS to represent
+which components an archetype or query includes or excludes.
+"""
+
 from std.bit import pop_count, bit_not
 from std.collections.check_bounds import check_bounds
 from .types import ComponentId

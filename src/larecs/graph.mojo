@@ -1,3 +1,9 @@
+"""A graph of nodes keyed by bitmask, used for archetype lookup.
+
+Provides `BitMaskGraph`, which links nodes that differ by exactly one bit
+so that a node reachable from a known starting point can be found quickly.
+"""
+
 # from collections import Dict
 from std.collections.check_bounds import check_bounds
 
@@ -243,6 +249,9 @@ struct BitMaskGraph[
 
         Args:
             node_index: The index of the node.
+
+        Returns:
+            The value stored in the node.
         """
         with Zone(function_name="BitMaskGraph.__getitem__(node_index: Int)"):
             check_bounds(node_index, len(self._nodes))
@@ -254,6 +263,9 @@ struct BitMaskGraph[
 
         Args:
             node_index: The index of the node.
+
+        Returns:
+            True if the node's value differs from `null_value`, False otherwise.
         """
         with Zone(function_name="BitMaskGraph.has_value(node_index: Int)"):
             check_bounds(node_index, len(self._nodes))

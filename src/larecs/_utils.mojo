@@ -24,6 +24,14 @@ def _assert_index_in_bounds(index: Int, size: Int):
 def assert_unreachable[
     MsgType: Writable & Movable
 ](reason: Optional[MsgType] = None):
+    """Asserts that execution never reaches this point.
+
+    Parameters:
+        MsgType: The type of the optional reason to include in the message.
+
+    Args:
+        reason: An optional value describing why this point was reached.
+    """
     with Zone(
         function_name=(
             "_utils.assert_unreachable[MsgType: Writable & Movable](reason:"

@@ -1,3 +1,9 @@
+"""Locking of the world to prevent structural changes during iteration.
+
+Provides `LockManager`, which hands out and tracks lock bits so that
+queries can detect concurrent structural changes to the world.
+"""
+
 from tracy import Zone
 
 from .bitmask import BitMask
@@ -32,6 +38,9 @@ struct LockManager(Copyable, Movable):
 
         Raises:
             InternalError: If the number of locks exceeds 256.
+
+        Returns:
+            The acquired lock bit.
         """
         with Zone(function_name="LockManager.lock()"):
             try:
@@ -45,6 +54,9 @@ struct LockManager(Copyable, Movable):
     def unlock(mut self, lock: Int) raises InternalError:
         """
         Unlocks the given lock bit.
+
+        Args:
+            lock: The lock bit to release, as returned by `lock()`.
 
         Raises:
             LockError: If the lock is not set.
@@ -60,6 +72,9 @@ struct LockManager(Copyable, Movable):
     def is_locked(self) -> Bool:
         """
         IsLocked returns whether the world is locked by any queries.
+
+        Returns:
+            True if any lock bit is currently set.
         """
         with Zone(function_name="LockManager.is_locked()"):
             return not self.locks.is_zero()

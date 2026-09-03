@@ -1,3 +1,9 @@
+"""Type-erased single-value storage.
+
+Provides `UnsafeBox`, a box that can hold a value of a type not known at
+compile time.
+"""
+
 from std.sys import size_of
 from std.reflection import call_location
 from std.memory import alloc, dealloc, Layout, Allocation

@@ -1,3 +1,10 @@
+"""Entity identifiers and lightweight accessors.
+
+Provides `Entity`, the recyclable ID/generation pair used to identify
+entities, and `EntityAccessor`, a non-owning accessor to a single entity's
+components.
+"""
+
 from std.bit import bit_reverse
 from std.hashlib import Hasher
 
@@ -79,6 +86,9 @@ struct Entity(
 
         Args:
             other: The other entity to compare to.
+
+        Returns:
+            True if both entities have the same ID and generation.
         """
         with Zone(function_name="Entity.__eq__(other: Entity)"):
             return (
@@ -92,6 +102,9 @@ struct Entity(
 
         Args:
             other: The other entity to compare to.
+
+        Returns:
+            True if the entities differ in ID or generation.
         """
         with Zone(function_name="Entity.__ne__(other: Entity)"):
             return not (self == other)
@@ -100,6 +113,9 @@ struct Entity(
     def __bool__(self) -> Bool:
         """
         Returns whether this entity is not the zero entity.
+
+        Returns:
+            True if this entity is not the zero entity.
         """
         with Zone(function_name="Entity.__bool__()"):
             return self._id != 0
@@ -109,6 +125,9 @@ struct Entity(
     def __str__(self) -> String:
         """
         Returns a string representation of the entity.
+
+        Returns:
+            A string of the form "Entity(id, generation)".
         """
         with Zone(function_name="Entity.__str__()"):
             return (
@@ -121,26 +140,45 @@ struct Entity(
 
     @always_inline
     def __hash__[H: Hasher](self, mut hasher: H):
-        """Returns a unique hash of the entity."""
+        """Returns a unique hash of the entity.
+
+        Parameters:
+            H: The hasher type to use.
+
+        Args:
+            hasher: The hasher to update with the entity's ID and generation.
+        """
         with Zone(function_name="Entity.__hash__[H: Hasher](mut hasher: H)"):
             hasher.update(self._id)
             hasher.update(self._generation)
 
     @always_inline
     def get_id(self) -> EntityId:
-        """Returns the entity's ID."""
+        """Returns the entity's ID.
+
+        Returns:
+            The entity's ID.
+        """
         with Zone(function_name="Entity.get_id()"):
             return self._id
 
     @always_inline
     def get_generation(self) -> UInt32:
-        """Returns the entity's generation."""
+        """Returns the entity's generation.
+
+        Returns:
+            The entity's generation.
+        """
         with Zone(function_name="Entity.get_generation()"):
             return self._generation
 
     @always_inline
     def is_zero(self) -> Bool:
-        """Returns whether this entity is the reserved zero entity."""
+        """Returns whether this entity is the reserved zero entity.
+
+        Returns:
+            True if this entity is the reserved zero entity.
+        """
         with Zone(function_name="Entity.is_zero()"):
             return self._id == 0
 
@@ -163,7 +201,7 @@ struct EntityAccessor[filter: Filter](Copyable):
     """Non-owning mutable accessor for a single entity.
 
     Parameters:
-        filter: The comptime [.filter.Filter] controlling which components are accessible via this accessor.
+        filter: The comptime [..filter.Filter] controlling which components are accessible via this accessor.
     """
 
     var idx: Int
@@ -175,7 +213,14 @@ struct EntityAccessor[filter: Filter](Copyable):
     """The base pointers to the component columns in the component table."""
 
     def get[T: ComponentType](self) -> ref[MutUntrackedOrigin] T:
-        """Loads an included component value for this entity."""
+        """Loads an included component value for this entity.
+
+        Parameters:
+            T: The component type to load.
+
+        Returns:
+            A reference to the component value for this entity.
+        """
         comptime comp_idx = Self.filter.includes[T]()
         comptime assert (
             comp_idx != -1
@@ -185,7 +230,14 @@ struct EntityAccessor[filter: Filter](Copyable):
         ]
 
     def set[T: ComponentType](self, var component: T):
-        """Stores a component value for this entity in device storage."""
+        """Stores a component value for this entity in device storage.
+
+        Parameters:
+            T: The component type to store.
+
+        Args:
+            component: The component value to store.
+        """
         comptime comp_idx = Self.filter.includes[T]()
         comptime assert (
             comp_idx != -1

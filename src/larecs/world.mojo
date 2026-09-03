@@ -1,3 +1,9 @@
+"""The central entry point tying entities, components, and resources together.
+
+Provides `World`, which owns a [..host_storage.HostStorage], a
+[..device_storage.DeviceComponentStorage], and a [..resource.ResourceStorage].
+"""
+
 from tracy import Zone
 
 from max.gpu.host import DeviceContext

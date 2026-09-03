@@ -63,21 +63,24 @@ main()
 ```
 
 Exports:
- - world.World
- - error.LarecsError
- - error.WorldError
+ - archetype.ArchetypeRowAccessor
+ - archetype.MutArchetypeRowAccessor
+ - component.ComponentManager
+ - component.ComponentType
+ - device_storage.DeviceComponentStorage
+ - device_storage.DeviceResourceStorage
+ - entity.Entity
  - error.ComponentError
  - error.EntityError
+ - error.LarecsError
  - error.UnknownError
- - host_storage.HostStorage
- - component.ComponentType
- - types.ComponentId
- - archetype.MutArchetypeRowAccessor
- - archetype.ArchetypeRowAccessor
- - entity.Entity
- - iteration.Query
- - filter.Filter
+ - error.WorldError
  - filter.BitMaskFilter
+ - filter.Filter
+ - host_storage.HostStorage
+ - host_storage.Replacer
+ - iteration.Query
+ - pool.BitPool
  - resource.Resources
  - resource.ResourceStorage
  - resource.ResourceType
@@ -85,6 +88,8 @@ Exports:
  - system.System
  - system.SystemContext
  - system.KernelContext
+ - types.ComponentId
+ - world.World
 """
 from .world import World
 from .host_storage import HostStorage

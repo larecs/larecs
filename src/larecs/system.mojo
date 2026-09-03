@@ -1,3 +1,11 @@
+"""Systems and their CPU/GPU execution context.
+
+Provides `System`, the trait implemented by scheduler-managed systems,
+`SystemContext`, through which a system accesses the world, and
+`KernelContext`, the component/resource view seen by a `SystemContext.run`
+kernel on CPU or GPU.
+"""
+
 from std.builtin.device_passable import DevicePassable, DeviceTypeEncoder
 from std.math import ceildiv
 from std.sys import has_accelerator
@@ -27,6 +35,9 @@ trait System(Copyable, Deinitable, Movable):
 
         Args:
             context: The SystemContext to access ECS functionality through.
+
+        Raises:
+            Error: If the implementation raises.
         """
         pass
 
@@ -35,6 +46,9 @@ trait System(Copyable, Deinitable, Movable):
 
         Args:
             context: The SystemContext to access ECS functionality through.
+
+        Raises:
+            Error: If the implementation raises.
         """
         ...
 
@@ -43,6 +57,9 @@ trait System(Copyable, Deinitable, Movable):
 
         Args:
             context: The SystemContext to access ECS functionality through.
+
+        Raises:
+            Error: If the implementation raises.
         """
         pass
 
@@ -120,6 +137,7 @@ def _finalize_system[
 
 
 comptime BLOCK_SIZE = 2**4
+"""Number of GPU threads per block used when launching kernels."""
 
 
 @fieldwise_init
@@ -127,12 +145,15 @@ struct ResourceAccessor[resources: Resources](Copyable):
     """Points to the resource buffers required by a kernel, indexed by
     position in ``resources``.
 
-    Backed by plain byte pointers rather than a [.ResourceStorage]
+    Backed by plain byte pointers rather than a [..resource.ResourceStorage]
     reference, so the same representation works both for CPU kernels
     (pointers into host resource storage) and GPU kernels (pointers into
     device buffers uploaded for the call) -- mirroring how ``KernelContext``
     already represents component columns as an array of byte pointers keyed
     by position in the kernel's filter.
+
+    Parameters:
+        resources: The resource types made available to the kernel.
     """
 
     # Building one of these pointers from a `ResourceStorage` (Dict /
@@ -177,15 +198,27 @@ struct ResourceAccessor[resources: Resources](Copyable):
 struct KernelContext[
     filter: Filter, required_resources: Resources = Resources[]()
 ](Copyable):
+    """Component columns, resources, and row/thread counts available to a kernel body.
+
+    Parameters:
+        filter: The comptime [..filter.Filter] describing the accessed components.
+        required_resources: Compile-time resources the kernel may access.
+    """
+
     var length: Int32
+    """Total number of rows the kernel operates over."""
     var thread_count: Int32
+    """Number of threads participating in the launch."""
 
     comptime Columns = Array[
         Pointer[UInt8, MutUntrackedOrigin], len(Self.filter)
     ]
+    """The type of the per-component byte pointer array."""
     var _columns: Self.Columns
+    """Byte pointers to each included component's column, indexed by position in ``filter``."""
 
     var resources: ResourceAccessor[Self.required_resources]
+    """Accessor for the kernel's required resources."""
 
     def __init__(
         out self,
@@ -195,6 +228,14 @@ struct KernelContext[
         length: Int32,
         thread_count: Int32,
     ):
+        """Creates a kernel context from column pointers, resources, and row/thread counts.
+
+        Args:
+            columns: Byte pointers to each included component's column.
+            resources: Accessor for the kernel's required resources.
+            length: Total number of rows the kernel operates over.
+            thread_count: Number of threads participating in the launch.
+        """
         with Zone(
             function_name=(
                 "KernelContext.__init__(var columns: Self.Columns, var"
@@ -208,6 +249,11 @@ struct KernelContext[
             self.resources = resources^
 
     def __iter__(self) -> EntityAccessorIterator[Self.filter]:
+        """Returns an iterator over the rows matching ``filter``.
+
+        Returns:
+            An iterator that yields one row accessor per matching row.
+        """
         # No `Zone` here: this runs as part of the kernel body on the GPU,
         # where the host-only Tracy FFI calls are not available.
         return EntityAccessorIterator[Self.filter](self)
@@ -217,29 +263,45 @@ struct KernelContext[
 struct HostKernelContext[
     filter: Filter, required_resources: Resources = Resources[]()
 ](Copyable, DevicePassable):
-    """Device-passable view of the component columns used by a kernel."""
+    """Device-passable view of the component columns used by a kernel.
+
+    Parameters:
+        filter: The comptime [..filter.Filter] describing the accessed components.
+        required_resources: Compile-time resources the kernel may access.
+    """
 
     comptime device_type = KernelContext[Self.filter, Self.required_resources]
+    """The device-side type this host context is encoded into."""
 
     @staticmethod
     def get_type_name() -> String:
-        """Returns the host type name used in device diagnostics."""
+        """Returns the host type name used in device diagnostics.
+
+        Returns:
+            The type name shown in device diagnostics.
+        """
         with Zone(function_name="HostKernelContext.get_type_name()"):
             return "KernelContext"
 
     var length: Int32
+    """Total number of rows the kernel operates over."""
     var thread_count: Int32
+    """Number of threads participating in the launch."""
     comptime Columns = Array[
         DevicePointer[mut=True, dtype=DType.uint8, origin=MutUntrackedOrigin],
         len(Self.filter),
     ]
+    """The type of the per-component device pointer array."""
     var _columns: Self.Columns
+    """Device pointers to each included component's column, indexed by position in ``filter``."""
 
     comptime ResourceBuffers = Array[
         DevicePointer[mut=True, dtype=DType.uint8, origin=MutUntrackedOrigin],
         len(Self.required_resources),
     ]
+    """The type of the per-resource device pointer array."""
     var _resource_pointers: Self.ResourceBuffers
+    """Device pointers to each required resource's buffer, indexed by position in ``required_resources``."""
 
     def __init__(
         out self,
@@ -249,6 +311,14 @@ struct HostKernelContext[
         length: Int32,
         thread_count: Int32,
     ):
+        """Creates a device-passable kernel context.
+
+        Args:
+            columns: Device pointers to each included component's column.
+            resource_pointers: Device pointers to each required resource's buffer.
+            length: Total number of rows the kernel operates over.
+            thread_count: Number of threads participating in the launch.
+        """
         with Zone(
             function_name=(
                 "HostKernelContext.__init__(var columns: Self.Columns, var"
@@ -308,12 +378,25 @@ struct SystemContext[
     world_origin: MutOrigin,
     *WorldTs: ComponentType,
 ](Copyable):
+    """Gives a system access to the world's entities, components, and resources.
+
+    Parameters:
+        world_origin: The origin of the world borrowed by this context.
+        WorldTs: A variadic list with all possible component types for the world.
+    """
+
     comptime World = World[*Self.WorldTs]
+    """The concrete world type this context wraps."""
 
     var world: Pointer[Self.World, Self.world_origin]
+    """Pointer to the world borrowed by the scheduler."""
 
     def __init__(out self, ref[Self.world_origin] world: Self.World):
-        """Creates a context borrowing the scheduler's world."""
+        """Creates a context borrowing the scheduler's world.
+
+        Args:
+            world: The world to borrow.
+        """
         with Zone(
             function_name="SystemContext.__init__(ref world: Self.World)"
         ):
@@ -337,6 +420,10 @@ struct SystemContext[
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             on_gpu: Whether to execute the kernel against device storage.
+
+        Raises:
+            Error: If a required resource is missing, or if the device
+                execution path fails to allocate or synchronize.
         """
         with Zone(
             function_name=(
@@ -525,6 +612,9 @@ struct SystemContext[
                 ``required_resources``.
             on_gpu: Whether to execute the kernel against device storage.
 
+        Args:
+            kernel_func: The kernel closure to run once per matching row.
+
         Note:
             Resource access through a *capturing* kernel closure has been
             observed to read corrupted data intermittently (tracked as a
@@ -533,6 +623,9 @@ struct SystemContext[
             is rejected here at compile time. The other ``run`` overload
             (a non-capturing kernel function) does not have this problem --
             use it for resource-reading kernels in the meantime.
+
+        Raises:
+            Error: If `kernel_func` raises.
         """
         comptime assert len(required_resources) == 0, (
             "SystemContext.run(kernel_func) does not yet support"

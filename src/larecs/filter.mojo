@@ -1,3 +1,9 @@
+"""Compile-time component inclusion/exclusion specs for queries.
+
+Provides `Filter`, built up via `include`/`exclude`, and `BitMaskFilter`,
+its runtime BitMask-based counterpart used to match archetypes.
+"""
+
 from tracy import Zone
 
 from .bitmask import BitMask
@@ -11,6 +17,14 @@ struct Filter[
     _exclude: Components = Components[](),
     _is_exclusive: Bool = False,
 ](Sized):
+    """Compile-time component inclusion and exclusion spec used to build queries.
+
+    Parameters:
+        _include: The component types that must be present.
+        _exclude: The component types that must be absent.
+        _is_exclusive: Whether only the included components may be present.
+    """
+
     comptime include[*ComponentTypes: ComponentType] = Filter[
         Components[
             *TypeList._concat[
@@ -20,6 +34,11 @@ struct Filter[
         Self._exclude,
         Self._is_exclusive,
     ]
+    """Returns a Filter also including the given component types.
+
+    Parameters:
+        ComponentTypes: The component types to include.
+    """
     comptime exclude[*ComponentTypes: ComponentType] = Filter[
         Self._include,
         Components[
@@ -29,15 +48,25 @@ struct Filter[
         ](),
         Self._is_exclusive,
     ]
+    """Returns a Filter also excluding the given component types.
+
+    Parameters:
+        ComponentTypes: The component types to exclude.
+    """
 
     comptime exclusive = Filter[
         Self._include,
         Components[](),
         True,
     ]
+    """Returns a Filter that matches only entities with exactly the included components."""
 
     def __len__(self) -> Int:
-        """Returns the number of components included by the filter."""
+        """Returns the number of components included by the filter.
+
+        Returns:
+            The number of included components.
+        """
         with Zone(function_name="Filter.__len__()"):
             comptime include_length = len(self._include)
             return include_length
@@ -75,6 +104,14 @@ struct Filter[
             return -1
 
     def get_include_mask[*ComponentTypes: ComponentType](self) -> BitMask:
+        """Returns the bitmask of the components this filter includes.
+
+        Parameters:
+            ComponentTypes: The component types to query against.
+
+        Returns:
+            The mask of the included components.
+        """
         with Zone(
             function_name=(
                 "Filter.get_include_mask[*ComponentTypes:"
@@ -88,6 +125,15 @@ struct Filter[
             )
 
     def get_exclude_mask[*ComponentTypes: ComponentType](self) -> BitMask:
+        """Returns the bitmask of the components this filter excludes.
+
+        Parameters:
+            ComponentTypes: The component types to query against.
+
+        Returns:
+            The mask of the excluded components, or the inverse of the
+            include mask when the filter is exclusive.
+        """
         with Zone(
             function_name=(
                 "Filter.get_exclude_mask[*ComponentTypes:"
