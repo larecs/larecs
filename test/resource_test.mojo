@@ -1,4 +1,4 @@
-from larecs.resource import Resources, ResourceType
+from larecs.resource import ResourceStorage, ResourceType
 from std.testing import *
 
 
@@ -18,7 +18,7 @@ struct Resource3(ResourceType):
 
 
 def test_reseource_init() raises:
-    var resources = Resources()
+    var resources = ResourceStorage()
     with assert_raises():
         _ = resources.get[Resource1]()
         _ = resources.get[Resource2]()
@@ -39,7 +39,7 @@ def test_reseource_init() raises:
 
 
 def test_resources_add_set() raises:
-    var resources = Resources()
+    var resources = ResourceStorage()
 
     with assert_raises():
         resources.set(Resource1(10))
@@ -74,7 +74,7 @@ def test_resources_add_set() raises:
 
 
 def test_resource_has() raises:
-    var resources = Resources()
+    var resources = ResourceStorage()
 
     assert_false(resources.has[Resource1]())
     assert_false(resources.has[Resource2]())
@@ -87,7 +87,7 @@ def test_resource_has() raises:
 
 
 def test_resources_get() raises:
-    var resources = Resources()
+    var resources = ResourceStorage()
     resources.add(Resource1(value=10), Resource2(value=20))
 
     assert_equal(resources.get[Resource1]().value, 10)
@@ -113,7 +113,7 @@ def test_resources_get() raises:
 
 
 def test_resource_remove() raises:
-    var resources = Resources()
+    var resources = ResourceStorage()
     resources.add(Resource1(10), Resource2(20))
     resources.remove[Resource1]()
     with assert_raises():

@@ -7,7 +7,7 @@ from .component import (
 )
 from .host_storage import HostStorage
 from .device_storage import DeviceStorage
-from .resource import Resources
+from .resource import ResourceStorage
 from .filter import Filter, BitMaskFilter
 
 
@@ -27,8 +27,8 @@ struct World[*component_types: ComponentType](Copyable, Sized):
     var _device_storage: Optional[Self.DeviceStorage]
     """[..device_storage.DeviceStorage Component Storage] associated with the world."""
 
-    var resources: Resources  # The resources of the world.
-    """[..resource.Resources Resource Storage] associated with the world."""
+    var resources: ResourceStorage  # The resources of the world.
+    """[..resource.ResourceStorage Resource Storage] associated with the world."""
 
     def __init__(out self):
         """
@@ -40,7 +40,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                 self._device_storage = Self.DeviceStorage(DeviceContext(), 0)
             except:
                 self._device_storage = None
-            self.resources = Resources()
+            self.resources = ResourceStorage()
 
     def __len__(self, out size: Int):
         """

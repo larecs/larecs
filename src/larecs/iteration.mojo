@@ -35,7 +35,7 @@ struct Query[
     This type should not be used directly, but through the [..host_storage.HostStorage.query] method:
 
     ```mojo {doctest="query_init" global=true hide=true}
-    from larecs import World, Resources, MutableEntityAccessor
+    from larecs import World, ResourceStorage, MutableEntityAccessor
     ```
 
     ```mojo {doctest="query_init"}
@@ -207,7 +207,7 @@ struct Query[
         Excludes the given components from the query.
 
         ```mojo {doctest="query_without" global=true hide=true}
-        from larecs import World, Resources, MutableEntityAccessor
+        from larecs import World, ResourceStorage, MutableEntityAccessor
         ```
 
         ```mojo {doctest="query_without"}
@@ -253,7 +253,7 @@ struct Query[
         Makes the query only match entities with exactly the query's components.
 
         ```mojo {doctest="query_without" global=true hide=true}
-        from larecs import World, Resources, MutableEntityAccessor
+        from larecs import World, ResourceStorage, MutableEntityAccessor
         ```
 
         ```mojo {doctest="query_without"}

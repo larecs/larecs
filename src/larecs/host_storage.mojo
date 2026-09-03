@@ -367,7 +367,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Example:
 
         ```mojo {doctest="add_entity_comps" global=true hide=true}
-        from larecs import World, Resources
+        from larecs import World, ResourceStorage
 
         @fieldwise_init
         struct Position(Copyable, Movable):
