@@ -166,7 +166,7 @@ struct EntityAccessor[filter: Filter](Copyable):
         filter: The comptime [.filter.Filter] controlling which components are accessible via this accessor.
     """
 
-    var idx: Int32
+    var idx: Int
     """The index of the entity row in the component table."""
 
     var _component_table_base: Array[
