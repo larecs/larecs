@@ -1,3 +1,9 @@
+"""Execution of systems against a world.
+
+Provides `Scheduler`, which owns a world and runs registered [..system.System]
+implementations through their initialize/update/finalize lifecycle.
+"""
+
 from .component import ComponentType
 from .resource import ResourceStorage
 from .world import World
@@ -18,7 +24,7 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
     """
     Manages the execution of systems in a world.
 
-    The systems must implement [.System].
+    The systems must implement [..system.System].
     Usage example:
 
     Example:
@@ -67,6 +73,8 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
     scheduler.run(10)
     ```
 
+    Parameters:
+        ComponentTypes: A variadic list with all possible component types for the world.
     """
 
     comptime World = World[*Self.ComponentTypes]
@@ -149,6 +157,9 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
     def add_system[S: System](mut self, var system: S):
         """Adds a system to the scheduler.
 
+        Parameters:
+            S: The type of the system to add.
+
         Args:
             system: The system to add.
         """
@@ -161,9 +172,7 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
                     _initialize_system[
                         S, MutUntrackedOrigin, *Self.ComponentTypes
                     ],
-                    _update_system[
-                        S, MutUntrackedOrigin, *Self.ComponentTypes
-                    ],
+                    _update_system[S, MutUntrackedOrigin, *Self.ComponentTypes],
                     _finalize_system[
                         S, MutUntrackedOrigin, *Self.ComponentTypes
                     ],
@@ -171,7 +180,11 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
             )
 
     def initialize(mut self) raises:
-        """Initializes all systems in the scheduler."""
+        """Initializes all systems in the scheduler.
+
+        Raises:
+            Error: If a system's `initialize` implementation raises.
+        """
         with Zone(function_name="Scheduler.initialize()"):
             var world_ptr = Pointer(to=self.world).unsafe_origin_cast[
                 MutUntrackedOrigin
@@ -188,6 +201,9 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
 
         Args:
             steps: How often the systems should be updated.
+
+        Raises:
+            Error: If a system's `update` implementation raises.
         """
         with Zone(function_name="Scheduler.update(steps: Int)"):
             var world_ptr = Pointer(to=self.world).unsafe_origin_cast[
@@ -202,7 +218,11 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
         frame_mark()
 
     def finalize(mut self) raises:
-        """Finalizes all systems in the scheduler."""
+        """Finalizes all systems in the scheduler.
+
+        Raises:
+            Error: If a system's `finalize` implementation raises.
+        """
         with Zone(function_name="Scheduler.finalize()"):
             var world_ptr = Pointer(to=self.world).unsafe_origin_cast[
                 MutUntrackedOrigin
@@ -225,6 +245,9 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
 
         Args:
             steps: The number of steps to run.
+
+        Raises:
+            Error: If a system's `initialize`, `update`, or `finalize` implementation raises.
         """
         with Zone(function_name="Scheduler.run(steps: Int)"):
             self.initialize()

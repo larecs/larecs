@@ -38,7 +38,8 @@ def scale_entities(
 
 
 def test_kernel_context_required_resources_on_gpu() raises:
-    """A GPU kernel can declare and read a resource via `KernelContext.resources`."""
+    """A GPU kernel can declare and read a resource via `KernelContext.resources`.
+    """
     comptime if not has_accelerator():
         return
 

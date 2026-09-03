@@ -1,3 +1,9 @@
+"""Component type registration and validation.
+
+Provides `ComponentManager`, which assigns compile-time IDs to component
+types and offers helpers for checking their validity.
+"""
+
 from std.collections.check_bounds import check_bounds
 from std.sys import size_of
 
@@ -15,8 +21,18 @@ comptime ComponentType = Copyable & Deinitable
 
 @fieldwise_init
 struct Components[*ComponentTypes: ComponentType](Sized):
+    """A compile-time list of component types.
+
+    Parameters:
+        ComponentTypes: The listed component types.
+    """
+
     def __len__(self) -> Int:
-        """Returns the number of component types included by the filter."""
+        """Returns the number of component types included by the filter.
+
+        Returns:
+            The number of component types.
+        """
         with Zone(function_name="Components.__len__()"):
             return len(self.ComponentTypes)
 
@@ -48,6 +64,9 @@ def constrain_valid_components[*Ts: ComponentType]() -> Bool:
 
     Parameters:
         Ts: The components to check.
+
+    Returns:
+        True when there is at least one component type and all are unique.
     """
     with Zone(
         function_name=(
@@ -124,7 +143,14 @@ struct ComponentManager[
     @staticmethod
     @always_inline
     def get_size(component_id: ComponentId) -> Int:
-        """Get the size of a component type."""
+        """Get the size of a component type.
+
+        Args:
+            component_id: The ID of the component type.
+
+        Returns:
+            The size of the component type, in bytes.
+        """
         with Zone(
             function_name="ComponentManager.get_size(component_id: ComponentId)"
         ):
@@ -235,6 +261,15 @@ struct ComponentManager[
 
     @staticmethod
     def get_type_name(id: ComponentId) -> StaticString:
+        """Get the name of a component type.
+
+        Args:
+            id: The ID of the component type.
+
+        Returns:
+            The name of the component type, or `"<UNKNOWN_COMPONENT>"`
+            if no component type has this ID.
+        """
         with Zone(
             function_name="ComponentManager.get_type_name(id: ComponentId)"
         ):

@@ -1,3 +1,10 @@
+"""Host-side entity and component storage.
+
+Provides `HostStorage`, which holds all archetypes, entities, and their
+component data for a world, along with `Replacer` for atomically replacing
+an entity's components.
+"""
+
 from .archetype import Archetype, MutArchetypeRowAccessor
 from .bitmask import BitMask
 from .debug_utils import debug_warn
@@ -49,6 +56,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     """
 
     comptime component_manager = ComponentManager[*Self.ComponentTypes]
+    """The component manager assigning IDs to `ComponentTypes`."""
 
     # If *Ts is empty, this results in a zero-sized Array, else this
     # results in an Array of component IDs.
@@ -150,13 +158,13 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         ],
     ):
         """
-        Returns an [..query.Query] for all [..entity.Entity Entities] with the given components.
+        Returns an [..iteration.Query] for all [..entity.Entity Entities] with the given components.
 
         Parameters:
             Ts: The types of the components.
 
         Returns:
-            A [..query.Query] for all entities with the given components.
+            A [..iteration.Query] for all entities with the given components.
         """
         with Zone(
             function_name=(
@@ -636,6 +644,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         Args:
             entity: The entity to check.
+
+        Returns:
+            True if the entity is still alive.
         """
         with Zone(function_name="HostStorage.is_alive(entity: Entity)"):
             return self._entity_pool.is_alive(entity)
@@ -653,6 +664,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         Raises:
             LarecsError: If the entity does not exist.
+
+        Returns:
+            True if the entity has the component.
         """
         with Zone(
             function_name="HostStorage.has[T: ComponentType](entity: Entity)"
@@ -681,8 +695,14 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Parameters:
             T: The type of the component. Constraints: Must be in the component manager.
 
+        Args:
+            entity: The entity whose component to access.
+
         Raises:
             LarecsError: If the entity is not alive or does not have the component.
+
+        Returns:
+            A reference to the component value.
         """
         comptime assert Self.component_manager.contains_components[
             T
@@ -884,6 +904,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
             Error: when called with a filter that could match existing entities that already have at least one of the
                 components to add.
+
+        Returns:
+            An iterator over the modified entities.
         """
         with Zone(
             function_name=(
@@ -983,6 +1006,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
             Error: when called with a filter that could match entities that don't have all of the components to remove.
+
+        Returns:
+            An iterator over the modified entities.
         """
 
         with Zone(
@@ -1018,7 +1044,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         remove_ids=Self.component_manager.get_id_arr[*Ts](),
     ]:
         """
-        Returns a [.Replacer] for removing and adding components to an [..entity.Entity] in one go.
+        Returns a [..host_storage.Replacer] for removing and adding components to an [..entity.Entity] in one go.
 
         Use as `world.replace[Comp1, Comp2]().by(comp3, comp4, comp5, entity=entity)`.
 
@@ -1026,6 +1052,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         Parameters:
             Ts: The types of the components to remove.
+
+        Returns:
+            A [..host_storage.Replacer] configured to remove the given component types.
         """
         with Zone(function_name="HostStorage.replace[*Ts: ComponentType]()"):
             comptime assert constrain_components_unique[
@@ -1695,6 +1724,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     def is_locked(self, out result: Bool):
         """
         Returns whether the world is locked by any [.HostStorage.query queries].
+
+        Returns:
+            True if the world is currently locked.
         """
         with Zone(function_name="HostStorage.is_locked(out result: Bool)"):
             return self._locks.is_locked()
@@ -1938,6 +1970,9 @@ struct Replacer[
             Error: when called with components that can't be added because they are already present.
             Error: when called with components that can't be removed because they are not present.
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
+
+        Returns:
+            An iterator over the modified entities.
         """
         with Zone(
             function_name=(
@@ -1976,6 +2011,9 @@ struct Replacer[
             Error: when called with components that can't be added because they are already present.
             Error: when called with components that can't be removed because they are not present.
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
+
+        Returns:
+            An iterator over the modified entities.
         """
 
         with Zone(

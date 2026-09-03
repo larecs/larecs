@@ -1,3 +1,10 @@
+"""Iteration over entities, archetypes, and filtered component rows.
+
+Provides `Query`, the entry point for iterating over entities matching a
+`Filter`, and `EntityAccessorIterator`, which walks the dense rows
+seen by a system kernel.
+"""
+
 from std.gpu import global_idx
 
 from std.utils.type_functions import ConditionalType
@@ -164,6 +171,9 @@ struct Query[
         Note that this requires the creation of an iterator from the query.
         If you intend to iterate anyway, get the iterator with [.Query.__iter__],
         and call `len` on it, instead.
+
+        Returns:
+            The number of entities matching the query.
         """
         with Zone(function_name="Query.__len__(out size: Int)"):
             size = 0
@@ -459,9 +469,13 @@ struct EntityAccessorIterator[filter: Filter](Iterator, Movable):
     performs no host/device copy or synchronization; callers must ensure the
     columns are initialized, have at least ``context.length`` rows, and that
     each row is written by at most one concurrent thread.
+
+    Parameters:
+        filter: The comptime [..filter.Filter] describing the accessed components.
     """
 
     comptime Element = EntityAccessor[Self.filter]
+    """The type yielded by the iterator."""
 
     var _entity: EntityAccessor[Self.filter]
     var _length: Int32
@@ -490,7 +504,11 @@ struct EntityAccessorIterator[filter: Filter](Iterator, Movable):
         self._done = False
 
     def __iter__(deinit self) -> Self:
-        """Returns this iterator for use in a ``for`` loop."""
+        """Returns this iterator for use in a ``for`` loop.
+
+        Returns:
+            This iterator.
+        """
         return self^
 
     def __next__(mut self) raises StopIteration -> Self.Element:

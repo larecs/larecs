@@ -1,3 +1,9 @@
+"""Typed errors raised by public ECS operations.
+
+Provides `LarecsError` and its variants (`UnknownError`, `WorldError`,
+`EntityError`, `ComponentError`).
+"""
+
 from std.builtin.globals import global_constant
 from std.utils import Variant
 
@@ -50,6 +56,11 @@ struct WorldError(Equatable, ImplicitlyCopyable, Writable):
 
     @always_inline
     def __init__(out self, variant: Int = 0):
+        """Creates a WorldError for the given variant.
+
+        Args:
+            variant: The numeric discriminator for the error variant.
+        """
         with Zone(function_name="WorldError.__init__(variant: Int)"):
             assert variant < 3, "Invalid variant for WorldError"
             self._variant = variant
@@ -108,6 +119,11 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
 
     @always_inline
     def __init__(out self, variant: Int = 0):
+        """Creates an EntityError for the given variant.
+
+        Args:
+            variant: The numeric discriminator for the error variant.
+        """
         with Zone(function_name="EntityError.__init__(variant: Int)"):
             assert variant < 2, "Invalid variant for EntityError"
 
@@ -118,6 +134,11 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
 
     @always_inline
     def __init__(out self, *, copy: Self):
+        """Copies an EntityError.
+
+        Args:
+            copy: The error to copy.
+        """
         with Zone(function_name="EntityError.__init__(*, copy: Self)"):
             self._variant = copy._variant
             self.entities = copy.entities.copy()
@@ -126,6 +147,17 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
     def with_entities[
         entity_count: Int
     ](deinit self, entities: Array[Entity, entity_count], out next_self: Self,):
+        """Returns a copy of this error with the given entities attached.
+
+        Parameters:
+            entity_count: The number of entities to attach.
+
+        Args:
+            entities: The entities involved in the error.
+
+        Returns:
+            The error with `entities` set.
+        """
         with Zone(
             function_name=(
                 "EntityError.with_entities[entity_count: Int](entities:"
@@ -145,6 +177,14 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
         var *entities: Entity,
         out next_self: Self,
     ):
+        """Returns a copy of this error with the given entities attached.
+
+        Args:
+            entities: The entities involved in the error.
+
+        Returns:
+            The error with `entities` set.
+        """
         with Zone(
             function_name=(
                 "EntityError.with_entities(var *entities: Entity, out"
@@ -229,6 +269,11 @@ struct ComponentError(Equatable, ImplicitlyCopyable, Writable):
         out self,
         variant: Int = 0,
     ):
+        """Creates a ComponentError for the given variant.
+
+        Args:
+            variant: The numeric discriminator for the error variant.
+        """
         with Zone(function_name="ComponentError.__init__(variant: Int)"):
             assert variant < 6, "Invalid variant for ComponentError"
             self._variant = variant
@@ -236,6 +281,14 @@ struct ComponentError(Equatable, ImplicitlyCopyable, Writable):
 
     @always_inline
     def with_components(deinit self, components: BitMask, out next_self: Self):
+        """Returns a copy of this error with the given components attached.
+
+        Args:
+            components: The bitmask of the components involved in the error.
+
+        Returns:
+            The error with `components` set.
+        """
         with Zone(
             function_name=(
                 "ComponentError.with_components(components: BitMask, out"

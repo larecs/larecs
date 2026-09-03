@@ -1,3 +1,9 @@
+"""A compile-time optional value.
+
+Provides `StaticOptional`, which decides at compile time whether it stores
+an `ElementType` value or a zero-sized empty placeholder.
+"""
+
 from std.utils.type_functions import ConditionalType
 
 from tracy import Zone

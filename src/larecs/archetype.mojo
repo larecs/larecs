@@ -1,3 +1,9 @@
+"""Column-based storage for entities sharing the same set of components.
+
+Provides `Archetype`, which stores component data for all entities with an
+identical component composition in contiguous, SIMD-friendly columns.
+"""
+
 from std.sys.defines import is_defined
 from std.reflection import reflect
 from std.memory import (
@@ -1547,6 +1553,9 @@ struct Archetype[
         This helper is intended for internal batch migration paths where the
         caller has already proven that source and destination archetypes are
         distinct, but Mojo's alias analysis cannot express that relationship.
+
+        Parameters:
+            source_origin: The origin of the source archetype.
 
         Args:
             source: An unsafe pointer to the source archetype. Must not point to self!
