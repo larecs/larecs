@@ -468,7 +468,7 @@ struct EntityAccessorIterator[filter: Filter](Iterator, Movable):
     var _stride: Int32
     var _done: Bool
 
-    def __init__(out self, context: KernelContext[Self.filter]):
+    def __init__(out self, context: KernelContext[Self.filter, _]):
         """Initializes row traversal for the current execution target.
 
         Args:
