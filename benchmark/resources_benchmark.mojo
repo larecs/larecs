@@ -1,6 +1,6 @@
 from std.benchmark import Bencher, Bench, keep, BenchId
 from custom_benchmark import DefaultBench
-from larecs import Resources, ResourceType
+from larecs import ResourceStorage, ResourceType
 
 
 @fieldwise_init
@@ -12,7 +12,7 @@ struct TestResource[size: Int = 1000](ResourceType):
 
 
 def benchmark_add_remove_resource_1_000(mut bencher: Bencher):
-    var resources = Resources()
+    var resources = ResourceStorage()
 
     @always_inline
     def bench_fn() {mut}:
@@ -28,7 +28,7 @@ def benchmark_add_remove_resource_1_000(mut bencher: Bencher):
 
 
 def benchmark_get_resource_1_000(mut bencher: Bencher):
-    var resources = Resources()
+    var resources = ResourceStorage()
 
     try:
         resources.add(TestResource())

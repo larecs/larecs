@@ -10,7 +10,7 @@ comptime ResourceType = Copyable & Deinitable
 
 
 @fieldwise_init
-struct Resources(Copyable, Movable, Sized):
+struct ResourceStorage(Copyable, Movable, Sized):
     """Manages resources."""
 
     comptime IdType = StringSlice[ImmStaticOrigin]
@@ -23,7 +23,7 @@ struct Resources(Copyable, Movable, Sized):
         """
         Constructs an empty resource container.
         """
-        with Zone(function_name="Resources.__init__()"):
+        with Zone(function_name="ResourceStorage.__init__()"):
             self._storage = Dict[Self.IdType, UnsafeBox]()
 
     @always_inline("nodebug")
@@ -33,7 +33,7 @@ struct Resources(Copyable, Movable, Sized):
         Returns:
             The number of stored resources.
         """
-        with Zone(function_name="Resources.__len__()"):
+        with Zone(function_name="ResourceStorage.__len__()"):
             return len(self._storage)
 
     def add[*Ts: ResourceType](mut self, var *resources: *Ts) raises:
@@ -51,7 +51,7 @@ struct Resources(Copyable, Movable, Sized):
 
         with Zone(
             function_name=(
-                "Resources.add[*Ts: ResourceType](var *resources: *Ts)"
+                "ResourceStorage.add[*Ts: ResourceType](var *resources: *Ts)"
             )
         ):
             var conflicting_ids = List[StringSlice[ImmStaticOrigin]](capacity=0)
@@ -81,7 +81,7 @@ struct Resources(Copyable, Movable, Sized):
         """
         with Zone(
             function_name=(
-                "Resources._add(id: Self.IdType, var resource:"
+                "ResourceStorage._add(id: Self.IdType, var resource:"
                 " Some[ResourceType])"
             )
         ):
@@ -89,7 +89,7 @@ struct Resources(Copyable, Movable, Sized):
 
     def set[
         *Ts: ResourceType, add_if_not_found: Bool = False
-    ](mut self: Resources, var *resources: *Ts) raises:
+    ](mut self: ResourceStorage, var *resources: *Ts) raises:
         """Sets the values of resources.
 
         Parameters:
@@ -105,8 +105,8 @@ struct Resources(Copyable, Movable, Sized):
 
         with Zone(
             function_name=(
-                "Resources.set[*Ts: ResourceType, add_if_not_found: Bool](var"
-                " *resources: *Ts)"
+                "ResourceStorage.set[*Ts: ResourceType, add_if_not_found:"
+                " Bool](var *resources: *Ts)"
             )
         ):
             comptime if not add_if_not_found:
@@ -148,8 +148,8 @@ struct Resources(Copyable, Movable, Sized):
 
         with Zone(
             function_name=(
-                "Resources._set[add_if_not_found: Bool](id: Self.IdType, var"
-                " resource: Some[ResourceType])"
+                "ResourceStorage._set[add_if_not_found: Bool](id: Self.IdType,"
+                " var resource: Some[ResourceType])"
             )
         ):
             try:
@@ -158,7 +158,7 @@ struct Resources(Copyable, Movable, Sized):
                 comptime if add_if_not_found:
                     self._add(id, resource^)
 
-    def remove[*Ts: ResourceType](mut self: Resources) raises:
+    def remove[*Ts: ResourceType](mut self: ResourceStorage) raises:
         """Removes resources.
 
         Parameters:
@@ -168,7 +168,7 @@ struct Resources(Copyable, Movable, Sized):
             Error: If one of the resources does not exist.
         """
 
-        with Zone(function_name="Resources.remove[*Ts: ResourceType]()"):
+        with Zone(function_name="ResourceStorage.remove[*Ts: ResourceType]()"):
             comptime for i in range(len(Ts)):
                 self._remove[Ts[i]](reflect[Ts[i]].name())
 
@@ -183,7 +183,9 @@ struct Resources(Copyable, Movable, Sized):
             Error: If the resource does not exist.
         """
         with Zone(
-            function_name="Resources._remove[T: ResourceType](id: Self.IdType)"
+            function_name=(
+                "ResourceStorage._remove[T: ResourceType](id: Self.IdType)"
+            )
         ):
             try:
                 _ = self._storage.pop(id)
@@ -202,7 +204,7 @@ struct Resources(Copyable, Movable, Sized):
         Returns:
             A reference to the resource.
         """
-        with Zone(function_name="Resources.get[T: ResourceType]()"):
+        with Zone(function_name="ResourceStorage.get[T: ResourceType]()"):
             try:
                 return Pointer(
                     to=self._storage[reflect[T].name()].unsafe_get[T]()
@@ -222,5 +224,5 @@ struct Resources(Copyable, Movable, Sized):
         Returns:
             True if the resource is present, otherwise False.
         """
-        with Zone(function_name="Resources.has[T: ResourceType]()"):
+        with Zone(function_name="ResourceStorage.has[T: ResourceType]()"):
             return reflect[T].name() in self._storage

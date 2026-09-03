@@ -9,7 +9,7 @@ from tracy import Zone
 from .component import ComponentType
 from .bitmask import BitMask
 from .world import World
-from .resource import Resources
+from .resource import ResourceStorage
 
 
 @always_inline
