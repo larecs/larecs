@@ -1,5 +1,6 @@
 from std.benchmark import Bench, Bencher, BenchId
 from custom_benchmark import DefaultBench
+from larecs.filter import Filter
 from larecs.test_utils import *
 
 
@@ -26,12 +27,16 @@ def benchmark_replace_1_comp_1_000_batch_1_000(
         try:
             for _ in range(500):
                 _ = world.storage.replace[FlexibleComponent[0]]().by(
-                    world.storage.query[FlexibleComponent[0]](),
                     FlexibleComponent[1](3.0, 4.0),
+                    filter=world.filter[
+                        Filter().include[FlexibleComponent[0]]()
+                    ](),
                 )
                 _ = world.storage.replace[FlexibleComponent[1]]().by(
-                    world.storage.query[FlexibleComponent[1]](),
                     FlexibleComponent[0](1.0, 2.0),
+                    filter=world.filter[
+                        Filter().include[FlexibleComponent[1]]()
+                    ](),
                 )
 
         except e:
