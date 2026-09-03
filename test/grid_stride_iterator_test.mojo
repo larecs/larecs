@@ -1,4 +1,11 @@
 # SKIP_ASAN
+# SKIP_DEBUG
+
+# This kernel doesn't itself trigger the Metal compiler crash described in
+# "Known issues" in AGENTS.md (it predates `KernelContext`'s
+# `for entity in context` pattern, the confirmed trigger), but `-g` is
+# dropped here too as a blanket policy for GPU-launching tests: any kernel
+# compiled with debug info can hit the same class of Apple AGX backend bug.
 
 from max.gpu.host import DeviceContext, DevicePointer
 from std.atomic import Atomic

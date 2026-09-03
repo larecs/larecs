@@ -1,4 +1,14 @@
 # SKIP_ASAN
+# SKIP_DEBUG
+
+# The `-g` in `SKIP_DEBUG` above is load-bearing, not cosmetic: compiling a
+# `for entity in context` GPU kernel (`KernelContext`'s `EntityAccessorIterator`,
+# which lowers to `raise StopIteration()`-driven control flow) with debug info
+# reliably crashes Apple's AGX Metal compiler backend (`MTLCompilerService`
+# SIGABRTs inside `llvm::report_fatal_error`, surfacing here as
+# `XPC_ERROR_CONNECTION_INTERRUPTED`). The same kernel compiles and runs
+# correctly without `-g`. See "Known issues" in AGENTS.md for the full
+# writeup and reproduction notes.
 
 from std.sys import has_accelerator
 from std.testing import *

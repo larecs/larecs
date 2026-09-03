@@ -19,6 +19,14 @@
 #
 #   # SKIP_ASAN
 #
+# To omit `-g` (debug info) for a specific test file, add:
+#
+#   # SKIP_DEBUG
+#
+# All tests that launch a GPU kernel should use `# SKIP_DEBUG`: compiling
+# certain kernels with `-g` crashes Apple's Metal compiler on-device. See
+# "Known issues" in AGENTS.md.
+#
 set -e
 
 precompile_args=(--precompile src/larecs)
