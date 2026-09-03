@@ -6,7 +6,7 @@ from .component import (
     ComponentType,
 )
 from .host_storage import HostStorage
-from .device_storage import DeviceStorage
+from .device_storage import DeviceComponentStorage
 from .resource import ResourceStorage
 from .filter import Filter, BitMaskFilter
 
@@ -17,15 +17,22 @@ struct World[*component_types: ComponentType](Copyable, Sized):
 
     The World provides all the basic ECS functionality of Larecs through it's member [..host_storage.HostStorage storage].
     These include functions like [..host_storage.HostStorage.query], [..host_storage.HostStorage.add_entity], [..host_storage.HostStorage.add], [..host_storage.HostStorage.remove], [..host_storage.HostStorage.get] or [..host_storage.HostStorage.remove_entity].
+
+    Parameters:
+        component_types: A variadic list with all possible component types for this world.
     """
 
     comptime HostStorage = HostStorage[*Self.component_types]
+    """The host storage type used by the world."""
     var storage: Self.HostStorage
     """[..host_storage.HostStorage Component Storage] associated with the world."""
 
-    comptime DeviceStorage = DeviceStorage[*Self.component_types]
-    var _device_storage: Optional[Self.DeviceStorage]
-    """[..device_storage.DeviceStorage Component Storage] associated with the world."""
+    comptime DeviceComponentStorage = DeviceComponentStorage[
+        *Self.component_types
+    ]
+    """The device component storage type used by the world."""
+    var _device_storage: Optional[Self.DeviceComponentStorage]
+    """[..device_storage.DeviceComponentStorage Component Storage] associated with the world."""
 
     var resources: ResourceStorage  # The resources of the world.
     """[..resource.ResourceStorage Resource Storage] associated with the world."""
@@ -37,7 +44,9 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         with Zone(function_name="World.__init__()"):
             self.storage = Self.HostStorage()
             try:
-                self._device_storage = Self.DeviceStorage(DeviceContext(), 0)
+                self._device_storage = Self.DeviceComponentStorage(
+                    DeviceContext(), 0
+                )
             except:
                 self._device_storage = None
             self.resources = ResourceStorage()

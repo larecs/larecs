@@ -46,6 +46,33 @@ def test_kernel_context_required_resources_on_gpu() raises:
     assert_equal(total, 15)
 
 
+def overwrite_scale(
+    context: KernelContext[Filter().include[Int32](), Resources[Scale]()]
+):
+    """Overwrites the `Scale` resource with a fixed value.
+
+    Every thread writes the same value, so the result is deterministic
+    regardless of which thread's write lands last.
+    """
+    context.resources.get[Scale]() = Scale(42)
+
+
+def test_kernel_context_resource_mutation_is_copied_back_to_host() raises:
+    """A resource mutated on the GPU is copied back to host after the kernel runs.
+    """
+    comptime if not has_accelerator():
+        return
+
+    var world = World[Int32]()
+    world.resources.add(Scale(3))
+    _ = world.storage.add_entities(Int32(1), count=5)
+
+    var context = SystemContext(world)
+    context.run[overwrite_scale, on_gpu=True]()
+
+    assert_equal(world.resources.get[Scale]().value, 42)
+
+
 comptime functions = __functions_in_module()
 
 

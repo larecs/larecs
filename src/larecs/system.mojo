@@ -15,8 +15,8 @@ from .resource import (
     Resources,
     ResourceType,
     ResourceStorage,
-    DeviceResourceStorage,
 )
+from .device_storage import DeviceResourceStorage
 
 
 trait System(Copyable, Deinitable, Movable):
@@ -144,10 +144,21 @@ struct ResourceAccessor[resources: Resources](Copyable):
     comptime Pointers = Array[
         Pointer[UInt8, MutUntrackedOrigin], len(Self.resources)
     ]
+    """The type of the per-resource byte pointer array."""
     var _pointers: Self.Pointers
+    """Byte pointers to each resource's buffer, indexed by position in ``resources``."""
 
-    def get[T: ResourceType](ref self) -> ref[self] T:
+    def get[T: ResourceType](self) -> ref[MutUntrackedOrigin] T:
         """Returns the resource of type T.
+
+        Always returns a mutable reference, mirroring how
+        `EntityAccessor.get` exposes component columns: the backing
+        pointer is already untracked-mutable (it addresses either host
+        resource storage or an uploaded device buffer), regardless of
+        whether this accessor itself was reached through a mutable or
+        immutable `KernelContext` -- so a kernel can write a resource back
+        even though `KernelFunc`'s non-capturing overload takes its
+        `KernelContext` immutably.
 
         Parameters:
             T: The type of the resource to retrieve.
@@ -403,10 +414,17 @@ struct SystemContext[
                     KernelFunc(kernel_context)
 
             else:
+                # Reuse the world's device storage across calls instead of
+                # discarding it: `DeviceComponentStorage.copy_from_host`
+                # already grows each column lazily as needed, so replacing
+                # the whole storage here on every call threw away every
+                # column already resident on the device (forcing a full
+                # reallocation and re-upload every time) for no benefit.
+                # This also makes `device_storage` a genuine reference for
+                # the rest of this branch, rather than one that is
+                # immediately invalidated by the reassignment that used to
+                # follow it.
                 ref device_storage = self.world[]._device_storage[]
-                self.world[]._device_storage = Self.World.DeviceStorage(
-                    device_storage._device_context, length
-                )
 
                 var device_resources = DeviceResourceStorage[
                     required_resources
@@ -462,8 +480,22 @@ struct SystemContext[
                             )
                             offset += len(archetype)
 
+                    comptime for i in range(len(required_resources)):
+                        comptime T = required_resources.ResourceTypes[i]
+                        # Same address-round-trip caution as the `upload`
+                        # call site above applies here: the `ref`/`mut`
+                        # argument must be produced and consumed within this
+                        # one call, never routed through a variable.
+                        device_resources.download[T](
+                            self.world[].resources.get[T]()
+                        )
+
+                    # `device_resources` was constructed from
+                    # `device_storage._device_context`, so both storages
+                    # share the same underlying device context and a single
+                    # synchronize flushes every operation enqueued above by
+                    # either one.
                     device_storage.synchronize()
-                    device_resources.synchronize()
 
     def run[
         filter: Filter,
