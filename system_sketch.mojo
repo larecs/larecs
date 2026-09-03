@@ -43,9 +43,7 @@ comptime ENTITY_COUNT = 10_000_000
 
 @fieldwise_init
 struct Move(System):
-    def update[
-        *WorldTs: ComponentType
-    ](mut self, mut context: SystemContext[*WorldTs]) raises:
+    def update(mut self, mut context: SystemContext[...]) raises:
         """Runs the movement kernel for entities with position and velocity."""
 
         def move_positions[filter: Filter](context: KernelContext[filter]):

@@ -22,39 +22,24 @@ from .resource import (
 trait System(Copyable, Deinitable, Movable):
     """Trait for systems in the scheduler."""
 
-    def initialize[
-        *WorldTs: ComponentType
-    ](mut self, mut context: SystemContext[*WorldTs]) raises:
+    def initialize(mut self, mut context: SystemContext[...]) raises:
         """Optionally initializes the system with the given world.
-
-        Parameters:
-            WorldTs: The component types in the world.
 
         Args:
             context: The SystemContext to access ECS functionality through.
         """
         pass
 
-    def update[
-        *WorldTs: ComponentType
-    ](mut self, mut context: SystemContext[*WorldTs]) raises:
+    def update(mut self, mut context: SystemContext[...]) raises:
         """Updates the system with the given world.
-
-        Parameters:
-            WorldTs: The component types in the world.
 
         Args:
             context: The SystemContext to access ECS functionality through.
         """
         ...
 
-    def finalize[
-        *WorldTs: ComponentType
-    ](mut self, mut context: SystemContext[*WorldTs]) raises:
+    def finalize(mut self, mut context: SystemContext[...]) raises:
         """Optionally finalizes the system with the given world.
-
-        Parameters:
-            WorldTs: The component types in the world.
 
         Args:
             context: The SystemContext to access ECS functionality through.
@@ -63,12 +48,18 @@ trait System(Copyable, Deinitable, Movable):
 
 
 def _update_system[
-    S: System, *WorldTs: ComponentType
-](mut system: UnsafeBox, mut context: SystemContext[*WorldTs]) raises:
+    S: System, world_origin: MutOrigin, *WorldTs: ComponentType
+](
+    mut system: UnsafeBox, mut context: SystemContext[world_origin, *WorldTs]
+) raises:
     """Updates the system with the given world.
 
     Parameters:
         S: The type of the system.
+        world_origin: The origin of the world borrowed by ``context``. Bound
+            explicitly (rather than left inferred) so a specific
+            instantiation of this function can be taken as a value and
+            stored, e.g. in `Scheduler`'s type-erased system list.
         WorldTs: The types of the components in the world.
 
     Args:
@@ -77,16 +68,22 @@ def _update_system[
     """
     with Zone(function_name=String(t"{reflect[S].name()}.update()")):
         ref concrete_system = system.unsafe_get[S]()
-        S.update[*WorldTs](concrete_system, context)
+        S.update(concrete_system, context)
 
 
 def _initialize_system[
-    S: System, *WorldTs: ComponentType
-](mut system: UnsafeBox, mut context: SystemContext[*WorldTs]) raises:
+    S: System, world_origin: MutOrigin, *WorldTs: ComponentType
+](
+    mut system: UnsafeBox, mut context: SystemContext[world_origin, *WorldTs]
+) raises:
     """Initializes the system with the given SystemContext.
 
     Parameters:
         S: The type of the system.
+        world_origin: The origin of the world borrowed by ``context``. Bound
+            explicitly (rather than left inferred) so a specific
+            instantiation of this function can be taken as a value and
+            stored, e.g. in `Scheduler`'s type-erased system list.
         WorldTs: The types of the components in the world.
 
     Args:
@@ -95,16 +92,22 @@ def _initialize_system[
     """
     with Zone(function_name=String(t"{reflect[S].name()}.initialize()")):
         ref concrete_system = system.unsafe_get[S]()
-        S.initialize[*WorldTs](concrete_system, context)
+        S.initialize(concrete_system, context)
 
 
 def _finalize_system[
-    S: System, *WorldTs: ComponentType
-](mut system: UnsafeBox, mut context: SystemContext[*WorldTs]) raises:
+    S: System, world_origin: MutOrigin, *WorldTs: ComponentType
+](
+    mut system: UnsafeBox, mut context: SystemContext[world_origin, *WorldTs]
+) raises:
     """Finalizes the system with the given SystemContext.
 
     Parameters:
         S: The type of the system.
+        world_origin: The origin of the world borrowed by ``context``. Bound
+            explicitly (rather than left inferred) so a specific
+            instantiation of this function can be taken as a value and
+            stored, e.g. in `Scheduler`'s type-erased system list.
         WorldTs: The types of the components in the world.
 
     Args:
@@ -113,7 +116,7 @@ def _finalize_system[
     """
     with Zone(function_name=String(t"{reflect[S].name()}.finalize()")):
         ref concrete_system = system.unsafe_get[S]()
-        S.finalize[*WorldTs](concrete_system, context)
+        S.finalize(concrete_system, context)
 
 
 comptime BLOCK_SIZE = 2**4
@@ -291,24 +294,21 @@ struct HostKernelContext[
 
 @fieldwise_init
 struct SystemContext[
+    world_origin: MutOrigin,
     *WorldTs: ComponentType,
 ](Copyable):
     comptime World = World[*Self.WorldTs]
 
-    var world: Pointer[Self.World, MutUntrackedOrigin]
+    var world: Pointer[Self.World, Self.world_origin]
 
-    def __init__(out self, ref world: Self.World):
+    def __init__(out self, ref[Self.world_origin] world: Self.World):
         """Creates a context borrowing the scheduler's world."""
         with Zone(
             function_name="SystemContext.__init__(ref world: Self.World)"
         ):
             comptime assert origin_of(world).mut, "world must be mutable"
 
-            self.world = (
-                Pointer(to=world)
-                .mut_cast[True]()
-                .unsafe_origin_cast[MutUntrackedOrigin]()
-            )
+            self.world = Pointer(to=world)
 
     def run[
         filter: Filter,
