@@ -46,8 +46,17 @@ struct Move(System):
     def update(mut self, mut context: SystemContext[...]) raises:
         """Runs the movement kernel for entities with position and velocity."""
 
-        def move_positions[filter: Filter](context: KernelContext[filter]):
+        def move_positions(
+            context: KernelContext[Filter().include[Position, Velocity]()]
+        ):
             """Moves every position in the kernel's assigned row range.
+
+            Bound directly to a concrete filter rather than taking `filter`
+            as a free type parameter: `Position` and `Velocity` must both
+            be provably writable/readable at this function's own
+            elaboration, and an unbound `filter: Filter` parameter cannot
+            prove that for any specific component -- see `read`/`write` on
+            `Filter`.
 
             Args:
                 context: The CPU or GPU execution context for the filtered rows.
@@ -60,7 +69,7 @@ struct Move(System):
 
         var start = perf_counter()
         context.run[
-            move_positions[Filter().include[Position, Velocity]()],
+            move_positions,
             on_gpu=True,
         ]()
         print(
@@ -69,7 +78,7 @@ struct Move(System):
 
         start = perf_counter()
         context.run[
-            move_positions[Filter().include[Position, Velocity]()],
+            move_positions,
             on_gpu=False,
         ]()
         print(

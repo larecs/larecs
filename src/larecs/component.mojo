@@ -18,6 +18,45 @@ from .types import ComponentId
 comptime ComponentType = Copyable & Deinitable
 """The trait that components must conform to."""
 
+comptime GPUComponentType = TrivialRegisterPassable
+"""Trait subset of [.ComponentType] safe for GPU raw-byte transfer.
+
+`SystemContext.run(..., on_gpu=True)` moves component columns between host
+and device buffers via a plain byte copy (see
+[..device_storage.DeviceComponentStorage]): the destination never runs
+`T`'s copy constructor or destructor, only `memcpy`s its bytes. That is
+only sound for a type with no non-trivial state -- no owned heap
+allocation, no custom copy/move/destroy logic -- since a bitwise copy of
+such a type would corrupt or leak it. `TrivialRegisterPassable` already
+encodes exactly that constraint at the type-system level (bitwise
+copyable, trivially destroyed, and transitively so for every member), so
+it is reused here rather than inventing a new marker trait.
+
+It also already implies `Copyable & Deinitable` (i.e. [.ComponentType]),
+so it alone is the constraint -- composing it with `ComponentType` would
+be redundant.
+"""
+
+
+def constrain_gpu_safe_components[*Ts: ComponentType]() -> Bool:
+    """Checks whether all component types are safe for GPU raw-byte transfer.
+
+    Parameters:
+        Ts: The component types to check.
+
+    Returns:
+        True when every type in ``Ts`` conforms to [.GPUComponentType].
+    """
+    with Zone(
+        function_name=(
+            "component.constrain_gpu_safe_components[*Ts: ComponentType]()"
+        )
+    ):
+        comptime for i in range(len(Ts)):
+            comptime if not conforms_to(Ts[i], GPUComponentType):
+                return False
+        return True
+
 
 @fieldwise_init
 struct Components[*ComponentTypes: ComponentType](Sized):

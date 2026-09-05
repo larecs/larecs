@@ -16,13 +16,27 @@ struct Filter[
     _include: Components = Components[](),
     _exclude: Components = Components[](),
     _is_exclusive: Bool = False,
+    _read: Components = Components[](),
+    _written: Components = Components[](),
 ](Sized):
     """Compile-time component inclusion and exclusion spec used to build queries.
+
+    Every included component is tracked separately as readable (`_read`)
+    and/or writable (`_written`). `include` -- the default, and the only
+    mode that matters for the CPU query API, where this distinction is not
+    used -- marks a component both readable and writable, matching this
+    type's behavior before `_read`/`_written` existed. `read` and `write`
+    mark a component for one direction only: a GPU-run kernel then only
+    pays for the transfer direction it actually needs (see `SystemContext.run`),
+    and `EntityAccessor.get`/`set` enforce the declared mode at compile
+    time, not just by convention -- see `read` and `write` below.
 
     Parameters:
         _include: The component types that must be present.
         _exclude: The component types that must be absent.
         _is_exclusive: Whether only the included components may be present.
+        _read: The included component types accessible for reading.
+        _written: The included component types accessible for writing.
     """
 
     comptime include[*ComponentTypes: ComponentType] = Filter[
@@ -33,11 +47,73 @@ struct Filter[
         ](),
         Self._exclude,
         Self._is_exclusive,
+        Components[
+            *TypeList._concat[
+                Self._read.ComponentTypes.values, ComponentTypes.values
+            ]()
+        ](),
+        Components[
+            *TypeList._concat[
+                Self._written.ComponentTypes.values, ComponentTypes.values
+            ]()
+        ](),
     ]
-    """Returns a Filter also including the given component types.
+    """Returns a Filter also including the given component types for both reading and writing.
 
     Parameters:
         ComponentTypes: The component types to include.
+    """
+    comptime read[*ComponentTypes: ComponentType] = Filter[
+        Components[
+            *TypeList._concat[
+                Self._include.ComponentTypes.values, ComponentTypes.values
+            ]()
+        ](),
+        Self._exclude,
+        Self._is_exclusive,
+        Components[
+            *TypeList._concat[
+                Self._read.ComponentTypes.values, ComponentTypes.values
+            ]()
+        ](),
+        Self._written,
+    ]
+    """Returns a Filter also including the given component types, accessible only for reading.
+
+    `EntityAccessor.get` returns an immutable reference for these
+    components; `EntityAccessor.set` is a compile error. `SystemContext.run`'s
+    GPU path uploads these components before the kernel runs but does not
+    download them afterward, since a read-only kernel cannot have changed
+    them.
+
+    Parameters:
+        ComponentTypes: The component types to include for reading only.
+    """
+    comptime write[*ComponentTypes: ComponentType] = Filter[
+        Components[
+            *TypeList._concat[
+                Self._include.ComponentTypes.values, ComponentTypes.values
+            ]()
+        ](),
+        Self._exclude,
+        Self._is_exclusive,
+        Self._read,
+        Components[
+            *TypeList._concat[
+                Self._written.ComponentTypes.values, ComponentTypes.values
+            ]()
+        ](),
+    ]
+    """Returns a Filter also including the given component types, accessible only for writing.
+
+    `EntityAccessor.set` overwrites these components; `EntityAccessor.get`
+    is a compile error, since a write-only component's prior value is
+    never uploaded to the kernel. `SystemContext.run`'s GPU path downloads
+    these components after the kernel runs but does not upload them
+    beforehand, since a write-only kernel never reads their prior value.
+
+    Parameters:
+        ComponentTypes: The component types to include for writing only.
     """
     comptime exclude[*ComponentTypes: ComponentType] = Filter[
         Self._include,
@@ -47,6 +123,8 @@ struct Filter[
             ]()
         ](),
         Self._is_exclusive,
+        Self._read,
+        Self._written,
     ]
     """Returns a Filter also excluding the given component types.
 
@@ -58,6 +136,8 @@ struct Filter[
         Self._include,
         Components[](),
         True,
+        Self._read,
+        Self._written,
     ]
     """Returns a Filter that matches only entities with exactly the included components."""
 
@@ -102,6 +182,32 @@ struct Filter[
                 comptime if Self._exclude.ComponentTypes[i] == T:
                     return i
             return -1
+
+    def reads[T: ComponentType](self) -> Bool:
+        """Returns whether this filter allows reading component ``T``.
+
+        Parameters:
+            T: The component type to check.
+
+        Returns:
+            True when ``T`` is accessible for reading, via `read` or
+            `include`.
+        """
+        with Zone(function_name="Filter.reads[T: ComponentType]()"):
+            return Self._read.ComponentTypes.contains[T]()
+
+    def writes[T: ComponentType](self) -> Bool:
+        """Returns whether this filter allows writing component ``T``.
+
+        Parameters:
+            T: The component type to check.
+
+        Returns:
+            True when ``T`` is accessible for writing, via `write` or
+            `include`.
+        """
+        with Zone(function_name="Filter.writes[T: ComponentType]()"):
+            return Self._written.ComponentTypes.contains[T]()
 
     def get_include_mask[*ComponentTypes: ComponentType](self) -> BitMask:
         """Returns the bitmask of the components this filter includes.

@@ -167,15 +167,60 @@ it exercised before.
 This is where the remaining time lives. Two independent changes, in
 increasing order of design cost.
 
-**Declare per-component access mode on the filter.** Today `run` uploads and
-downloads every component in the filter unconditionally. Most systems read
-some components and write others. In the baseline workload `Velocity` is
-read-only, so its 2.5 ms download is pure waste; a write-only output
-component would likewise not need uploading. Extending `Filter` with read,
-write, and read-write intent lets `run` skip each direction per component.
-For a typical read-two-write-one system this removes roughly a third to a
-half of both directions. It also gives the scheduler the information it needs
-later to decide which systems may run concurrently.
+**Declare per-component access mode on the filter — done.** Today `run`
+uploads and downloads every component in the filter unconditionally. Most
+systems read some components and write others. In the baseline workload
+`Velocity` is read-only, so its download was pure waste; a write-only output
+component would likewise not need uploading.
+
+Implemented as `Filter.read[T]`/`Filter.write[T]`, alongside the existing
+`Filter.include[T]` (which now marks a component both readable and
+writable, preserving every existing call site's behavior exactly).
+`EntityAccessor.get`/`set` enforce the declared mode at compile time, not
+just by convention: `get`'s return type is `ref [UntrackedOrigin[mut =
+<is-writable>]] T`, so a write-only `get` or a read-only `set` is rejected
+during type-checking, with a message naming the specific builder that would
+fix it. `SystemContext.run`'s GPU path skips the upload for a write-only
+component (via a new `DeviceComponentStorage.ensure_column[T]`, which sizes
+the column without transferring anything) and skips the download for a
+read-only component.
+
+The load-bearing implementation detail: `mut=<expr>` in a `ref` return
+type only accepts a small set of expression forms — direct comptime
+parameter access and boolean operators over those fold correctly, but *any*
+function call does not, even a fully resolved one with no free parameters,
+confirmed by direct probe with progressively simpler repros. The one
+exception found is a call already marked `@always_inline("builtin")` in the
+standard library, such as `TypeList.contains[T]()`. This is why `_read` and
+`_written` are stored as `Components` (backed by `TypeList`) rather than
+computed through an ordinary loop-based method: `get`'s return type calls
+`Self.filter._written.ComponentTypes.contains[T]()` directly, using that
+builtin-inlined stdlib primitive, rather than a hand-written `Filter.writes[T]()`
+method, which would not fold in that position no matter how it was written.
+`Filter.reads[T]()`/`writes[T]()` still exist as ordinary methods for use
+inside function bodies (`comptime assert`, `comptime if`), where an ordinary
+method call resolves fine — confirmed working in `SystemContext.run`'s
+`comptime if filter.reads[T]():` upload gate and `comptime if
+filter.writes[T]():` download gate.
+
+Verified two ways. Compile-time enforcement: a `set` on a `read`-only
+component and a `get` on a `write`-only component were each confirmed to
+fail to compile, with the intended diagnostic surfacing in the error
+(`"declared read-only ... use Filter.write"` and `"declared write-only ...
+use set[T]()"` respectively). Performance, on the baseline workload (1M
+entities, `Position` read-write, `Velocity`): marking `Velocity` `read`-only
+(download skipped) took the steady-state cost from 6.17 ms to 3.82 ms per
+call, and additionally marking `Position` `write`-only (upload skipped too,
+kernel fully overwrites it) took it to 3.63 ms, both against the same
+`include`-both baseline, with output correctness checked over all 1,000,000
+entities. The absolute baseline number here is lower than the 9.24 ms
+figure elsewhere in this document because it reflects the Phase 1 fixes
+already being in place; the relevant comparison is the roughly 40% same-run
+reduction from declaring accurate modes, consistent with removing very
+close to one whole transfer direction out of two.
+
+Full test suite (`pixi run tests test`, 16 files) passes, including all
+three GPU tests.
 
 **Keep component columns resident on the device across frames.** This is the
 structural change and the one that actually decides whether the GPU path is
