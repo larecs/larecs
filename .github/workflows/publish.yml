@@ -6,14 +6,16 @@ on:
       - main
   pull_request:
 
-permissions:
-  contents: write
-  pages: write
+permissions: {}
 
 jobs:
   publish:
     name: Publish API docs
     runs-on: ubuntu-latest
+    permissions:
+      # Only the deploy step (push to a fresh, orphan-history gh-pages
+      # branch) needs write access; everything else here only reads.
+      contents: write
 
     defaults:
       run:
@@ -21,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout Larecs
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install pixi CLI
         run: |
           curl -ssL https://pixi.sh/install.sh | bash
@@ -42,7 +44,7 @@ jobs:
           mkdir -p docs/src/guide/images
           cp benchmark/plots/results/aos_benchmark.svg docs/src/guide/images/
 
-      - name: Build docs # Includes 'modo build', 'mojo doc', 'mojo test' and 'hugo -s docs/site'
+      - name: Build docs # Includes 'mojo doc', 'modo build', doctests via mogo-tester, and 'hugo -s docs/site'
         run: |
           pixi install --locked
           pixi run build-docs
