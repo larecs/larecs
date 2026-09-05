@@ -115,5 +115,5 @@ from larecs import World
 
 def main():
     # Create a world with the components Position and Velocity
-    world = World[Position, Velocity]()
+    var world = World[Position, Velocity]()
 ```
