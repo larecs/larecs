@@ -8,10 +8,21 @@ A major feature of Mojo is its native support for
 vectorized operations, processing multiple values in
 one go via `SIMD`. This can improve
 the computational performance of our code significantly.
-In Larecs🌲, this feature can be used by defining
-a vectorized function that can process multiple entities at once
-and applying it to entities via the {{< api World.apply apply >}}
-method.
+
+> [!Warning]
+> Applying a vectorized operation across `simd_width`-sized batches of
+> entities via {{< api HostStorage.apply apply >}} is currently disabled:
+> Mojo cannot yet correctly infer the `simd_width` parameter for this call
+> pattern, so the SIMD-batched overload of `apply` is commented out in
+> Larecs🌲's source until that is resolved upstream. The
+> [non-vectorized `apply`](../queries_iteration#applying-functions-to-entities-in-queries)
+> that runs one entity at a time remains available and is the
+> recommended way to apply a function to entities today.
+>
+> The rest of this chapter explains the underlying memory-layout
+> considerations, which stay relevant preparation for when vectorized
+> `apply` returns. The code below is illustrative only and is not compiled
+> as part of the documentation build.
 
 > [!Caution]
 > Using vectorized functions is an an advanced feature,
@@ -23,9 +34,9 @@ method.
 Below, we need some advanced Mojo and
 Larecs🌲 features, which we can import as follows:
 
-```mojo {doctest="guide_simd_apply" global=true}
+```mojo
 from sys.info import simdwidthof, sizeof
-from larecs import World, MutableEntityAccessor
+from larecs import World, MutArchetypeRowAccessor
 ```
 
 ## Considering the memory layout
@@ -49,8 +60,7 @@ Position[0].x | Position[0].y | Position[1].x | Position[1].y | ...
 Hence, accessing the `x` attribute of multiple `Position` components
 requires us to skip the `y` attributes.
 
-```mojo {doctest="guide_simd_apply" global=true hide=true}
-
+```mojo
 @fieldwise_init
 struct Position(Copyable, Movable):
     var x: Float64
@@ -60,11 +70,9 @@ struct Position(Copyable, Movable):
 struct Velocity(Copyable, Movable):
     var dx: Float64
     var dy: Float64
-```
 
-```mojo {doctest="guide_simd_apply" hide=true}
-world = World[Position, Velocity]()
-_ = world.add_entities(Position(0, 0), Velocity(1, 0), count=10)
+var world = World[Position, Velocity]()
+_ = world.storage.add_entities(Position(0, 0), Velocity(1, 0), count=10)
 ```
 
 Loading elements from memory while leaving out some values
@@ -85,14 +93,14 @@ is _twice_ the size of a single `x` attribute.
 > Choosing the wrong `stride` may lead to undefined behavior,  
 > causing crashes or errors that are extremely difficult to track down.
 
-We may store the stride information in an `alias` variable.
+We may store the stride information in a `comptime` variable.
 
-```mojo {doctest="guide_simd_apply"}
-alias stride = 2
+```mojo
+comptime stride = 2
 
 # Alternatively, we could use the `sizeof` function
 # to calculate the stride automatically.
-alias stride_ = Int(sizeof[Position]() / sizeof[__type_of(Position(0, 0).x)]())
+comptime stride_ = Int(sizeof[Position]() / sizeof[__type_of(Position(0, 0).x)]())
 ```
 
 Note that the `Velocity` component also has two `Float64`
@@ -104,31 +112,26 @@ component.
 Now we can define our vectorized move operation.
 It needs to accept an integer parameter `simd_width`,
 which denotes how many entities will be processed at once.
-Let us revisit the `move` function we defined in the
+Let us revisit the `move` operation we defined in the
 [queries and iteration](../queries_iteration#applying-functions-to-entities-in-queries)
 chapter and add support for vectorized computation. The
 updated signature of the function reads as follows:
 
-```mojo {doctest="guide_simd_apply"}
-fn move[simd_width: Int](entity: MutableEntityAccessor) capturing:
+```mojo
+def move[simd_width: Int](accessor: MutArchetypeRowAccessor) raises:
 ```
 
 Again we start implementing `move` by obtaining pointers
 to the `Position` and `Velocity` components.
 
-```mojo {doctest="guide_simd_apply"}
-    try:
-        pos = Pointer(to=entity.get[Position]())
-        vel = Pointer(to=entity.get[Velocity]())
-    except:
-        return
+```mojo
+    var pos = Pointer(to=accessor.get[Position]())
+    var vel = Pointer(to=accessor.get[Velocity]())
 ```
 
-The `entity` argument is a normal mutable
-{{< api EntityAccessor >}} instance, allowing
-access to a single entity. However, the referenced entity
-is the _first_ of a _batch_ of `simd_width` entities, each with
-the same components. The `move` function will not be
+The `accessor` argument gives access to a single entity. However,
+the referenced entity is the _first_ of a _batch_ of `simd_width`
+entities, each with the same components. The `move` function will not be
 called for any other entity in this batch.
 
 The components of the batched entities are guaranteed
@@ -138,28 +141,28 @@ attributes in a batch is an "unsafe" operation, as it requires
 us to specify the stride manually.
 Hence, we need `Pointer`s to the components.
 
-```mojo {doctest="guide_simd_apply"}
-    pos_x_ptr = Pointer(to=pos[].x)
-    pos_y_ptr = Pointer(to=pos[].y)
-    vel_x_ptr = Pointer(to=vel[].dx)
-    vel_y_ptr = Pointer(to=vel[].dy)
+```mojo
+    var pos_x_ptr = Pointer(to=pos[].x)
+    var pos_y_ptr = Pointer(to=pos[].y)
+    var vel_x_ptr = Pointer(to=vel[].dx)
+    var vel_y_ptr = Pointer(to=vel[].dy)
 ```
 
 Now we can load `simd_width` values of `x` and `y`
 into temporary `SIMD` vectors using the `strided_load` method
 and do the same for the `dx` and `dy` attributes of `Velocity`.
 
-```mojo {doctest="guide_simd_apply"}
-    pos_x = pos_x_ptr.strided_load[width=simd_width](stride)
-    pos_y = pos_y_ptr.strided_load[width=simd_width](stride)
-    vel_x = vel_x_ptr.strided_load[width=simd_width](stride)
-    vel_y = vel_y_ptr.strided_load[width=simd_width](stride)
+```mojo
+    var pos_x = pos_x_ptr.strided_load[width=simd_width](stride)
+    var pos_y = pos_y_ptr.strided_load[width=simd_width](stride)
+    var vel_x = vel_x_ptr.strided_load[width=simd_width](stride)
+    var vel_y = vel_y_ptr.strided_load[width=simd_width](stride)
 ```
 
 Next, we implement the actual "move" logic as if the
 vectors were simple scalars.
 
-```mojo {doctest="guide_simd_apply"}
+```mojo
     pos_x += vel_x
     pos_y += vel_y
 ```
@@ -167,7 +170,7 @@ vectors were simple scalars.
 Finally, we store the updated positions at their original
 memory locations using the `strided_store` method.
 
-```mojo {doctest="guide_simd_apply"}
+```mojo
     pos_x_ptr.strided_store[width=simd_width](pos_x, stride)
     pos_y_ptr.strided_store[width=simd_width](pos_y, stride)
 ```
@@ -177,21 +180,25 @@ memory locations using the `strided_store` method.
 > functions that take care of stride and width and
 > thereby reduce the complexity of the code.
 
-# Applying a vectorized operation to all entities
+## Applying a vectorized operation to all entities
 
-What remains to be done is to apply the move operation to all entities.
-In the vectorized version, the {{< api World.apply apply >}} method
-requires us to provide a value for the `simd_width` parameter, which
-denotes the maximal number of entities that can be processed
-at once efficiently. Typically, this corresponds to the `SIMD` width of our machine.
-We can get this information using the `simdwidthof` function.
+What remains to be done -- once vectorized `apply` is available again --
+is to apply the move operation to all entities. The vectorized version of
+{{< api HostStorage.apply apply >}} would require providing a value for the
+`simd_width` parameter, denoting the maximal number of entities that can
+be processed at once efficiently. Typically, this corresponds to the
+`SIMD` width of our machine, obtainable via the `simdwidthof` function.
 
-```mojo {doctest="guide_simd_apply"}
+```mojo
 # How many `Float64` values can we process at once?
-alias simd_width=simdwidthof[Float64]()
+comptime simd_width = simdwidthof[Float64]()
 
 # Apply the move operation to all entities with a position and a velocity
-world.storage.apply[move, simd_width=simd_width](world.storage.query[Position, Velocity]())
+# (illustrative -- see the warning at the top of this chapter)
+world.storage.apply[simd_width=simd_width](
+    world.filter[Filter().include[Position, Velocity]()](),
+    move,
+)
 ```
 
 > [!Note]

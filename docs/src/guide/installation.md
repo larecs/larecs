@@ -9,8 +9,8 @@ Larecs🌲 is written in and for [Mojo](https://docs.modular.com/mojo/manual/get
 
 1. Clone the repository / download the files.
 2. Navigate to the `src/` subfolder.
-3. Execute `mojo package larecs`.
-4. Move the newly created file `larecs.mojopkg` to your project's source directory.
+3. Execute `mojo precompile larecs -o larecs.mojoc`.
+4. Move the newly created file `larecs.mojoc` to your project's source directory.
 
 ## Include the source directly when compiling
 
