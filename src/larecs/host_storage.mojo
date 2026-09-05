@@ -408,6 +408,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         Raises:
             LarecsError: If the world is [.HostStorage.is_locked locked].
+            LarecsError: If `count` is negative.
 
         Returns:
             An iterator to the new or recycled [..entity.Entity Entities].
@@ -426,7 +427,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 *Ts
             ](), "Duplicate component types in add_entities are not allowed."
 
-            debug_assert(0 <= count, "Count must be non-negative.")
+            if count < 0:
+                raise LarecsError(WorldError.negative_count)
 
             if count == 0:
                 try:
@@ -465,7 +467,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 comptime assert Self.component_manager.contains_components[
                     T
                 ](), "Component type is not part of the world."
-                archetype.set_component_range[T](
+                # These rows were just appended by `_create_entities` and
+                # hold uninitialized memory for `T`, so they must be
+                # initialized rather than assigned.
+                archetype.init_component_range[T](
                     first_index_in_archetype, count, components[i]
                 )
 
@@ -707,8 +712,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         comptime assert Self.component_manager.contains_components[
             T
         ](), "Component type not in component manager"
-        var entity_loc = self._entity_locations[entity.get_id()]
         self._assert_alive(entity)
+        var entity_loc = self._entity_locations[entity.get_id()]
 
         with Zone(
             function_name="HostStorage.get[T: ComponentType](entity: Entity)"
@@ -1128,7 +1133,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 if not old_archetype_mask.contains(remove_mask):
                     raise LarecsError(
                         ComponentError.missing_components_on_remove.with_components(
-                            old_archetype_mask ^ remove_mask
+                            remove_mask & ~old_archetype_mask
                         )
                     )
 
@@ -1170,6 +1175,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             var index_in_new_archetype = new_archetype.add_entity(entity)
 
             # Move component data from old archetype to new archetype.
+            # `index_in_new_archetype` is a row that `add_entity` just
+            # appended, so it holds uninitialized memory and must be
+            # initialized rather than assigned.
             comptime for id in range(Self.component_manager.component_count):
                 comptime T = Self.ComponentTypes[id]
                 if not old_archetype.has_components[T]():
@@ -1179,7 +1187,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     if not new_archetype.has_components[T]():
                         continue
 
-                new_archetype.set_components[T](
+                new_archetype.init_components[T](
                     index_in_new_archetype,
                     old_archetype.get_component[T](
                         index_in_old_archetype
@@ -1310,7 +1318,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 if not filter.include_mask.contains(remove_mask):
                     raise LarecsError(
                         ComponentError.missing_components_on_remove_query.with_components(
-                            filter.include_mask ^ remove_mask
+                            remove_mask & ~filter.include_mask
                         )
                     )
 
@@ -1389,6 +1397,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                         arch_start_idcs.append(0)
                         changed_archetype_idcs.append(new_archetype_idx)
 
+                        # The archetype did not change, so these rows
+                        # already hold valid values that must be destroyed
+                        # before assigning the new ones.
                         comptime for i in range(add_size):
                             comptime T = Ts[i]
                             new_archetype.set_component_range[T](
@@ -1409,9 +1420,13 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     arch_start_idcs.append(arch_start_idx)
                     changed_archetype_idcs.append(new_archetype_idx)
 
+                    # These rows were just appended by
+                    # `extend_from_archetype_unsafe` and hold uninitialized
+                    # memory for the newly added components, so they must
+                    # be initialized rather than assigned.
                     comptime for i in range(add_size):
                         comptime T = Ts[i]
-                        new_archetype.set_component_range[T](
+                        new_archetype.init_component_range[T](
                             arch_start_idx,
                             old_archetype_size,
                             add_components[i].copy(),
