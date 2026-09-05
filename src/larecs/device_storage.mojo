@@ -11,6 +11,7 @@ from std.sys import size_of
 from tracy import Zone
 
 from .component import ComponentType, ComponentManager
+from .debug_utils import debug_warn
 from .resource import ResourceType, Resources
 
 
@@ -83,11 +84,28 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             comptime for i in range(len(Self.ComponentTypes)):
                 comptime T = Self.ComponentTypes[i]
                 if copy._columns[i] is not None:
+                    # `Copyable.__init__(out self, *, copy: Self)` cannot
+                    # itself be `raises` (its trait signature isn't), so a
+                    # device allocation/copy failure here can only be
+                    # swallowed, not propagated to the caller -- unlike the
+                    # `raises` constructors used everywhere else in this
+                    # file. Swallowing it *silently* previously left
+                    # `self._columns[i] = None` with no signal at all, so a
+                    # copy could look complete while quietly missing data a
+                    # caller relied on. `debug_warn` at least surfaces which
+                    # column was dropped and why, in debug builds; see
+                    # `_WorldEntityIterator.__deinit__` in iteration.mojo
+                    # for the same pattern applied to the same constraint.
                     try:
                         self._create_column[T]()
                         self._copy_column[T](copy._columns[i].unsafe_value())
-                    except:
+                    except e:
                         self._columns[i] = None
+                        debug_warn(
+                            t"DeviceComponentStorage.copy: failed to copy"
+                            t" the device column for"
+                            t" {reflect[T].name()}: {String(e)}"
+                        )
 
     def has_component[T: ComponentType](self) -> Bool:
         """Returns whether the device column for ``T`` is initialized.
@@ -162,10 +180,20 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             if self._columns[id] is None:
                 return List[T](capacity=0)
 
-            var bytes = List[UInt8](length=self._length * size_of[T](), fill=0)
-            self._columns[id].unsafe_value().enqueue_copy_to(bytes.unsafe_ptr())
+            # Build the result as a `List[T]` directly, sized in *elements*
+            # (`self._length`), and copy into its raw bytes -- rather than
+            # building a `List[UInt8]` sized in bytes and reinterpreting it
+            # via `rebind_var[List[T]]`. `rebind_var` only reinterprets the
+            # list's fields (pointer, length, capacity) bit-for-bit; it does
+            # not rescale `length`/`capacity` from a byte count to an
+            # element count, so the previous version left `data` reporting
+            # `self._length * size_of[T]()` elements -- `size_of[T]()` times
+            # too many -- for any `T` wider than one byte.
+            data = List[T](unsafe_uninit_length=self._length)
+            self._columns[id].unsafe_value().enqueue_copy_to(
+                data.unsafe_ptr().unsafe_bitcast[UInt8]()
+            )
             self._device_context.synchronize()
-            data = rebind_var[List[T]](bytes^)
 
     def copy_to_host[
         T: ComponentType
@@ -184,10 +212,14 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         Args:
             column_ptr: The host pointer to copy the range into.
             offset: The starting row of the range to copy.
-            length: The number of rows to copy.
+            length: The number of rows to copy. A negative value (the
+                default) copies every row from ``offset`` through the end
+                of the column.
 
         Raises:
-            Error: If the device copy fails.
+            Error: If ``offset``/``length`` describe a range outside the
+                column's ``[0, self._length)`` bounds, or if the device
+                copy fails.
         """
         with Zone(
             function_name=(
@@ -201,41 +233,54 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             if self._columns[id] is None:
                 return
 
+            # `length=-1` is a sentinel, not a literal count: it means "the
+            # rest of the column from `offset`". Resolve it before
+            # validating, so a bad explicit `length` (negative, or past the
+            # column's end) is still rejected below rather than silently
+            # multiplying out to a nonsensical byte count in
+            # `create_sub_buffer`.
+            var copy_length = length if length >= 0 else self._length - offset
+
+            var end = offset + copy_length
+            if offset < 0 or copy_length < 0 or end > self._length:
+                raise Error(
+                    t"DeviceComponentStorage.copy_to_host: range [{offset},"
+                    t" {end}) is out of bounds for a column of length"
+                    t" {self._length}"
+                )
+
             self._columns[id].unsafe_value().create_sub_buffer[DType.uint8](
-                offset * size_of[T](), length * size_of[T]()
+                offset * size_of[T](), copy_length * size_of[T]()
             ).enqueue_copy_to(column_ptr.unsafe_bitcast[UInt8]())
 
-    def copy_from_host[
-        mut: Bool, origin: Origin[mut=mut], //, T: ComponentType
-    ](mut self, data: Span[T, origin], *, offset: Int = 0) raises:
-        """Copies host data for ``T`` into the device column, growing it if needed.
+    def ensure_column[T: ComponentType](mut self, length: Int) raises:
+        """Ensures the device column for ``T`` exists and covers ``length`` rows.
+
+        Creates or grows the column as needed, but uploads no data into it.
+        Used for a kernel component that is write-only for the current
+        call: the column must exist before the kernel writes through it,
+        but nothing needs uploading first, since a write-only component's
+        prior value is never read by the kernel.
 
         Parameters:
-            mut: Whether the source span is mutable.
-            origin: The origin of the source span.
-            T: The component type of the column to copy into.
+            T: The component type of the column to ensure.
 
         Args:
-            data: The host data to upload.
-            offset: The starting row at which to write the data.
+            length: The minimum number of rows the column must cover.
 
         Raises:
-            Error: If allocating or copying the device buffer fails.
+            Error: If allocating or growing the device buffer fails.
         """
         with Zone(
             function_name=(
-                "DeviceComponentStorage.copy_from_host[mut: Bool, origin:"
-                " Origin[mut=mut], //, T: ComponentType](data: Span[T,"
-                " origin], *, offset: Int)"
+                "DeviceComponentStorage.ensure_column[T:"
+                " ComponentType](length: Int)"
             )
         ):
             comptime id = Self.component_manager.get_id[T]()
 
-            if len(data) == 0:
-                return
-
-            if self._length <= (len(data) + offset):
-                self._length = len(data) + offset
+            if self._length < length:
+                self._length = length
 
             if self._columns[id] is None:
                 self._columns[id] = {
@@ -271,6 +316,37 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
                     0, len(old_buffer)
                 ).enqueue_copy_from(old_buffer)
                 self._columns[id] = {new_buffer^}
+
+    def copy_from_host[
+        mut: Bool, origin: Origin[mut=mut], //, T: ComponentType
+    ](mut self, data: Span[T, origin], *, offset: Int = 0) raises:
+        """Copies host data for ``T`` into the device column, growing it if needed.
+
+        Parameters:
+            mut: Whether the source span is mutable.
+            origin: The origin of the source span.
+            T: The component type of the column to copy into.
+
+        Args:
+            data: The host data to upload.
+            offset: The starting row at which to write the data.
+
+        Raises:
+            Error: If allocating or copying the device buffer fails.
+        """
+        with Zone(
+            function_name=(
+                "DeviceComponentStorage.copy_from_host[mut: Bool, origin:"
+                " Origin[mut=mut], //, T: ComponentType](data: Span[T,"
+                " origin], *, offset: Int)"
+            )
+        ):
+            comptime id = Self.component_manager.get_id[T]()
+
+            if len(data) == 0:
+                return
+
+            self.ensure_column[T](len(data) + offset)
 
             var sub_buffer = (
                 self._columns[id]

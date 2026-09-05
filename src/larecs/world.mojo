@@ -11,6 +11,7 @@ from max.gpu.host import DeviceContext
 from .component import (
     ComponentType,
 )
+from .debug_utils import debug_warn
 from .host_storage import HostStorage
 from .device_storage import DeviceComponentStorage
 from .resource import ResourceStorage
@@ -53,8 +54,25 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                 self._device_storage = Self.DeviceComponentStorage(
                     DeviceContext(), 0
                 )
-            except:
+            except e:
+                # No accelerator is a routine, expected condition (most
+                # hosts don't have one), so this constructor -- unlike
+                # `SystemContext.run(..., on_gpu=True)`, which does raise a
+                # clear error when it actually needs a device -- must not
+                # fail outright here just because a device context could
+                # not be created. But it must not stay silent either: the
+                # only sign of this failure from here on is
+                # `self._device_storage` being empty, and the first thing a
+                # caller who *did* expect a GPU sees is an unrelated-looking
+                # error much later, at the first `on_gpu=True` run. Surface
+                # the real cause now, in debug builds, at the point it
+                # actually occurred.
                 self._device_storage = None
+                debug_warn(
+                    t"World.__init__: GPU device storage did not initialize"
+                    t" ({String(e)}); on_gpu=True system runs will raise"
+                    t" until a working accelerator is available."
+                )
             self.resources = ResourceStorage()
 
     def __len__(self, out size: Int):

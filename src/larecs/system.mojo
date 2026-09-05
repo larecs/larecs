@@ -15,7 +15,7 @@ from max.gpu.host import DevicePointer
 from tracy import Zone
 
 from .world import World
-from .component import ComponentType
+from .component import ComponentType, constrain_gpu_safe_components
 from .filter import Filter
 from .iteration import EntityAccessorIterator
 from .unsafe_box import UnsafeBox
@@ -23,6 +23,7 @@ from .resource import (
     Resources,
     ResourceType,
     ResourceStorage,
+    constrain_gpu_safe_resources,
 )
 from .device_storage import DeviceResourceStorage
 
@@ -495,12 +496,60 @@ struct SystemContext[
                     ](
                         kernel_columns^,
                         resource_accessor.copy(),
-                        length=Int32(length),
+                        # Each archetype's columns are separate SoA
+                        # allocations, not offsets into one shared buffer
+                        # (unlike the GPU path below, which flattens every
+                        # matching archetype into one device column). The
+                        # kernel's row loop must therefore stop at this
+                        # archetype's own length, not the total across every
+                        # matching archetype -- using the total here made
+                        # every archetype but the largest walk past the end
+                        # of its columns.
+                        length=Int32(len(archetype)),
                         thread_count=1,
                     )
                     KernelFunc(kernel_context)
 
             else:
+                # `on_gpu=True` moves every accessed component and resource
+                # across the host/device boundary as raw bytes (see
+                # `DeviceComponentStorage`/`DeviceResourceStorage`): the
+                # destination is never constructed through `T`'s copy
+                # constructor, only `memcpy`'d into. A type with non-trivial
+                # state (an owned heap allocation, custom copy/destroy
+                # logic) would be silently corrupted or leaked by that copy,
+                # so reject it here at compile time rather than at the
+                # `DeviceBuffer` call sites below where the failure would be
+                # far less legible. Host execution (`on_gpu=False`) is
+                # unaffected -- it never takes this branch.
+                comptime assert constrain_gpu_safe_components[
+                    *filter._include.ComponentTypes
+                ](), (
+                    "SystemContext.run(..., on_gpu=True) requires every"
+                    " accessed component type to be GPU-safe (conform to"
+                    " GPUComponentType, i.e. TrivialRegisterPassable) for raw"
+                    " byte transfer between host and device."
+                )
+                comptime assert constrain_gpu_safe_resources[
+                    *required_resources.ResourceTypes
+                ](), (
+                    "SystemContext.run(..., on_gpu=True) requires every"
+                    " required resource type to be GPU-safe (conform to"
+                    " GPUResourceType, i.e. TrivialRegisterPassable) for raw"
+                    " byte transfer between host and device."
+                )
+
+                if not self.world[]._device_storage:
+                    raise Error(
+                        "SystemContext.run(..., on_gpu=True) requires a"
+                        " working GPU device context, but this world's"
+                        " device storage never initialized -- either no"
+                        " accelerator is available, or `DeviceContext()`"
+                        " construction failed when the world was created."
+                        " Run with on_gpu=False to execute on the CPU"
+                        " instead."
+                    )
+
                 # Reuse the world's device storage across calls instead of
                 # discarding it: `DeviceComponentStorage.copy_from_host`
                 # already grows each column lazily as needed, so replacing
@@ -532,20 +581,29 @@ struct SystemContext[
                 comptime for i in range(len(filter)):
                     comptime T = filter._include.ComponentTypes[i]
 
-                    # A filter can match multiple archetypes; each is a
-                    # separate homogeneous host range that must land at its
-                    # own offset in the flat device column, matching how the
-                    # download loop below reads them back. Uploading every
-                    # archetype at the default `offset=0` would overwrite
-                    # each archetype with the next, corrupting every column
-                    # but the last.
-                    var offset = 0
-                    for ref archetype in matching_archetypes.copy():
-                        device_storage.copy_from_host[T](
-                            archetype._storage.get_component_span[T](),
-                            offset=offset,
-                        )
-                        offset += len(archetype)
+                    comptime if filter.reads[T]():
+                        # A filter can match multiple archetypes; each is a
+                        # separate homogeneous host range that must land at
+                        # its own offset in the flat device column,
+                        # matching how the download loop below reads them
+                        # back. Uploading every archetype at the default
+                        # `offset=0` would overwrite each archetype with
+                        # the next, corrupting every column but the last.
+                        var offset = 0
+                        for ref archetype in matching_archetypes.copy():
+                            device_storage.copy_from_host[T](
+                                archetype._storage.get_component_span[T](),
+                                offset=offset,
+                            )
+                            offset += len(archetype)
+                    else:
+                        # `T` is write-only for this kernel: its prior
+                        # value is never read, so there is nothing to
+                        # upload. The column still needs to exist and be
+                        # sized for `length`, since the kernel writes
+                        # through it and the download loop below reads the
+                        # result back.
+                        device_storage.ensure_column[T](length)
 
                     kernel_columns[i] = device_storage.get_device_ptr[T]()
 
@@ -568,14 +626,18 @@ struct SystemContext[
                     comptime for i in range(len(filter)):
                         comptime T = filter._include.ComponentTypes[i]
 
-                        var offset = 0
-                        for ref archetype in matching_archetypes.copy():
-                            device_storage.copy_to_host[T](
-                                archetype._storage.get_component_ptr[T](),
-                                offset=offset,
-                                length=len(archetype),
-                            )
-                            offset += len(archetype)
+                        comptime if filter.writes[T]():
+                            var offset = 0
+                            for ref archetype in matching_archetypes.copy():
+                                device_storage.copy_to_host[T](
+                                    archetype._storage.get_component_ptr[T](),
+                                    offset=offset,
+                                    length=len(archetype),
+                                )
+                                offset += len(archetype)
+                        # `T` is read-only for this kernel: nothing on the
+                        # device could have changed it, so there is
+                        # nothing to download.
 
                     comptime for i in range(len(required_resources)):
                         comptime T = required_resources.ResourceTypes[i]
@@ -641,7 +703,6 @@ struct SystemContext[
                 " Bool](kernel_func: KernelFunc)"
             )
         ):
-            var length = 0
             comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
             comptime exclude_mask = filter.get_exclude_mask[*Self.WorldTs]()
             var matching_archetypes = (
@@ -650,8 +711,6 @@ struct SystemContext[
                     exclude_mask,
                 )
             )
-            for ref archetype in matching_archetypes.copy():
-                length += len(archetype)
 
             # `required_resources` is asserted empty above, so this is
             # always an empty accessor -- kept as a real (trivial) value
@@ -681,7 +740,11 @@ struct SystemContext[
                 var kernel_context = KernelContext[filter, required_resources](
                     kernel_columns^,
                     resource_accessor.copy(),
-                    length=Int32(length),
+                    # See the matching comment in the other `run` overload:
+                    # each archetype's columns are a separate allocation, so
+                    # the row loop must stop at this archetype's own length,
+                    # not the total across every matching archetype.
+                    length=Int32(len(archetype)),
                     thread_count=1,
                 )
                 kernel_func(kernel_context)

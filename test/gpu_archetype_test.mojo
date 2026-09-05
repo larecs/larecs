@@ -1,14 +1,9 @@
 # SKIP_ASAN
 # SKIP_DEBUG
 
-# The `-g` in `SKIP_DEBUG` above is load-bearing, not cosmetic: compiling a
-# `for entity in context` GPU kernel (`KernelContext`'s `EntityAccessorIterator`,
-# which lowers to `raise StopIteration()`-driven control flow) with debug info
-# reliably crashes Apple's AGX Metal compiler backend (`MTLCompilerService`
-# SIGABRTs inside `llvm::report_fatal_error`, surfacing here as
-# `XPC_ERROR_CONNECTION_INTERRUPTED`). The same kernel compiles and runs
-# correctly without `-g`. See "Known issues" in AGENTS.md for the full
-# writeup and reproduction notes.
+# Every GPU test file needs both markers above: a `for entity in context`
+# GPU kernel reliably crashes Apple's Metal compiler when compiled with
+# `-g`. See "Known issues" in AGENTS.md for the full writeup.
 
 from std.sys import has_accelerator
 from std.testing import *
@@ -16,18 +11,22 @@ from std.testing import *
 from larecs import World, SystemContext, KernelContext, Filter
 
 
+# `TrivialRegisterPassable` on every component below satisfies
+# `GPUComponentType` (see component.mojo): `SystemContext.run(...,
+# on_gpu=True)` moves component columns as raw bytes, which is only
+# compile-time-permitted for a type with no non-trivial state.
 @fieldwise_init
-struct Position(Copyable):
+struct Position(Copyable, TrivialRegisterPassable):
     var x: Float32
 
 
 @fieldwise_init
-struct Velocity(Copyable):
+struct Velocity(Copyable, TrivialRegisterPassable):
     var dx: Float32
 
 
 @fieldwise_init
-struct Tag(Copyable):
+struct Tag(Copyable, TrivialRegisterPassable):
     var t: Int32
 
 
@@ -74,6 +73,41 @@ def test_gpu_run_covers_every_matching_archetype() raises:
     assert_equal(world.storage.get[Position](c).x, 101.0)
     assert_equal(world.storage.get[Position](d).x, 201.0)
     assert_equal(world.storage.get[Position](e).x, 1000.0)
+
+
+def test_gpu_run_raises_a_clear_error_without_device_storage() raises:
+    """`on_gpu=True` raises a legible error when the world has no working
+    device storage, instead of an opaque `EmptyOptionalError`.
+
+    `World.__init__` already falls back to an empty `_device_storage` when
+    `DeviceContext()` fails (e.g. no accelerator, or a driver-level
+    failure despite `has_accelerator()` being true at compile time). Before
+    this fix, `SystemContext.run(..., on_gpu=True)` unwrapped that
+    `Optional` directly with `[]`, which raises `EmptyOptionalError`, an
+    error type that names neither the world, the requested run, nor what
+    to do about it. This test forces that fallback path directly (rather
+    than relying on a specific `DeviceContext()` failure) by clearing an
+    otherwise-working world's device storage, since this machine having an
+    accelerator is exactly what makes `on_gpu=True` reach this branch at
+    all -- see the `has_accelerator()` guard below.
+    """
+    comptime if not has_accelerator():
+        return
+
+    var world = World[Position, Velocity, Tag]()
+    _ = world.storage.add_entity(Position(0.0), Velocity(1.0))
+    world._device_storage = None
+
+    var context = SystemContext(world)
+
+    var raised = False
+    try:
+        context.run[bump, on_gpu=True]()
+    except e:
+        raised = True
+        assert_true("device" in String(e))
+
+    assert_true(raised)
 
 
 comptime functions = __functions_in_module()

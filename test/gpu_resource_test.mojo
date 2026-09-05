@@ -1,14 +1,9 @@
 # SKIP_ASAN
 # SKIP_DEBUG
 
-# The `-g` in `SKIP_DEBUG` above is load-bearing, not cosmetic: compiling a
-# `for entity in context` GPU kernel (`KernelContext`'s `EntityAccessorIterator`,
-# which lowers to `raise StopIteration()`-driven control flow) with debug info
-# reliably crashes Apple's AGX Metal compiler backend (`MTLCompilerService`
-# SIGABRTs inside `llvm::report_fatal_error`, surfacing here as
-# `XPC_ERROR_CONNECTION_INTERRUPTED`). The same kernel compiles and runs
-# correctly without `-g`. See "Known issues" in AGENTS.md for the full
-# writeup and reproduction notes.
+# Every GPU test file needs both markers above: a `for entity in context`
+# GPU kernel reliably crashes Apple's Metal compiler when compiled with
+# `-g`. See "Known issues" in AGENTS.md for the full writeup.
 
 from std.sys import has_accelerator
 from std.testing import *
@@ -23,8 +18,13 @@ from larecs import (
 )
 
 
+# `TrivialRegisterPassable` satisfies `GPUResourceType` (see
+# resource.mojo): `SystemContext.run(..., on_gpu=True)` moves required
+# resources as raw bytes, which is only compile-time-permitted for a type
+# with no non-trivial state. `Int32`, this file's component type, is
+# already `TrivialRegisterPassable` as a builtin scalar.
 @fieldwise_init
-struct Scale(ResourceType):
+struct Scale(ResourceType, TrivialRegisterPassable):
     var value: Int32
 
 

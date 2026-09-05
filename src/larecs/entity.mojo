@@ -212,19 +212,44 @@ struct EntityAccessor[filter: Filter](Copyable):
     ]
     """The base pointers to the component columns in the component table."""
 
-    def get[T: ComponentType](self) -> ref[MutUntrackedOrigin] T:
+    def get[
+        T: ComponentType
+    ](self) -> ref[
+        UntrackedOrigin[mut=Self.filter._written.ComponentTypes.contains[T]()]
+    ] T:
         """Loads an included component value for this entity.
+
+        Returns a mutable reference when the kernel's filter marked ``T``
+        writable (via `Filter.include` or `Filter.write`), and an
+        immutable reference when the filter marked ``T`` read-only (via
+        `Filter.read`). This is enforced by the compiler, not just
+        documented: the returned reference's own type differs between the
+        two cases, so writing through a read-only `get` is a compile
+        error rather than a runtime one.
 
         Parameters:
             T: The component type to load.
 
         Returns:
             A reference to the component value for this entity.
+
+        Constraints:
+            ``T`` must be included by the kernel's filter and marked
+            readable (via `Filter.read` or `Filter.include`). A
+            write-only component's previous value is never uploaded to
+            the kernel, so reading it would read uninitialized or stale
+            device memory; use `set` to write it instead.
         """
         comptime comp_idx = Self.filter.includes[T]()
         comptime assert (
             comp_idx != -1
         ), "Component type is not included by the kernel filter"
+        comptime assert Self.filter.reads[T](), (
+            "Component type is declared write-only by the kernel filter"
+            " (via Filter.write) -- its previous value is never uploaded"
+            " to the kernel. Use set[T]() to write it, or Filter.read /"
+            " Filter.include to make it readable."
+        )
         return self._component_table_base[comp_idx].unsafe_bitcast[T]()[
             unsafe_offset=self.idx
         ]
@@ -237,11 +262,20 @@ struct EntityAccessor[filter: Filter](Copyable):
 
         Args:
             component: The component value to store.
+
+        Constraints:
+            ``T`` must be included by the kernel's filter and marked
+            writable (via `Filter.write` or `Filter.include`).
         """
         comptime comp_idx = Self.filter.includes[T]()
         comptime assert (
             comp_idx != -1
         ), "Component type is not included by the kernel filter"
+        comptime assert Self.filter.writes[T](), (
+            "Component type is declared read-only by the kernel filter"
+            " (via Filter.read) -- it cannot be written. Use Filter.write"
+            " or Filter.include to make it writable."
+        )
         self._component_table_base[comp_idx].unsafe_bitcast[T]()[
             unsafe_offset=self.idx
         ] = (component^)

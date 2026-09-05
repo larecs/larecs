@@ -87,7 +87,7 @@ comptime BYTES_PER_ENTITY = 32
 """Bytes of component traffic per entity per launch: 16 read, 16 written."""
 
 
-def integrate_orbit[steps: Int, filter: Filter](context: KernelContext[filter]):
+def integrate_orbit[steps: Int](context: KernelContext[FILTER]):
     """Advances every matching entity along a central-force orbit.
 
     The body of the step loop is deliberately free of memory traffic: the
@@ -95,9 +95,14 @@ def integrate_orbit[steps: Int, filter: Filter](context: KernelContext[filter]):
     stored once. Raising `steps` therefore raises arithmetic intensity
     without changing the bytes moved.
 
+    Bound directly to `FILTER` rather than taking a free `filter: Filter`
+    type parameter: `Position` and `Velocity` must both be provably
+    writable at this function's own elaboration, which an unbound
+    `filter: Filter` parameter cannot prove for any specific component --
+    see `read`/`write` on `Filter`.
+
     Parameters:
         steps: The number of integration steps to perform per entity.
-        filter: The comptime filter describing the accessed components.
 
     Args:
         context: The CPU or GPU execution context for the filtered rows.
@@ -173,7 +178,7 @@ def _run_once[steps: Int, on_gpu: Bool](mut world: WorldType) raises:
     var context = ContextType(
         Pointer(to=world).unsafe_origin_cast[MutUntrackedOrigin]()[]
     )
-    context.run[integrate_orbit[steps, FILTER], on_gpu=on_gpu]()
+    context.run[integrate_orbit[steps], on_gpu=on_gpu]()
 
 
 def _benchmark[steps: Int, on_gpu: Bool](mut bencher: Bencher):

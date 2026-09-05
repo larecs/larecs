@@ -17,6 +17,41 @@ from .unsafe_box import UnsafeBox
 comptime ResourceType = Copyable & Deinitable
 """The trait that resources must conform to."""
 
+comptime GPUResourceType = TrivialRegisterPassable
+"""Trait subset of [.ResourceType] safe for GPU raw-byte transfer.
+
+Mirrors [..component.GPUComponentType]: a kernel run with `on_gpu=True`
+uploads and downloads required resources via
+[..device_storage.DeviceResourceStorage], a plain byte copy to and from a
+device buffer, which is only sound for a type with no non-trivial state.
+`TrivialRegisterPassable` encodes that constraint; see
+[..component.GPUComponentType]'s docstring for the full rationale.
+
+It also already implies `Copyable & Deinitable` (i.e. [.ResourceType]), so
+it alone is the constraint -- composing it with `ResourceType` would be
+redundant.
+"""
+
+
+def constrain_gpu_safe_resources[*Ts: ResourceType]() -> Bool:
+    """Checks whether all resource types are safe for GPU raw-byte transfer.
+
+    Parameters:
+        Ts: The resource types to check.
+
+    Returns:
+        True when every type in ``Ts`` conforms to [.GPUResourceType].
+    """
+    with Zone(
+        function_name=(
+            "resource.constrain_gpu_safe_resources[*Ts: ResourceType]()"
+        )
+    ):
+        comptime for i in range(len(Ts)):
+            comptime if not conforms_to(Ts[i], GPUResourceType):
+                return False
+        return True
+
 
 @fieldwise_init
 struct Resources[*ResourceTypes: ResourceType](Sized):
