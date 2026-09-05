@@ -99,12 +99,14 @@ struct EntityPool(Copyable, Movable, Sized):
 
         Returns:
             True if `entity`'s generation matches the pool's current generation for its ID.
+            False if `entity`'s ID is out of the range ever handed out by this pool,
+            e.g. because it stems from a different pool or was never a valid entity.
         """
         with Zone(function_name="EntityPool.is_alive(entity: Entity)"):
-            return (
-                entity._generation
-                == self._entities[entity.get_id()]._generation
-            )
+            var id = entity.get_id()
+            if id < 0 or id >= len(self._entities):
+                return False
+            return entity._generation == self._entities[id]._generation
 
     @always_inline
     def __len__(self) -> Int:

@@ -53,6 +53,8 @@ struct WorldError(Equatable, ImplicitlyCopyable, Writable):
     """Error raised when the world is locked."""
     comptime out_of_locks = WorldError(variant=2)
     """Error raised when the world cannot allocate another lock."""
+    comptime negative_count = WorldError(variant=3)
+    """Error raised when a negative entity count is passed to a batch operation."""
 
     @always_inline
     def __init__(out self, variant: Int = 0):
@@ -62,7 +64,7 @@ struct WorldError(Equatable, ImplicitlyCopyable, Writable):
             variant: The numeric discriminator for the error variant.
         """
         with Zone(function_name="WorldError.__init__(variant: Int)"):
-            assert variant < 3, "Invalid variant for WorldError"
+            assert variant < 4, "Invalid variant for WorldError"
             self._variant = variant
 
     @always_inline
@@ -73,13 +75,14 @@ struct WorldError(Equatable, ImplicitlyCopyable, Writable):
             The human-readable message for the variant.
         """
         with Zone(function_name="WorldError.msg()"):
-            comptime WORLD_ERROR_VARIANT_MESSAGES: Array[StaticString, 3] = [
+            comptime WORLD_ERROR_VARIANT_MESSAGES: Array[StaticString, 4] = [
                 "Unknown error.",
                 "Attempt to modify a locked world.",
                 (
                     "The world cannot allocate another lock. This is likely"
                     " due to having too many queries open."
                 ),
+                "The requested entity count must be non-negative.",
             ]
 
             ref global_variant_messages = global_constant[

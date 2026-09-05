@@ -205,6 +205,8 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         mut data: Self.Data, length: Int, remove_idx: Int
     ) thin
     """Callback that removes and destroys one value from a column."""
+    var _clear_values: def(mut data: Self.Data, length: Int) thin
+    """Callback that destroys initialized values without freeing the allocation."""
 
     @staticmethod
     def _empty_destroy(
@@ -257,6 +259,17 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         ):
             pass
 
+    @staticmethod
+    def _empty_clear_values(mut data: Self.Data, length: Int):
+        """Does nothing because an untyped empty column has no values."""
+        with Zone(
+            function_name=(
+                "_ComponentColumn._empty_clear_values(mut data: Self.Data,"
+                " length: Int)"
+            )
+        ):
+            pass
+
     def __init__(out self):
         """
         Initializes an empty _ComponentColumn.
@@ -267,6 +280,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             self._copy = Self._empty_copy
             self._resize = Self._empty_resize
             self._swap_remove = Self._empty_swap_remove
+            self._clear_values = Self._empty_clear_values
 
     @staticmethod
     def _destroy_t[
@@ -408,6 +422,31 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
                 )
 
     @staticmethod
+    def _clear_values_t[
+        T: ComponentType
+    ](mut data: Self.Data, length: Int):
+        """Destroys all initialized values of type `T` without freeing the allocation.
+
+        Parameters:
+            T: The component type stored by this column.
+
+        Args:
+            data: The column allocation, if present.
+            length: The number of initialized values.
+        """
+        with Zone(
+            function_name=(
+                "_ComponentColumn._clear_values_t[T: ComponentType](mut"
+                " data: Self.Data, length: Int)"
+            )
+        ):
+            if data:
+                unsafe_destroy_n(
+                    data.value().unsafe_ptr().unsafe_bitcast[T](),
+                    count=length,
+                )
+
+    @staticmethod
     def create[
         T: ComponentType
     ](out column: Self, *, preallocate: Bool, capacity: Int):
@@ -431,6 +470,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             column._copy = Self._copy_t[T]
             column._resize = Self._resize_t[T]
             column._swap_remove = Self._swap_remove_t[T]
+            column._clear_values = Self._clear_values_t[T]
             var empty: Self.Data = None
             if preallocate:
                 column._data^.deinit_assert_empty()
@@ -445,6 +485,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             self._copy = copy._copy
             self._resize = copy._resize
             self._swap_remove = copy._swap_remove
+            self._clear_values = copy._clear_values
 
     def __deinit__(deinit self):
         """Asserts that the column allocation was explicitly destroyed."""
@@ -501,6 +542,17 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             )
         ):
             self._swap_remove(self._data, length, remove_idx)
+
+    def clear_values(mut self, length: Int):
+        """Destroys all initialized values, retaining the allocation.
+
+        Args:
+            length: The number of initialized values to destroy.
+        """
+        with Zone(
+            function_name="_ComponentColumn.clear_values(length: Int)"
+        ):
+            self._clear_values(self._data, length)
 
     def destroy(mut self, length: Int, capacity: Int):
         """Destroys initialized values and releases the column allocation.
@@ -681,9 +733,14 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
     def clear(mut self):
         """Removes all entities from the storage (resets length to 0).
 
-        Note: does not free any memory.
+        Destroys all currently initialized values of active components.
+        Does not free any memory: the allocation is retained for reuse.
         """
         with Zone(function_name="_ComponentTable.clear()"):
+            comptime for id in range(len(Self.ComponentTypes)):
+                if self._active_component_mask.get(id):
+                    self._columns[id].clear_values(self._length)
+
             self._length = 0
 
     @always_inline
@@ -711,8 +768,18 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             var old_capacity = self._capacity
 
             if old_capacity > 0 or self._length == 0:
-                for ref column in self._columns:
-                    column.resize(self._length, old_capacity, new_pow2_capacity)
+                # Only resize columns for active components. `_resize_t`
+                # unconditionally allocates a buffer for a `None` input (it
+                # is also used to perform a column's very first allocation),
+                # so calling it on an inactive column would wrongly turn its
+                # `_data` from `None` into `Some(uninitialized allocation)`,
+                # making the column look initialized to code that branches
+                # on `column._data`.
+                comptime for id in range(len(Self.ComponentTypes)):
+                    if self._active_component_mask.get(id):
+                        self._columns[id].resize(
+                            self._length, old_capacity, new_pow2_capacity
+                        )
 
             self._capacity = new_pow2_capacity
 
@@ -1137,7 +1204,12 @@ struct Archetype[
             debug_assert(
                 0 <= capacity, "Capacity must be greater or equal to zero."
             )
-            _assert_index_in_bounds(node_index, Self.max_size)
+            # `node_index` identifies this archetype's node in the (unbounded)
+            # archetype graph, so it grows with the number of distinct
+            # archetypes -- it is not bounded by `Self.max_size` (the maximum
+            # number of *components*, i.e. `BitMask.total_bits`). Bounding it
+            # by `max_size` would wrongly reject the 257th distinct archetype.
+            debug_assert(0 <= node_index, "node_index must be non-negative.")
 
             self._mask = mask
 
@@ -1373,7 +1445,13 @@ struct Archetype[
     def set_component_range[
         T: ComponentType
     ](mut self, start_entity_idx: Int, count: Int, value: T) raises LarecsError:
-        """Fills the component with the given Type T for multiple consecutive entities starting with the given index.
+        """Overwrites the component with the given Type T for multiple consecutive, already-initialized entities starting with the given index.
+
+        Caution: This destroys the existing value at each target row before
+        writing the new one, so every row in `[start_entity_idx, start_entity_idx
+        + count)` must already hold a valid, initialized `T` value. Use
+        [.Archetype.init_component_range] instead for rows that were just
+        appended or migrated and have not been initialized for `T` yet.
 
         Parameters:
             T: The type of the component. Constraints: Must be contained in the component manager.
@@ -1404,6 +1482,49 @@ struct Archetype[
                 unsafe_ptr=comp_ptr.unsafe_offset(start_entity_idx),
                 length=count,
             ).fill(value)
+
+    @always_inline
+    def init_component_range[
+        T: ComponentType
+    ](mut self, start_entity_idx: Int, count: Int, value: T) raises LarecsError:
+        """Initializes the component with the given Type T for multiple consecutive, uninitialized entities starting with the given index.
+
+        Unlike [.Archetype.set_component_range], this does not destroy any
+        prior value at the target rows: it places a fresh copy of `value`
+        directly into each row. Use this for rows that were just appended
+        (e.g. via [.Archetype.extend]) or migrated (e.g. via
+        [.Archetype.extend_from_archetype_unsafe]) and therefore hold
+        uninitialized memory for `T`.
+
+        Parameters:
+            T: The type of the component. Constraints: Must be contained in the component manager.
+
+        Args:
+            start_entity_idx: The index of the first uninitialized entity row.
+            count: The number of elements to initialize.
+            value: The value to fill the component with.
+
+        Raises:
+            LarecsError: If the component is not present.
+        """
+        with Zone(
+            function_name=(
+                "Archetype.init_component_range[T:"
+                " ComponentType](start_entity_idx: Int, count: Int, value: T)"
+            )
+        ):
+            _assert_range_in_bounds(
+                start_entity_idx, count, self._storage._length
+            )
+
+            if count == 0:
+                return
+
+            var comp_ptr = self._storage.get_component_ptr[T]()
+            for i in range(count):
+                comp_ptr.unsafe_offset(start_entity_idx + i).unsafe_write(
+                    value.copy()
+                )
 
     @always_inline
     def copy_component_from[
