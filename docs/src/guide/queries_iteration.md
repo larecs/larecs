@@ -57,14 +57,23 @@ def main() raises:
     # two have a position component
     print(len(query)) # "2"
 
+    # Query iterators are copyable. A copy starts at the same position and
+    # acquires its own structural-change lock.
+    var query_copy = query.copy()
+
     # Now let us iterate over the queried entities
-    # (`^` transfers the iterator into the loop -- it isn't copyable)
+    # (`^` transfers this iterator into the loop without copying it).
     for entity in query^:
         ref pos = entity.get[Position]()
         print(
             "Entity at position: ("
             + String(pos.x) + ", " + String(pos.y) + ")"
         )
+
+    # The copy has an independent cursor and lock, so it can be consumed
+    # separately and remains valid after the original iterator is destroyed.
+    for _ in query_copy^:
+        pass
 ```
 
 The filter can also exclude entities that have
@@ -157,10 +166,20 @@ lock—there is no separate accessor to unwrap. The lock stays held for the
 wrapper's lifetime, including between calls to `next`, `len`, and `bool`, and
 is released on destruction—even when a loop exits early. Moving the wrapper
 transfers the existing lock; exhausting the iterator does not unlock it while
-the wrapper remains alive. This is not a thread mutex; it only prevents
-structural changes. Component values reached through this iterator are
-themselves read-only -- mutate components from inside a system instead, via
-{{< api SystemContext.run >}} (see [Systems and the scheduler](../systems_scheduler)).
+the wrapper remains alive.
+
+Locked iterators are copyable. Calling `copy()` preserves the iterator's
+current traversal position and acquires a distinct structural-change lock for
+the copy. Each iterator releases only its own lock, so destroying or consuming
+one copy does not unlock the storage while another copy remains alive. Because
+Mojo's `Copyable` interface cannot return an error, copying aborts if the
+storage's lock capacity is exhausted. Moving an iterator with `^` remains the
+way to transfer it without acquiring another lock.
+
+These locks are not thread mutexes; they only prevent structural changes.
+Component values reached through this iterator are themselves read-only --
+mutate components from inside a system instead, via {{< api SystemContext.run >}}
+(see [Systems and the scheduler](../systems_scheduler)).
 
 ```mojo {doctest="guide_queries_iteration" global=true}
     for entity in world.storage.query[Filter().include[Position]()]():

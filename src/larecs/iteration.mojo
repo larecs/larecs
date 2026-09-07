@@ -269,7 +269,7 @@ struct _ArchetypeEntityIterator[
     //,
     archetype_origin: Origin[mut=archetype_mutability],
     *ComponentTypes: ComponentType,
-](Boolable, Movable, Sized):
+](Boolable, Copyable, Movable, Sized):
     """
     Iterator over all entities of an archetype.
 
@@ -309,6 +309,17 @@ struct _ArchetypeEntityIterator[
         ):
             self.archetype = Pointer(to=archetype)
             self._index = _index
+
+    @doc_hidden
+    @always_inline
+    def __init__(out self, *, copy: Self):
+        """Copies the archetype traversal position.
+
+        Args:
+            copy: The archetype entity iterator to copy.
+        """
+        self.archetype = copy.archetype
+        self._index = copy._index
 
     def _has_next(self) -> Bool:
         """
@@ -370,13 +381,15 @@ struct LockedWorldEntityIterator[
     lock_origin: MutOrigin,
     *ComponentTypes: ComponentType,
     has_start_indices: Bool = False,
-](Boolable, Movable, Sized):
+](Boolable, Copyable, Movable, Sized):
     """Owns an entity iterator and a structural-change lock for its lifetime.
 
     Acquires the lock before initializing traversal and releases it on
     destruction, including early loop exits. Moving the wrapper transfers
-    ownership of the lock without acquiring another one. Exhaustion does not
-    release the lock while the wrapper is still alive.
+    ownership of the lock without acquiring another one. Copying preserves
+    the traversal position and acquires a distinct lock; it aborts if no lock
+    is available. Exhaustion does not release the lock while the wrapper is
+    still alive.
 
     This is not a thread-synchronization mutex. The lock prevents structural
     changes to the world, not component reads or writes. The underlying
@@ -459,6 +472,20 @@ struct LockedWorldEntityIterator[
             archetypes, filter^, start_indices^
         )
 
+    @doc_hidden
+    @always_inline
+    def __init__(out self, *, copy: Self):
+        """Copies the traversal position and acquires a distinct lock.
+
+        Args:
+            copy: The locked iterator to copy.
+
+        Notes:
+            Aborts if a distinct lock cannot be acquired.
+        """
+        self._iterator = copy._iterator.copy()
+        self._guard = copy._guard.copy()
+
     def __deinit__(deinit self):
         """Destroys the wrapped iterator before releasing the lock that protects it.
         """
@@ -524,7 +551,7 @@ struct _WorldEntityIterator[
     archetype_list_origin: Origin[mut=archetype_list_mutability],
     *ComponentTypes: ComponentType,
     has_start_indices: Bool = False,
-](Boolable, Movable, Sized):
+](Boolable, Copyable, Movable, Sized):
     """Iterator over all entities of a world corresponding to a mask.
 
     Does not acquire a lock. Internal callers must prevent structural changes
@@ -617,6 +644,19 @@ struct _WorldEntityIterator[
             start_indices: Starting row indices in archetype iteration order.
         """
         self = Self(Self.ArchetypeIterator(archetypes, filter^), start_indices^)
+
+    @doc_hidden
+    @always_inline
+    def __init__(out self, *, copy: Self):
+        """Copies the current world traversal position.
+
+        Args:
+            copy: The world entity iterator to copy.
+        """
+        self._start_indices = copy._start_indices.copy()
+        self._current_archetype_index = copy._current_archetype_index
+        self._archetype_iterator = copy._archetype_iterator.copy()
+        self._entity_iterator = copy._entity_iterator.copy()
 
     @always_inline
     def __iter__(var self, out iterator: Self):
