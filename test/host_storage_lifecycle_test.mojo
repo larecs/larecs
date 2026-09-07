@@ -55,6 +55,14 @@ struct LifecycleCounters(Movable):
         """Returns the current delete counter value."""
         return self._del_counter.unsafe_ptr()[]
 
+    def copy_counter(ref self) -> Int:
+        """Returns the current copy counter value."""
+        return self._copy_counter.unsafe_ptr()[]
+
+    def move_counter(ref self) -> Int:
+        """Returns the current move counter value."""
+        return self._move_counter.unsafe_ptr()[]
+
     def component(ref self) -> TrackedComponent:
         """Creates a tracked component connected to these counters.
 
@@ -242,7 +250,7 @@ def test_host_storage_add_migration_non_trivial_component() raises:
 
     Regression test: `_batch_remove_and_add` used to fill the newly added
     component's rows via `set_component_range` (assignment) after migrating
-    entities to a new archetype via `extend_from_archetype_unsafe`, which
+    entities to a new archetype via `unsafe_move_all_from_archetype`, which
     never initializes the newly added component's column for the migrated
     rows -- so the assignment destroyed uninitialized memory.
     """
@@ -250,42 +258,94 @@ def test_host_storage_add_migration_non_trivial_component() raises:
     var counters = LifecycleCounters()
     var storage = HS()
 
-    # Give every entity a `LargerComponent` first, so adding
-    # `TrackedComponent` below must migrate them to a new archetype.
+    # Give every entity a `TrackedComponent` first, so adding
+    # `LargerComponent` below must migrate the tracked values.
     # Entities are created one at a time (rather than via `add_entities`)
     # so this setup does not depend on iterator-lock release timing, which
     # is unrelated to what this test targets.
     var created = 0
     for _ in range(4):
-        _ = storage.add_entity(LargerComponent(0, 0, 0))
+        _ = storage.add_entity(counters.component())
         created += 1
     assert_equal(created, 4)
 
-    comptime larger_id = HS.component_manager.get_id[LargerComponent]()
+    comptime tracked_id = HS.component_manager.get_id[TrackedComponent]()
+    var base_copies = counters.copy_counter()
+    var base_moves = counters.move_counter()
     var base_dels = counters.del_counter()
 
-    # `add` takes its components by ownership (unlike `add_entities`, which
-    # borrows and copies its prototype into every row): the value passed
-    # here is moved through two layers of internal forwarding (`add` to
-    # `_batch_remove_and_add`) before every migrated row's value is copied
-    # from it, which accounts for two extra destructor calls beyond the one
-    # stored per migrated row.
     var migrated = 0
-    for _ in storage.add[TrackedComponent](
-        BitMaskFilter(BitMask(larger_id)), counters.component()
+    for _ in storage.add[LargerComponent](
+        BitMaskFilter(BitMask(tracked_id)), LargerComponent(0, 0, 0)
     ):
         migrated += 1
     assert_equal(migrated, 4)
 
+    # Existing components are transferred between archetypes, never copied.
+    assert_equal(counters.copy_counter() - base_copies, 0)
+    assert_equal(counters.move_counter() - base_moves, migrated)
+
     _ = storage^
-    # Every migrated row's value, plus the internal forwarding copies `add`
-    # consumed, must be destroyed exactly once -- no more, no less. A
-    # spurious extra destructor call here would mean a migrated row's
-    # memory was assigned into instead of initialized.
-    assert_equal(counters.del_counter() - base_dels, migrated + 2)
+    # Every migrated tracked value must be destroyed exactly once -- no more,
+    # no less. In particular, moved-out source rows must not be destroyed.
+    assert_equal(counters.del_counter() - base_dels, migrated)
     # Keep `counters` live until after `storage` is destroyed: its
     # components hold unsafe pointers to these counter allocations.
     _ = counters.del_counter()
+
+
+def test_host_storage_add_single_moves_non_trivial_component() raises:
+    """Verify single-entity migration moves retained component values.
+
+    Regression test: `_remove_and_add` used to assign or copy a retained
+    non-trivial component into a freshly appended destination row. Assignment
+    destroyed uninitialized memory, while copying needlessly duplicated
+    ownership. The retained value must instead be move-initialized, and its
+    moved-out source slot must not be destroyed.
+    """
+    var counters = LifecycleCounters()
+    var storage = HostStorage[TrackedComponent, LargerComponent]()
+    var entity = storage.add_entity(counters.component())
+
+    var base_copies = counters.copy_counter()
+    var base_moves = counters.move_counter()
+    var base_dels = counters.del_counter()
+
+    storage.add(entity, LargerComponent(1, 2, 3))
+
+    assert_equal(counters.copy_counter() - base_copies, 0)
+    assert_equal(counters.move_counter() - base_moves, 1)
+    assert_equal(counters.del_counter() - base_dels, 0)
+
+    _ = storage^
+    assert_equal(counters.del_counter() - base_dels, 1)
+    # Keep `counters` alive until after the stored component is destroyed.
+    _ = counters.del_counter()
+
+
+def test_host_storage_replace_same_non_trivial_component_in_place() raises:
+    """Verify remove-and-add of one type replaces its initialized row safely.
+
+    When the removed and added component sets are identical, the source and
+    destination archetypes are the same. Migration must not append a row and
+    attempt an overlapping move; it must assign the replacement in place.
+    """
+    var old_counters = LifecycleCounters()
+    var new_counters = LifecycleCounters()
+    var storage = HostStorage[TrackedComponent]()
+    var entity = storage.add_entity(old_counters.component())
+    var old_base_dels = old_counters.del_counter()
+
+    storage.replace[TrackedComponent]().by(
+        new_counters.component(), entity=entity
+    )
+
+    assert_equal(old_counters.del_counter() - old_base_dels, 1)
+    _ = storage^
+    # Teardown owns only the replacement, not the already-destroyed old value.
+    assert_equal(old_counters.del_counter() - old_base_dels, 1)
+    _ = new_counters.del_counter()
+    _ = old_counters.del_counter()
 
 
 def test_host_storage_remove_entities_non_trivial_component() raises:

@@ -822,6 +822,58 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             return need_swap
 
     @always_inline
+    def unsafe_swap_remove_entity_after_moving_shared_components(
+        mut self, remove_idx: Int, destination_mask: BitMask
+    ) -> Bool:
+        """Removes a row after its shared components were moved elsewhere.
+
+        Shared component values at `remove_idx` are already uninitialized and
+        therefore must not be destroyed. Components absent from the destination
+        are still initialized and are removed normally.
+
+        Args:
+            remove_idx: The index of the row whose shared values were moved.
+            destination_mask: The component mask of the move destination.
+
+        Returns:
+            Whether the final row was moved into `remove_idx`.
+
+        Constraints:
+            Every component active in both this table and `destination_mask`
+            must already have been moved out of `remove_idx`.
+        """
+        with Zone(
+            function_name=(
+                "_ComponentTable.unsafe_swap_remove_entity_after_moving_shared_components(remove_idx:"
+                " Int, destination_mask: BitMask)"
+            )
+        ):
+            _assert_index_in_bounds(remove_idx, self._length)
+
+            self._length -= 1
+            var need_swap = remove_idx != self._length
+
+            comptime for id in range(len(Self.ComponentTypes)):
+                if not self._active_component_mask.get(id):
+                    continue
+
+                if destination_mask.get(id):
+                    if need_swap:
+                        comptime T = Self.ComponentTypes[id]
+                        var ptr = self._columns[id].get_ptr[T]()
+                        unsafe_uninit_move_n[overlapping=False](
+                            dest=ptr.unsafe_offset(
+                                remove_idx
+                            ).as_unsafe_any_origin(),
+                            src=ptr.unsafe_offset(self._length),
+                            count=1,
+                        )
+                else:
+                    self._columns[id].swap_remove(self._length + 1, remove_idx)
+
+            return need_swap
+
+    @always_inline
     def get_component_ptr[
         T: ComponentType,
     ](ref self) raises LarecsError -> Pointer[
@@ -1021,6 +1073,65 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             (components^).consume_elements[init_component]()
 
     @always_inline
+    def unsafe_move_shared_components_from[
+        source_origin: MutOrigin,
+    ](
+        mut self,
+        to_idx: Int,
+        source: Pointer[Self, source_origin],
+        count: Int,
+        from_idx: Int = 0,
+    ):
+        """Move-initializes shared component columns from another table.
+
+        Parameters:
+            source_origin: The mutable origin of the source table.
+
+        Args:
+            to_idx: The first uninitialized destination row.
+            source: The distinct source table.
+            count: The number of rows to move.
+            from_idx: The first initialized source row.
+
+        Constraints:
+            Source and destination must be distinct. Destination rows must be
+            uninitialized, and callers must subsequently remove the moved-out
+            source rows without destroying their shared component values.
+        """
+        with Zone(
+            function_name=(
+                "_ComponentTable.unsafe_move_shared_components_from(to_idx:"
+                " Int, source: Pointer, count: Int, from_idx: Int)"
+            )
+        ):
+            debug_assert(0 <= count, "Count must be non-negative.")
+            _assert_range_in_bounds(to_idx, count, self._length)
+            _assert_range_in_bounds(from_idx, count, source[]._length)
+
+            if count == 0:
+                return
+
+            comptime for id in range(len(Self.ComponentTypes)):
+                comptime T = Self.ComponentTypes[id]
+                if self.has_components[T]() and source[].has_components[T]():
+                    try:
+                        unsafe_uninit_move_n[overlapping=False](
+                            dest=self.get_component_ptr[T]()
+                            .unsafe_offset(to_idx)
+                            .unsafe_origin_cast[MutUnsafeAnyOrigin](),
+                            src=source[]
+                            .get_component_ptr[T]()
+                            .unsafe_offset(from_idx)
+                            .unsafe_origin_cast[MutUnsafeAnyOrigin](),
+                            count=count,
+                        )
+                    except:
+                        assert_unreachable(
+                            "Not reachable as component presence was checked"
+                            " before."
+                        )
+
+    @always_inline
     def copy_component_from[
         T: ComponentType
     ](
@@ -1068,7 +1179,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             )
 
     @always_inline
-    def copy_shared_components_from_unsafe[
+    def unsafe_copy_shared_components_from[
         source_origin: Origin,
     ](
         mut self,
@@ -1095,7 +1206,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         """
         with Zone(
             function_name=(
-                "_ComponentTable.copy_shared_components_from_unsafe(to_idx:"
+                "_ComponentTable.unsafe_copy_shared_components_from(to_idx:"
                 " Int, source: Pointer, count: Int, from_idx: Int)"
             )
         ):
@@ -1489,7 +1600,7 @@ struct Archetype[
         prior value at the target rows: it places a fresh copy of `value`
         directly into each row. Use this for rows that were just appended
         (e.g. via [.Archetype.extend]) or migrated (e.g. via
-        [.Archetype.extend_from_archetype_unsafe]) and therefore hold
+        [.Archetype.unsafe_move_all_from_archetype]) and therefore hold
         uninitialized memory for `T`.
 
         Parameters:
@@ -1624,6 +1735,41 @@ struct Archetype[
             return swapped
 
     @always_inline
+    def unsafe_remove_after_moving_shared_components(
+        mut self, idx: Int, destination_mask: BitMask
+    ) -> Bool:
+        """Removes an entity after moving its retained components.
+
+        Args:
+            idx: The entity row whose shared components were moved out.
+            destination_mask: The component mask of the move destination.
+
+        Returns:
+            Whether the final entity row was moved into `idx`.
+
+        Constraints:
+            Every component shared with `destination_mask` must already have
+            been moved out of row `idx`.
+        """
+        with Zone(
+            function_name=(
+                "Archetype.unsafe_remove_after_moving_shared_components(idx:"
+                " Int, destination_mask: BitMask)"
+            )
+        ):
+            var swapped = self._storage.unsafe_swap_remove_entity_after_moving_shared_components(
+                idx, destination_mask
+            )
+
+            if swapped:
+                ref entity = self._entities.pop()
+                self._entities[idx] = entity
+            else:
+                _ = self._entities.pop()
+
+            return swapped
+
+    @always_inline
     def clear(mut self):
         """Removes all entities from the archetype.
 
@@ -1657,50 +1803,40 @@ struct Archetype[
             return idx
 
     @always_inline
-    def extend_from_archetype_unsafe[
-        source_origin: Origin,
-    ](
-        mut self,
-        source: Pointer[Self, source_origin],
-        count: Int,
-        from_idx: Int = 0,
-    ) -> Int:
-        """Appends entities and shared components from another archetype.
+    def unsafe_move_all_from_archetype[
+        source_origin: MutOrigin,
+    ](mut self, source: Pointer[Self, source_origin],) -> Int:
+        """Moves all entities and shared components from another archetype.
 
         This helper is intended for internal batch migration paths where the
         caller has already proven that source and destination archetypes are
         distinct, but Mojo's alias analysis cannot express that relationship.
+        Components absent from the destination are destroyed in the source.
 
         Parameters:
             source_origin: The origin of the source archetype.
 
         Args:
             source: An unsafe pointer to the source archetype. Must not point to self!
-            count: The number of entities to append.
-            from_idx: The index of the first source entity to append.
 
         Returns:
             The index of the first newly appended entity.
 
         Constraints:
-            The source and destination archetypes must be distinct and
-            contiguous ranges `[from_idx, from_idx + count)` and
-            `[return, return + count)` must be valid for the source and
-            destination storages.
+            The source and destination archetypes must be distinct.
         """
         with Zone(
             function_name=(
-                "Archetype.extend_from_archetype_unsafe(source: Pointer,"
-                " count: Int, from_idx: Int)"
+                "Archetype.unsafe_move_all_from_archetype(source: Pointer)"
             )
         ):
-            debug_assert(0 <= count, "Count must be non-negative.")
+            ref source_archetype = source.unsafe_mut_cast[True]()[]
             debug_assert(
-                Pointer(to=self) != source,
+                Pointer(to=self) != Pointer(to=source_archetype),
                 "Source and destination archetypes must be distinct.",
             )
-            _assert_range_in_bounds(from_idx, count, len(source[]))
 
+            var count = len(source_archetype)
             var start_index = self._storage._length
 
             if count == 0:
@@ -1711,33 +1847,29 @@ struct Archetype[
             self._entities.reserve(self._storage._capacity)
 
             for i in range(count):
-                self._entities.append(source[]._entities[from_idx + i])
+                self._entities.append(source_archetype._entities[i])
 
             debug_assert(
                 start_index + count <= self._storage._length,
                 "Destination range must be valid after extending the storage.",
             )
 
+            self._storage.unsafe_move_shared_components_from(
+                start_index,
+                Pointer(to=source_archetype._storage).unsafe_mut_cast[True](),
+                count,
+            )
+
+            # Shared source values were moved and are now uninitialized. Only
+            # destroy initialized components that are absent from destination.
             comptime for id in range(len(Self.ComponentTypes)):
-                comptime T = Self.ComponentTypes[id]
-                if self.has_components[T]() and source[].has_components[T]():
-                    try:
-                        unsafe_uninit_copy_n[overlapping=False](
-                            dest=self._storage.get_component_ptr[
-                                T
-                            ]().unsafe_offset(start_index),
-                            src=source[]
-                            ._storage.get_component_ptr[T]()
-                            .unsafe_offset(
-                                from_idx,
-                            ),
-                            count=count,
-                        )
-                    except:
-                        assert_unreachable(
-                            "Unreachable as component presence is checked"
-                            " before."
-                        )
+                if source_archetype._storage._active_component_mask.get(
+                    id
+                ) and not self._storage._active_component_mask.get(id):
+                    source_archetype._storage._columns[id].clear_values(count)
+
+            source_archetype._storage._length = 0
+            source_archetype._entities.clear()
 
             return start_index
 
