@@ -21,8 +21,7 @@ from .component import (
 )
 from .archetype import Archetype as _Archetype
 from .host_storage import HostStorage
-from .lock import LockManager
-from .debug_utils import debug_warn
+from .lock import LockManager, LockGuard
 from .static_optional import StaticOptional
 from .error import LarecsError, WorldError
 from .filter import Filter, BitMaskFilter
@@ -185,7 +184,7 @@ struct Query[
     @always_inline
     def __iter__(
         deinit self,
-        out iterator: _WorldEntityIterator[
+        out iterator: LockedWorldEntityIterator[
             Self.archetypes_origin,
             Self.locks_origin,
             *Self.ComponentTypes,
@@ -628,7 +627,7 @@ struct _ArchetypeEntityIterator[
             self._index += 1
 
 
-struct _WorldEntityIterator[
+struct LockedWorldEntityIterator[
     archetype_list_mutability: Bool,
     //,
     archetype_list_origin: Origin[mut=archetype_list_mutability],
@@ -636,14 +635,169 @@ struct _WorldEntityIterator[
     *ComponentTypes: ComponentType,
     has_start_indices: Bool = False,
 ](Boolable, Movable, Sized):
+    """Owns an entity iterator and a structural-change lock for its lifetime.
+
+    Acquires the lock before initializing traversal and releases it on
+    destruction, including early loop exits. Moving the wrapper transfers
+    ownership of the lock without acquiring another one. Exhaustion does not
+    release the lock while the wrapper is still alive.
+
+    This is not a thread-synchronization mutex. The lock prevents structural
+    changes to the world, not component reads or writes. The underlying
+    iterator is kept private so traversal always happens while locked.
+
+    Parameters:
+        archetype_list_mutability: Whether archetype access is mutable.
+        archetype_list_origin: The origin of the world's archetypes.
+        lock_origin: The origin of the world's lock manager.
+        ComponentTypes: The world's component types.
+        has_start_indices: Whether traversal starts at specified row indices.
+    """
+
+    comptime UnlockedIterator = _WorldEntityIterator[
+        Self.archetype_list_origin,
+        *Self.ComponentTypes,
+        has_start_indices=Self.has_start_indices,
+    ]
+    comptime Archetype = _Archetype[*Self.ComponentTypes]
+    comptime ArchetypeIterator = _ArchetypeIterator[
+        Self.archetype_list_origin,
+        *Self.ComponentTypes,
+    ]
+    comptime StartIndices = StaticOptional[List[Int], Self.has_start_indices]
+    comptime IteratorOwnedType = LockedWorldEntityIterator[
+        Self.archetype_list_origin,
+        Self.lock_origin,
+        *Self.ComponentTypes,
+        has_start_indices=Self.has_start_indices,
+    ]
+
+    var _iterator: Self.UnlockedIterator
+    var _guard: LockGuard[Self.lock_origin]
+
+    def __init__(
+        out self,
+        var archetype_iter: Self.ArchetypeIterator,
+        lock_ptr: Pointer[LockManager, Self.lock_origin],
+        var start_indices: Self.StartIndices = None,
+    ) raises LarecsError:
+        """Acquires a lock and initializes traversal over selected archetypes.
+
+        Args:
+            archetype_iter: The archetype iterator to consume.
+            lock_ptr: A pointer to the world's lock manager.
+            start_indices: Starting row indices in archetype iteration order.
+
+        Raises:
+            LarecsError: If no lock is available.
+        """
+        try:
+            self._guard = LockGuard(lock_ptr)
+        except:
+            raise LarecsError(WorldError.out_of_locks)
+        self._iterator = Self.UnlockedIterator(
+            archetype_iter^, start_indices^
+        )
+
+    def __init__(
+        out self,
+        archetypes: Pointer[List[Self.Archetype], Self.archetype_list_origin],
+        var filter: BitMaskFilter[_],
+        lock_ptr: Pointer[LockManager, Self.lock_origin],
+        var start_indices: Self.StartIndices = None,
+    ) raises LarecsError:
+        """Acquires a lock before selecting archetypes and initializing traversal.
+
+        Args:
+            archetypes: A pointer to the world's archetypes.
+            filter: The filter used to select archetypes.
+            lock_ptr: A pointer to the world's lock manager.
+            start_indices: Starting row indices in archetype iteration order.
+
+        Raises:
+            LarecsError: If no lock is available.
+        """
+        try:
+            self._guard = LockGuard(lock_ptr)
+        except:
+            raise LarecsError(WorldError.out_of_locks)
+        self._iterator = Self.UnlockedIterator(
+            archetypes, filter^, start_indices^
+        )
+
+    def __deinit__(deinit self):
+        """Destroys the wrapped iterator before releasing the lock that protects it."""
+        _ = self._iterator^
+        _ = self._guard^
+
+    @always_inline
+    def __iter__(var self, out iterator: Self):
+        """Transfers this wrapper into a loop without acquiring another lock.
+
+        Returns:
+            This locked iterator.
+        """
+        iterator = self^
+
+    @__unsafe_nested_origins_read_only
+    @always_inline
+    def __next__(
+        mut self,
+        out accessor: Self.Archetype.RowAccessor[Self.archetype_list_origin],
+    ) raises StopIteration:
+        """Advances the wrapped iterator while retaining the lock.
+
+        Raises:
+            StopIteration: If there are no more entities.
+
+        Returns:
+            An accessor to the next entity.
+        """
+        accessor = self._iterator.__next__()
+
+    @always_inline
+    def __len__(self, out size: Int):
+        """Counts remaining entities while retaining the lock.
+
+        Returns:
+            The number of entities remaining.
+        """
+        size = len(self._iterator)
+
+    @always_inline
+    def _has_next(self) -> Bool:
+        """Checks for remaining entities while retaining the lock.
+
+        Returns:
+            Whether traversal has more entities.
+        """
+        return self._iterator._has_next()
+
+    @always_inline
+    def __bool__(self) -> Bool:
+        """Checks for remaining entities while retaining the lock.
+
+        Returns:
+            Whether traversal has more entities.
+        """
+        return self._has_next()
+
+
+struct _WorldEntityIterator[
+    archetype_list_mutability: Bool,
+    //,
+    archetype_list_origin: Origin[mut=archetype_list_mutability],
+    *ComponentTypes: ComponentType,
+    has_start_indices: Bool = False,
+](Boolable, Movable, Sized):
     """Iterator over all entities of a world corresponding to a mask.
 
-    Locks the world while it exists.
+    Does not acquire a lock. Internal callers must prevent structural changes
+    for the duration of iteration, normally using `LockedWorldEntityIterator`.
 
     Parameters:
         archetype_list_mutability: Whether the reference to the archetypes is mutable.
         archetype_list_origin: The origin of the archetypes.
-        lock_origin: The origin of the LockManager.
         ComponentTypes: The types of the components.
         has_start_indices: Whether the iterator starts iterating the
                            archetypes at given indices.
@@ -655,24 +809,11 @@ struct _WorldEntityIterator[
         *Self.ComponentTypes,
     ]
 
-    # comptime Element = Self.Archetype.RowAccessor[
-    #     Self.archetype_list_origin._get_owned_interior["element"]
-    # ]
-
-    # comptime ArchetypeEntityIterator = _ArchetypeEntityIterator[
-    #     Self.archetype_list_origin._get_owned_interior["element"],
-    #     *Self.ComponentTypes,
-    # ]
-
     comptime IteratorOwnedType = _WorldEntityIterator[
         Self.archetype_list_origin,
-        Self.lock_origin,
         *Self.ComponentTypes,
         has_start_indices=Self.has_start_indices,
     ]
-
-    var _lock_ptr: Pointer[LockManager, Self.lock_origin]
-    var _lock: Int
 
     comptime StartIndices = StaticOptional[List[Int], Self.has_start_indices]
     var _start_indices: Self.StartIndices
@@ -697,35 +838,20 @@ struct _WorldEntityIterator[
     def __init__(
         out self,
         var archetype_iter: Self.ArchetypeIterator,
-        lock_ptr: Pointer[LockManager, Self.lock_origin],
         var start_indices: Self.StartIndices = None,
-    ) raises LarecsError:
-        """
-        Creates an entity iterator with or without excluded components.
+    ):
+        """Creates a lock-free entity iterator over selected archetypes.
 
         Args:
-            archetype_iter: The variant of the archetype iterator to use.
-            lock_ptr: a pointer to the world's locks.
-            start_indices: The indices where the iterator starts iterating the
-                           archetypes. Caution: the index order must
-                           match the order of the archetypes that
-                           are iterated.
-
-        Raises:
-            LarecsError: If the lock cannot be acquired.
+            archetype_iter: The archetype iterator to consume.
+            start_indices: Starting row indices in archetype iteration order.
         """
         with Zone(
             function_name=(
                 "_WorldEntityIterator.__init__(var archetype_iter:"
-                " Self.ArchetypeIterator, lock_ptr: Pointer, var start_indices:"
-                " Self.StartIndices)"
+                " Self.ArchetypeIterator, var start_indices: Self.StartIndices)"
             )
         ):
-            self._lock_ptr = lock_ptr
-            try:
-                self._lock = self._lock_ptr[].lock()
-            except:
-                raise LarecsError(WorldError.out_of_locks)
             self._start_indices = start_indices^
             self._archetype_iterator = archetype_iter^
             var archetype_list_ptr = (
@@ -746,64 +872,16 @@ struct _WorldEntityIterator[
         out self,
         archetypes: Pointer[List[Self.Archetype], Self.archetype_list_origin],
         var filter: BitMaskFilter[_],
-        lock_ptr: Pointer[LockManager, Self.lock_origin],
         var start_indices: Self.StartIndices = None,
-    ) raises LarecsError:
-        """
-        Creates an entity iterator from query information after acquiring a lock.
+    ):
+        """Creates a lock-free entity iterator from a filter.
 
         Args:
             archetypes: A pointer to the world's archetypes.
             filter: The filter used to select archetypes.
-            lock_ptr: A pointer to the world's locks.
-            start_indices: The indices where the iterator starts iterating the
-                           archetypes. Caution: the index order must match the
-                           order of the archetypes that are iterated.
-
-        Raises:
-            LarecsError: If the lock cannot be acquired.
+            start_indices: Starting row indices in archetype iteration order.
         """
-        with Zone(
-            function_name=(
-                "_WorldEntityIterator.__init__(archetypes:"
-                " Pointer[List[Self.Archetype]], var filter: BitMaskFilter,"
-                " lock_ptr: Pointer, var start_indices: Self.StartIndices)"
-            )
-        ):
-            self._lock_ptr = lock_ptr
-            try:
-                self._lock = self._lock_ptr[].lock()
-            except:
-                raise LarecsError(WorldError.out_of_locks)
-            self._start_indices = start_indices^
-
-            self._archetype_iterator = Self.ArchetypeIterator(
-                archetypes, filter^
-            )
-            var archetype_list_ptr = archetypes.unsafe_origin_cast[
-                UntrackedOrigin[mut=Self.archetype_list_mutability]
-            ]()
-            self._entity_iterator = Self._UnsafeArchetypeEntityIterator(
-                archetype_list_ptr[][0],
-                len(archetype_list_ptr[][0]),
-            )  # initialize entity iterator exhausted so that the first
-            # `__next__` always advances to the next archetype; the zero
-            # archetype may be non-empty when it is the iteration target.
-
-            self._current_archetype_index = 0
-
-    def __deinit__(deinit self):
-        """
-        Releases the lock.
-        """
-        with Zone(function_name="_WorldEntityIterator.__del__()"):
-            try:
-                self._lock_ptr[].unlock(self._lock)
-            except _:
-                debug_warn(
-                    t"Failed to unlock the lock {self._lock}. This should not"
-                    t" happen."
-                )
+        self = Self(Self.ArchetypeIterator(archetypes, filter^), start_indices^)
 
     @always_inline
     def __iter__(var self, out iterator: Self):

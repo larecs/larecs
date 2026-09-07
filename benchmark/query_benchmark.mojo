@@ -7,7 +7,7 @@ from larecs.test_utils import *
 
 
 def benchmark_add_entity_1_000_000(mut bencher: Bencher):
-    world = SmallWorld()
+    var world = SmallWorld()
 
     @always_inline
     def bench_fn() {mut world}:
@@ -114,8 +114,10 @@ def benchmark_query_get_iter_1_000_000(
         try:
             _ = world.storage.add_entity(c1, c2, c3, c4, c5)
             for _ in range(1_000_000):
+                # Observe traversal through the wrapper, not its lock fields.
+                # Each temporary must acquire and release its structural lock.
                 keep(
-                    world.storage.query[FlexibleComponent[1]]().__iter__()._lock
+                    Bool(world.storage.query[FlexibleComponent[1]]().__iter__())
                 )
 
         except e:

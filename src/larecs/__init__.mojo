@@ -80,6 +80,8 @@ Exports:
  - host_storage.HostStorage
  - host_storage.Replacer
  - iteration.Query
+ - lock.LockGuard
+ - lock.LockManager
  - pool.BitPool
  - resource.Resources
  - resource.ResourceStorage
@@ -106,6 +108,7 @@ from .archetype import MutArchetypeRowAccessor, ArchetypeRowAccessor
 from .resource import Resources, ResourceStorage, ResourceType
 from .entity import Entity
 from .iteration import Query
+from .lock import LockGuard, LockManager
 from .filter import Filter, BitMaskFilter
 from .system import System, SystemContext, KernelContext
 from .scheduler import Scheduler
