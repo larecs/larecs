@@ -80,6 +80,11 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     """
     Primary entity iterator type comptime for mask-based HostStorage queries.
 
+    These iterators are copyable. Each copy preserves its source's current
+    traversal position and acquires a distinct structural-change lock that is
+    released independently. Copying aborts if no lock is available; moving an
+    iterator transfers its existing lock without acquiring another one.
+
     Parameters:
         archetype_mutability: Whether the iterator allows mutable access to archetypes.
         archetype_origin: The origin of the archetype data accessed by the iterator.
@@ -152,9 +157,11 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         The lock is acquired immediately and held for the iterator's
         lifetime, preventing structural changes to the world until it is
-        dropped. Component values are read-only through this iterator;
-        mutate components from inside a system instead, via
-        [..system.SystemContext.run].
+        dropped. The iterator can be copied; every copy preserves the current
+        traversal position and acquires a distinct lock that is released
+        independently. Copying aborts if no lock is available. Component
+        values are read-only through this iterator; mutate components from
+        inside a system instead, via [..system.SystemContext.run].
 
         Parameters:
             filter: The compile-time [..filter.Filter] specifying which
@@ -164,8 +171,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: If no lock is available.
 
         Returns:
-            A locked iterator over all entities matching the filter, with
-            read-only component access.
+            A copyable, locked iterator over all entities matching the filter,
+            with read-only component access. Each copy owns a distinct lock.
         """
         with Zone(
             function_name="HostStorage.query[filter: Filter](mut self, ...)"

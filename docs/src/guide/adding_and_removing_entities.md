@@ -75,9 +75,10 @@ More information on manipulation of and iteration over entities
 is provided in the upcoming chapters.
 
 > [!Note]
-> Iterators block certain changes to the world and should not
-> be stored in a variable. That is, use the result of `add_entities`
-> only in the right hand side of for loops.
+> Iterators block structural changes to the world for their entire lifetime.
+> They may be stored or copied, but every copy acquires and owns a distinct
+> lock. Move an iterator into a loop with `^` when no independent copy is
+> needed, and avoid keeping iterators alive longer than necessary.
 
 ## Batch removal
 

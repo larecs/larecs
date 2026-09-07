@@ -103,6 +103,40 @@ def test_nested_locked_iterators_release_independently() raises:
     assert_false(storage.is_locked())
 
 
+def test_locked_iterator_copy_acquires_independent_lock() raises:
+    """Copies traversal state and owns a distinct lock for each iterator.
+
+    Raises:
+        Error: If setup or an assertion fails.
+    """
+    var storage = HostStorage[Int]()
+    var first = storage.add_entity(10)
+    var second = storage.add_entity(20)
+    var original = storage.query[Filter().include[Int]()]()
+    assert_equal(original.__next__().get_entity(), first)
+
+    var copied = original.copy()
+    var active_locks = 0
+    for i in range(storage._locks.bit_pool.capacity):
+        if storage._locks.locks.get(i):
+            active_locks += 1
+    assert_equal(active_locks, 2)
+
+    assert_equal(original.__next__().get_entity(), second)
+    assert_equal(copied.__next__().get_entity(), second)
+    for _ in copied^:
+        pass
+
+    assert_true(storage.is_locked())
+    with assert_raises(contains=WorldError.world_is_locked.msg()):
+        _ = storage.add_entity(30)
+
+    for _ in original^:
+        pass
+    assert_false(storage.is_locked())
+    _ = storage.add_entity(30)
+
+
 def test_unlocked_archetype_iterator_start_indices() raises:
     """Lock-free archetype traversal honors start indices and mutable access.
 

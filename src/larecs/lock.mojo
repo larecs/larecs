@@ -8,6 +8,8 @@ primitives.
 
 from tracy import Zone
 
+from std.os import abort
+
 from .bitmask import BitMask
 from .pool import BitPool
 from ._internal_error import InternalError
@@ -93,11 +95,13 @@ struct LockManager(Copyable, Movable):
             self.bit_pool.reset()
 
 
-struct LockGuard[lock_origin: MutOrigin](Movable):
+struct LockGuard[lock_origin: MutOrigin](Copyable, Movable):
     """Owns one structural-change lock until destruction.
 
-    Moving transfers ownership without acquiring another lock. The guard
-    cannot be copied. Acquire it before constructing a value that needs
+    Moving transfers ownership without acquiring another lock. Copying
+    acquires a distinct lock that is released independently. Because the
+    `Copyable` trait cannot report errors, copying aborts if no lock is
+    available. Acquire a guard before constructing a value that needs
     protection during initialization, then transfer it into the owning
     container, such as `LockedWorldEntityIterator`.
 
@@ -125,6 +129,23 @@ struct LockGuard[lock_origin: MutOrigin](Movable):
             self._lock = self._manager[].lock()
         except:
             raise Error(WorldError.out_of_locks.msg())
+
+    @always_inline
+    def __init__(out self, *, copy: Self):
+        """Copies the guard by acquiring a distinct structural-change lock.
+
+        Args:
+            copy: The guard whose lock manager the new guard will use.
+
+        Notes:
+            Aborts if no lock is available because `Copyable.__init__` cannot
+            raise an error.
+        """
+        self._manager = copy._manager
+        try:
+            self._lock = self._manager[].lock()
+        except:
+            abort("LockGuard.copy: no structural-change lock is available")
 
     def __deinit__(deinit self):
         """Releases the owned lock, warning if its bit was already cleared."""
