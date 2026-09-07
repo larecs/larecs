@@ -541,7 +541,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: If the world is locked or the entity does not exist.
         """
         self._assert_unlocked()
-        self._assert_alive(entity)
+        self.assert_alive(entity)
 
         with Zone(function_name="HostStorage.remove_entity(entity: Entity)"):
             var entity_loc = self._entity_locations[entity.get_id()]
@@ -659,6 +659,22 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             return self._entity_pool.is_alive(entity)
 
     @always_inline
+    def assert_alive(self, entity: Entity) raises LarecsError:
+        """Ensures that an [..entity.Entity] is still alive.
+
+        Args:
+            entity: The entity to validate.
+
+        Raises:
+            LarecsError: If the entity does not exist.
+        """
+        with Zone(function_name="HostStorage.assert_alive(entity: Entity)"):
+            if not self.is_alive(entity):
+                raise LarecsError(
+                    EntityError.non_existent_entity.with_entities(entity)
+                )
+
+    @always_inline
     def has[T: ComponentType](self, entity: Entity) raises LarecsError -> Bool:
         """
         Returns whether an [..entity.Entity] has a given component.
@@ -681,7 +697,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             comptime assert Self.component_manager.contains_components[
                 T
             ](), "Component type not in component manager"
-            self._assert_alive(entity)
+            self.assert_alive(entity)
             return self._archetypes.unsafe_get(
                 index(self._entity_locations[entity.get_id()].archetype_index)
             ).has_components[T]()
@@ -714,7 +730,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         comptime assert Self.component_manager.contains_components[
             T
         ](), "Component type not in component manager"
-        self._assert_alive(entity)
+        self.assert_alive(entity)
         var entity_loc = self._entity_locations[entity.get_id()]
 
         with Zone(
@@ -759,7 +775,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             comptime assert Self.component_manager.contains_components[
                 T
             ](), "Component type not in component manager"
-            self._assert_alive(entity)
+            self.assert_alive(entity)
             var entity_loc = self._entity_locations[entity.get_id()]
             self._archetypes.unsafe_get(
                 entity_loc.archetype_index
@@ -796,7 +812,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 *Ts
             ](), "Duplicate component types in set are not allowed."
 
-            self._assert_alive(entity)
+            self.assert_alive(entity)
             var entity_loc = self._entity_locations[entity.get_id()]
             self._archetypes.unsafe_get(
                 entity_loc.archetype_index
@@ -1114,7 +1130,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             comptime add_ids = Self.component_manager.get_id_arr[*Ts]()
 
             self._assert_unlocked()
-            self._assert_alive(entity)
+            self.assert_alive(entity)
 
             # Reserve space for the possibility that a new archetype gets created
             # This ensure that no further allocations can happen in this function and
@@ -1474,23 +1490,6 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         with Zone(function_name="HostStorage._assert_unlocked()"):
             if self.is_locked():
                 raise LarecsError(WorldError.world_is_locked)
-
-    @always_inline
-    def _assert_alive(self, entity: Entity) raises LarecsError:
-        """
-        Checks if the entity is alive, and raises if not.
-
-        Args:
-            entity: The entity to check.
-
-        Raises:
-            Error: If the entity does not exist.
-        """
-        with Zone(function_name="HostStorage._assert_alive(entity: Entity)"):
-            if not self._entity_pool.is_alive(entity):
-                raise LarecsError(
-                    EntityError.non_existent_entity.with_entities(entity)
-                )
 
     @always_inline
     def apply[
