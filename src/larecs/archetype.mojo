@@ -422,9 +422,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
                 )
 
     @staticmethod
-    def _clear_values_t[
-        T: ComponentType
-    ](mut data: Self.Data, length: Int):
+    def _clear_values_t[T: ComponentType](mut data: Self.Data, length: Int):
         """Destroys all initialized values of type `T` without freeing the allocation.
 
         Parameters:
@@ -549,9 +547,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         Args:
             length: The number of initialized values to destroy.
         """
-        with Zone(
-            function_name="_ComponentColumn.clear_values(length: Int)"
-        ):
+        with Zone(function_name="_ComponentColumn.clear_values(length: Int)"):
             self._clear_values(self._data, length)
 
     def destroy(mut self, length: Int, capacity: Int):

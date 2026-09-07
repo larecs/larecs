@@ -80,9 +80,7 @@ def trace_grid_stride(context: DeviceTraceContext):
     var row = Int32(global_idx.x)
     while row < context.length:
         context.owner[unsafe_offset=Int(row)] = Int32(global_idx.x)
-        _ = Atomic.fetch_add(
-            context.visits.unsafe_offset(Int(row)), 1
-        )
+        _ = Atomic.fetch_add(context.visits.unsafe_offset(Int(row)), 1)
         row += context.thread_count
 
 
