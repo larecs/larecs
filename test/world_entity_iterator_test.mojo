@@ -51,7 +51,7 @@ def test_unlocked_iterator_needs_no_lock() raises:
     assert_equal(len(unlocked), 2)
     for entity in unlocked^:
         assert_false(storage.is_locked())
-        entity.get[Int]() += 1
+        entity.unsafe_get[Int]() += 1
     assert_equal(storage.get[Int](first), 11)
     assert_equal(storage.get[Int](second), 21)
 
@@ -158,7 +158,7 @@ def test_unlocked_archetype_iterator_start_indices() raises:
     assert_equal(len(iterator), 1)
     for entity in iterator^:
         assert_equal(entity.get_entity(), second)
-        entity.get[Int]() = 30
+        entity.unsafe_get[Int]() = 30
     assert_false(storage.is_locked())
     assert_equal(storage.get[Int](first), 10)
     assert_equal(storage.get[Int](second), 30)
@@ -178,7 +178,7 @@ def test_batch_iterator_is_locked() raises:
     var count = 0
     for entity in iterator^:
         assert_true(storage.is_locked())
-        assert_equal(entity.get[Int](), 20)
+        assert_equal(entity.unsafe_get[Int](), 20)
         count += 1
     assert_equal(count, 3)
     assert_false(storage.is_locked())

@@ -67,7 +67,7 @@ as follows:
     # Add a batch of 10 entities with given position and velocity, placed on a line
     var x_position = 0.0
     for entity in world.storage.add_entities(Position(0, 0), Velocity(1, 0), count=10):
-        entity.get[Position]().x = x_position
+        entity.unsafe_get[Position]().x = x_position
         x_position += 1
 ```
 

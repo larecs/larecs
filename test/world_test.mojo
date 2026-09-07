@@ -35,10 +35,10 @@ def test_add_entities() raises:
     var vel = Velocity(0.1, 0.2)
     var i = 0
     for entity in world.storage.add_entities(pos, vel, count=23):
-        assert_equal(entity.get[Position]().x, pos.x)
-        assert_equal(entity.get[Position]().y, pos.y)
-        assert_equal(entity.get[Velocity]().dx, vel.dx)
-        assert_equal(entity.get[Velocity]().dy, vel.dy)
+        assert_equal(entity.unsafe_get[Position]().x, pos.x)
+        assert_equal(entity.unsafe_get[Position]().y, pos.y)
+        assert_equal(entity.unsafe_get[Velocity]().dx, vel.dx)
+        assert_equal(entity.unsafe_get[Velocity]().dy, vel.dy)
         assert_false(entity.has[FlexibleComponent[0]]())
         assert_false(entity.has[FlexibleComponent[1]]())
         assert_false(entity.has[FlexibleComponent[2]]())
@@ -73,8 +73,8 @@ def test_add_entities_iterator_length() raises:
     for remaining in range(12, 0, -1):
         assert_equal(len(iter), remaining)
         var entity = iter.__next__()
-        assert_equal(entity.get[Position]().x, pos.x)
-        assert_equal(entity.get[Velocity]().dy, vel.dy)
+        assert_equal(entity.unsafe_get[Position]().x, pos.x)
+        assert_equal(entity.unsafe_get[Velocity]().dy, vel.dy)
 
     assert_equal(len(iter), 0)
 
@@ -342,8 +342,8 @@ def test_world_batch_add() raises:
         Velocity(0.1, 0.2),
     ):
         assert_true(entity.has[Velocity]())
-        assert_equal(entity.get[Velocity]().dx, 0.1)
-        assert_equal(entity.get[Velocity]().dy, 0.2)
+        assert_equal(entity.unsafe_get[Velocity]().dx, 0.1)
+        assert_equal(entity.unsafe_get[Velocity]().dy, 0.2)
 
     assert_equal(
         len(
@@ -451,8 +451,8 @@ def test_world_batch_remove() raises:
         world.filter[Filter().include[Position, Velocity]()](),
     ):
         assert_false(entity.has[Velocity]())
-        assert_equal(entity.get[Position]().x, 1.0)
-        assert_equal(entity.get[Position]().y, 2.0)
+        assert_equal(entity.unsafe_get[Position]().x, 1.0)
+        assert_equal(entity.unsafe_get[Position]().y, 2.0)
 
     assert_equal(
         len(world.storage.query[Filter().include[Position, Velocity]()]()), 0
@@ -548,8 +548,8 @@ def test_batch_remove_and_add() raises:
         assert_false(entity.has[Velocity]())
         assert_true(entity.has[Position]())
         assert_true(entity.has[FlexibleComponent[1]]())
-        assert_equal(entity.get[FlexibleComponent[1]]().x, 3.0)
-        assert_equal(entity.get[FlexibleComponent[1]]().y, 4.0)
+        assert_equal(entity.unsafe_get[FlexibleComponent[1]]().x, 3.0)
+        assert_equal(entity.unsafe_get[FlexibleComponent[1]]().y, 4.0)
 
     assert_equal(
         len(world.storage.query[Filter().include[Position, Velocity]()]()), 0
@@ -584,8 +584,8 @@ def test_batch_remove_and_add() raises:
         filter=world.filter[Filter().include[Position]()](),
     ):
         assert_true(entity.has[Position]())
-        assert_equal(entity.get[Position]().x, 42.0)
-        assert_equal(entity.get[Position]().y, 6.0)
+        assert_equal(entity.unsafe_get[Position]().x, 42.0)
+        assert_equal(entity.unsafe_get[Position]().y, 6.0)
 
 
 def test_world_batch_add_multiple_source_archetypes() raises:
@@ -690,8 +690,8 @@ def test_world_apply() raises:
         _ = world.storage.add_entity(pos, vel)
 
     def operation(accessor: MutArchetypeRowAccessor) raises:
-        ref pos2 = accessor.get[Position]()
-        ref vel2 = accessor.get[Velocity]()
+        ref pos2 = accessor.unsafe_get[Position]()
+        ref vel2 = accessor.unsafe_get[Velocity]()
         pos2.x += vel2.dx
         pos2.y += vel2.dy
 

@@ -127,7 +127,7 @@ def benchmark_apply_expexp_1_comp_100_000(
             @always_inline
             def operation_plus(accessor: MutArchetypeRowAccessor):
                 try:
-                    ref pos2 = accessor.get[Position]()
+                    ref pos2 = accessor.unsafe_get[Position]()
                     pos2.x = exp(1 - exp(pos2.x))
                     pos2.y = exp(1 - exp(pos2.y))
                 except:
