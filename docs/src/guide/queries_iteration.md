@@ -143,6 +143,17 @@ This means that methods that change how many entities
 exist in the world or which components entities have
 will raise exceptions if called during iteration.
 
+Queries and batch operations return a `LockedWorldEntityIterator`. This wrapper
+owns both the internal, lock-free `_WorldEntityIterator` and a
+structural-change lock acquired for its lifetime, and it forwards iteration
+(`next`, `len`, `bool`) straight to the wrapped iterator while holding that
+lock—there is no separate accessor to unwrap. The lock stays held for the
+wrapper's lifetime, including between calls to `next`, `len`, and `bool`, and
+is released on destruction—even when a loop exits early. Moving the wrapper
+transfers the existing lock; exhausting the iterator does not unlock it while
+the wrapper remains alive. This is not a thread mutex and does not prevent
+modifying component values.
+
 ```mojo {doctest="guide_queries_iteration" global=true}
     for entity in world.storage.query[Position]():
 
