@@ -2,10 +2,25 @@
 
 ## [Unreleased](https://github.com/samufi/larecs/compare/v0.5.0b4...main)
 
+### Breaking changes
+
+- Rename `Resources` to `ResourceStorage`; `Resources` now denotes a compile-time list of resource types that a system/kernel declares it needs.
+- Rename `Storage` to `HostStorage` and add a mirrored `DeviceStorage` for GPU execution.
+- Replace the `Query` builder with filtered iterators: `HostStorage.query` now takes compile-time filters, locks immediately, and enforces read-only access (component mutation goes through systems).
+- Replace `MaskFilter` with a new comptime `Filter` type, with `World.filter` and exclusive filters built on top of it.
+- `ArchetypeRowAccessor.get[T]()` is now checked against the query filter at compile time; the previous runtime-checked behavior is available as `unsafe_get[T]()`.
+
 ### Added
 
+- New `System`/`SystemContext`/`KernelContext` API for writing ECS logic that runs unchanged on CPU or GPU, including `DeviceResourceStorage`, grid-stride GPU iteration, and CPU/GPU execution benchmarks.
 - Expose `HostStorage.assert_alive` for typed validation of entity liveness.
 - [`mojo-tracy`](https://github.com/moseschmiedel/mojo-tracy) integration for profiling with [Tracy](https://github.com/wolfpld/tracy)
+
+### Fixed
+
+- Move components correctly during archetype migration.
+- Preserve component lifecycle invariants and world mutations across system dispatch.
+- Fix several interior-origin bugs affecting `ResourceStorage` and `HostStorage.get()`.
 
 ## [0.5.0b4](https://github.com/samufi/larecs/compare/v0.5.0b3...v0.5.0b4)
 
