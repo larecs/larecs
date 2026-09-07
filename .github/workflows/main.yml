@@ -71,6 +71,7 @@ jobs:
       - name: Run examples
         run: |
           cd examples/satellites
+          export MPLBACKEND=Agg
           pixi run satellites
 
       - name: Package smoke test
