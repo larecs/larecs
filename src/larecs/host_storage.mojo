@@ -1173,6 +1173,16 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 component_ids, old_archetype.get_node_index()
             )
             ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
+
+            # Removing and re-adding the same component set keeps the entity
+            # in its current archetype. These rows are initialized, so replace
+            # their values in place rather than appending and moving onto self.
+            if old_archetype_idx == new_archetype_idx:
+                old_archetype.set_components[*Ts](
+                    index_in_old_archetype, *add_components^
+                )
+                return
+
             ref new_archetype = self._archetypes.unsafe_get(new_archetype_idx)
             var index_in_new_archetype = new_archetype.add_entity(entity)
 
@@ -1180,27 +1190,23 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             # `index_in_new_archetype` is a row that `add_entity` just
             # appended, so it holds uninitialized memory and must be
             # initialized rather than assigned.
-            comptime for id in range(Self.component_manager.component_count):
-                comptime T = Self.ComponentTypes[id]
-                if not old_archetype.has_components[T]():
-                    continue
-
-                comptime if rem_size:
-                    if not new_archetype.has_components[T]():
-                        continue
-
-                new_archetype.init_components[T](
-                    index_in_new_archetype,
-                    old_archetype.get_component[T](
-                        index_in_old_archetype
-                    ).copy(),
-                )
+            new_archetype._storage.unsafe_move_shared_components_from(
+                index_in_new_archetype,
+                Pointer(to=old_archetype._storage).as_unsafe_any_origin(),
+                1,
+                index_in_old_archetype,
+            )
 
             new_archetype.init_components[*Ts](
                 index_in_new_archetype, *add_components^
             )
 
-            var swapped = old_archetype.remove(index_in_old_archetype)
+            var new_archetype_mask = new_archetype.get_mask().copy()
+            var swapped = (
+                old_archetype.unsafe_remove_after_moving_shared_components(
+                    index_in_old_archetype, new_archetype_mask
+                )
+            )
             if swapped:
                 var swap_entity = old_archetype.get_entity(
                     entity_loc.entity_index
@@ -1415,15 +1421,15 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                         to=old_archetype
                     ).as_unsafe_any_origin()
                     var arch_start_idx = (
-                        new_archetype.extend_from_archetype_unsafe(
-                            old_archetype_unsafe, old_archetype_size
+                        new_archetype.unsafe_move_all_from_archetype(
+                            old_archetype_unsafe
                         )
                     )
                     arch_start_idcs.append(arch_start_idx)
                     changed_archetype_idcs.append(new_archetype_idx)
 
                     # These rows were just appended by
-                    # `extend_from_archetype_unsafe` and hold uninitialized
+                    # `unsafe_move_all_from_archetype` and hold uninitialized
                     # memory for the newly added components, so they must
                     # be initialized rather than assigned.
                     comptime for i in range(add_size):
@@ -1436,14 +1442,14 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
                     # Update entity index mappings for the moved entity range.
                     for entity_idx in range(old_archetype_size):
-                        var entity = old_archetype.get_entity(entity_idx)
+                        var entity = new_archetype.get_entity(
+                            arch_start_idx + entity_idx
+                        )
                         self._entity_locations[
                             entity.get_id()
                         ] = EntityLocation(
                             arch_start_idx + entity_idx, new_archetype_idx
                         )
-
-                    old_archetype.clear()
 
             # Return iterator to iterate over the changed entities.
             try:

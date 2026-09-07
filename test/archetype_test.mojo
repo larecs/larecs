@@ -476,8 +476,8 @@ def test_archetype_copy_component_from_non_trivial_component() raises:
     _ = counters.del_counter()
 
 
-def test_archetype_extend_from_archetype_unsafe_non_trivial_component() raises:
-    """Verify unsafe extension copies shared non-trivial component rows."""
+def test_archetype_unsafe_move_all_from_non_trivial_component() raises:
+    """Verify unsafe migration moves shared non-trivial component rows."""
     var counters = LifecycleCounters()
     var source = NonTrivialArchetype(0, tracked_mask, capacity=4)
     var destination = NonTrivialArchetype(1, tracked_mask, capacity=1)
@@ -491,16 +491,17 @@ def test_archetype_extend_from_archetype_unsafe_non_trivial_component() raises:
     var base_moves = counters.move_counter()
     var base_dels = counters.del_counter()
 
-    var start = destination.extend_from_archetype_unsafe(Pointer(to=source), 2)
+    var start = destination.unsafe_move_all_from_archetype(Pointer(to=source))
 
     assert_equal(start, 0)
     assert_equal(len(destination), 2)
+    assert_equal(len(source), 0)
     counters.assert_delta(
         base_copies,
         base_moves,
         base_dels,
-        expected_copies=2,
-        expected_moves=0,
+        expected_copies=0,
+        expected_moves=2,
         expected_dels=0,
     )
     _ = destination^
