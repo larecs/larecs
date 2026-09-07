@@ -6,6 +6,15 @@
 # `for entity in context` pattern, the confirmed trigger), but `-g` is
 # dropped here too as a blanket policy for GPU-launching tests: any kernel
 # compiled with debug info can hit the same class of Apple AGX backend bug.
+#
+# The test body below lives entirely inside a `comptime if
+# has_accelerator():` block rather than an early `comptime if not
+# has_accelerator(): return` followed by unconditional code -- see the
+# comment at the top of `gpu_device_storage_test.mojo` for why the two are
+# not equivalent to the compiler on a target with no accelerator support
+# at all: `enqueue_function`/`DeviceContext()` calls trailing a bare early
+# return still get fully instantiated and hit a hard compile-time "Unknown
+# GPU architecture detected" error there, even though they would never run.
 
 from max.gpu.host import DeviceContext, DevicePointer
 from std.atomic import Atomic
@@ -86,46 +95,44 @@ def trace_grid_stride(context: DeviceTraceContext):
 
 def test_grid_stride_assigns_unique_chunks() raises:
     """Verifies that every row is visited once by its expected thread."""
-    comptime if not has_accelerator():
-        return
+    comptime if has_accelerator():
+        var device = DeviceContext()
+        var owner = device.create_buffer_sync[DType.int32](LENGTH)
+        var visits = device.create_buffer_sync[DType.int32](LENGTH)
+        owner.enqueue_fill(-1)
+        visits.enqueue_fill(0)
 
-    var device = DeviceContext()
-    var owner = device.create_buffer_sync[DType.int32](LENGTH)
-    var visits = device.create_buffer_sync[DType.int32](LENGTH)
-    owner.enqueue_fill(-1)
-    visits.enqueue_fill(0)
+        var context = HostTraceContext(
+            length=Int32(LENGTH),
+            thread_count=Int32(THREAD_COUNT),
+            owner=rebind[
+                DevicePointer[
+                    mut=True, dtype=DType.int32, origin=MutUntrackedOrigin
+                ]
+            ](DevicePointer(owner)),
+            visits=rebind[
+                DevicePointer[
+                    mut=True, dtype=DType.int32, origin=MutUntrackedOrigin
+                ]
+            ](DevicePointer(visits)),
+        )
 
-    var context = HostTraceContext(
-        length=Int32(LENGTH),
-        thread_count=Int32(THREAD_COUNT),
-        owner=rebind[
-            DevicePointer[
-                mut=True, dtype=DType.int32, origin=MutUntrackedOrigin
-            ]
-        ](DevicePointer(owner)),
-        visits=rebind[
-            DevicePointer[
-                mut=True, dtype=DType.int32, origin=MutUntrackedOrigin
-            ]
-        ](DevicePointer(visits)),
-    )
+        device.enqueue_function[trace_grid_stride](
+            context,
+            grid_dim=GRID_DIM,
+            block_dim=BLOCK_SIZE,
+        )
+        device.synchronize()
 
-    device.enqueue_function[trace_grid_stride](
-        context,
-        grid_dim=GRID_DIM,
-        block_dim=BLOCK_SIZE,
-    )
-    device.synchronize()
+        var host_owner = List[Int32](length=LENGTH, fill=-1)
+        var host_visits = List[Int32](length=LENGTH, fill=0)
+        owner.enqueue_copy_to(host_owner.unsafe_ptr())
+        visits.enqueue_copy_to(host_visits.unsafe_ptr())
+        device.synchronize()
 
-    var host_owner = List[Int32](length=LENGTH, fill=-1)
-    var host_visits = List[Int32](length=LENGTH, fill=0)
-    owner.enqueue_copy_to(host_owner.unsafe_ptr())
-    visits.enqueue_copy_to(host_visits.unsafe_ptr())
-    device.synchronize()
-
-    for row in range(LENGTH):
-        assert host_owner[row] == Int32(row % THREAD_COUNT)
-        assert host_visits[row] == 1
+        for row in range(LENGTH):
+            assert host_owner[row] == Int32(row % THREAD_COUNT)
+            assert host_visits[row] == 1
 
 
 def main() raises:
