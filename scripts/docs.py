@@ -53,12 +53,21 @@ async def _run(args, cwd) -> tuple[int, bool]:
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
-    stdout_error, stderr_error = await asyncio.gather(
-        _relay(proc.stdout, sys.stdout),
-        _relay(proc.stderr, sys.stderr),
-    )
-    returncode = await proc.wait()
-    return returncode, stdout_error or stderr_error
+    relay_tasks = [
+        asyncio.create_task(_relay(proc.stdout, sys.stdout)),
+        asyncio.create_task(_relay(proc.stderr, sys.stderr)),
+    ]
+    try:
+        stdout_error, stderr_error = await asyncio.gather(*relay_tasks)
+        returncode = await proc.wait()
+        return returncode, stdout_error or stderr_error
+    except asyncio.CancelledError:
+        # Watch mode cancels the still-running command when its sibling exits.
+        # Ensure cancellation does not orphan that subprocess.
+        if proc.returncode is None:
+            proc.terminate()
+        await proc.wait()
+        raise
 
 
 def _check(returncode: int, script_error: bool, description: str) -> None:
@@ -113,14 +122,25 @@ async def main():
             _check(returncode, script_error, "hugo build")
 
         case "watch":
-            # Long-running: run both to completion (until interrupted) before
-            # checking, rather than failing fast on either.
-            modo_result, hugo_result = await asyncio.gather(
-                build_docs(watch=True),
-                serve_docs("docs/site"),
+            # Both commands are long-running, but either one must be able to
+            # report its failure while the other is still alive.
+            modo_task = asyncio.create_task(build_docs(watch=True))
+            hugo_task = asyncio.create_task(serve_docs("docs/site"))
+            done, pending = await asyncio.wait(
+                (modo_task, hugo_task),
+                return_when=asyncio.FIRST_COMPLETED,
             )
-            _check(*modo_result, "modo build --watch")
-            _check(*hugo_result, "hugo server")
+
+            for task in pending:
+                task.cancel()
+            await asyncio.gather(*pending, return_exceptions=True)
+
+            completed_task = done.pop()
+            completed_result = completed_task.result()
+            if completed_task is modo_task:
+                _check(*completed_result, "modo build --watch")
+            else:
+                _check(*completed_result, "hugo server")
 
         case "serve":
             returncode, script_error = await serve_docs("docs/site")
