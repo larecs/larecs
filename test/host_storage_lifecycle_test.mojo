@@ -105,6 +105,25 @@ def test_host_storage_is_alive_bounds_safe() raises:
     assert_false(storage.is_alive(Entity(-1, 0)))
 
 
+def test_host_storage_assert_alive_raises_typed_error() raises:
+    """`assert_alive` validates live, removed, and foreign entities."""
+    var storage = HostStorage[Position]()
+    var entity = storage.add_entity(Position(1.0, 2.0))
+
+    storage.assert_alive(entity)
+
+    storage.remove_entity(entity)
+    assert_false(storage.is_alive(entity))
+    with assert_raises(contains=EntityError.non_existent_entity.msg()):
+        storage.assert_alive(entity)
+
+    with assert_raises(contains=EntityError.non_existent_entity.msg()):
+        storage.assert_alive(Entity(1_000_000, 0))
+
+    with assert_raises(contains=EntityError.non_existent_entity.msg()):
+        storage.assert_alive(Entity(-1, 0))
+
+
 def test_host_storage_get_foreign_entity_raises() raises:
     """`get` must raise a typed error instead of crashing on a foreign entity.
 
