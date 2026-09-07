@@ -294,10 +294,10 @@ def test_entity_accessor_set_components() raises:
         FlexibleComponent[1](4.0, 5.0),
     )
 
-    assert_equal(entity.get[LargerComponent]().x, 1.0)
-    assert_equal(entity.get[LargerComponent]().y, 2.0)
-    assert_equal(entity.get[FlexibleComponent[1]]().x, 4.0)
-    assert_equal(entity.get[FlexibleComponent[1]]().y, 5.0)
+    assert_equal(entity.unsafe_get[LargerComponent]().x, 1.0)
+    assert_equal(entity.unsafe_get[LargerComponent]().y, 2.0)
+    assert_equal(entity.unsafe_get[FlexibleComponent[1]]().x, 4.0)
+    assert_equal(entity.unsafe_get[FlexibleComponent[1]]().y, 5.0)
 
 
 def test_archetype_add() raises:

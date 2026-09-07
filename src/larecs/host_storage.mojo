@@ -70,11 +70,13 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         archetype_origin: Origin[mut=archetype_mutability],
         lock_origin: MutOrigin,
         *,
+        row_filter: Filter = Filter(),
         has_start_indices: Bool = False,
     ] = LockedWorldEntityIterator[
         archetype_origin,
         lock_origin,
         *Self.ComponentTypes,
+        row_filter=row_filter,
         has_start_indices=has_start_indices,
     ]
     """
@@ -89,6 +91,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         archetype_mutability: Whether the iterator allows mutable access to archetypes.
         archetype_origin: The origin of the archetype data accessed by the iterator.
         lock_origin: The origin of the locks preventing structural changes.
+        row_filter: The compile-time [..filter.Filter] the yielded row
+            accessors are created with, if any. Only `query` passes this;
+            other callers leave it at the default, so their accessors only
+            support `unsafe_get`/`has`.
         has_start_indices: Enables iteration from specific entity ranges (batch ops).
     """
 
@@ -150,6 +156,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             ImmOrigin(origin_of(self._archetypes)),
             origin_of(self._locks),
+            row_filter=filter,
         ],
     ) raises LarecsError:
         """
@@ -162,6 +169,12 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         independently. Copying aborts if no lock is available. Component
         values are read-only through this iterator; mutate components from
         inside a system instead, via [..system.SystemContext.run].
+
+        The yielded [..archetype.ArchetypeRowAccessor]'s `get[T]()` is
+        checked at compile time against `filter`: `T` must be included by
+        `filter` (via `Filter.include`), since only then is every matching
+        archetype guaranteed to carry it. Use `unsafe_get[T]()` for a
+        component `filter` doesn't guarantee, or `has[T]()` to check first.
 
         Parameters:
             filter: The compile-time [..filter.Filter] specifying which
@@ -183,6 +196,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             iterator = Self.Iterator[
                 ImmOrigin(origin_of(self._archetypes)),
                 origin_of(self._locks),
+                row_filter=filter,
             ](
                 Pointer(to=self._archetypes).as_imm(),
                 bitmask_filter,
@@ -398,7 +412,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             count = 5
         ):
             # Do things with the newly created entities
-            position = entity.get[Position]()
+            position = entity.unsafe_get[Position]()
         ```
 
         Parameters:
@@ -909,8 +923,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             world.filter[Filter().include[Position]().exclude[Velocity]()](),
             Velocity(0.5, -0.5),
         ):
-            velocity = entity.get[Velocity]()
-            position = entity.get[Position]()
+            velocity = entity.unsafe_get[Velocity]()
+            position = entity.unsafe_get[Position]()
             entity.set[Position](Position(position.x + velocity.x, position.y + velocity.y))
             entity.set[Velocity](Velocity(velocity.x - 0.05, velocity.y - 0.05))
         ```
@@ -1017,7 +1031,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         for entity in world.storage.remove[Velocity](
             world.filter[Filter().include[Position, Velocity]()]()
         ):
-            position = entity.get[Position]()
+            position = entity.unsafe_get[Position]()
         ```
 
         Parameters:

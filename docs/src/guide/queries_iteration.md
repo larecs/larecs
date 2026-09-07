@@ -124,6 +124,16 @@ way, not written -- see
 [Preventing iterator invalidation](#preventing-iterator-invalidation-the-locked-world)
 below for how to mutate them.
 
+Because a query's filter guarantees which components every matching
+entity has, {{< api ArchetypeRowAccessor.get get >}} checks its
+component type against that filter at *compile time*: requesting a
+component the filter didn't include is a compile error, not a runtime
+one. For a component the filter doesn't guarantee -- typically one
+you only conditionally access after checking
+{{< api ArchetypeRowAccessor.has has >}} -- use
+{{< api ArchetypeRowAccessor.unsafe_get unsafe_get >}} instead, which
+checks at runtime and raises if the component is missing.
+
 ```mojo {doctest="guide_queries_iteration" global=true}
     for entity in world.storage.query[Filter().include[Position]()]():
         ref pos = entity.get[Position]()
@@ -132,7 +142,11 @@ below for how to mutate them.
             + String(pos.x) + ", " + String(pos.y) + ")"
         )
         if entity.has[Velocity]():
-            ref vel = entity.get[Velocity]()
+            # `Velocity` isn't included by this query's filter, so it isn't
+            # guaranteed to exist on every matching entity -- `get` would be
+            # a compile error here. `unsafe_get` is the checked-at-runtime
+            # escape hatch for exactly this case.
+            ref vel = entity.unsafe_get[Velocity]()
             # Also print the velocity
             print(
                 " - with velocity ("
@@ -244,8 +258,8 @@ with a `Position` and a `Velocity` component, we can do this as follows:
 ```mojo {doctest="guide_queries_iteration" global=true}
     # Define the move operation
     def move(accessor: MutArchetypeRowAccessor) raises:
-        ref move_pos = accessor.get[Position]()
-        ref move_vel = accessor.get[Velocity]()
+        ref move_pos = accessor.unsafe_get[Position]()
+        ref move_vel = accessor.unsafe_get[Velocity]()
         move_pos.x += move_vel.dx
         move_pos.y += move_vel.dy
 

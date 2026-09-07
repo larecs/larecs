@@ -14,7 +14,7 @@ from tracy import Zone
 
 from .entity import Entity, EntityAccessor
 from .component import ComponentType
-from .archetype import Archetype as _Archetype
+from .archetype import Archetype as _Archetype, ArchetypeRowAccessor
 from .lock import LockManager, LockGuard
 from .static_optional import StaticOptional
 from .error import LarecsError, WorldError
@@ -269,6 +269,7 @@ struct _ArchetypeEntityIterator[
     //,
     archetype_origin: Origin[mut=archetype_mutability],
     *ComponentTypes: ComponentType,
+    filter: Filter = Filter(),
 ](Boolable, Copyable, Movable, Sized):
     """
     Iterator over all entities of an archetype.
@@ -280,6 +281,8 @@ struct _ArchetypeEntityIterator[
             iterator are mutable.
         archetype_origin: The origin of the archetype pointer.
         ComponentTypes: The types of the components.
+        filter: The compile-time [..filter.Filter] the yielded row
+            accessors are created with, if any.
     """
 
     comptime Archetype = _Archetype[*Self.ComponentTypes]
@@ -351,7 +354,9 @@ struct _ArchetypeEntityIterator[
     @__unsafe_nested_origins_read_only
     def __next__(
         mut self,
-        out accessor: type_of(self.archetype[].get_row_accessor(self._index)),
+        out accessor: type_of(
+            self.archetype[].get_row_accessor[Self.filter](self._index)
+        ),
     ) raises StopIteration:
         """
         Returns the next entity in the iteration.
@@ -365,12 +370,14 @@ struct _ArchetypeEntityIterator[
         with Zone(
             function_name=(
                 "_ArchetypeEntityIterator.__next__[archetype_origin:"
-                " Origin](out accessor: Self.Archetype.RowAccessor)"
+                " Origin](out accessor: ArchetypeRowAccessor)"
             )
         ):
             if not self._has_next():
                 raise StopIteration()
-            accessor = self.archetype[].get_row_accessor(self._index)
+            accessor = self.archetype[].get_row_accessor[Self.filter](
+                self._index
+            )
             self._index += 1
 
 
@@ -380,6 +387,7 @@ struct LockedWorldEntityIterator[
     archetype_list_origin: Origin[mut=archetype_list_mutability],
     lock_origin: MutOrigin,
     *ComponentTypes: ComponentType,
+    row_filter: Filter = Filter(),
     has_start_indices: Bool = False,
 ](Boolable, Copyable, Movable, Sized):
     """Owns an entity iterator and a structural-change lock for its lifetime.
@@ -400,12 +408,17 @@ struct LockedWorldEntityIterator[
         archetype_list_origin: The origin of the world's archetypes.
         lock_origin: The origin of the world's lock manager.
         ComponentTypes: The world's component types.
+        row_filter: The compile-time [..filter.Filter] the yielded row
+            accessors are created with, if any. Named distinctly from
+            the runtime `filter: BitMaskFilter` argument below, which
+            selects archetypes rather than typing the accessor.
         has_start_indices: Whether traversal starts at specified row indices.
     """
 
     comptime UnlockedIterator = _WorldEntityIterator[
         Self.archetype_list_origin,
         *Self.ComponentTypes,
+        row_filter=Self.row_filter,
         has_start_indices=Self.has_start_indices,
     ]
     comptime Archetype = _Archetype[*Self.ComponentTypes]
@@ -418,6 +431,7 @@ struct LockedWorldEntityIterator[
         Self.archetype_list_origin,
         Self.lock_origin,
         *Self.ComponentTypes,
+        row_filter=Self.row_filter,
         has_start_indices=Self.has_start_indices,
     ]
 
@@ -505,7 +519,11 @@ struct LockedWorldEntityIterator[
     @always_inline
     def __next__(
         mut self,
-        out accessor: Self.Archetype.RowAccessor[Self.archetype_list_origin],
+        out accessor: ArchetypeRowAccessor[
+            Self.archetype_list_origin,
+            *Self.ComponentTypes,
+            filter=Self.row_filter,
+        ],
     ) raises StopIteration:
         """Advances the wrapped iterator while retaining the lock.
 
@@ -550,6 +568,7 @@ struct _WorldEntityIterator[
     //,
     archetype_list_origin: Origin[mut=archetype_list_mutability],
     *ComponentTypes: ComponentType,
+    row_filter: Filter = Filter(),
     has_start_indices: Bool = False,
 ](Boolable, Copyable, Movable, Sized):
     """Iterator over all entities of a world corresponding to a mask.
@@ -561,6 +580,10 @@ struct _WorldEntityIterator[
         archetype_list_mutability: Whether the reference to the archetypes is mutable.
         archetype_list_origin: The origin of the archetypes.
         ComponentTypes: The types of the components.
+        row_filter: The compile-time [..filter.Filter] the yielded row
+            accessors are created with, if any. Named distinctly from
+            the runtime `filter: BitMaskFilter` argument below, which
+            selects archetypes rather than typing the accessor.
         has_start_indices: Whether the iterator starts iterating the
                            archetypes at given indices.
     """
@@ -574,6 +597,7 @@ struct _WorldEntityIterator[
     comptime IteratorOwnedType = _WorldEntityIterator[
         Self.archetype_list_origin,
         *Self.ComponentTypes,
+        row_filter=Self.row_filter,
         has_start_indices=Self.has_start_indices,
     ]
 
@@ -594,6 +618,7 @@ struct _WorldEntityIterator[
     comptime _UnsafeArchetypeEntityIterator = _ArchetypeEntityIterator[
         UntrackedOrigin[mut=Self.archetype_list_mutability],
         *Self.ComponentTypes,
+        filter=Self.row_filter,
     ]
     var _entity_iterator: Self._UnsafeArchetypeEntityIterator
 
@@ -675,7 +700,11 @@ struct _WorldEntityIterator[
     @always_inline
     def __next__(
         mut self,
-        out accessor: Self.Archetype.RowAccessor[Self.archetype_list_origin],
+        out accessor: ArchetypeRowAccessor[
+            Self.archetype_list_origin,
+            *Self.ComponentTypes,
+            filter=Self.row_filter,
+        ],
     ) raises StopIteration:
         """
         Returns the next entity in the iteration.

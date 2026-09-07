@@ -155,8 +155,8 @@ You can add components to multiple entities that match a query using the
         world.filter[Filter().include[Position].exclude[Velocity]()](),
         Velocity(1.0, 0.5),
     ):
-        ref pos = entity.get[Position]()
-        ref vel = entity.get[Velocity]()
+        ref pos = entity.unsafe_get[Position]()
+        ref vel = entity.unsafe_get[Velocity]()
 ```
 
 This is significantly more efficient than adding components to entities one by one:
@@ -181,7 +181,7 @@ Similar methods exist also for {{< api HostStorage.remove removing >}} and
     for entity in world.storage.remove[Velocity](
         world.filter[Filter().include[Position, Velocity]()]()
     ):
-        ref pos = entity.get[Position]()
+        ref pos = entity.unsafe_get[Position]()
 ```
 
 For batch replace operations, you also need to use the {{< api Replacer.by by >}} helper method to specify which
@@ -196,7 +196,7 @@ components should be used as replacement.
         Velocity(2.0, 2.0),
         filter=world.filter[Filter().include[Position].exclusive()](),
     ):
-        ref vel = entity.get[Velocity]()
+        ref vel = entity.unsafe_get[Velocity]()
 ```
 
 > [!Important]
