@@ -26,7 +26,7 @@ from .lock import LockManager
 from .pool import EntityPool
 from .iteration import (
     Query,
-    _WorldEntityIterator,
+    LockedWorldEntityIterator,
     _ArchetypeIterator,
 )
 from .filter import BitMaskFilter
@@ -80,7 +80,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         lock_origin: MutOrigin,
         *,
         has_start_indices: Bool = False,
-    ] = _WorldEntityIterator[
+    ] = LockedWorldEntityIterator[
         archetype_origin,
         lock_origin,
         *Self.ComponentTypes,
@@ -92,7 +92,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     Parameters:
         archetype_mutability: Whether the iterator allows mutable access to archetypes.
         archetype_origin: The origin of the archetype data accessed by the iterator.
-        lock_origin: The origin of the locks used for safe concurrent access.
+        lock_origin: The origin of the locks preventing structural changes.
         has_start_indices: Enables iteration from specific entity ranges (batch ops).
     """
 

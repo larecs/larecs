@@ -94,7 +94,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
                     # copy could look complete while quietly missing data a
                     # caller relied on. `debug_warn` at least surfaces which
                     # column was dropped and why, in debug builds; see
-                    # `_WorldEntityIterator.__deinit__` in iteration.mojo
+                    # `LockGuard.__deinit__` in lock.mojo
                     # for the same pattern applied to the same constraint.
                     try:
                         self._create_column[T]()

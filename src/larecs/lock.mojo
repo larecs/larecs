@@ -1,7 +1,9 @@
 """Locking of the world to prevent structural changes during iteration.
 
-Provides `LockManager`, which hands out and tracks lock bits so that
-queries can detect concurrent structural changes to the world.
+Provides `LockManager` for structural-change lock bits and `LockGuard` for
+owning one bit until it is transferred into an owning container such as
+`LockedWorldEntityIterator`. These types are not thread-synchronization
+primitives.
 """
 
 from tracy import Zone
@@ -9,6 +11,8 @@ from tracy import Zone
 from .bitmask import BitMask
 from .pool import BitPool
 from ._internal_error import InternalError
+from .error import WorldError
+from .debug_utils import debug_warn
 
 
 @fieldwise_init
@@ -88,9 +92,47 @@ struct LockManager(Copyable, Movable):
             self.locks = BitMask()
             self.bit_pool.reset()
 
-    # @always_inline
-    # def locked(mut self) -> LockedContext[origin_of(self)]:
-    #     """
-    #     Returns a locked context.
-    #     """
-    #     return LockedContext(Pointer(to=self))
+
+struct LockGuard[lock_origin: MutOrigin](Movable):
+    """Owns one structural-change lock until destruction.
+
+    Moving transfers ownership without acquiring another lock. The guard
+    cannot be copied. Acquire it before constructing a value that needs
+    protection during initialization, then transfer it into the owning
+    container, such as `LockedWorldEntityIterator`.
+
+    Parameters:
+        lock_origin: The origin of the lock manager, which must outlive the guard.
+    """
+
+    var _manager: Pointer[LockManager, Self.lock_origin]
+    var _lock: Int
+
+    @always_inline
+    def __init__(
+        out self, manager: Pointer[LockManager, Self.lock_origin]
+    ) raises:
+        """Acquires one structural-change lock.
+
+        Args:
+            manager: The lock manager to acquire a lock from.
+
+        Raises:
+            Error: If no lock is available.
+        """
+        self._manager = manager
+        try:
+            self._lock = self._manager[].lock()
+        except:
+            raise Error(WorldError.out_of_locks.msg())
+
+    def __deinit__(deinit self):
+        """Releases the owned lock, warning if its bit was already cleared."""
+        with Zone(function_name="LockGuard.__deinit__()"):
+            try:
+                self._manager[].unlock(self._lock)
+            except _:
+                debug_warn(
+                    t"Failed to unlock the lock {self._lock}. This should not"
+                    t" happen."
+                )
