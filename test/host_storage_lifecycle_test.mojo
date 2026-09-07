@@ -179,7 +179,8 @@ def test_host_storage_remove_missing_component_mask() raises:
 
 
 def test_host_storage_remove_batch_missing_component_mask() raises:
-    """The batch missing-components error must report exactly the missing bit."""
+    """The batch missing-components error must report exactly the missing bit.
+    """
     comptime HS = HostStorage[Position, Velocity]
     var storage = HS()
     _ = storage.add_entities(Position(1.0, 2.0), count=3)
