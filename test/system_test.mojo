@@ -1,11 +1,13 @@
 from larecs import (
     World,
+    Entity,
     SystemContext,
     KernelContext,
     Filter,
     Resources,
     ResourceType,
 )
+from larecs.test_utils import SmallWorld, FlexibleComponent
 from std.testing import *
 
 
@@ -95,6 +97,47 @@ def test_system_context_run_capturing_overload_visits_each_archetype_once() rais
     context.run(count_visits_capturing)
 
     assert_equal(visits, 5)
+
+
+def overwrite_flexible_component_0_x(
+    context: KernelContext[Filter().include[FlexibleComponent[0]]()],
+):
+    """Sets every matching entity's `x` field to `9.0` via `set`, keeping `y`.
+    """
+    for entity in context:
+        var value = entity.get[FlexibleComponent[0]]()
+        value.x = 9.0
+        entity.set(value)
+
+
+def test_kernel_mutates_matching_entities_in_order() raises:
+    """A kernel run through `SystemContext` mutates each entity it visits.
+
+    `HostStorage.query` is read-only, so component mutation now only
+    happens inside a kernel run through `SystemContext.run`; this covers
+    the mutation coverage (`.set()`, per-entity correctness across
+    iteration) that used to live on `HostStorage.query` results directly.
+    """
+    var world = SmallWorld()
+    var c1 = FlexibleComponent[1](3.0, 4.0)
+    var c2 = FlexibleComponent[2](5.0, 6.0)
+
+    var n = 50
+    var entities = List[Entity]()
+    for i in range(n):
+        entities.append(
+            world.storage.add_entity(
+                FlexibleComponent[0](1.0, Float32(i)), c1, c2
+            )
+        )
+
+    var context = SystemContext(world)
+    context.run[overwrite_flexible_component_0_x]()
+
+    for i in range(n):
+        var value = world.storage.get[FlexibleComponent[0]](entities[i])
+        assert_equal(value.x, 9.0)
+        assert_equal(value.y, Float32(i))
 
 
 comptime functions = __functions_in_module()

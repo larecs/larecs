@@ -30,7 +30,7 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
     Example:
 
     ```mojo {doctest="scheduler" global=true hide=true}
-    from larecs import World, Scheduler, System, SystemContext
+    from larecs import World, Scheduler, System, SystemContext, KernelContext, Filter
 
     @fieldwise_init
     struct Position(Copyable, Movable):
@@ -44,6 +44,15 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
     ```
 
     ```mojo {doctest="scheduler" global=true}
+    # Component mutation always happens inside a kernel like this one,
+    # run through the system's SystemContext.
+    comptime move_filter = Filter().include[Position, Velocity]()
+
+    def move_entities(context: KernelContext[move_filter]):
+        for entity in context:
+            entity.get[Position]().x += entity.get[Velocity]().x
+            entity.get[Position]().y += entity.get[Velocity]().y
+
     @fieldwise_init
     struct MySystem(System):
         var internal_variable: Int
@@ -56,14 +65,12 @@ struct Scheduler[*ComponentTypes: ComponentType](Movable):
 
         # This is executed in each step
         def update(mut self, mut context: SystemContext[...]) raises:
-            for entity in context.world[].storage.query[Position, Velocity]():
-                entity.get[Position]().x += entity.get[Velocity]().x
-                entity.get[Position]().y += entity.get[Velocity]().y
+            context.run[move_entities]()
 
         # This is executed at the end
         def finalize(mut self, mut context: SystemContext[...]) raises:
             print("Final positions")
-            for entity in context.world[].storage.query[Position]():
+            for entity in context.world[].storage.query[Filter().include[Position]()]():
                 print(entity.get[Position]().x, entity.get[Position]().y)
     ```
 

@@ -162,17 +162,27 @@ def test_world_remove_entities() raises:
         world.filter[Filter().include[Position, Velocity].exclusive()]()
     )
 
-    assert_equal(len(world.storage.query[Position, Velocity]().exclusive()), 0)
     assert_equal(
-        len(world.storage.query[Position, Velocity]()), entity_count - 12
+        len(
+            world.storage.query[
+                Filter().include[Position, Velocity].exclusive()
+            ]()
+        ),
+        0,
+    )
+    assert_equal(
+        len(world.storage.query[Filter().include[Position, Velocity]()]()),
+        entity_count - 12,
     )
     assert_equal(len(world), entity_count - 12 + 13)
 
     world.storage.remove_entities(
         world.filter[Filter().include[Position, Velocity]()]()
     )
-    assert_equal(len(world.storage.query[Position, Velocity]()), 0)
-    assert_equal(len(world.storage.query[Position]()), 13)
+    assert_equal(
+        len(world.storage.query[Filter().include[Position, Velocity]()]()), 0
+    )
+    assert_equal(len(world.storage.query[Filter().include[Position]()]()), 13)
     assert_equal(len(world), 13)
 
     var entity = world.storage.add_entity(pos, vel)
@@ -315,8 +325,17 @@ def test_world_batch_add() raises:
             world.storage.add_entity(Position(Float64(i), Float64(i + 1)))
         )
 
-    assert_equal(len(world.storage.query[Position]().without[Velocity]()), n)
-    assert_equal(len(world.storage.query[Position, Velocity]()), 0)
+    assert_equal(
+        len(
+            world.storage.query[
+                Filter().include[Position].exclude[Velocity]()
+            ]()
+        ),
+        n,
+    )
+    assert_equal(
+        len(world.storage.query[Filter().include[Position, Velocity]()]()), 0
+    )
 
     for entity in world.storage.add(
         world.filter[Filter().include[Position].exclude[Velocity]()](),
@@ -326,8 +345,17 @@ def test_world_batch_add() raises:
         assert_equal(entity.get[Velocity]().dx, 0.1)
         assert_equal(entity.get[Velocity]().dy, 0.2)
 
-    assert_equal(len(world.storage.query[Position]().without[Velocity]()), 0)
-    assert_equal(len(world.storage.query[Position, Velocity]()), n)
+    assert_equal(
+        len(
+            world.storage.query[
+                Filter().include[Position].exclude[Velocity]()
+            ]()
+        ),
+        0,
+    )
+    assert_equal(
+        len(world.storage.query[Filter().include[Position, Velocity]()]()), n
+    )
     for i in range(n):
         var entity = entities[i]
         assert_equal(world.storage.get[Position](entity).x, Float64(i))
@@ -352,8 +380,17 @@ def test_world_batch_add() raises:
         LargerComponent(0.3, 0.4, 0.5),
     )
 
-    assert_equal(len(world.storage.query[Position]().without[Velocity]()), 0)
-    assert_equal(len(world.storage.query[Position, Velocity]()), n)
+    assert_equal(
+        len(
+            world.storage.query[
+                Filter().include[Position].exclude[Velocity]()
+            ]()
+        ),
+        0,
+    )
+    assert_equal(
+        len(world.storage.query[Filter().include[Position, Velocity]()]()), n
+    )
 
 
 def test_world_remove() raises:
@@ -398,8 +435,17 @@ def test_world_batch_remove() raises:
         Position(1.0, 2.0), Velocity(0.1, 0.2), count=n
     )
 
-    assert_equal(len(world.storage.query[Position, Velocity]()), n)
-    assert_equal(len(world.storage.query[Position]().without[Velocity]()), 0)
+    assert_equal(
+        len(world.storage.query[Filter().include[Position, Velocity]()]()), n
+    )
+    assert_equal(
+        len(
+            world.storage.query[
+                Filter().include[Position].exclude[Velocity]()
+            ]()
+        ),
+        0,
+    )
 
     for entity in world.storage.remove[Velocity](
         world.filter[Filter().include[Position, Velocity]()](),
@@ -408,8 +454,17 @@ def test_world_batch_remove() raises:
         assert_equal(entity.get[Position]().x, 1.0)
         assert_equal(entity.get[Position]().y, 2.0)
 
-    assert_equal(len(world.storage.query[Position, Velocity]()), 0)
-    assert_equal(len(world.storage.query[Position]().without[Velocity]()), n)
+    assert_equal(
+        len(world.storage.query[Filter().include[Position, Velocity]()]()), 0
+    )
+    assert_equal(
+        len(
+            world.storage.query[
+                Filter().include[Position].exclude[Velocity]()
+            ]()
+        ),
+        n,
+    )
 
     with assert_raises(
         contains=ComponentError.missing_components_on_remove_query.msg()
@@ -472,11 +527,15 @@ def test_batch_remove_and_add() raises:
             )
         )
 
-    assert_equal(len(world.storage.query[Position, Velocity]()), n)
+    assert_equal(
+        len(world.storage.query[Filter().include[Position, Velocity]()]()), n
+    )
     assert_equal(
         len(
-            world.storage.query[Position, FlexibleComponent[1]]().without[
-                Velocity
+            world.storage.query[
+                Filter()
+                .include[Position, FlexibleComponent[1]]
+                .exclude[Velocity]()
             ]()
         ),
         0,
@@ -492,11 +551,15 @@ def test_batch_remove_and_add() raises:
         assert_equal(entity.get[FlexibleComponent[1]]().x, 3.0)
         assert_equal(entity.get[FlexibleComponent[1]]().y, 4.0)
 
-    assert_equal(len(world.storage.query[Position, Velocity]()), 0)
+    assert_equal(
+        len(world.storage.query[Filter().include[Position, Velocity]()]()), 0
+    )
     assert_equal(
         len(
-            world.storage.query[Position, FlexibleComponent[1]]().without[
-                Velocity
+            world.storage.query[
+                Filter()
+                .include[Position, FlexibleComponent[1]]
+                .exclude[Velocity]()
             ]()
         ),
         n,
@@ -636,7 +699,7 @@ def test_world_apply() raises:
         world.filter[Filter().include[Position, Velocity]()](), operation
     )
 
-    for entity in world.storage.query[Position, Velocity]():
+    for entity in world.storage.query[Filter().include[Position, Velocity]()]():
         assert_equal(entity.get[Position]().x, new_pos.x)
         assert_equal(entity.get[Position]().y, new_pos.y)
 

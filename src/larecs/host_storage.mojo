@@ -25,11 +25,10 @@ from .graph import BitMaskGraph
 from .lock import LockManager
 from .pool import EntityPool
 from .iteration import (
-    Query,
     LockedWorldEntityIterator,
     _ArchetypeIterator,
 )
-from .filter import BitMaskFilter
+from .filter import Filter, BitMaskFilter
 from .static_optional import StaticOptional
 from .types import ComponentId
 from ._utils import concatenate_arrays, assert_unreachable
@@ -64,14 +63,6 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         *Ts: ComponentType
     ] = Self.component_manager.get_id_arr[*Ts]()
     """Component ID array type for an optional component type pack."""
-
-    comptime Query = Query[
-        _,
-        _,
-        *Self.ComponentTypes,
-        has_exclude_mask=_,
-    ]
-    """Query builder type for this world's component type set."""
 
     comptime Iterator[
         archetype_mutability: Bool,
@@ -148,43 +139,47 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
     @always_inline
     def query[
-        *Ts: ComponentType
+        filter: Filter
     ](
         mut self,
-        out iterator: Self.Query[
-            origin_of(self._archetypes),
+        out iterator: Self.Iterator[
+            ImmOrigin(origin_of(self._archetypes)),
             origin_of(self._locks),
-            has_exclude_mask=False,
         ],
-    ):
+    ) raises LarecsError:
         """
-        Returns an [..iteration.Query] for all [..entity.Entity Entities] with the given components.
+        Returns a locked, read-only iterator over all [..entity.Entity Entities] matching the filter.
+
+        The lock is acquired immediately and held for the iterator's
+        lifetime, preventing structural changes to the world until it is
+        dropped. Component values are read-only through this iterator;
+        mutate components from inside a system instead, via
+        [..system.SystemContext.run].
 
         Parameters:
-            Ts: The types of the components.
+            filter: The compile-time [..filter.Filter] specifying which
+                components to include or exclude.
+
+        Raises:
+            LarecsError: If no lock is available.
 
         Returns:
-            A [..iteration.Query] for all entities with the given components.
+            A locked iterator over all entities matching the filter, with
+            read-only component access.
         """
         with Zone(
-            function_name=(
-                "Components.query[*Ts: ComponentType](out iterator: Self.Query)"
-            )
+            function_name="HostStorage.query[filter: Filter](mut self, ...)"
         ):
-            comptime assert constrain_components_unique[
-                *Ts
-            ](), "Duplicate component types in query are not allowed."
-            comptime component_count = len(Ts)
-
-            var bitmask: BitMask
-
-            comptime if not component_count:
-                bitmask = BitMask()
-            else:
-                bitmask = BitMask(Self.component_manager.get_id_arr[*Ts]())
-
-            iterator = Self.Query[has_exclude_mask=False](
-                Pointer(to=self._archetypes), Pointer(to=self._locks), bitmask
+            comptime bitmask_filter = filter.get_bitmask_filter[
+                *Self.ComponentTypes
+            ]()
+            iterator = Self.Iterator[
+                ImmOrigin(origin_of(self._archetypes)),
+                origin_of(self._locks),
+            ](
+                Pointer(to=self._archetypes).as_imm(),
+                bitmask_filter,
+                Pointer(to=self._locks),
             )
 
     @always_inline
@@ -588,18 +583,18 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Example:
 
         ```mojo {doctest="apply" global=true hide=true}
-        from larecs import World, MutArchetypeRowAccessor
+        from larecs import World, MutArchetypeRowAccessor, Filter
         from testing import assert_equal, assert_false
         ```
 
         ```mojo {doctest="apply"}
         world = World[Float32, Float64]()
-        _ = world.add_entity(Float32(0))
-        _ = world.add_entity(Float32(0), Float64(0))
-        _ = world.add_entity(Float64(0))
+        _ = world.storage.add_entity(Float32(0))
+        _ = world.storage.add_entity(Float32(0), Float64(0))
+        _ = world.storage.add_entity(Float64(0))
 
         # Remove all entities with a Float32 component.
-        world.storage.remove_entities(world.storage.query[Float32]())
+        world.storage.remove_entities(world.filter[Filter().include[Float32]()]())
         ```
 
         Args:
@@ -872,7 +867,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         **Example:**
 
         ```mojo {doctest="add_query_comps" global=true}
-        from larecs import World
+        from larecs import World, Filter
 
         @fieldwise_init
         struct Position(Copyable, Movable):
@@ -885,10 +880,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             var y: Float64
 
         world = World[Position, Velocity]()
-        _ = world.add_entities(Position(0, 0), 100)
+        _ = world.storage.add_entities(Position(0, 0), count=100)
 
         for entity in world.storage.add[Velocity](
-            world.storage.query[Position]().exclude_mask[Velocity](),
+            world.filter[Filter().include[Position]().exclude[Velocity]()](),
             Velocity(0.5, -0.5),
         ):
             velocity = entity.get[Velocity]()
@@ -981,7 +976,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Example:
 
         ```mojo {doctest="remove_query_comps" global=true}
-        from larecs import World
+        from larecs import World, Filter
 
         @fieldwise_init
         struct Position(Copyable, Movable):
@@ -994,10 +989,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             var y: Float64
 
         world = World[Position, Velocity]()
-        _ = world.add_entities(Position(0, 0), Velocity(1, 0), 100)
+        _ = world.storage.add_entities(Position(0, 0), Velocity(1, 0), count=100)
 
         for entity in world.storage.remove[Velocity](
-            world.storage.query[Position, Velocity]()
+            world.filter[Filter().include[Position, Velocity]()]()
         ):
             position = entity.get[Position]()
         ```

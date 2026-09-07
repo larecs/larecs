@@ -1,5 +1,6 @@
 from std.testing import *
 from larecs.entity import Entity, EntityLocation
+from larecs.filter import Filter
 from larecs.test_utils import SmallWorld, Position
 
 
@@ -21,7 +22,7 @@ def test_implicit_constructor() raises:
     var world = SmallWorld()
     var entity = world.storage.add_entity(Position(1, 0))
     var storage = List[Entity]()
-    for e in world.storage.query[Position]():
+    for e in world.storage.query[Filter().include[Position]()]():
         storage.append(e)
 
     assert_equal(storage[0], entity)

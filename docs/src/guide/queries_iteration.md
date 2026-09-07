@@ -12,12 +12,12 @@ conforming to a query.
 
 ## Queries
 
-{{< api Query Queries >}} allow to iterate over all
+The {{< api HostStorage.query query >}} method of
+{{< api HostStorage >}} allows to iterate over all
 entities with or without a specific
-set of components. To create a query, we can use
-the {{< api HostStorage.query query >}} method of
-{{< api HostStorage >}}. The parameters used in this method are the components
-that each entity we look for must have. For example, if we want to
+set of components. It takes a compile-time {{< api Filter >}}
+specifying the components that each entity we look for must have
+(and, optionally, must not have). For example, if we want to
 iterate over all entities with a `Position` and a `Velocity` component,
 we can do this as follows:
 
@@ -48,15 +48,18 @@ def main() raises:
     _ = world.storage.add_entity(Velocity(1, 0))
     _ = world.storage.add_entity(Position(1, 0), Velocity(1, 0))
 
-    # Query all entities that have a position
-    var query = world.storage.query[Position]()
+    # Query all entities that have a position.
+    # Calling `query` immediately locks the storage; see
+    # "Preventing iterator invalidation" below.
+    var query = world.storage.query[Filter().include[Position]()]()
 
     # Of the entities we have just added,
     # two have a position component
     print(len(query)) # "2"
 
     # Now let us iterate over the queried entities
-    for entity in query:
+    # (`^` transfers the iterator into the loop -- it isn't copyable)
+    for entity in query^:
         ref pos = entity.get[Position]()
         print(
             "Entity at position: ("
@@ -64,27 +67,31 @@ def main() raises:
         )
 ```
 
-Queries can be adjusted to also exclude entities that have
+The filter can also exclude entities that have
 certain components. For example, if we want to iterate
 over all entities that have a `Position` component
 but not a `Velocity` component, we can do this
-using the {{< api Query.without without >}} method:
+using {{< api Filter.exclude exclude >}}:
 
 ```mojo {doctest="guide_queries_iteration" global=true}
-    var excluding_query = world.storage.query[Position]().without[Velocity]()
+    var excluding_query = world.storage.query[
+        Filter().include[Position].exclude[Velocity]()
+    ]()
     print(len(excluding_query)) # "1"
 ```
 
 Furthermore, we can also query for entities that have
 exactly the components we are looking for but no more.
-This can be done using the {{< api Query.exclusive exclusive >}}
-method. For example, if we want to iterate
+This can be done using {{< api Filter.exclusive exclusive >}}.
+For example, if we want to iterate
 over all entities that have only a `Position` component,
 we can do this as follows:
 
 ```mojo {doctest="guide_queries_iteration" global=true}
-    excluding_query = world.storage.query[Position]().exclusive()
-    print(len(excluding_query)) # "1"
+    var exclusive_query = world.storage.query[
+        Filter().include[Position].exclusive()
+    ]()
+    print(len(exclusive_query)) # "1"
 ```
 
 > [!Note]
@@ -97,15 +104,19 @@ we can do this as follows:
 ## Iterating over queries
 
 As we have seen, we can iterate over queries using a for loop.
-Here, the control variable ("entity") is an {{< api EntityAccessor >}}
+Here, the control variable ("entity") is an {{< api ArchetypeRowAccessor >}}
 object, i.e., not technically an {{< api Entity >}}, which is
-merely an identifier of an entity. Instead, the `EntityAccessor`
-directly provides methods to get, set, and check the existence
+merely an identifier of an entity. Instead, the `ArchetypeRowAccessor`
+directly provides methods to get and check the existence
 of components, so that we do not need to call the storage's
-methods for this, making the code more efficient.
+methods for this, making the code more efficient. Since `query`'s
+iterator gives read-only access, components can only be read this
+way, not written -- see
+[Preventing iterator invalidation](#preventing-iterator-invalidation-the-locked-world)
+below for how to mutate them.
 
 ```mojo {doctest="guide_queries_iteration" global=true}
-    for entity in world.storage.query[Position]():
+    for entity in world.storage.query[Filter().include[Position]()]():
         ref pos = entity.get[Position]()
         print(
             "Entity at position: ("
@@ -121,15 +132,10 @@ methods for this, making the code more efficient.
 ```
 
 > [!Note]
-> The `EntityAccessor` is a temporary object that is
+> The `ArchetypeRowAccessor` is a temporary object that is
 > created for each iteration. Therefore, it should not be
-> stored in a container. Use {{< api EntityAccessor.get_entity >}}
+> stored in a container. Use {{< api ArchetypeRowAccessor.get_entity >}}
 > instead if you need to store the entity for later use.
-
-> [!Note]
-> The `EntityAccessor` can be implicitly
-> converted to an `Entity` object and hence be used
-> wherever an `Entity` is required.
 
 ## Preventing iterator invalidation: the locked world
 
@@ -151,11 +157,13 @@ lock—there is no separate accessor to unwrap. The lock stays held for the
 wrapper's lifetime, including between calls to `next`, `len`, and `bool`, and
 is released on destruction—even when a loop exits early. Moving the wrapper
 transfers the existing lock; exhausting the iterator does not unlock it while
-the wrapper remains alive. This is not a thread mutex and does not prevent
-modifying component values.
+the wrapper remains alive. This is not a thread mutex; it only prevents
+structural changes. Component values reached through this iterator are
+themselves read-only -- mutate components from inside a system instead, via
+{{< api SystemContext.run >}} (see [Systems and the scheduler](../systems_scheduler)).
 
 ```mojo {doctest="guide_queries_iteration" global=true}
-    for entity in world.storage.query[Position]():
+    for entity in world.storage.query[Filter().include[Position]()]():
 
         # Adding entities to the world while iterating
         # is forbidden.
@@ -165,7 +173,7 @@ modifying component values.
         # Changing components of an entity while iterating
         # is forbidden.
         with assert_raises():
-            world.storage.add(entity, Velocity(2, 3)) # Raises an exception
+            world.storage.add(entity.get_entity(), Velocity(2, 3)) # Raises an exception
 ```
 
 If we want to add or remove components from entities while iterating,
@@ -178,12 +186,12 @@ but no `Velocity` component:
 ```mojo {doctest="guide_queries_iteration" global=true}
     # A container for the entities
     var entities = List[Entity]()
-    for entity in world.storage.query[Position]().without[Velocity]():
+    for entity in world.storage.query[
+        Filter().include[Position].exclude[Velocity]()
+    ]():
 
         # Store the entity for later use
-        # The implicit conversion to `Entity`
-        # allows us to use `entity` directly
-        entities.append(entity)
+        entities.append(entity.get_entity())
 
     # Add a velocity component to all stored entities
     for entity in entities:

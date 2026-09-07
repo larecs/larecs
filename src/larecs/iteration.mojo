@@ -1,8 +1,8 @@
 """Iteration over entities, archetypes, and filtered component rows.
 
-Provides `Query`, the entry point for iterating over entities matching a
-`Filter`, and `EntityAccessorIterator`, which walks the dense rows
-seen by a system kernel.
+Provides `LockedWorldEntityIterator`, the read-only entity iterator returned
+by [..host_storage.HostStorage.query], and `EntityAccessorIterator`, which
+walks the dense rows seen by a system kernel.
 """
 
 from std.gpu import global_idx
@@ -13,277 +13,13 @@ from std.sys import is_gpu
 from tracy import Zone
 
 from .entity import Entity, EntityAccessor
-from .bitmask import BitMask
-from .component import (
-    ComponentType,
-    ComponentManager,
-    constrain_components_unique,
-)
+from .component import ComponentType
 from .archetype import Archetype as _Archetype
-from .host_storage import HostStorage
 from .lock import LockManager, LockGuard
 from .static_optional import StaticOptional
 from .error import LarecsError, WorldError
 from .filter import Filter, BitMaskFilter
 from .system import KernelContext
-
-
-struct Query[
-    archetype_mutability: Bool,
-    //,
-    archetypes_origin: Origin[mut=archetype_mutability],
-    locks_origin: MutOrigin,
-    *ComponentTypes: ComponentType,
-    has_exclude_mask: Bool = False,
-](ImplicitlyCopyable, SizedRaising):
-    """Query builder for entities with and without specific components.
-
-    This type should not be used directly, but through the [..host_storage.HostStorage.query] method:
-
-    ```mojo {doctest="query_init" global=true hide=true}
-    from larecs import World, ResourceStorage, MutableEntityAccessor
-    ```
-
-    ```mojo {doctest="query_init"}
-    world = World[Float64, Float32, Int]()
-    _ = world.storage.add_entity(Float64(1.0), Float32(2.0), 3)
-    _ = world.storage.add_entity(Float64(1.0), 3)
-
-    for entity in world.storage.query[Float64, Int]():
-        ref f = entity.get[Float64]()
-        f += 1
-    ```
-
-    Parameters:
-        archetype_mutability: Whether the archetypes are mutable.
-        archetypes_origin: The origin of the archetypes.
-        locks_origin: The origin of the lock manager.
-        ComponentTypes: The types of the components to include in the query.
-        has_exclude_mask: Whether the query has excluded components.
-    """
-
-    comptime HostStorage = HostStorage[*Self.ComponentTypes]
-    """The world type for this query."""
-    comptime ArchetypeIterator = _ArchetypeIterator[
-        _,
-        *Self.ComponentTypes,
-    ]
-    """The archetype iterator type for this query."""
-
-    comptime QueryWithWithout = Query[
-        Self.archetypes_origin,
-        Self.locks_origin,
-        *Self.ComponentTypes,
-        has_exclude_mask=True,
-    ]
-    """The query type with an active exclusion mask."""
-
-    var _archetypes: Pointer[
-        Self.HostStorage.Archetypes, Self.archetypes_origin
-    ]
-    """Pointer to the world's archetypes."""
-    var _lock_ptr: Pointer[LockManager, Self.locks_origin]
-    """Pointer to the world's lock manager."""
-
-    var _filter: BitMaskFilter[is_excluding=Self.has_exclude_mask]
-    """Component matching information for this query."""
-
-    @doc_hidden
-    def __init__(
-        out self,
-        archetypes: Pointer[
-            Self.HostStorage.Archetypes, Self.archetypes_origin
-        ],
-        lock_ptr: Pointer[LockManager, Self.locks_origin],
-        var include_mask: BitMask,
-        var exclude_mask: StaticOptional[BitMask, Self.has_exclude_mask] = None,
-    ):
-        """
-        Creates a new query.
-
-        The constructors should not be used directly, but through the [..host_storage.HostStorage.query] method.
-
-        Args:
-            archetypes: A pointer to the world's archetypes.
-            lock_ptr: A pointer to the world's lock manager.
-            include_mask: The mask of the components to iterate over.
-            exclude_mask: The mask for components to exclude.
-        """
-        with Zone(
-            function_name=(
-                "Query.__init__(archetypes: Pointer, lock_ptr: Pointer, var"
-                " include_mask: BitMask, var exclude_mask:"
-                " StaticOptional[BitMask, Self.has_exclude_mask])"
-            )
-        ):
-            self._archetypes = archetypes
-            self._lock_ptr = lock_ptr
-            self._filter = BitMaskFilter[is_excluding=Self.has_exclude_mask](
-                include_mask^, exclude_mask^
-            )
-
-    @doc_hidden
-    def __init__(
-        out self,
-        archetypes: Pointer[
-            Self.HostStorage.Archetypes, Self.archetypes_origin
-        ],
-        lock_ptr: Pointer[LockManager, Self.locks_origin],
-        var filter: BitMaskFilter[is_excluding=Self.has_exclude_mask],
-    ):
-        """
-        Creates a new query from existing query information.
-
-        The constructors should not be used directly, but through the [..host_storage.HostStorage.query] method.
-
-        Args:
-            archetypes: A pointer to the world's archetypes.
-            lock_ptr: A pointer to the world's lock manager.
-            filter: The filter to use for matching.
-        """
-        with Zone(
-            function_name=(
-                "Query.__init__(archetypes: Pointer, lock_ptr: Pointer, var"
-                " filter: BitMaskFilter)"
-            )
-        ):
-            self._archetypes = archetypes
-            self._lock_ptr = lock_ptr
-            self._filter = filter^
-
-    def __init__(out self, *, copy: Self):
-        """
-        Copy constructor.
-
-        Args:
-            copy: The query to copy.
-        """
-        with Zone(function_name="Query.__init__(copy: Self)"):
-            self._archetypes = copy._archetypes
-            self._lock_ptr = copy._lock_ptr
-            self._filter = copy._filter.copy()
-
-    def __len__(self, out size: Int):
-        """
-        Returns the number of entities matching the query.
-
-        Note that this requires the creation of an iterator from the query.
-        If you intend to iterate anyway, get the iterator with [.Query.__iter__],
-        and call `len` on it, instead.
-
-        Returns:
-            The number of entities matching the query.
-        """
-        with Zone(function_name="Query.__len__(out size: Int)"):
-            size = 0
-            for i in range(len(self._archetypes[])):
-                ref archetype = self._archetypes[].unsafe_get(i)
-                if archetype and self._filter.matches(archetype.get_mask()):
-                    size += len(archetype)
-
-    @always_inline
-    def __iter__(
-        deinit self,
-        out iterator: LockedWorldEntityIterator[
-            Self.archetypes_origin,
-            Self.locks_origin,
-            *Self.ComponentTypes,
-            has_start_indices=False,
-        ],
-    ) raises LarecsError:
-        """
-        Creates an iterator over all entities that match the query.
-
-        Raises:
-            LarecsError: If the iterator cannot acquire a lock.
-
-        Returns:
-            An iterator over all entities that match the query.
-        """
-        with Zone(function_name="Query.__iter__(out iterator: _WorldIterator)"):
-            iterator = {
-                self._archetypes,
-                self._filter^,
-                self._lock_ptr,
-                None,
-            }
-
-    @always_inline
-    def without[
-        *Ts: ComponentType
-    ](deinit self, out query: Self.QueryWithWithout):
-        """
-        Excludes the given components from the query.
-
-        ```mojo {doctest="query_without" global=true hide=true}
-        from larecs import World, ResourceStorage, MutableEntityAccessor
-        ```
-
-        ```mojo {doctest="query_without"}
-        world = World[Float64, Float32, Int]()
-        _ = world.add_entity(Float64(1.0), Float32(2.0), 3)
-        _ = world.storage.add_entity(Float64(1.0), 3)
-
-        for entity in world.storage.query[Float64, Int]().without[Float32]():
-            ref f = entity.get[Float64]()
-            f += 1
-        ```
-
-        Parameters:
-            Ts: The types of the components to exclude.
-
-        Returns:
-            The query, excluding the given components.
-        """
-        with Zone(
-            function_name=(
-                "Query.without[*Ts: ComponentType](out query:"
-                " Self.QueryWithWithout)"
-            )
-        ):
-            comptime assert constrain_components_unique[
-                *Ts
-            ](), "Duplicate component types in query are not allowed."
-
-            query = Self.QueryWithWithout(
-                self._archetypes,
-                self._lock_ptr,
-                self._filter
-                ^.exclude(
-                    BitMask(
-                        Self.HostStorage.component_manager.get_id_arr[*Ts]()
-                    )
-                ),
-            )
-
-    @always_inline
-    def exclusive(deinit self, out query: Self.QueryWithWithout):
-        """
-        Makes the query only match entities with exactly the query's components.
-
-        ```mojo {doctest="query_without" global=true hide=true}
-        from larecs import World, ResourceStorage, MutableEntityAccessor
-        ```
-
-        ```mojo {doctest="query_without"}
-        world = World[Float64, Float32, Int]()
-        _ = world.add_entity(Float64(1.0), Float32(2.0), 3)
-        _ = world.storage.add_entity(Float64(1.0), 3)
-
-        for entity in world.storage.query[Float64, Int]().exclusive():
-            ref f = entity.get[Float64]()
-            f += 1
-        ```
-
-        Returns:
-            The query, made exclusive.
-        """
-        with Zone(
-            function_name="Query.exclusive(out query: Self.QueryWithWithout)"
-        ):
-            query = Self.QueryWithWithout(
-                self._archetypes, self._lock_ptr, self._filter^.exclusive()
-            )
 
 
 struct _ArchetypeIterator[
@@ -695,9 +431,7 @@ struct LockedWorldEntityIterator[
             self._guard = LockGuard(lock_ptr)
         except:
             raise LarecsError(WorldError.out_of_locks)
-        self._iterator = Self.UnlockedIterator(
-            archetype_iter^, start_indices^
-        )
+        self._iterator = Self.UnlockedIterator(archetype_iter^, start_indices^)
 
     def __init__(
         out self,
@@ -726,7 +460,8 @@ struct LockedWorldEntityIterator[
         )
 
     def __deinit__(deinit self):
-        """Destroys the wrapped iterator before releasing the lock that protects it."""
+        """Destroys the wrapped iterator before releasing the lock that protects it.
+        """
         _ = self._iterator^
         _ = self._guard^
 

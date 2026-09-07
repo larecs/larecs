@@ -114,7 +114,8 @@ def scale_entities(
 
 
 def test_kernel_context_required_resources() raises:
-    """A kernel can declare and read a resource via `KernelContext.resources`."""
+    """A kernel can declare and read a resource via `KernelContext.resources`.
+    """
     var world = World[Int]()
     world.resources.add(Scale(3))
     _ = world.storage.add_entities(1, count=5)
@@ -123,7 +124,7 @@ def test_kernel_context_required_resources() raises:
     context.run[scale_entities]()
 
     var total = 0
-    for entity in world.storage.query[Int]():
+    for entity in world.storage.query[Filter().include[Int]()]():
         total += entity.get[Int]()
 
     assert_equal(total, 15)
