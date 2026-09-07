@@ -135,12 +135,12 @@ async def main():
                 task.cancel()
             await asyncio.gather(*pending, return_exceptions=True)
 
-            completed_task = done.pop()
-            completed_result = completed_task.result()
-            if completed_task is modo_task:
-                _check(*completed_result, "modo build --watch")
-            else:
-                _check(*completed_result, "hugo server")
+            for completed_task in done:
+                completed_result = completed_task.result()
+                if completed_task is modo_task:
+                    _check(*completed_result, "modo build --watch")
+                else:
+                    _check(*completed_result, "hugo server")
 
         case "serve":
             returncode, script_error = await serve_docs("docs/site")
