@@ -317,14 +317,16 @@ struct ComponentError(Equatable, ImplicitlyCopyable, Writable):
                 "Entity already has components that are being added:",
                 "Entity misses components required by assertion:",
                 (
-                    "Query matches entities that do not have all the"
-                    " components to remove. Use `Query[Component, ...]()` to"
-                    " include those components:"
+                    "Filter matches entities that do not have all the"
+                    " components to remove. Use"
+                    " `Filter().include[Component, ...]()` to include those"
+                    " components:"
                 ),
                 (
-                    "Query matches entities that already have some of the"
-                    " components to add. Use `Query.without[Component,"
-                    " ...]()` to exclude those components:"
+                    "Filter matches entities that already have some of the"
+                    " components to add. Use `Filter().include[...]()"
+                    ".exclude[Component, ...]()` to exclude those"
+                    " components:"
                 ),
             ]
 

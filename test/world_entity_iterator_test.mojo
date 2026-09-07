@@ -11,7 +11,7 @@ from std.testing import (
 from larecs.host_storage import HostStorage
 from larecs.iteration import _ArchetypeIterator, _WorldEntityIterator
 from larecs.bitmask import BitMask
-from larecs.filter import BitMaskFilter
+from larecs.filter import BitMaskFilter, Filter
 from larecs.error import WorldError
 from larecs.static_optional import StaticOptional
 
@@ -64,7 +64,7 @@ def test_locked_iterator_move_and_exhaustion() raises:
     """
     var storage = HostStorage[Int]()
     _ = storage.add_entity(10)
-    var iterator = storage.query[Int]().__iter__()
+    var iterator = storage.query[Filter().include[Int]()]().__iter__()
     var locks_before_move = storage._locks.locks.copy()
     var moved = iterator^
     var loop_iterator = moved^.__iter__()
@@ -93,8 +93,8 @@ def test_nested_locked_iterators_release_independently() raises:
     """
     var storage = HostStorage[Int]()
     _ = storage.add_entity(10)
-    var outer = storage.query[Int]().__iter__()
-    for _ in storage.query[Int]():
+    var outer = storage.query[Filter().include[Int]()]().__iter__()
+    for _ in storage.query[Filter().include[Int]()]():
         break
     assert_true(storage.is_locked())
     assert_equal(len(outer), 1)

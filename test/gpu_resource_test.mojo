@@ -51,7 +51,7 @@ def test_kernel_context_required_resources_on_gpu() raises:
     context.run[scale_entities, on_gpu=True]()
 
     var total: Int32 = 0
-    for entity in world.storage.query[Int32]():
+    for entity in world.storage.query[Filter().include[Int32]()]():
         total += entity.get[Int32]()
 
     assert_equal(total, 15)

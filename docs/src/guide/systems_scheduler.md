@@ -28,7 +28,17 @@ whose `world` field points at the world on which they perform the
 desired operations.
 
 ```mojo {doctest="guide_systems_scheduler" global=true}
-from larecs import World, System, SystemContext
+from larecs import World, System, SystemContext, KernelContext, Filter
+
+# Component mutation always happens inside a kernel like this one, run
+# through the system's SystemContext -- see it invoked in Move.update()
+# below.
+comptime move_filter = Filter().include[Position, Velocity]()
+
+def move_entities(context: KernelContext[move_filter]):
+    for entity in context:
+        entity.get[Position]().x += entity.get[Velocity]().dx
+        entity.get[Position]().y += entity.get[Velocity]().dy
 
 @fieldwise_init
 struct Move(System):
@@ -40,11 +50,8 @@ struct Move(System):
 
     # This is executed in each step
     def update(mut self, mut context: SystemContext[...]) raises:
-
         # Move all entities with a position and velocity
-        for entity in context.world[].storage.query[Position, Velocity]():
-            entity.get[Position]().x += entity.get[Velocity]().dx
-            entity.get[Position]().y += entity.get[Velocity]().dy
+        context.run[move_entities]()
 
     # This is executed at the end
     def finalize(mut self, mut context: SystemContext[...]) raises:
@@ -115,13 +122,13 @@ struct Logger[interval: Int](System):
         self._logging_step = 0
 
     def _print_positions(self, mut context: SystemContext[...]) raises:
-        for entity in context.world[].storage.query[Position, Velocity]():
+        for entity in context.world[].storage.query[Filter().include[Position, Velocity]()]():
             ref pos = entity.get[Position]()
             print("(", pos.x, ",", pos.y, ")")
 
     # This is executed once at the beginning
     def initialize(mut self, mut context: SystemContext[...]) raises:
-        print("Starting with", len(context.world[].storage.query[Position, Velocity]()),
+        print("Starting with", len(context.world[].storage.query[Filter().include[Position, Velocity]()]()),
               "moving entities.")
 
     # This is executed in each step
@@ -162,12 +169,10 @@ def main() raises:
 
 ## GPU execution
 
-Beyond the CPU-oriented `world.storage.query`/`world.storage.apply` APIs
-shown above, a system can also run a kernel function directly against a
-filter of components via {{< api SystemContext.run >}}, optionally
-executing it on an accelerator (`on_gpu=True`) instead of the CPU. This is
-an advanced, lower-level API most useful for hot loops over large numbers
-of homogeneous entities; see the {{< api SystemContext.run >}} and
+`SystemContext.run`/`KernelContext`, as used by `Move` above, is not just
+how components get mutated -- it can also run on an accelerator, by passing
+`on_gpu=True`, instead of the CPU. The same kernel function works on both
+targets unchanged; see the {{< api SystemContext.run >}} and
 {{< api KernelContext >}} API docs for details. GPU execution requires an
 available accelerator and the corresponding Mojo GPU toolchain -- on
 systems without one, `on_gpu=True` kernels fall back to CPU execution.

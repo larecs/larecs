@@ -219,17 +219,23 @@ def run_benchmarks(config: BenchConfig, out results: List[BenchResult]) raises:
             results.append(result)
 
 
+comptime move_filter = lx.Filter().include[Position, Velocity]()
+
+
+def move_entities(context: lx.KernelContext[move_filter]):
+    for entity in context:
+        entity.get[Position]().x += entity.get[Velocity]().x
+        entity.get[Position]().y += entity.get[Velocity]().y
+
+
 def benchmark[
     components_exp: Int
 ](rounds: Int, entities: Int) raises -> BenchResult:
     var w1 = create_ecs_world[components_exp](entities)
+    var context = lx.SystemContext(w1)
     var start_ecs = perf_counter_ns()
     for _ in range(rounds):
-        for entity in w1.storage.query[Position, Velocity]():
-            ref position = entity.get[Position]()
-            ref velocity = entity.get[Velocity]()
-            position.x += velocity.x
-            position.y += velocity.y
+        context.run[move_entities]()
     var dur_ecs = Float64(perf_counter_ns() - start_ecs) / Float64(
         entities * rounds
     )

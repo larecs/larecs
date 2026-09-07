@@ -164,8 +164,10 @@ This is significantly more efficient than adding components to entities one by o
 ```mojo {doctest="guide_change_entities" global=true}
     # Less efficient approach (avoid this for large numbers of entities)
     var entities = List[Entity]()
-    for entity in world.storage.query[Position]().without[Velocity]():
-        entities.append(entity)
+    for entity in world.storage.query[
+        Filter().include[Position].exclude[Velocity]()
+    ]():
+        entities.append(entity.get_entity())
 ```
 
 Similar methods exist also for {{< api HostStorage.remove removing >}} and
