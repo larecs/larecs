@@ -29,11 +29,10 @@ from std.sys import has_accelerator
 from custom_benchmark import DefaultBench
 
 from larecs import Entity, Filter, KernelContext, SystemContext, World
-from larecs.component import ComponentType
 
 
 @fieldwise_init
-struct Position(ComponentType & ImplicitlyCopyable):
+struct Position(TrivialRegisterPassable):
     """A single-precision position, sized for device storage."""
 
     var x: Float32
@@ -44,7 +43,7 @@ struct Position(ComponentType & ImplicitlyCopyable):
 
 
 @fieldwise_init
-struct Velocity(ComponentType & ImplicitlyCopyable):
+struct Velocity(TrivialRegisterPassable):
     """A single-precision velocity, sized for device storage."""
 
     var dx: Float32
@@ -56,9 +55,6 @@ struct Velocity(ComponentType & ImplicitlyCopyable):
 
 comptime ENTITY_COUNT = 250_000
 """Number of entities each benchmark integrates."""
-
-comptime FILTER = Filter().include[Position, Velocity]()
-"""The filter matching the integrated entities."""
 
 comptime WorldType = World[Position, Velocity]
 """The world type used by these benchmarks."""
@@ -87,7 +83,9 @@ comptime BYTES_PER_ENTITY = 32
 """Bytes of component traffic per entity per launch: 16 read, 16 written."""
 
 
-def integrate_orbit[steps: Int](context: KernelContext[FILTER]):
+def integrate_orbit[
+    steps: Int
+](context: KernelContext[Filter().include[Position, Velocity]()]):
     """Advances every matching entity along a central-force orbit.
 
     The body of the step loop is deliberately free of memory traffic: the
@@ -157,8 +155,8 @@ def _populate(mut world: WorldType) raises -> Entity:
         Position(1.0, 0.0), Velocity(0.0, 1.0), count=ENTITY_COUNT
     ):
         var radius = 1.0 + Float32(index) * 1e-6
-        entity.get[Position]().x = radius
-        entity.get[Velocity]().dy = rsqrt(radius)
+        entity.unsafe_get[Position]().x = radius
+        entity.unsafe_get[Velocity]().dy = rsqrt(radius)
         if index == 0:
             first = entity.get_entity()
         index += 1

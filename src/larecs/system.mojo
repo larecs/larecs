@@ -581,7 +581,7 @@ struct SystemContext[
                 comptime for i in range(len(filter)):
                     comptime T = filter._include.ComponentTypes[i]
 
-                    comptime if filter.reads[T]():
+                    comptime if filter.reads[T]:
                         # A filter can match multiple archetypes; each is a
                         # separate homogeneous host range that must land at
                         # its own offset in the flat device column,
@@ -626,7 +626,7 @@ struct SystemContext[
                     comptime for i in range(len(filter)):
                         comptime T = filter._include.ComponentTypes[i]
 
-                        comptime if filter.writes[T]():
+                        comptime if filter.writes[T]:
                             var offset = 0
                             for ref archetype in matching_archetypes.copy():
                                 device_storage.copy_to_host[T](

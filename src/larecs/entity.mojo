@@ -214,9 +214,7 @@ struct EntityAccessor[filter: Filter](Copyable):
 
     def get[
         T: ComponentType
-    ](self) -> ref[
-        UntrackedOrigin[mut=Self.filter._written.ComponentTypes.contains[T]()]
-    ] T:
+    ](self) -> ref[UntrackedOrigin[mut=Self.filter.writes[T]]] T:
         """Loads an included component value for this entity.
 
         Returns a mutable reference when the kernel's filter marked ``T``
@@ -244,7 +242,7 @@ struct EntityAccessor[filter: Filter](Copyable):
         comptime assert (
             comp_idx != -1
         ), "Component type is not included by the kernel filter"
-        comptime assert Self.filter.reads[T](), (
+        comptime assert Self.filter.reads[T], (
             "Component type is declared write-only by the kernel filter"
             " (via Filter.write) -- its previous value is never uploaded"
             " to the kernel. Use set[T]() to write it, or Filter.read /"
@@ -271,7 +269,7 @@ struct EntityAccessor[filter: Filter](Copyable):
         comptime assert (
             comp_idx != -1
         ), "Component type is not included by the kernel filter"
-        comptime assert Self.filter.writes[T](), (
+        comptime assert Self.filter.writes[T], (
             "Component type is declared read-only by the kernel filter"
             " (via Filter.read) -- it cannot be written. Use Filter.write"
             " or Filter.include to make it writable."
