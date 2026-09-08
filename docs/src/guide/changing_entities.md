@@ -11,12 +11,12 @@ existing components.
 ## Accessing and changing individual components
 
 The values of an entity's component can be
-accessed and changed via the {{< api World.get get >}}
-method of world.
+accessed and changed via the {{< api HostStorage.get get >}}
+method of {{< api World World.storage >}}.
 
 ```mojo {doctest="guide_change_entities" global=true hide=true}
-from larecs import World
-from testing import *
+from larecs import World, Entity, Filter
+from std.testing import *
 
 @fieldwise_init
 struct Position(Copyable, Movable):
@@ -29,82 +29,83 @@ struct Velocity(Copyable, Movable):
     var dy: Float64
 ```
 
-```mojo {doctest="guide_change_entities" hide=true}
-world = World[Position, Velocity]()
+```mojo {doctest="guide_change_entities" global=true hide=true}
+def main() raises:
+    var world = World[Position, Velocity]()
 ```
 
 A reference to a component can be obtained
 as follows:
 
-```mojo {doctest="guide_change_entities"}
-# Add an entity with a component
-entity = world.add_entity(Position(0, 0))
+```mojo {doctest="guide_change_entities" global=true}
+    # Add an entity with a component
+    var entity = world.storage.add_entity(Position(0, 0))
 
-# Get a reference to the position;
-ref pos = world.get[Position](entity)
+    # Get a reference to the position;
+    ref pos = world.storage.get[Position](entity)
 
-# We can change the reference.
-pos.x = 5
-assert_equal(world.get[Position](entity).x, 5)
+    # We can change the reference.
+    pos.x = 5
+    assert_equal(world.storage.get[Position](entity).x, 5)
 
-# We can also replace the component completely.
-world.get[Position](entity) = Position(10, 0)
-assert_equal(world.get[Position](entity).x, 10)
+    # We can also replace the component completely.
+    world.storage.get[Position](entity) = Position(10, 0)
+    assert_equal(world.storage.get[Position](entity).x, 10)
 ```
 
 Of course, accessing a component only works if the entity has
 the component in question. Accessing a component
 that the entity does not have will result in an error.
 
-```mojo {doctest="guide_change_entities"}
-# Add an entity without a velocity component
-entity = world.add_entity(Position(0, 0))
+```mojo {doctest="guide_change_entities" global=true}
+    # Add an entity without a velocity component
+    entity = world.storage.add_entity(Position(0, 0))
 
-with assert_raises():
-    # This will result in an error
-    _ = world.get[Velocity](entity)
+    with assert_raises():
+        # This will result in an error
+        _ = world.storage.get[Velocity](entity)
 ```
 
 We can check if an entity has a component using the
-{{< api World.has has >}} method.
+{{< api HostStorage.has has >}} method.
 
-```mojo {doctest="guide_change_entities"}
-# Check if the entity has a velocity component
-if world.has[Velocity](entity):
-    print("Entity has a velocity component")
-else:
-    print("Entity does not have a velocity component")
+```mojo {doctest="guide_change_entities" global=true}
+    # Check if the entity has a velocity component
+    if world.storage.has[Velocity](entity):
+        print("Entity has a velocity component")
+    else:
+        print("Entity does not have a velocity component")
 ```
 
 ## Setting multiple components at once
 
 We can set the values of multiple components at once
-using the {{< api World.set set >}}
+using the {{< api HostStorage.set set >}}
 method. This method takes an arbitrary number of
 components and sets them all in one go.
 
-```mojo {doctest="guide_change_entities"}
-# Add an entity with two components
-entity = world.add_entity(Position(0, 0), Velocity(1, 1))
+```mojo {doctest="guide_change_entities" global=true}
+    # Add an entity with two components
+    entity = world.storage.add_entity(Position(0, 0), Velocity(1, 1))
 
-# Set multiple components at once
-world.set(entity, Position(5, 5), Velocity(2, 2))
+    # Set multiple components at once
+    world.storage.set(entity, Position(5, 5), Velocity(2, 2))
 ```
 
 ## Adding and removing components
 
 Components can be added and removed from entities using the
-{{< api World.add add >}} and {{< api World.remove remove >}} methods.
+{{< api HostStorage.add add >}} and {{< api HostStorage.remove remove >}} methods.
 
-```mojo {doctest="guide_change_entities"}
-# Add an entity without components
-entity = world.add_entity()
+```mojo {doctest="guide_change_entities" global=true}
+    # Add an entity without components
+    entity = world.storage.add_entity()
 
-# Add components to the entity
-world.add(entity, Position(0, 0), Velocity(1, 1))
+    # Add components to the entity
+    world.storage.add(entity, Position(0, 0), Velocity(1, 1))
 
-# Remove a component from the entity
-world.remove[Velocity](entity)
+    # Remove a component from the entity
+    world.storage.remove[Velocity](entity)
 ```
 
 This works with arbitrary numbers of components, so we can add or remove
@@ -112,14 +113,14 @@ any number of components at once.
 
 If we want to remove some components and replace
 them with other components directly, we can use the
-{{< api World.replace replace >}} method in combination with the
+{{< api HostStorage.replace replace >}} method in combination with the
 {{< api Replacer.by by >}} method. The `replace` method takes
 Components to be removed as parameters, whereas the `by` method
 takes the new components to be added.
 
-```mojo {doctest="guide_change_entities"}
-# Replace the position component with a velocity component
-world.replace[Position]().by(Velocity(2, 2), entity=entity)
+```mojo {doctest="guide_change_entities" global=true}
+    # Replace the position component with a velocity component
+    world.storage.replace[Position]().by(Velocity(2, 2), entity=entity)
 ```
 
 Similar to the `add` and `remove`
@@ -143,72 +144,59 @@ individual operations on each entity.
 > reorganization and improve cache locality.
 
 You can add components to multiple entities that match a query using the
-{{< api World.add add >}} method with a query:
+{{< api HostStorage.add add >}} method with a query:
 
-```mojo {doctest="guide_change_entities"}
-# Add 10 entities with only Position components
-_ = world.add_entities(Position(0, 0), count=10)
+```mojo {doctest="guide_change_entities" global=true}
+    # Add 10 entities with only Position components
+    _ = world.storage.add_entities(Position(0, 0), count=10)
 
-# Add Velocity component to all entities that have Position but not Velocity
-world.storage.add(
-    world.storage.query[Position]().without[Velocity](),
-    Velocity(1.0, 0.5)
-)
-
-# You can also add multiple components at once to multiple entities
-world.storage.add(
-    world.storage.query[Position]().without[Velocity](),
-    Velocity(2.0, 1.0),
-    # Additional components can be added here
-)
+    # Add a Velocity component to all entities that have Position but not Velocity
+    for entity in world.storage.add(
+        world.filter[Filter().include[Position].exclude[Velocity]()](),
+        Velocity(1.0, 0.5),
+    ):
+        ref pos = entity.unsafe_get[Position]()
+        ref vel = entity.unsafe_get[Velocity]()
 ```
 
 This is significantly more efficient than adding components to entities one by one:
 
-```mojo {doctest="guide_change_entities"}
-# Less efficient approach (avoid this for large numbers of entities)
-entities = List[Entity]()
-for entity in world.storage.query[Position]().without[Velocity]():
-    entities.append(entity)
+```mojo {doctest="guide_change_entities" global=true}
+    # Less efficient approach (avoid this for large numbers of entities)
+    var entities = List[Entity]()
+    for entity in world.storage.query[
+        Filter().include[Position].exclude[Velocity]()
+    ]():
+        entities.append(entity.get_entity())
 ```
 
-Similar methods exist also for {{< api World.remove removing >}} and
-{{< api World.replace replacing >}} components from multiple entities at once.
+Similar methods exist also for {{< api HostStorage.remove removing >}} and
+{{< api HostStorage.replace replacing >}} components from multiple entities at once.
 
-```mojo {doctest="guide_change_entities"}
-# Add 10 entities with Position and Velocity components
-_ = world.add_entities(Position(0, 0), Velocity(1.0, 1.0), count=10)
+```mojo {doctest="guide_change_entities" global=true}
+    # Add 10 more entities with Position and Velocity components
+    _ = world.storage.add_entities(Position(0, 0), Velocity(1.0, 1.0), count=10)
 
-# Remove Velocity component from all entities that have both Position and Velocity
-world.storage.remove[Velocity](
-    world.storage.query[Position, Velocity]()
-)
-
-# You can also remove multiple components at once from multiple entities
-world.storage.remove[Position, Velocity](
-    world.storage.query[Position, Velocity]()
-)
+    # Remove the Velocity component from all entities that have both Position and Velocity
+    for entity in world.storage.remove[Velocity](
+        world.filter[Filter().include[Position, Velocity]()]()
+    ):
+        ref pos = entity.unsafe_get[Position]()
 ```
 
 For batch replace operations, you also need to use the {{< api Replacer.by by >}} helper method to specify which
 components should be used as replacement.
 
-```mojo {doctest="guide_change_entities"}
-# Add 10 entities with Position components
-_ = world.add_entities(Position(0, 0), count=10)
+```mojo {doctest="guide_change_entities" global=true}
+    # Add 10 more entities with only a Position component
+    _ = world.storage.add_entities(Position(0, 0), count=10)
 
-# Replace Position with Velocity for all entities that have Position
-world.storage.replace[Position]().by(
-    Velocity(2.0, 2.0)
-    query=world.storage.query[Position](),
-)
-
-# You can also replace multiple components with multiple other components
-world.storage.replace[Position, Velocity]().by(
-    world.storage.query[Position, Velocity](),
-    Direction(0.0, 5.0),
-    Acceleration(0.2, 0.4)
-)
+    # Replace Position with Velocity for all entities that have only a Position
+    for entity in world.storage.replace[Position]().by(
+        Velocity(2.0, 2.0),
+        filter=world.filter[Filter().include[Position].exclusive()](),
+    ):
+        ref vel = entity.unsafe_get[Velocity]()
 ```
 
 > [!Important]

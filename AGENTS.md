@@ -81,3 +81,48 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 - Memory layout and cache efficiency are crucial
 - Always consider vectorization opportunities
 - Update benchmarks when making performance changes
+
+## Known issues
+
+### GPU tests must not be compiled with `-g` (Apple Metal compiler crash)
+
+Compiling a GPU kernel that uses `KernelContext`'s `for entity in context`
+iteration (`EntityAccessorIterator`, which lowers to `raise StopIteration()`-
+driven control flow) with debug info (`-g`) reliably crashes Apple's Metal
+shader compiler on-device:
+
+```
+At max/mojo/max/gpu/host/_device_context_extras.mojo:168:17: Failed to create
+compute pipeline state (GPU machine code generation): Compilation failed due
+to an interrupted connection: XPC_ERROR_CONNECTION_INTERRUPTED. This error
+occurred after multiple retries.
+```
+
+This is not flaky driver noise -- it's deterministic and reproducible in
+isolation. `log show`/crash reports (`~/Library/Logs/DiagnosticReports/
+MTLCompilerService-*.ips`) show `MTLCompilerService` SIGABRT-ing every time,
+inside Apple's proprietary AGX LLVM backend:
+
+```
+llvm::report_fatal_error
+  -> llvm::AGX::AGXCompilePlan::execute
+  -> AGCLLVMCtx::compile
+  -> MTLCompilerObject::backendCompileModule
+  -> MTLCompilerService::messageHandler
+```
+
+The trigger is specifically `-g`: the exact same kernel, built with the exact
+same `mojo build` invocation minus `-g`, compiles and runs correctly. It is
+independent of resource access, of whether the kernel reads or writes
+components, and of component count/type -- confirmed by bisecting several
+minimal repros. `system_sketch.mojo` (built via plain `mojo run`/`mojo
+build`, no `-g`) uses this exact iteration pattern and works; every test in
+`test/` that used it failed until this was understood, because
+`test/run_tests.sh` used to build every test with `-g` unconditionally.
+
+**Fix**: any test that launches a GPU kernel must opt out of debug info via
+the `# SKIP_DEBUG` marker mogo-tester (>=2.3.0) supports -- see
+`test/run_tests.sh`'s header comment. This is a workaround, not a real fix:
+the underlying bug lives in Apple's Metal compiler, not in Mojo or larecs,
+and there is nothing to change in this codebase to avoid it beyond not
+compiling GPU kernels with `-g`.

@@ -1,10 +1,19 @@
+"""Entity identifiers and lightweight accessors.
+
+Provides `Entity`, the recyclable ID/generation pair used to identify
+entities, and `EntityAccessor`, a non-owning accessor to a single entity's
+components.
+"""
+
 from std.bit import bit_reverse
 from std.hashlib import Hasher
 
 from tracy import Zone
 
+from .component import ComponentType
+from .filter import Filter
 from .types import EntityId
-from .archetype import Archetype, EntityAccessor
+from .archetype import Archetype, ArchetypeRowAccessor
 
 # # Reflection type of an [Entity].
 # var entityType = reflect.TypeOf(Entity{})
@@ -28,7 +37,8 @@ struct Entity(
     """Entity identifier.
     Holds an entity ID and it's generation for recycling.
 
-    Entities are only created via the [..world.World], using [..storage.Storage.add_entity].
+    Entities are only created via the [..world.World], using [..host_storage.HostStorage.add_entity].
+
 
     ⚠️ Important:
     Entities are intended to be stored and passed around via copy, not via pointers!
@@ -49,19 +59,24 @@ struct Entity(
             id: The entity ID.
             generation: The entity generation.
         """
-        self._id = id
-        self._generation = generation
+        with Zone(
+            function_name="Entity.__init__(id: EntityId, generation: UInt32)"
+        ):
+            self._id = id
+            self._generation = generation
 
     @implicit
     @always_inline
-    def __init__(out self, accessor: EntityAccessor):
+    def __init__(out self, accessor: ArchetypeRowAccessor):
         """
-        Initializes the entity from an [..archetype.EntityAccessor].
+        Initializes the entity from an [..archetype.ArchetypeRowAccessor].
 
         Args:
             accessor: The entity accessor to initialize from.
         """
-        with Zone(function_name="Entity.__init__(accessor: EntityAccessor)"):
+        with Zone(
+            function_name="Entity.__init__(accessor: ArchetypeRowAccessor)"
+        ):
             self = accessor.get_entity()
 
     @always_inline
@@ -71,6 +86,9 @@ struct Entity(
 
         Args:
             other: The other entity to compare to.
+
+        Returns:
+            True if both entities have the same ID and generation.
         """
         with Zone(function_name="Entity.__eq__(other: Entity)"):
             return (
@@ -84,6 +102,9 @@ struct Entity(
 
         Args:
             other: The other entity to compare to.
+
+        Returns:
+            True if the entities differ in ID or generation.
         """
         with Zone(function_name="Entity.__ne__(other: Entity)"):
             return not (self == other)
@@ -92,6 +113,9 @@ struct Entity(
     def __bool__(self) -> Bool:
         """
         Returns whether this entity is not the zero entity.
+
+        Returns:
+            True if this entity is not the zero entity.
         """
         with Zone(function_name="Entity.__bool__()"):
             return self._id != 0
@@ -101,6 +125,9 @@ struct Entity(
     def __str__(self) -> String:
         """
         Returns a string representation of the entity.
+
+        Returns:
+            A string of the form "Entity(id, generation)".
         """
         with Zone(function_name="Entity.__str__()"):
             return (
@@ -113,26 +140,45 @@ struct Entity(
 
     @always_inline
     def __hash__[H: Hasher](self, mut hasher: H):
-        """Returns a unique hash of the entity."""
+        """Returns a unique hash of the entity.
+
+        Parameters:
+            H: The hasher type to use.
+
+        Args:
+            hasher: The hasher to update with the entity's ID and generation.
+        """
         with Zone(function_name="Entity.__hash__[H: Hasher](mut hasher: H)"):
             hasher.update(self._id)
             hasher.update(self._generation)
 
     @always_inline
     def get_id(self) -> EntityId:
-        """Returns the entity's ID."""
+        """Returns the entity's ID.
+
+        Returns:
+            The entity's ID.
+        """
         with Zone(function_name="Entity.get_id()"):
             return self._id
 
     @always_inline
     def get_generation(self) -> UInt32:
-        """Returns the entity's generation."""
+        """Returns the entity's generation.
+
+        Returns:
+            The entity's generation.
+        """
         with Zone(function_name="Entity.get_generation()"):
             return self._generation
 
     @always_inline
     def is_zero(self) -> Bool:
-        """Returns whether this entity is the reserved zero entity."""
+        """Returns whether this entity is the reserved zero entity.
+
+        Returns:
+            True if this entity is the reserved zero entity.
+        """
         with Zone(function_name="Entity.is_zero()"):
             return self._id == 0
 
@@ -148,3 +194,86 @@ struct EntityLocation(ImplicitlyCopyable, TrivialRegisterPassable):
     # Entity's current archetype
     var archetype_index: Int
     """Index of the archetype currently storing the entity."""
+
+
+@fieldwise_init
+struct EntityAccessor[filter: Filter](Copyable):
+    """Non-owning mutable accessor for a single entity.
+
+    Parameters:
+        filter: The comptime [..filter.Filter] controlling which components are accessible via this accessor.
+    """
+
+    var idx: Int
+    """The index of the entity row in the component table."""
+
+    var _component_table_base: Array[
+        Pointer[UInt8, MutUntrackedOrigin], len(Self.filter)
+    ]
+    """The base pointers to the component columns in the component table."""
+
+    def get[
+        T: ComponentType
+    ](self) -> ref[UntrackedOrigin[mut=Self.filter.writes[T]]] T:
+        """Loads an included component value for this entity.
+
+        Returns a mutable reference when the kernel's filter marked ``T``
+        writable (via `Filter.include` or `Filter.write`), and an
+        immutable reference when the filter marked ``T`` read-only (via
+        `Filter.read`). This is enforced by the compiler, not just
+        documented: the returned reference's own type differs between the
+        two cases, so writing through a read-only `get` is a compile
+        error rather than a runtime one.
+
+        Parameters:
+            T: The component type to load.
+
+        Returns:
+            A reference to the component value for this entity.
+
+        Constraints:
+            ``T`` must be included by the kernel's filter and marked
+            readable (via `Filter.read` or `Filter.include`). A
+            write-only component's previous value is never uploaded to
+            the kernel, so reading it would read uninitialized or stale
+            device memory; use `set` to write it instead.
+        """
+        comptime comp_idx = Self.filter.includes[T]()
+        comptime assert (
+            comp_idx != -1
+        ), "Component type is not included by the kernel filter"
+        comptime assert Self.filter.reads[T], (
+            "Component type is declared write-only by the kernel filter"
+            " (via Filter.write) -- its previous value is never uploaded"
+            " to the kernel. Use set[T]() to write it, or Filter.read /"
+            " Filter.include to make it readable."
+        )
+        return self._component_table_base[comp_idx].unsafe_bitcast[T]()[
+            unsafe_offset=self.idx
+        ]
+
+    def set[T: ComponentType](self, var component: T):
+        """Stores a component value for this entity in device storage.
+
+        Parameters:
+            T: The component type to store.
+
+        Args:
+            component: The component value to store.
+
+        Constraints:
+            ``T`` must be included by the kernel's filter and marked
+            writable (via `Filter.write` or `Filter.include`).
+        """
+        comptime comp_idx = Self.filter.includes[T]()
+        comptime assert (
+            comp_idx != -1
+        ), "Component type is not included by the kernel filter"
+        comptime assert Self.filter.writes[T], (
+            "Component type is declared read-only by the kernel filter"
+            " (via Filter.read) -- it cannot be written. Use Filter.write"
+            " or Filter.include to make it writable."
+        )
+        self._component_table_base[comp_idx].unsafe_bitcast[T]()[
+            unsafe_offset=self.idx
+        ] = (component^)

@@ -10,7 +10,7 @@ Example:
 
 ```mojo {doctest="readme" global=true}
 # Import the package
-from larecs import World
+from larecs import World, SystemContext, KernelContext, Filter
 
 
 # Define components
@@ -31,6 +31,18 @@ struct Velocity(Copyable, Movable):
     var y: Float64
 
 
+# A kernel that moves every entity with a Position and a Velocity.
+# Component mutation always happens inside a kernel like this one,
+# run through a SystemContext -- see it invoked in main() below.
+comptime move_filter = Filter().include[Position, Velocity]()
+
+
+def move(context: KernelContext[move_filter]):
+    for entity in context:
+        entity.get[Position]().x += entity.get[Velocity]().x
+        entity.get[Position]().y += entity.get[Velocity]().y
+
+
 # Run the ECS
 def main() raises:
     # Create a world, list all components that will / may be used
@@ -48,14 +60,14 @@ def main() raises:
         # of the entity by a Velocity component
         world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity)
 
-    # We can query entities with specific components
-    for entity in world.storage.query[Position, Velocity]():
-        # get references to components
-        ref position = entity.get[Position]()
-        ref velocity = entity.get[Velocity]()
+    # We can query entities with specific components, read-only
+    for entity in world.storage.query[Filter().include[Position, Velocity]()]():
+        _ = entity.get[Position]()
+        _ = entity.get[Velocity]()
 
-        position.x += velocity.x
-        position.y += velocity.y
+    # To mutate components, run a kernel through a SystemContext
+    var context = SystemContext(world)
+    context.run[move]()
 ```
 
 ```mojo {doctest="readme" hide=true}
@@ -63,26 +75,37 @@ main()
 ```
 
 Exports:
- - world.World
- - error.LarecsError
- - error.WorldError
+ - archetype.ArchetypeRowAccessor
+ - archetype.MutArchetypeRowAccessor
+ - component.ComponentManager
+ - component.ComponentType
+ - device_storage.DeviceComponentStorage
+ - device_storage.DeviceResourceStorage
+ - entity.Entity
  - error.ComponentError
  - error.EntityError
+ - error.LarecsError
  - error.UnknownError
- - storage.Storage
- - component.ComponentType
- - types.ComponentId
- - archetype.MutableEntityAccessor
- - archetype.EntityAccessor
- - entity.Entity
- - query.Query
- - query.QueryInfo
+ - error.WorldError
+ - filter.BitMaskFilter
+ - filter.Filter
+ - host_storage.HostStorage
+ - host_storage.Replacer
+ - lock.LockGuard
+ - lock.LockManager
+ - pool.BitPool
  - resource.Resources
+ - resource.ResourceStorage
  - resource.ResourceType
  - scheduler.Scheduler
- - scheduler.System
+ - system.System
+ - system.SystemContext
+ - system.KernelContext
+ - types.ComponentId
+ - world.World
 """
 from .world import World
+from .host_storage import HostStorage
 from .error import (
     LarecsError,
     WorldError,
@@ -92,8 +115,10 @@ from .error import (
 )
 from .component import ComponentType
 from .types import ComponentId
-from .archetype import MutableEntityAccessor
-from .resource import Resources, ResourceType
+from .archetype import MutArchetypeRowAccessor, ArchetypeRowAccessor
+from .resource import Resources, ResourceStorage, ResourceType
 from .entity import Entity
-from .query import Query
-from .scheduler import Scheduler, System
+from .lock import LockGuard, LockManager
+from .filter import Filter, BitMaskFilter
+from .system import System, SystemContext, KernelContext
+from .scheduler import Scheduler

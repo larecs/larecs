@@ -1,3 +1,9 @@
+"""Type-erased single-value storage.
+
+Provides `UnsafeBox`, a box that can hold a value of a type not known at
+compile time.
+"""
+
 from std.sys import size_of
 from std.reflection import call_location
 from std.memory import alloc, dealloc, Layout, Allocation
@@ -132,7 +138,12 @@ struct UnsafeBox(Copyable, Movable):
     """Trait requirements for values that can be stored in the box."""
 
     var _data: Self.data_type
-    """Pointer to the boxed allocation, or None for empty storage."""
+    """Pointer to the boxed allocation, or None for empty storage.
+
+    Note: `None` does not necessarily mean the box is empty/uninitialized --
+    a box holding a zero-sized value also has `_data = None`, since there is
+    nothing to allocate for it. Use `_initialized` to distinguish the two.
+    """
 
     var _destructor: def(mut self: Self.data_type) thin
     """Type-erased destructor for the boxed allocation."""
@@ -141,6 +152,15 @@ struct UnsafeBox(Copyable, Movable):
         existing_box: Self.data_type
     ) thin -> Self.data_type
     """Type-erased copy initializer for the boxed allocation."""
+
+    var _initialized: Bool
+    """Whether the box currently holds a value.
+
+    This is tracked separately from `_data`, because `_data` is `None` both
+    for a box that was never given a value (the internal placeholder used
+    transiently while swapping in a copy) and for a box validly holding a
+    zero-sized value (which has no bytes to allocate).
+    """
 
     def __init__[used_internally: Bool = False](out self):
         """
@@ -160,6 +180,7 @@ struct UnsafeBox(Copyable, Movable):
             self._data = None
             self._destructor = _dummy_destructor
             self._copy_initializer = _dummy_copy_initializer
+            self._initialized = False
 
     def __init__[T: Self.EltType](out self, var data: T):
         """
@@ -176,15 +197,23 @@ struct UnsafeBox(Copyable, Movable):
             function_name="UnsafeBox.__init__[T: Self.EltType](var data: T)"
         ):
             comptime if size_of[T]() == 0:
+                # There are no bytes to allocate. `data` is destroyed
+                # automatically once this initializer returns (it is an
+                # owned, unmoved local), so no further destructor call is
+                # needed later: use the dummy destructor rather than
+                # `_destructor[T]`, which assumes a live allocation in
+                # `_data`.
                 self._data = None
+                self._destructor = _dummy_destructor
             else:
                 self._data = {alloc(Layout[T].single().as_byte_layout())}
                 self._data.unsafe_value().unsafe_ptr().unsafe_bitcast[
                     T
                 ]().unsafe_write(data^)
+                self._destructor = _destructor[T]
 
-            self._destructor = _destructor[T]
             self._copy_initializer = _copy_initializer[T]
+            self._initialized = True
 
     def __init__(out self, *, deinit move: Self):
         """
@@ -197,6 +226,7 @@ struct UnsafeBox(Copyable, Movable):
             self._data = move._data^
             self._destructor = move._destructor
             self._copy_initializer = move._copy_initializer
+            self._initialized = move._initialized
 
     def __init__(out self, *, copy: Self):
         """
@@ -211,6 +241,7 @@ struct UnsafeBox(Copyable, Movable):
             self._data = copy._copy_initializer(copy._data)
             self._destructor = copy._destructor
             self._copy_initializer = copy._copy_initializer
+            self._initialized = copy._initialized
 
     @always_inline
     def __deinit__(deinit self):
@@ -222,7 +253,7 @@ struct UnsafeBox(Copyable, Movable):
         """
         with Zone(function_name="UnsafeBox.__del__()"):
             debug_assert(
-                self._data is not None,
+                self._initialized,
                 "Attempting to destroy an empty UnsafeBox.",
             )
             self._destructor(self._data)
@@ -244,15 +275,31 @@ struct UnsafeBox(Copyable, Movable):
         """
         with Zone(function_name="UnsafeBox.unsafe_get[T: Self.EltType]()"):
             debug_assert(
-                self._data is not None,
+                self._initialized,
                 (
                     t"Attempting to get `{String(reflect[T].base_name())}` from"
                     t" an empty UnsafeBox."
                 ),
             )
-            return (
-                self._data.unsafe_value()
-                .unsafe_ptr()
-                .unsafe_bitcast[T]()
-                .unsafe_origin_cast[origin_of(self._data)]()[]
-            )
+
+            comptime if size_of[T]() == 0:
+                # No bytes were ever allocated for a zero-sized `T` --
+                # `_data` legitimately stays `None` (see `_initialized`).
+                # `self._data.unsafe_value()` would assert in that case, so
+                # use the same well-aligned dangling pointer `alloc` returns
+                # for zero-sized allocations (see `std.memory.alloc.alloc`)
+                # instead: dereferencing it touches no bytes, since `T` is
+                # zero-sized.
+                comptime target_origin = origin_of(self._data)
+                return (
+                    Pointer[T, UntrackedOrigin[mut=target_origin.mut]]
+                    .unsafe_dangling()
+                    .unsafe_origin_cast[target_origin]()[]
+                )
+            else:
+                return (
+                    self._data.unsafe_value()
+                    .unsafe_ptr()
+                    .unsafe_bitcast[T]()
+                    .unsafe_origin_cast[origin_of(self._data)]()[]
+                )

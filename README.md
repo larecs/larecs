@@ -1,5 +1,3 @@
-![CodeQL](https://github.com/larecs/larecs/workflows/CodeQL/badge.svg)
-
 # Larecs🌲 – Lightweight archetype-based ECS
 
 Larecs🌲 is a performance-oriented archetype-based ECS for [Mojo](https://www.modular.com/mojo)🔥.
@@ -9,13 +7,18 @@ Its architecture is based on the Go ECS [Arche](https://github.com/mlange-42/arc
 
 - Clean and simple API
 - High performance due to archetypes and Mojo's compile-time programming
-- Support for SIMD via a [`vectorize`](https://docs.modular.com/mojo/stdlib/algorithm/functional/vectorize/)-like syntax
 - Compile-time checks thanks to usage of parameters
-- Native support for [resources](https://mlange-42.github.io/arche/guide/resources/) and scheduling.
+- Native support for [resources](https://mlange-42.github.io/arche/guide/resources/) and scheduling
+- Systems can run their component-processing kernels on the CPU or (experimentally) on a GPU accelerator via `SystemContext.run(..., on_gpu=True)`
 - Tested and benchmarked
-- No external dependencies
-- Optional profiling with [Tracy](https://github.com/wolfpld/tracy)
 - More features coming soon...
+
+Larecs🌲 depends on [Tracy](https://github.com/wolfpld/tracy) via the
+[Mojo Tracy bindings](https://github.com/moseschmiedel/mojo-tracy) for its
+built-in instrumentation (see [Profiling with Tracy](#profiling-with-tracy)
+below) and on [MAX](https://www.modular.com/max) for GPU execution support;
+both are pulled in automatically by Pixi. Beyond Mojo, MAX, and Tracy,
+Larecs🌲 has no other external dependencies.
 
 ## Installation
 
@@ -23,8 +26,8 @@ This package is written in and for [Mojo](https://docs.modular.com/mojo/manual/g
 
 1. Clone the repository / download the files.
 2. Navigate to the `src/` subfolder.
-3. Execute `mojo package larecs`.
-4. Move the newly created file `larecs.mojopkg` to your project's source directory.
+3. Execute `mojo precompile larecs -o larecs.mojoc`.
+4. Move the newly created file `larecs.mojoc` to your project's source directory.
 
 ### Include source directly for compiler and language server
 
@@ -51,9 +54,9 @@ on how to use Larecs🌲.
 Below there is a simple example covering the most important functionality.
 Have a look at the `examples` subdirectory for more elaborate examples.
 
-```python
+```mojo
 # Import the package
-from larecs import World, Resources
+from larecs import World
 
 
 # Define components
@@ -75,21 +78,21 @@ struct Velocity(Copyable, Movable):
 
 
 # Run the ECS
-fn main() raises:
+def main() raises:
     # Create a world, list all components that will / may be used
-    world = World[Position, Velocity, IsStatic]()
+    var world = World[Position, Velocity, IsStatic]()
 
     for _ in range(100):
         # Add an entity. The returned value is the
         # entity's ID, which can be used to access the entity later
-        entity = world.add_entity(Position(0, 0), IsStatic())
+        var entity = world.storage.add_entity(Position(0, 0), IsStatic())
 
         # For example, we may want to change the entity's position
-        world.get[Position](entity).x = 2
+        world.storage.get[Position](entity).x = 2
 
         # Or we may want to replace the IsStatic component
         # of the entity by a Velocity component
-        world.replace[IsStatic]().by(Velocity(2, 2), entity=entity)
+        world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity)
 
     # We can query entities with specific components
     for entity in world.storage.query[Position, Velocity]():
@@ -129,11 +132,12 @@ By default, the script writes constraints with an exclusive upper bound of
 pixi run update-mojo --max-version 3 1.0.0b3.dev2026061606
 ```
 
-The script only updates dependency files by default. To also refresh the Pixi
-lockfiles for configured Pixi projects, pass `--update-locks`:
+By default, the script also refreshes the Pixi lockfiles for every configured
+Pixi project after editing the pins. To only update the dependency files and
+skip relocking, pass `--no-update-lock`:
 
 ```sh
-pixi run update-mojo --update-locks
+pixi run update-mojo --no-update-lock
 ```
 
 The list of files that may contain Mojo versions is configured at the top of
@@ -142,12 +146,12 @@ newest-version discovery are configured in `MOJO_SEARCH_CHANNELS`.
 
 ### Profiling with Tracy
 
-Larecs🌲 supports optional profiling with [Tracy](https://github.com/wolfpld/tracy) enabled by the [Mojo Tracy bindings](https://github.com/moseschmiedel/mojo-tracy).
+Larecs🌲's internals are instrumented with [Tracy](https://github.com/wolfpld/tracy) zones via the [Mojo Tracy bindings](https://github.com/moseschmiedel/mojo-tracy), which is a required build dependency (see `mojo-tracy` in `pixi.toml`). Actually capturing and viewing that instrumentation is optional and only takes effect when the application is compiled with `-DTRACY_ENABLED`.
 
 To enable Tracy profiling, the final application must be compiled with the following flags (see the `profiling` task in `pixi.toml` for reference):
 
 ```sh
-mojo build -XLinker -L"${CONDA_PREFIX}/lib" -XLinker -lmojotracy -DTRACY_ENABLED <your_application_source.mojo>
+mojo build -Xlinker -L"${CONDA_PREFIX}/lib" -Xlinker -lmojotracy -DTRACY_ENABLED <your_application_source.mojo>
 ```
 
 This assumes that `mojo-tracy` was installed via `pixi`.
@@ -166,17 +170,25 @@ The result should look something like this:
 
 ## Limitations
 
-### Only trivial types can be components
+### Component type requirements differ between host and GPU execution
 
-Larecs🌲 currently only supports trivial types as components, i.e., structs
-that have a fixed size in memory and can be copied and moved via a
-simple memory copy operation. Using types with heap-allocated memory will
-result in memory leaks and / or undefined behaviour, and as of now there is no
-good way to enforce that only compatible types are used.
-Hence, it is up to the users to take care of this.
+Any `Copyable & Deinitable` struct can be used as a component for CPU
+(host-only) execution -- this is no longer restricted to trivial/POD types.
 
-Note that using types with heap-allocated memory is typically a bad idea for
-ECS and should be avoided anyway.
+Components accessed by a system that runs its kernel on a GPU
+(`SystemContext.run(..., on_gpu=True)`) are subject to a stricter
+constraint: GPU transfer moves component columns between host and device
+buffers via a raw byte copy that never runs a type's copy constructor or
+destructor, so such components must additionally be
+`TrivialRegisterPassable` (bitwise-copyable, with no heap-allocated state
+and no custom copy/move/destroy logic -- the same requirement applies to
+resources read by a GPU kernel). Using a type with heap-allocated memory in
+a component accessed on the GPU will corrupt or leak that memory.
+
+Heap-allocated (non-trivial) components for host-only use are permitted by
+the type system, but are a comparatively new and lightly-exercised path
+compared to trivial components; as with resources, using heap-allocated
+data in the ECS should generally be avoided unless you need it.
 
 ## Next steps
 
@@ -191,10 +203,10 @@ In the near future, Larecs🌲 will take the following steps:
 - [x] Add further options to filter entities (e.g. "does not have component").
 - [ ] Add possibilities for parallel execution
 - [ ] Improve the API for systems (e.g. allow systems to stop the execution)
-- [ ] Add GPU support
+- [ ] Add GPU support (in progress) -- systems can already run kernels on an accelerator via `SystemContext.run(..., on_gpu=True)`; this is experimental and still under active development
 - [ ] Improve the usability by switching to value unpacking in queries as soon as this is available in Mojo🔥.
 - [x] Fix using an inefficient dictionary for first-time archetype lookup.
-- [ ] Allow the usage of complex types as components, i.e., types that have heap-allocated memory.
+- [x] Allow the usage of complex types as components, i.e., types that have heap-allocated memory, for host-only (non-GPU) usage.
 
 ## License
 

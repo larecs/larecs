@@ -16,8 +16,7 @@ output: docs/site/content
 
 # Output directory for doc-tests.
 # Remove or set to "" to disable doc-tests.
-tests: ""
-#docs/test
+tests: docs/test
 
 # Output format. One of (plain|hugo|mdbook).
 format: hugo
@@ -61,10 +60,14 @@ pre-test: []
 
 # Bash scripts to run after test.
 # Also runs after build if 'tests' is given.
+#
+# `mojo test` no longer exists as of the current Mojo toolchain; doctests are
+# compiled and run via mogo-tester instead (see scripts/run_doctests.sh for
+# why the doctest files can't just be pointed at as a directory).
 post-test:
   - |
-    echo Running 'mojo test'...
-    pixi run mojo test -I src docs/test
+    echo Running Mojo doctests...
+    pixi run doctest
     echo Done.
 
 # Bash scripts to run after build.

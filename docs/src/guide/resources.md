@@ -48,38 +48,11 @@ struct Position(Copyable, Movable):
 struct Velocity(Copyable, Movable):
     var dx: Float64
     var dy: Float64
-```
 
-```mojo {doctest="guide_resources" hide=true}
-world = World[Position, Velocity]()
-```
-
-```mojo {doctest="guide_resources"}
-# Add the `Time resource
-world.resources.add(Time(0.0))
-```
-The `resources` attribute also allows us to access and
-change resources via {{< api Resources.get get >}}
-and {{< api Resources.set set >}} methods resembling their
-[component-related counterparts](../changing_entities) of `World`.
-
-```mojo {doctest="guide_resources"}
-# Change a resource value via a reference
-world.resources.get[Time]().time = 1.0
-
-# Get a reference to a resource
-ref time = world.resources.get[Time]()
-
-# Change the resource value via the pointer
-time.time = 2.0
-```
-
-The {{< api Resources.add add >}} and the {{< api Resources.set set >}}
-methods also allow to add or set multiple resources at once.
-For example, consider the additional entities `Temperature`
-and `SelectedEntities`.
-
-```mojo {doctest="guide_resources" global=true}
+# Two more resource types, used further down this chapter --
+# defined here (rather than where they are first discussed) because
+# every executable statement in this file has to live in a single
+# `main` function, and struct definitions have to come before it.
 @fieldwise_init
 struct Temperature(Copyable, Movable):
     var temperature: Float64
@@ -89,20 +62,50 @@ struct SelectedEntities(Copyable, Movable):
     var entities: List[Entity]
 ```
 
+```mojo {doctest="guide_resources" global=true hide=true}
+def main() raises:
+    var world = World[Position, Velocity]()
+```
+
+```mojo {doctest="guide_resources" global=true}
+    # Add the `Time` resource
+    world.resources.add(Time(0.0))
+```
+The `resources` attribute also allows us to access and
+change resources via {{< api Resources.get get >}}
+and {{< api Resources.set set >}} methods resembling their
+[component-related counterparts](../changing_entities) of `World.storage`.
+
+```mojo {doctest="guide_resources" global=true}
+    # Change a resource value via a reference
+    world.resources.get[Time]().time = 1.0
+
+    # Get a reference to a resource
+    ref time = world.resources.get[Time]()
+
+    # Change the resource value via the pointer
+    time.time = 2.0
+```
+
+The {{< api Resources.add add >}} and the {{< api Resources.set set >}}
+methods also allow to add or set multiple resources at once.
+For example, consider the additional resources `Temperature`
+and `SelectedEntities`, each defined just like `Time` above.
+
 We can add and set them as follows:
 
-```mojo {doctest="guide_resources"}
-# Add multiple resources
-world.resources.add(
-    Temperature(20.0),
-    SelectedEntities(List[Entity]())
-)
+```mojo {doctest="guide_resources" global=true}
+    # Add multiple resources
+    world.resources.add(
+        Temperature(20.0),
+        SelectedEntities(List[Entity]())
+    )
 
-# Set multiple resources
-world.resources.set(
-    Temperature(30.0),
-    Time(2.0) 
-)
+    # Set multiple resources
+    world.resources.set(
+        Temperature(30.0),
+        Time(2.0)
+    )
 ```
 
 In contrast to components, resources can
@@ -110,11 +113,11 @@ be "complex" types with heap-allocated memory,
 as demonstrated above with `SelectedEntities`. 
 We can use them to store arbitrary amounts of data.
 
-```mojo {doctest="guide_resources"}
-# Create entities and add them to the selected entities
-for i in range(10):
-    entity = world.add_entity(Position(i, i))
-    world.resources.get[SelectedEntities]().entities.append(entity)
+```mojo {doctest="guide_resources" global=true}
+    # Create entities and add them to the selected entities
+    for i in range(10):
+        var entity = world.storage.add_entity(Position(Float64(i), Float64(i)))
+        world.resources.get[SelectedEntities]().entities.append(entity)
 ```
 
 ## Removing resources
@@ -123,13 +126,13 @@ One or multiple resources can be removed via the
 {{< api Resources.remove remove >}} method. The existence
 of a resource is checked via the {{< api Resources.has has >}} method.
 
-```mojo {doctest="guide_resources"}	
-# Remove the `Time` and the `Temperature` resource
-world.resources.remove[Time, Temperature]()
+```mojo {doctest="guide_resources" global=true}
+    # Remove the `Time` and the `Temperature` resource
+    world.resources.remove[Time, Temperature]()
 
-# Check if the `Time` resource exists
-if world.resources.has[Time]():
-    print("Time resource exists")
-else:
-    print("Time resource does not exist")
+    # Check if the `Time` resource exists
+    if world.resources.has[Time]():
+        print("Time resource exists")
+    else:
+        print("Time resource does not exist")
 ```

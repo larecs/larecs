@@ -3,11 +3,12 @@ from custom_benchmark import DefaultBench
 from larecs.world import World
 from larecs.entity import Entity
 from larecs.component import ComponentType
+from larecs.filter import Filter
 from larecs.test_utils import *
 
 
 def benchmark_add_entity_1_000_000(mut bencher: Bencher):
-    world = SmallWorld()
+    var world = SmallWorld()
 
     @always_inline
     def bench_fn() {mut world}:
@@ -33,7 +34,9 @@ def benchmark_query_1_comp_1_000_000(
             for _ in range(1000):
                 _ = world.storage.add_entity(pos)
             for _ in range(1000):
-                for entity in world.storage.query[Position]():
+                for entity in world.storage.query[
+                    Filter().include[Position]()
+                ]():
                     keep(entity.get[Position]().x)
         except e:
             print(e)
@@ -54,7 +57,9 @@ def benchmark_query_2_comp_1_000_000(
             for _ in range(1000):
                 _ = world.storage.add_entity(pos, vel)
             for _ in range(1000):
-                for entity in world.storage.query[Position, Velocity]():
+                for entity in world.storage.query[
+                    Filter().include[Position, Velocity]()
+                ]():
                     keep(entity.get[Position]().x)
                     keep(entity.get[Velocity]().dx)
 
@@ -81,11 +86,13 @@ def benchmark_query_5_comp_1_000_000(
                 _ = world.storage.add_entity(c1, c2, c3, c4, c5)
             for _ in range(1000):
                 for entity in world.storage.query[
-                    FlexibleComponent[1],
-                    FlexibleComponent[2],
-                    FlexibleComponent[3],
-                    FlexibleComponent[4],
-                    FlexibleComponent[5],
+                    Filter().include[
+                        FlexibleComponent[1],
+                        FlexibleComponent[2],
+                        FlexibleComponent[3],
+                        FlexibleComponent[4],
+                        FlexibleComponent[5],
+                    ]()
                 ]():
                     keep(entity.get[FlexibleComponent[1]]().x)
                     keep(entity.get[FlexibleComponent[2]]().x)
@@ -114,8 +121,15 @@ def benchmark_query_get_iter_1_000_000(
         try:
             _ = world.storage.add_entity(c1, c2, c3, c4, c5)
             for _ in range(1_000_000):
+                # `query` itself returns the locked iterator directly, so
+                # each temporary here must acquire and release its
+                # structural lock.
                 keep(
-                    world.storage.query[FlexibleComponent[1]]().__iter__()._lock
+                    Bool(
+                        world.storage.query[
+                            Filter().include[FlexibleComponent[1]]()
+                        ]()
+                    )
                 )
 
         except e:
@@ -138,7 +152,9 @@ def benchmark_query_has_1_000_000(
     def bench_fn() {imm, mut world}:
         try:
             _ = world.storage.add_entity(c1, c2, c3, c4, c5)
-            for entity in world.storage.query[FlexibleComponent[1]]():
+            for entity in world.storage.query[
+                Filter().include[FlexibleComponent[1]]()
+            ]():
                 for _ in range(1_000_000):
                     keep(entity.has[FlexibleComponent[1]]())
 

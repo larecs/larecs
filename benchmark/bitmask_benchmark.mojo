@@ -117,11 +117,6 @@ def benchmark_bitmask_get_each_1_000_000(mut bencher: Bencher):
     bencher.iter(bench_fn)
 
 
-# def BenchmarkMaskFilterNoPointer(b *testing.B):
-#     b.StopTimer()
-#     mask = maskFilterPointer{BitMask(0, 1, 2), BitMask()
-#     bits = BitMask(0, 1, 2)
-#     b.StartTimer()
 #     var v: Bool
 #     for i = 0; i < b.N; i++:
 #         v = mask.matches(bits)

@@ -33,6 +33,10 @@ comptime TrackedComponent = MemTestStruct[
 comptime NonTrivialArchetype = _Archetype[TrackedComponent]
 comptime tracked_mask = BitMask(0)
 
+comptime MixedArchetype = _Archetype[TrackedComponent, LargerComponent]
+comptime larger_only_mask = BitMask(1)
+"""Activates only `LargerComponent` (id 1); `TrackedComponent` (id 0) stays inactive."""
+
 
 struct LifecycleCounters(Movable):
     """Lifecycle operation counters for non-trivial component tests."""
@@ -283,17 +287,17 @@ def test_archetype_copy() raises:
 def test_entity_accessor_set_components() raises:
     var archetype = Archetype(0, mask2)
     var entity_idx = archetype.add_entity(Entity(10, 3))
-    var entity = archetype.get_entity_accessor(entity_idx)
+    var entity = archetype.get_row_accessor(entity_idx)
 
     entity.set(
         LargerComponent(1.0, 2.0, 3.0),
         FlexibleComponent[1](4.0, 5.0),
     )
 
-    assert_equal(entity.get[LargerComponent]().x, 1.0)
-    assert_equal(entity.get[LargerComponent]().y, 2.0)
-    assert_equal(entity.get[FlexibleComponent[1]]().x, 4.0)
-    assert_equal(entity.get[FlexibleComponent[1]]().y, 5.0)
+    assert_equal(entity.unsafe_get[LargerComponent]().x, 1.0)
+    assert_equal(entity.unsafe_get[LargerComponent]().y, 2.0)
+    assert_equal(entity.unsafe_get[FlexibleComponent[1]]().x, 4.0)
+    assert_equal(entity.unsafe_get[FlexibleComponent[1]]().y, 5.0)
 
 
 def test_archetype_add() raises:
@@ -472,8 +476,8 @@ def test_archetype_copy_component_from_non_trivial_component() raises:
     _ = counters.del_counter()
 
 
-def test_archetype_extend_from_archetype_unsafe_non_trivial_component() raises:
-    """Verify unsafe extension copies shared non-trivial component rows."""
+def test_archetype_unsafe_move_all_from_non_trivial_component() raises:
+    """Verify unsafe migration moves shared non-trivial component rows."""
     var counters = LifecycleCounters()
     var source = NonTrivialArchetype(0, tracked_mask, capacity=4)
     var destination = NonTrivialArchetype(1, tracked_mask, capacity=1)
@@ -487,16 +491,17 @@ def test_archetype_extend_from_archetype_unsafe_non_trivial_component() raises:
     var base_moves = counters.move_counter()
     var base_dels = counters.del_counter()
 
-    var start = destination.extend_from_archetype_unsafe(Pointer(to=source), 2)
+    var start = destination.unsafe_move_all_from_archetype(Pointer(to=source))
 
     assert_equal(start, 0)
     assert_equal(len(destination), 2)
+    assert_equal(len(source), 0)
     counters.assert_delta(
         base_copies,
         base_moves,
         base_dels,
-        expected_copies=2,
-        expected_moves=0,
+        expected_copies=0,
+        expected_moves=2,
         expected_dels=0,
     )
     _ = destination^
@@ -504,6 +509,92 @@ def test_archetype_extend_from_archetype_unsafe_non_trivial_component() raises:
     # Keep `counters` live until after both archetypes are destroyed: their
     # components hold unsafe pointers to these counter allocations.
     _ = counters.del_counter()
+
+
+def test_archetype_clear_non_trivial_component() raises:
+    """Verify clear destroys active initialized values but retains capacity."""
+    var counters = LifecycleCounters()
+    var archetype = NonTrivialArchetype(0, tracked_mask, capacity=4)
+
+    var idx0 = archetype.add_entity(Entity(0, 0))
+    init_tracked_component(archetype, idx0, counters.component())
+    var idx1 = archetype.add_entity(Entity(1, 0))
+    init_tracked_component(archetype, idx1, counters.component())
+
+    var base_copies = counters.copy_counter()
+    var base_moves = counters.move_counter()
+    var base_dels = counters.del_counter()
+    var capacity_before_clear = archetype._storage._capacity
+
+    archetype.clear()
+
+    assert_equal(len(archetype), 0)
+    assert_equal(len(archetype._entities), 0)
+    assert_equal(archetype._storage._capacity, capacity_before_clear)
+    counters.assert_delta(
+        base_copies,
+        base_moves,
+        base_dels,
+        expected_copies=0,
+        expected_moves=0,
+        expected_dels=2,
+    )
+
+    # The archetype must stay usable after clear: new rows must be
+    # initialized rather than assigned over the (already-destroyed) memory
+    # of the cleared rows.
+    var idx2 = archetype.add_entity(Entity(2, 0))
+    # `init_tracked_component` move-initializes the freshly constructed
+    # component into the row via `unsafe_write`, which counts as one move.
+    init_tracked_component(archetype, idx2, counters.component())
+    assert_equal(len(archetype), 1)
+    assert_equal(archetype._storage._capacity, capacity_before_clear)
+
+    _ = archetype^
+    counters.assert_delta(
+        base_copies,
+        base_moves,
+        base_dels,
+        expected_copies=0,
+        expected_moves=1,
+        expected_dels=3,
+    )
+    # Keep `counters` live until after the archetype is destroyed: its
+    # components hold unsafe pointers to these counter allocations.
+    _ = counters.del_counter()
+
+
+def test_archetype_reserve_inactive_non_trivial_column() raises:
+    """Verify reserve does not allocate or touch an inactive non-trivial column.
+
+    Regression test: `_resize_t` unconditionally allocates a buffer, even for
+    a `None` input. `reserve` used to call it for every column regardless of
+    activation, which turned an inactive column's `_data` from `None` into
+    `Some(uninitialized allocation)` -- making the column look initialized to
+    code that branches on `column._data` (e.g. `swap_remove_entity`,
+    `destroy`), which would then treat uninitialized memory as live values.
+    """
+    var archetype = MixedArchetype(0, larger_only_mask, capacity=2)
+
+    var idx0 = archetype.add_entity(Entity(0, 0))
+    archetype.init_components[LargerComponent](
+        idx0, LargerComponent(1.0, 2.0, 3.0)
+    )
+    var idx1 = archetype.add_entity(Entity(1, 0))
+    archetype.init_components[LargerComponent](
+        idx1, LargerComponent(4.0, 5.0, 6.0)
+    )
+
+    assert_false(Bool(archetype._storage._columns[0]._data))
+
+    archetype.reserve(16)
+
+    assert_false(Bool(archetype._storage._columns[0]._data))
+    assert_equal(archetype._storage._capacity, 16)
+    assert_equal(archetype.get_component[LargerComponent](idx0).x, 1.0)
+    assert_equal(archetype.get_component[LargerComponent](idx1).x, 4.0)
+
+    _ = archetype^
 
 
 comptime functions = __functions_in_module()

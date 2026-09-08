@@ -1,5 +1,6 @@
 from std.benchmark import Bench, Bencher, keep, BenchId
 from custom_benchmark import DefaultBench
+from larecs.filter import Filter
 from larecs.test_utils import *
 from larecs.entity import Entity
 
@@ -173,7 +174,9 @@ def benchmark_add_remove_entities_1_comp_1_000_batch_1000(
         try:
             for _ in range(1000):
                 _ = world.storage.add_entities(pos, count=1000)
-                world.storage.remove_entities(world.storage.query[Position]())
+                world.storage.remove_entities(
+                    world.filter[Filter().include[Position]()]()
+                )
 
         except e:
             print(e)
@@ -186,7 +189,7 @@ def prevent_inlining_add_remove_entity_1_comp() raises:
     var world = SmallWorld()
     var entity = world.storage.add_entity(pos)
     world.storage.remove_entity(entity)
-    world.storage.remove_entities(world.storage.query[Position]())
+    world.storage.remove_entities(world.filter[Filter().include[Position]()]())
 
 
 def benchmark_add_remove_entity_5_comp_1_000_000(
@@ -238,12 +241,14 @@ def benchmark_add_remove_entities_5_comp_1_000_batch_1_000(
             for _ in range(1000):
                 _ = world.storage.add_entities(c1, c2, c3, c4, c5, count=1000)
                 world.storage.remove_entities(
-                    world.storage.query[
-                        LargerComponent,
-                        FlexibleComponent[2],
-                        FlexibleComponent[3],
-                        FlexibleComponent[4],
-                        FlexibleComponent[5],
+                    world.filter[
+                        Filter().include[
+                            LargerComponent,
+                            FlexibleComponent[2],
+                            FlexibleComponent[3],
+                            FlexibleComponent[4],
+                            FlexibleComponent[5],
+                        ]()
                     ]()
                 )
 
@@ -265,12 +270,14 @@ def prevent_inlining_add_remove_entity_5_comp() raises:
     world.storage.remove_entity(entity)
     _ = world.storage.add_entity(c1, c2, c3, c4, c5)
     world.storage.remove_entities(
-        world.storage.query[
-            LargerComponent,
-            FlexibleComponent[2],
-            FlexibleComponent[3],
-            FlexibleComponent[4],
-            FlexibleComponent[5],
+        world.filter[
+            Filter().include[
+                LargerComponent,
+                FlexibleComponent[2],
+                FlexibleComponent[3],
+                FlexibleComponent[4],
+                FlexibleComponent[5],
+            ]()
         ]()
     )
 

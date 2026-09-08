@@ -3,6 +3,7 @@ import world_benchmark
 import component_benchmark
 import query_benchmark
 import resources_benchmark
+import gpu_system_benchmark
 from custom_benchmark import DefaultBench
 
 
@@ -13,4 +14,5 @@ def main() raises:
     bitmask_benchmark.run_all_bitmask_benchmarks(bench)
     component_benchmark.run_all_component_benchmarks(bench)
     resources_benchmark.run_all_resource_benchmarks(bench)
+    gpu_system_benchmark.run_all_gpu_system_benchmarks(bench)
     bench.dump_report()

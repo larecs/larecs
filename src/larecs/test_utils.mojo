@@ -3,10 +3,13 @@
 from std.testing import assert_true, assert_false, assert_equal
 from std.random import random
 from std.memory import Layout, alloc, dealloc
+
+from tracy import Zone
+
 from .component import ComponentType
 from .bitmask import BitMask
 from .world import World
-from .resource import Resources
+from .resource import ResourceStorage
 
 
 @always_inline
@@ -29,7 +32,13 @@ def load[
     Returns:
         The loaded SIMD value.
     """
-    return Pointer(to=val).unsafe_strided_load[width=simd_width](stride)
+    with Zone(
+        function_name=(
+            "test_utils.load[dType: DType, //, simd_width: Int, stride: Int ="
+            " 1](ref val: SIMD[dType, 1], out simd: SIMD[dType, simd_width])"
+        )
+    ):
+        return Pointer(to=val).unsafe_strided_load[width=simd_width](stride)
 
 
 @always_inline
@@ -52,7 +61,15 @@ def store[
 
     The SIMD values are written through the pointer to `val`.
     """
-    return Pointer(to=val).unsafe_strided_store[width=simd_width](simd, stride)
+    with Zone(
+        function_name=(
+            "test_utils.store[dType: DType, //, simd_width: Int, stride: Int"
+            " = 1](mut val: SIMD[dType, 1], simd: SIMD[dType, simd_width])"
+        )
+    ):
+        return Pointer(to=val).unsafe_strided_store[width=simd_width](
+            simd, stride
+        )
 
 
 comptime load2 = load[_, 2]
@@ -88,7 +105,13 @@ def is_mutable[
     Returns:
         True if the value has a mutable origin, False otherwise.
     """
-    return mut
+    with Zone(
+        function_name=(
+            "test_utils.is_mutable[mut: Bool, //, T: AnyType, origin:"
+            " Origin[mut=mut]](ref[origin] val: T) -> Bool"
+        )
+    ):
+        return mut
 
 
 def get_random_bitmask_list(
@@ -112,25 +135,33 @@ def get_random_bitmask_list(
             - `range_end` must be at most 2^64.
             - `range_start` must be less than `range_end`.
     """
-    debug_assert(range_start >= 0, "range_start must be non-negative")
-    debug_assert(range_end <= 2**64, "range_end must be at most 2^64")
-    debug_assert(
-        range_start < range_end, "range_start must be less than range_end"
-    )
-    debug_assert(count >= 0, "count must be non-negative")
+    with Zone(
+        function_name=(
+            "test_utils.get_random_bitmask_list(count: Int, range_start: Int"
+            " = 0, range_end: Int = 1000, out list: List[BitMask])"
+        )
+    ):
+        debug_assert(range_start >= 0, "range_start must be non-negative")
+        debug_assert(range_end <= 2**64, "range_end must be at most 2^64")
+        debug_assert(
+            range_start < range_end, "range_start must be less than range_end"
+        )
+        debug_assert(count >= 0, "count must be non-negative")
 
-    list = List[BitMask]()
-    list.reserve(count)
-    for _ in range(count):
-        var bytes = Array[Scalar[DType.int], BitMask.total_bytes // 4](
-            uninitialized=True
-        )
-        random.randint(bytes.unsafe_ptr(), 4, range_start, range_end)
-        list.append(
-            BitMask(
-                bytes=bytes.unsafe_ptr().unsafe_bitcast[BitMask.BytesType]()[]
+        list = List[BitMask]()
+        list.reserve(count)
+        for _ in range(count):
+            var bytes = Array[Scalar[DType.int], BitMask.total_bytes // 4](
+                uninitialized=True
             )
-        )
+            random.randint(bytes.unsafe_ptr(), 4, range_start, range_end)
+            list.append(
+                BitMask(
+                    bytes=bytes.unsafe_ptr().unsafe_bitcast[
+                        BitMask.BytesType
+                    ]()[]
+                )
+            )
 
 
 @always_inline
@@ -140,11 +171,12 @@ def get_random_bitmask() -> BitMask:
     Returns:
         A bitmask with each bit set independently at random.
     """
-    var mask = BitMask()
-    for i in range(BitMask.total_bits):
-        if random.random_float64() < 0.5:
-            mask.set[True](i)
-    return mask
+    with Zone(function_name="test_utils.get_random_bitmask() -> BitMask"):
+        var mask = BitMask()
+        for i in range(BitMask.total_bits):
+            if random.random_float64() < 0.5:
+                mask.set[True](i)
+        return mask
 
 
 @fieldwise_init
@@ -506,10 +538,15 @@ struct MemTestStruct[
 
         The source value is consumed by this initializer.
         """
-        self.move_counter = move.move_counter
-        self.del_counter = move.del_counter
-        self.copy_counter = move.copy_counter
-        self.move_counter[] += 1
+        with Zone(
+            function_name=(
+                "MemTestStruct.__init__(out self, *, deinit move: Self)"
+            )
+        ):
+            self.move_counter = move.move_counter
+            self.del_counter = move.del_counter
+            self.copy_counter = move.copy_counter
+            self.move_counter[] += 1
 
     def __init__(out self, *, copy: Self):
         """Copy-initialize a lifecycle-counting test value.
@@ -519,17 +556,21 @@ struct MemTestStruct[
 
         The new value shares the same lifecycle counters as the source value.
         """
-        self.move_counter = copy.move_counter
-        self.del_counter = copy.del_counter
-        self.copy_counter = copy.copy_counter
-        self.copy_counter[] += 1
+        with Zone(
+            function_name="MemTestStruct.__init__(out self, *, copy: Self)"
+        ):
+            self.move_counter = copy.move_counter
+            self.del_counter = copy.del_counter
+            self.copy_counter = copy.copy_counter
+            self.copy_counter[] += 1
 
     def __deinit__(deinit self):
         """Destroy a lifecycle-counting test value.
 
         The delete counter is incremented in place.
         """
-        self.del_counter[] += 1
+        with Zone(function_name="MemTestStruct.__deinit__(deinit self)"):
+            self.del_counter[] += 1
 
 
 def test_copy_move_del[
@@ -560,59 +601,67 @@ def test_copy_move_del[
     Raises:
         AssertionError: If any copy, move, or delete count differs from the expected value.
     """
-
-    var copy_counter = alloc(Layout[Int].single()).into_managed()
-    var move_counter = alloc(Layout[Int].single()).into_managed()
-    var del_counter = alloc(Layout[Int].single()).into_managed()
-    copy_counter.unsafe_ptr().unsafe_write(0)
-    move_counter.unsafe_ptr().unsafe_write(0)
-    del_counter.unsafe_ptr().unsafe_write(0)
-
-    var test_del_counter = 0
-    var test_move_counter = init_moves
-    var test_copy_counter = 0
-    var container = container_factory(
-        MemTestStruct(
-            copy_counter.unsafe_ptr().as_unsafe_any_origin(),
-            move_counter.unsafe_ptr().as_unsafe_any_origin(),
-            del_counter.unsafe_ptr().as_unsafe_any_origin(),
+    with Zone(
+        function_name=(
+            "test_utils.test_copy_move_del[Container: Copyable &"
+            " Deinitable, //, container_factory: def(var val:"
+            " MemTestStruct[MutUnsafeAnyOrigin, MutUnsafeAnyOrigin,"
+            " MutUnsafeAnyOrigin]) thin -> Container](*, init_moves: Int ="
+            " 0, copy_moves: Int = 0, move_moves: Int = 0)"
         )
-    )
+    ):
+        var copy_counter = alloc(Layout[Int].single()).into_managed()
+        var move_counter = alloc(Layout[Int].single()).into_managed()
+        var del_counter = alloc(Layout[Int].single()).into_managed()
+        copy_counter.unsafe_ptr().unsafe_write(0)
+        move_counter.unsafe_ptr().unsafe_write(0)
+        del_counter.unsafe_ptr().unsafe_write(0)
 
-    # Initialize
-    assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
-    assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
-    assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
+        var test_del_counter = 0
+        var test_move_counter = init_moves
+        var test_copy_counter = 0
+        var container = container_factory(
+            MemTestStruct(
+                copy_counter.unsafe_ptr().as_unsafe_any_origin(),
+                move_counter.unsafe_ptr().as_unsafe_any_origin(),
+                del_counter.unsafe_ptr().as_unsafe_any_origin(),
+            )
+        )
 
-    # Copy
-    var container2 = container.copy()
-    test_copy_counter += 1
-    test_move_counter += copy_moves
-    assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
-    assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
-    assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
+        # Initialize
+        assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
+        assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
+        assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
 
-    # Delete
-    _ = container2^
-    test_del_counter += 1
-    assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
-    assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
-    assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
+        # Copy
+        var container2 = container.copy()
+        test_copy_counter += 1
+        test_move_counter += copy_moves
+        assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
+        assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
+        assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
 
-    # Move
-    container2 = container^
-    test_move_counter += move_moves
-    assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
-    assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
-    assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
+        # Delete
+        _ = container2^
+        test_del_counter += 1
+        assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
+        assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
+        assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
 
-    # Delete
-    _ = container2^
-    test_del_counter += 1
-    assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
-    assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
-    assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
+        # Move
+        container2 = container^
+        test_move_counter += move_moves
+        assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
+        assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
+        assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
 
-    copy_counter.unsafe_ptr().unsafe_deinit_pointee()
-    move_counter.unsafe_ptr().unsafe_deinit_pointee()
-    del_counter.unsafe_ptr().unsafe_deinit_pointee()
+        # Delete
+        _ = container2^
+        test_del_counter += 1
+        assert_equal(del_counter.unsafe_ptr()[], test_del_counter)
+        assert_equal(move_counter.unsafe_ptr()[], test_move_counter)
+        assert_equal(copy_counter.unsafe_ptr()[], test_copy_counter)
+
+        copy_counter.unsafe_ptr().unsafe_deinit_pointee()
+        move_counter.unsafe_ptr().unsafe_deinit_pointee()
+        del_counter.unsafe_ptr().unsafe_deinit_pointee()

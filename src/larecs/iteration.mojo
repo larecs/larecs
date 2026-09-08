@@ -1,0 +1,824 @@
+"""Iteration over entities, archetypes, and filtered component rows.
+
+Provides `LockedWorldEntityIterator`, the read-only entity iterator returned
+by [..host_storage.HostStorage.query], and `EntityAccessorIterator`, which
+walks the dense rows seen by a system kernel.
+"""
+
+from std.gpu import global_idx
+
+from std.utils.type_functions import ConditionalType
+from std.sys import is_gpu
+
+from tracy import Zone
+
+from .entity import Entity, EntityAccessor
+from .component import ComponentType
+from .archetype import Archetype as _Archetype, ArchetypeRowAccessor
+from .lock import LockManager, LockGuard
+from .static_optional import StaticOptional
+from .error import LarecsError, WorldError
+from .filter import Filter, BitMaskFilter
+from .system import KernelContext
+
+
+struct _ArchetypeIterator[
+    archetype_mutability: Bool,
+    //,
+    archetype_origin: Origin[mut=archetype_mutability],
+    *ComponentTypes: ComponentType,
+](Boolable, Copyable, Iterator, Movable, Sized):
+    """
+    Iterator over non-empty archetypes corresponding to given list of Archetype IDs.
+
+    Note: For internal use only! Do not expose to users.
+
+    Parameters:
+        archetype_mutability: Whether the reference to the archetypes is mutable.
+        archetype_origin: The origin of the archetypes.
+        ComponentTypes: The types of the components.
+    """
+
+    comptime Archetype = _Archetype[*Self.ComponentTypes]
+    comptime Element = Self.Archetype
+    var _archetypes: Pointer[List[Self.Archetype], Self.archetype_origin]
+    var _archetype_indices: List[Int]
+    var _index: Int
+
+    def __init__(
+        out self,
+        archetypes: Pointer[List[Self.Archetype], Self.archetype_origin],
+        var archetype_indices: List[Int],
+    ):
+        """
+        Creates an archetype by list iterator.
+
+        Args:
+            archetypes: a pointer to the world's archetypes.
+            archetype_indices: The indices of the archetypes in the list that are being iterated over.
+        """
+        with Zone(
+            function_name=(
+                "_ArchetypeIterator.__init__(archetypes:"
+                " Pointer[List[Self.Archetype]], var archetype_indices:"
+                " List[Int])"
+            )
+        ):
+            self._archetypes = archetypes
+            self._archetype_indices = archetype_indices^
+            self._index = 0
+
+    def __init__(
+        out self,
+        archetypes: Pointer[List[Self.Archetype], Self.archetype_origin],
+        var filter: BitMaskFilter[_],
+    ):
+        """
+        Creates an archetype iterator from a list of archetypes and a query info.
+        """
+        with Zone(
+            function_name=(
+                "_ArchetypeIterator.__init__(archetypes:"
+                " Pointer[List[Self.Archetype]], var filter: BitMaskFilter[_])"
+            )
+        ):
+            self._archetypes = archetypes
+            self._archetype_indices = List[Int]()
+            self._index = 0
+
+            for i in range(len(self._archetypes[])):
+                ref archetype = self._archetypes[].unsafe_get(i)
+                if archetype and filter.matches(archetype.get_mask()):
+                    self._archetype_indices.append(i)
+
+    @doc_hidden
+    @always_inline
+    def __init__(out self, *, copy: Self):
+        """
+        Copies the iterator state.
+
+        Args:
+            copy: The iterator to copy.
+        """
+        with Zone(function_name="_ArchetypeIterator.__init__(copy: Self)"):
+            self._archetypes = copy._archetypes
+            self._archetype_indices = copy._archetype_indices.copy()
+            self._index = copy._index
+
+    @always_inline
+    def __iter__(var self, out iterator: Self):
+        """
+        Returns self as an iterator usable in for loops.
+
+        Returns:
+            Self as an iterator usable in for loops.
+        """
+        with Zone(
+            function_name="_ArchetypeIterator.__iter__(out iterator: Self)"
+        ):
+            iterator = self^
+
+    @__unsafe_nested_origins_read_only
+    @always_inline
+    def __next__(
+        mut self,
+    ) raises StopIteration -> ref[
+        origin_of(
+            self._archetypes[].unsafe_get(
+                self._archetype_indices.unsafe_get(self._index)
+            )
+        )
+    ] Self.Element:
+        """
+        Returns the next archetype in the iteration.
+
+        Raises:
+            StopIteration: If there are no more archetypes to return.
+
+        Returns:
+            The next archetype as a pointer.
+        """
+        with Zone(
+            function_name="_ArchetypeIterator.__next__() -> ref Self.Element"
+        ):
+            if not self._has_next():
+                raise StopIteration()
+            ref archetype = self._archetypes[].unsafe_get(
+                self._archetype_indices.unsafe_get(self._index)
+            )
+
+            self._index += 1
+            return archetype
+
+    def __len__(self) -> Int:
+        """
+        Returns the number of archetypes remaining in the iterator.
+        """
+        with Zone(function_name="_ArchetypeIterator.__len__()"):
+            return len(self._archetype_indices) - self._index
+
+    @always_inline
+    def _has_next(self) -> Bool:
+        """
+        Returns whether the iterator has at least one more element.
+
+        Returns:
+            Whether there are more elements to iterate.
+        """
+        with Zone(function_name="_ArchetypeIterator._has_next()"):
+            return self._index < len(self._archetype_indices)
+
+    @always_inline
+    def __bool__(self) -> Bool:
+        """
+        Returns whether the iterator has at least one more element.
+
+        Returns:
+            Whether there are more elements to iterate.
+        """
+        with Zone(function_name="_ArchetypeIterator.__bool__()"):
+            return self._has_next()
+
+
+struct EntityAccessorIterator[filter: Filter](Iterator, Movable):
+    """Iterates filtered component rows with CPU or GPU-appropriate strides.
+
+    The iterator does not enumerate entity IDs or archetypes. It walks the
+    dense rows described by ``KernelContext`` and yields an
+    ``EntityAccessor`` containing a row offset and one byte-addressed pointer
+    per included component. The accessor's ``get`` and ``set`` methods use the
+    filter's compile-time component order to select a column, then use the
+    row offset to access that column's structure-of-arrays (SoA) element.
+
+    On the CPU, iteration starts at row ``0`` and advances by ``1``. The
+    context therefore describes one homogeneous component range, normally a
+    single matching archetype. On a GPU, ``is_gpu()`` removes the CPU path at
+    compile time: each thread starts at ``global_idx.x`` and advances by the
+    total number of threads in the launch. This gives every thread the rows
+    ``global_idx.x``, ``global_idx.x + thread_count``, and so on, while the
+    bounds check stops at ``context.length``.
+
+    The same kernel source is consequently valid on both targets. CPU
+    contexts contain host pointers, while the device-passable host context is
+    converted to device pointers before a GPU launch. The iterator itself
+    performs no host/device copy or synchronization; callers must ensure the
+    columns are initialized, have at least ``context.length`` rows, and that
+    each row is written by at most one concurrent thread.
+
+    Parameters:
+        filter: The comptime [..filter.Filter] describing the accessed components.
+    """
+
+    comptime Element = EntityAccessor[Self.filter]
+    """The type yielded by the iterator."""
+
+    var _entity: EntityAccessor[Self.filter]
+    var _length: Int32
+    var _stride: Int32
+    var _done: Bool
+
+    def __init__(out self, context: KernelContext[Self.filter, _]):
+        """Initializes row traversal for the current execution target.
+
+        Args:
+            context: The component-column pointers, row count, and GPU launch
+                thread count used by the iterator.
+        """
+        var start: Int32 = 0
+        var stride: Int32 = 1
+        comptime if is_gpu():
+            start = Int32(global_idx.x)
+            stride = context.thread_count
+
+        self._entity = EntityAccessor[Self.filter](
+            idx=Int(start),
+            _component_table_base=context._columns.copy(),
+        )
+        self._length = context.length
+        self._stride = stride
+        self._done = False
+
+    def __iter__(deinit self) -> Self:
+        """Returns this iterator for use in a ``for`` loop.
+
+        Returns:
+            This iterator.
+        """
+        return self^
+
+    def __next__(mut self) raises StopIteration -> Self.Element:
+        """Returns the next row accessor and advances by the target stride.
+
+        Raises:
+            ``StopIteration``: When all rows assigned to this iterator have
+                been visited.
+
+        Returns:
+            An accessor whose ``id`` is the current row offset into every
+            included component column.
+        """
+        if self._done or self._entity.idx >= Int(self._length):
+            raise StopIteration()
+        var entity = self._entity.copy()
+        self._entity.idx += Int(self._stride)
+        return entity^
+
+
+struct _ArchetypeEntityIterator[
+    archetype_mutability: Bool,
+    //,
+    archetype_origin: Origin[mut=archetype_mutability],
+    *ComponentTypes: ComponentType,
+    filter: Filter = Filter(),
+](Boolable, Copyable, Movable, Sized):
+    """
+    Iterator over all entities of an archetype.
+
+    Note: For internal use only! Do not expose to users.
+
+    Parameters:
+        archetype_mutability: Whether the archetype references produced by this
+            iterator are mutable.
+        archetype_origin: The origin of the archetype pointer.
+        ComponentTypes: The types of the components.
+        filter: The compile-time [..filter.Filter] the yielded row
+            accessors are created with, if any.
+    """
+
+    comptime Archetype = _Archetype[*Self.ComponentTypes]
+
+    var archetype: Pointer[Self.Archetype, Self.archetype_origin]
+    var _index: Int
+
+    def __init__(
+        out self,
+        ref[Self.archetype_origin] archetype: Self.Archetype,
+        _index: Int = 0,
+    ):
+        """
+        Creates an entity iterator for the given archetype.
+
+        Args:
+            archetype: An untracked pointer to the archetype to iterate over.
+                The caller is responsible for ensuring the pointer remains
+                valid for the lifetime of the iterator.
+            _index: The index of the entity to start iterating from.
+        """
+        with Zone(
+            function_name=(
+                "_ArchetypeEntityIterator.__init__(archetype:"
+                " Pointer[UntrackedOrigin], _index: Int)"
+            )
+        ):
+            self.archetype = Pointer(to=archetype)
+            self._index = _index
+
+    @doc_hidden
+    @always_inline
+    def __init__(out self, *, copy: Self):
+        """Copies the archetype traversal position.
+
+        Args:
+            copy: The archetype entity iterator to copy.
+        """
+        self.archetype = copy.archetype
+        self._index = copy._index
+
+    def _has_next(self) -> Bool:
+        """
+        Returns whether the iterator has at least one more element.
+
+        Returns:
+            Whether there are more elements to iterate.
+        """
+        with Zone(function_name="_ArchetypeEntityIterator._has_next()"):
+            return self._index < len(self.archetype[])
+
+    def __bool__(self) -> Bool:
+        """
+        Returns whether the iterator has at least one more element.
+
+        Returns:
+            Whether there are more elements to iterate.
+        """
+        with Zone(function_name="_ArchetypeEntityIterator.__bool__()"):
+            return self._has_next()
+
+    def __len__(self) -> Int:
+        """
+        Returns the number of entities remaining in the iterator.
+        """
+        with Zone(function_name="_ArchetypeEntityIterator.__len__()"):
+            return len(self.archetype[]) - self._index
+
+    @__unsafe_nested_origins_read_only
+    def __next__(
+        mut self,
+        out accessor: type_of(
+            self.archetype[].get_row_accessor[Self.filter](self._index)
+        ),
+    ) raises StopIteration:
+        """
+        Returns the next entity in the iteration.
+
+        Raises:
+            StopIteration: If there are no more entities to iterate.
+
+        Returns:
+            An [..archetype.ArchetypeRowAccessor] to the entity.
+        """
+        with Zone(
+            function_name=(
+                "_ArchetypeEntityIterator.__next__[archetype_origin:"
+                " Origin](out accessor: ArchetypeRowAccessor)"
+            )
+        ):
+            if not self._has_next():
+                raise StopIteration()
+            accessor = self.archetype[].get_row_accessor[Self.filter](
+                self._index
+            )
+            self._index += 1
+
+
+struct LockedWorldEntityIterator[
+    archetype_list_mutability: Bool,
+    //,
+    archetype_list_origin: Origin[mut=archetype_list_mutability],
+    lock_origin: MutOrigin,
+    *ComponentTypes: ComponentType,
+    row_filter: Filter = Filter(),
+    has_start_indices: Bool = False,
+](Boolable, Copyable, Movable, Sized):
+    """Owns an entity iterator and a structural-change lock for its lifetime.
+
+    Acquires the lock before initializing traversal and releases it on
+    destruction, including early loop exits. Moving the wrapper transfers
+    ownership of the lock without acquiring another one. Copying preserves
+    the traversal position and acquires a distinct lock; it aborts if no lock
+    is available. Exhaustion does not release the lock while the wrapper is
+    still alive.
+
+    This is not a thread-synchronization mutex. The lock prevents structural
+    changes to the world, not component reads or writes. The underlying
+    iterator is kept private so traversal always happens while locked.
+
+    Parameters:
+        archetype_list_mutability: Whether archetype access is mutable.
+        archetype_list_origin: The origin of the world's archetypes.
+        lock_origin: The origin of the world's lock manager.
+        ComponentTypes: The world's component types.
+        row_filter: The compile-time [..filter.Filter] the yielded row
+            accessors are created with, if any. Named distinctly from
+            the runtime `filter: BitMaskFilter` argument below, which
+            selects archetypes rather than typing the accessor.
+        has_start_indices: Whether traversal starts at specified row indices.
+    """
+
+    comptime UnlockedIterator = _WorldEntityIterator[
+        Self.archetype_list_origin,
+        *Self.ComponentTypes,
+        row_filter=Self.row_filter,
+        has_start_indices=Self.has_start_indices,
+    ]
+    comptime Archetype = _Archetype[*Self.ComponentTypes]
+    comptime ArchetypeIterator = _ArchetypeIterator[
+        Self.archetype_list_origin,
+        *Self.ComponentTypes,
+    ]
+    comptime StartIndices = StaticOptional[List[Int], Self.has_start_indices]
+    comptime IteratorOwnedType = LockedWorldEntityIterator[
+        Self.archetype_list_origin,
+        Self.lock_origin,
+        *Self.ComponentTypes,
+        row_filter=Self.row_filter,
+        has_start_indices=Self.has_start_indices,
+    ]
+
+    var _iterator: Self.UnlockedIterator
+    var _guard: LockGuard[Self.lock_origin]
+
+    def __init__(
+        out self,
+        var archetype_iter: Self.ArchetypeIterator,
+        lock_ptr: Pointer[LockManager, Self.lock_origin],
+        var start_indices: Self.StartIndices = None,
+    ) raises LarecsError:
+        """Acquires a lock and initializes traversal over selected archetypes.
+
+        Args:
+            archetype_iter: The archetype iterator to consume.
+            lock_ptr: A pointer to the world's lock manager.
+            start_indices: Starting row indices in archetype iteration order.
+
+        Raises:
+            LarecsError: If no lock is available.
+        """
+        try:
+            self._guard = LockGuard(lock_ptr)
+        except:
+            raise LarecsError(WorldError.out_of_locks)
+        self._iterator = Self.UnlockedIterator(archetype_iter^, start_indices^)
+
+    def __init__(
+        out self,
+        archetypes: Pointer[List[Self.Archetype], Self.archetype_list_origin],
+        var filter: BitMaskFilter[_],
+        lock_ptr: Pointer[LockManager, Self.lock_origin],
+        var start_indices: Self.StartIndices = None,
+    ) raises LarecsError:
+        """Acquires a lock before selecting archetypes and initializing traversal.
+
+        Args:
+            archetypes: A pointer to the world's archetypes.
+            filter: The filter used to select archetypes.
+            lock_ptr: A pointer to the world's lock manager.
+            start_indices: Starting row indices in archetype iteration order.
+
+        Raises:
+            LarecsError: If no lock is available.
+        """
+        try:
+            self._guard = LockGuard(lock_ptr)
+        except:
+            raise LarecsError(WorldError.out_of_locks)
+        self._iterator = Self.UnlockedIterator(
+            archetypes, filter^, start_indices^
+        )
+
+    @doc_hidden
+    @always_inline
+    def __init__(out self, *, copy: Self):
+        """Copies the traversal position and acquires a distinct lock.
+
+        Args:
+            copy: The locked iterator to copy.
+
+        Notes:
+            Aborts if a distinct lock cannot be acquired.
+        """
+        self._iterator = copy._iterator.copy()
+        self._guard = copy._guard.copy()
+
+    def __deinit__(deinit self):
+        """Destroys the wrapped iterator before releasing the lock that protects it.
+        """
+        _ = self._iterator^
+        _ = self._guard^
+
+    @always_inline
+    def __iter__(var self, out iterator: Self):
+        """Transfers this wrapper into a loop without acquiring another lock.
+
+        Returns:
+            This locked iterator.
+        """
+        iterator = self^
+
+    @__unsafe_nested_origins_read_only
+    @always_inline
+    def __next__(
+        mut self,
+        out accessor: ArchetypeRowAccessor[
+            Self.archetype_list_origin,
+            *Self.ComponentTypes,
+            filter=Self.row_filter,
+        ],
+    ) raises StopIteration:
+        """Advances the wrapped iterator while retaining the lock.
+
+        Raises:
+            StopIteration: If there are no more entities.
+
+        Returns:
+            An accessor to the next entity.
+        """
+        accessor = self._iterator.__next__()
+
+    @always_inline
+    def __len__(self, out size: Int):
+        """Counts remaining entities while retaining the lock.
+
+        Returns:
+            The number of entities remaining.
+        """
+        size = len(self._iterator)
+
+    @always_inline
+    def _has_next(self) -> Bool:
+        """Checks for remaining entities while retaining the lock.
+
+        Returns:
+            Whether traversal has more entities.
+        """
+        return self._iterator._has_next()
+
+    @always_inline
+    def __bool__(self) -> Bool:
+        """Checks for remaining entities while retaining the lock.
+
+        Returns:
+            Whether traversal has more entities.
+        """
+        return self._has_next()
+
+
+struct _WorldEntityIterator[
+    archetype_list_mutability: Bool,
+    //,
+    archetype_list_origin: Origin[mut=archetype_list_mutability],
+    *ComponentTypes: ComponentType,
+    row_filter: Filter = Filter(),
+    has_start_indices: Bool = False,
+](Boolable, Copyable, Movable, Sized):
+    """Iterator over all entities of a world corresponding to a mask.
+
+    Does not acquire a lock. Internal callers must prevent structural changes
+    for the duration of iteration, normally using `LockedWorldEntityIterator`.
+
+    Parameters:
+        archetype_list_mutability: Whether the reference to the archetypes is mutable.
+        archetype_list_origin: The origin of the archetypes.
+        ComponentTypes: The types of the components.
+        row_filter: The compile-time [..filter.Filter] the yielded row
+            accessors are created with, if any. Named distinctly from
+            the runtime `filter: BitMaskFilter` argument below, which
+            selects archetypes rather than typing the accessor.
+        has_start_indices: Whether the iterator starts iterating the
+                           archetypes at given indices.
+    """
+
+    comptime Archetype = _Archetype[*Self.ComponentTypes]
+    comptime ArchetypeIterator = _ArchetypeIterator[
+        Self.archetype_list_origin,
+        *Self.ComponentTypes,
+    ]
+
+    comptime IteratorOwnedType = _WorldEntityIterator[
+        Self.archetype_list_origin,
+        *Self.ComponentTypes,
+        row_filter=Self.row_filter,
+        has_start_indices=Self.has_start_indices,
+    ]
+
+    comptime StartIndices = StaticOptional[List[Int], Self.has_start_indices]
+    var _start_indices: Self.StartIndices
+    var _current_archetype_index: Int
+
+    var _archetype_iterator: Self.ArchetypeIterator
+
+    # We need to store the `_ArchetypeEntityIterator` with an untracked origin, because
+    # the interior origins don't carry over from `_WorldEntityIterator` creation to the
+    # call of `__next__`. Therefore, we need to reattach the tracked origin via
+    # `unsafe_origin_cast`.
+    # The same strategy is used in `List` in the standard library.
+    # See
+    #  - https://github.com/modular/modular/issues/6806
+    #  - https://github.com/modular/modular/blob/2b9eb0f719997665d20d19ddeab85fa8a481e871/mojo/stdlib/std/collections/list.mojo#L335
+    comptime _UnsafeArchetypeEntityIterator = _ArchetypeEntityIterator[
+        UntrackedOrigin[mut=Self.archetype_list_mutability],
+        *Self.ComponentTypes,
+        filter=Self.row_filter,
+    ]
+    var _entity_iterator: Self._UnsafeArchetypeEntityIterator
+
+    def __init__(
+        out self,
+        var archetype_iter: Self.ArchetypeIterator,
+        var start_indices: Self.StartIndices = None,
+    ):
+        """Creates a lock-free entity iterator over selected archetypes.
+
+        Args:
+            archetype_iter: The archetype iterator to consume.
+            start_indices: Starting row indices in archetype iteration order.
+        """
+        with Zone(
+            function_name=(
+                "_WorldEntityIterator.__init__(var archetype_iter:"
+                " Self.ArchetypeIterator, var start_indices: Self.StartIndices)"
+            )
+        ):
+            self._start_indices = start_indices^
+            self._archetype_iterator = archetype_iter^
+            var archetype_list_ptr = (
+                self._archetype_iterator._archetypes.unsafe_origin_cast[
+                    UntrackedOrigin[mut=Self.archetype_list_mutability]
+                ]()
+            )
+            self._entity_iterator = Self._UnsafeArchetypeEntityIterator(
+                archetype_list_ptr[][0],
+                len(archetype_list_ptr[][0]),
+            )  # initialize entity iterator exhausted so that the first
+            # `__next__` always advances to the next archetype; the zero
+            # archetype may be non-empty when it is the iteration target.
+
+            self._current_archetype_index = 0
+
+    def __init__(
+        out self,
+        archetypes: Pointer[List[Self.Archetype], Self.archetype_list_origin],
+        var filter: BitMaskFilter[_],
+        var start_indices: Self.StartIndices = None,
+    ):
+        """Creates a lock-free entity iterator from a filter.
+
+        Args:
+            archetypes: A pointer to the world's archetypes.
+            filter: The filter used to select archetypes.
+            start_indices: Starting row indices in archetype iteration order.
+        """
+        self = Self(Self.ArchetypeIterator(archetypes, filter^), start_indices^)
+
+    @doc_hidden
+    @always_inline
+    def __init__(out self, *, copy: Self):
+        """Copies the current world traversal position.
+
+        Args:
+            copy: The world entity iterator to copy.
+        """
+        self._start_indices = copy._start_indices.copy()
+        self._current_archetype_index = copy._current_archetype_index
+        self._archetype_iterator = copy._archetype_iterator.copy()
+        self._entity_iterator = copy._entity_iterator.copy()
+
+    @always_inline
+    def __iter__(var self, out iterator: Self):
+        """
+        Returns self as an iterator usable in for loops.
+
+        Returns:
+            Self as an iterator usable in for loops.
+        """
+        with Zone(
+            function_name="_WorldEntityIterator.__iter__(out iterator: Self)"
+        ):
+            iterator = self^
+
+    @__unsafe_nested_origins_read_only
+    @always_inline
+    def __next__(
+        mut self,
+        out accessor: ArchetypeRowAccessor[
+            Self.archetype_list_origin,
+            *Self.ComponentTypes,
+            filter=Self.row_filter,
+        ],
+    ) raises StopIteration:
+        """
+        Returns the next entity in the iteration.
+
+        Raises:
+            StopIteration: If there are no more entities to iterate.
+
+        Returns:
+            An [..archetype.ArchetypeRowAccessor] to the entity.
+        """
+
+        # Implementation note:
+        #
+        # The accessor is constructed from the untracked archetype pointer of
+        # `self._entity_iterator`, with the tracked whole-list origin
+        # reattached via `unsafe_origin_cast`. This is safe because that pointer
+        # genuinely points into the archetype list's interior storage for the
+        # duration of iteration. Note that the whole-list origin is used (and
+        # not an interior element origin of the list): an interior origin in an
+        # `out` parameter of a `mut self` method is reported as invalidated by
+        # the caller (see `_DequeIter.__next__` in the Mojo stdlib, which uses
+        # the whole-container origin for the same reason).
+
+        with Zone(
+            function_name=(
+                "_WorldEntityIterator.__next__(out accessor: Self.Element)"
+            )
+        ):
+            if not self._entity_iterator:
+                if not self._archetype_iterator:
+                    raise StopIteration()
+
+                var start_idx: Int
+                comptime if Self.has_start_indices:
+                    start_idx = self._start_indices[][
+                        self._current_archetype_index
+                    ]
+                else:
+                    start_idx = 0
+
+                self._current_archetype_index += 1
+
+                var untracked_archetype_ptr = Pointer(
+                    to=self._archetype_iterator.__next__()
+                ).unsafe_origin_cast[
+                    UntrackedOrigin[mut=Self.archetype_list_mutability]
+                ]()
+
+                self._entity_iterator = Self._UnsafeArchetypeEntityIterator(
+                    untracked_archetype_ptr[],
+                    start_idx,
+                )
+
+            accessor = {
+                self._entity_iterator.archetype.unsafe_origin_cast[
+                    Self.archetype_list_origin
+                ]()[],
+                self._entity_iterator.__next__()._index_in_archetype,
+            }
+
+    def __len__(self, out size: Int):
+        """
+        Returns the number of entities remaining in the iterator.
+
+        Note that this requires iterating over all archetypes
+        and may be a complex operation.
+        """
+        with Zone(function_name="_WorldEntityIterator.__len__(out size: Int)"):
+            size = 0
+
+            if not self._has_next():
+                return
+
+            if self._entity_iterator:
+                size += len(self._entity_iterator)
+
+            var archetype_iter_copy = self._archetype_iterator.copy()
+
+            var archetype_idx = self._current_archetype_index
+
+            for ref archetype in archetype_iter_copy^:
+                var start_idx: Int
+                comptime if Self.has_start_indices:
+                    start_idx = self._start_indices[][archetype_idx]
+                else:
+                    start_idx = 0
+                archetype_idx += 1
+
+                var entity_iter = Self._UnsafeArchetypeEntityIterator(
+                    Pointer(to=archetype).unsafe_origin_cast[
+                        UntrackedOrigin[mut=Self.archetype_list_mutability]
+                    ]()[],
+                    start_idx,
+                )
+                size += len(entity_iter)
+
+    @always_inline
+    def _has_next(self) -> Bool:
+        """
+        Returns whether the iterator has at least one more element.
+
+        Returns:
+            Whether there are more elements to iterate.
+        """
+        with Zone(function_name="_WorldEntityIterator._has_next()"):
+            return self._entity_iterator or self._archetype_iterator
+
+    @always_inline
+    def __bool__(self) -> Bool:
+        """
+        Returns whether the iterator has at least one more element.
+
+        Returns:
+            Whether there are more elements to iterate.
+        """
+        with Zone(function_name="_WorldEntityIterator.__bool__()"):
+            return self._has_next()

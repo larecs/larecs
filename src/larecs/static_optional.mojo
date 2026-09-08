@@ -1,3 +1,9 @@
+"""A compile-time optional value.
+
+Provides `StaticOptional`, which decides at compile time whether it stores
+an `ElementType` value or a zero-sized empty placeholder.
+"""
+
 from std.utils.type_functions import ConditionalType
 
 from tracy import Zone
@@ -103,7 +109,7 @@ struct StaticOptional[
     @always_inline
     def __deinit__(deinit self):
         """Destroy the stored value when present."""
-        with Zone(function_name="StaticOptional.__del__()"):
+        with Zone(function_name="StaticOptional.__deinit__()"):
             comptime if Self.has_value:
                 _ = self._value^
 

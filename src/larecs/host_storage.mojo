@@ -1,4 +1,11 @@
-from .archetype import Archetype, MutableEntityAccessor
+"""Host-side entity and component storage.
+
+Provides `HostStorage`, which holds all archetypes, entities, and their
+component data for a world, along with `Replacer` for atomically replacing
+an entity's components.
+"""
+
+from .archetype import Archetype, MutArchetypeRowAccessor
 from .bitmask import BitMask
 from .debug_utils import debug_warn
 from .component import (
@@ -17,12 +24,11 @@ from .error import (
 from .graph import BitMaskGraph
 from .lock import LockManager
 from .pool import EntityPool
-from .query import (
-    Query,
-    QueryInfo,
-    _WorldEntityIterator,
+from .iteration import (
+    LockedWorldEntityIterator,
     _ArchetypeIterator,
 )
+from .filter import Filter, BitMaskFilter
 from .static_optional import StaticOptional
 from .types import ComponentId
 from ._utils import concatenate_arrays, assert_unreachable
@@ -32,7 +38,7 @@ from std.sys import size_of
 from tracy import Zone
 
 
-struct Storage[*ComponentTypes: ComponentType](Copyable):
+struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     """
     Holds all the component and entity data for a world.
 
@@ -49,6 +55,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     """
 
     comptime component_manager = ComponentManager[*Self.ComponentTypes]
+    """The component manager assigning IDs to `ComponentTypes`."""
 
     # If *Ts is empty, this results in a zero-sized Array, else this
     # results in an Array of component IDs.
@@ -57,34 +64,37 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     ] = Self.component_manager.get_id_arr[*Ts]()
     """Component ID array type for an optional component type pack."""
 
-    comptime Query = Query[
-        _,
-        _,
-        *Self.ComponentTypes,
-        has_without_mask=_,
-    ]
-    """Query builder type for this world's component type set."""
-
     comptime Iterator[
         archetype_mutability: Bool,
         //,
         archetype_origin: Origin[mut=archetype_mutability],
         lock_origin: MutOrigin,
         *,
+        row_filter: Filter = Filter(),
         has_start_indices: Bool = False,
-    ] = _WorldEntityIterator[
+    ] = LockedWorldEntityIterator[
         archetype_origin,
         lock_origin,
         *Self.ComponentTypes,
+        row_filter=row_filter,
         has_start_indices=has_start_indices,
     ]
     """
-    Primary entity iterator type comptime for mask-based Storage queries.
+    Primary entity iterator type comptime for mask-based HostStorage queries.
+
+    These iterators are copyable. Each copy preserves its source's current
+    traversal position and acquires a distinct structural-change lock that is
+    released independently. Copying aborts if no lock is available; moving an
+    iterator transfers its existing lock without acquiring another one.
 
     Parameters:
         archetype_mutability: Whether the iterator allows mutable access to archetypes.
         archetype_origin: The origin of the archetype data accessed by the iterator.
-        lock_origin: The origin of the locks used for safe concurrent access.
+        lock_origin: The origin of the locks preventing structural changes.
+        row_filter: The compile-time [..filter.Filter] the yielded row
+            accessors are created with, if any. Only `query` passes this;
+            other callers leave it at the default, so their accessors only
+            support `unsafe_get`/`has`.
         has_start_indices: Enables iteration from specific entity ranges (batch ops).
     """
 
@@ -92,7 +102,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         archetype_mutability: Bool,
         //,
         archetype_origin: Origin[mut=archetype_mutability],
-        has_without_mask: Bool = False,
+        has_exclude_mask: Bool = False,
     ] = _ArchetypeIterator[
         archetype_origin,
         *Self.ComponentTypes,
@@ -103,7 +113,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     Parameters:
         archetype_mutability: Whether the iterator allows mutable access to archetypes.
         archetype_origin: The origin of the archetype data accessed by the iterator.
-        has_without_mask: Whether the query has a without mask, which requires additional checks during iteration.
+        has_exclude_mask: Whether the query has a without mask, which requires additional checks during iteration.
     """
 
     var _locks: LockManager
@@ -121,7 +131,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     """Type alias for the list of archetypes owned by this storage."""
 
     var _archetypes: Self.Archetypes
-    """Storage for all archetypes owned by this storage."""
+    """Archetype list owned by this HostStorage."""
 
     var _archetype_map: BitMaskGraph[-1]
     """Graph mapping component masks to archetype indices."""
@@ -130,52 +140,67 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         Initializes the storage with the zero archetype and zero entity location.
         """
-        self._entity_locations = [EntityLocation(0, 0)]
-        self._entity_pool = EntityPool()
+        with Zone(function_name="HostStorage.__init__()"):
+            self._entity_locations = [EntityLocation(0, 0)]
+            self._entity_pool = EntityPool()
 
-        self._archetype_map = BitMaskGraph[-1](0)
-        self._archetypes = [Self.Archetype()]
-        self._locks = LockManager()
+            self._archetype_map = BitMaskGraph[-1](0)
+            self._archetypes = [Self.Archetype()]
+            self._locks = LockManager()
 
     @always_inline
     def query[
-        *Ts: ComponentType
+        filter: Filter
     ](
         mut self,
-        out iterator: Self.Query[
-            origin_of(self._archetypes),
+        out iterator: Self.Iterator[
+            ImmOrigin(origin_of(self._archetypes)),
             origin_of(self._locks),
-            has_without_mask=False,
+            row_filter=filter,
         ],
-    ):
+    ) raises LarecsError:
         """
-        Returns an [..query.Query] for all [..entity.Entity Entities] with the given components.
+        Returns a locked, read-only iterator over all [..entity.Entity Entities] matching the filter.
+
+        The lock is acquired immediately and held for the iterator's
+        lifetime, preventing structural changes to the world until it is
+        dropped. The iterator can be copied; every copy preserves the current
+        traversal position and acquires a distinct lock that is released
+        independently. Copying aborts if no lock is available. Component
+        values are read-only through this iterator; mutate components from
+        inside a system instead, via [..system.SystemContext.run].
+
+        The yielded [..archetype.ArchetypeRowAccessor]'s `get[T]()` is
+        checked at compile time against `filter`: `T` must be included by
+        `filter` (via `Filter.include`), since only then is every matching
+        archetype guaranteed to carry it. Use `unsafe_get[T]()` for a
+        component `filter` doesn't guarantee, or `has[T]()` to check first.
 
         Parameters:
-            Ts: The types of the components.
+            filter: The compile-time [..filter.Filter] specifying which
+                components to include or exclude.
+
+        Raises:
+            LarecsError: If no lock is available.
 
         Returns:
-            A [..query.Query] for all entities with the given components.
+            A copyable, locked iterator over all entities matching the filter,
+            with read-only component access. Each copy owns a distinct lock.
         """
         with Zone(
-            function_name=(
-                "Components.query[*Ts: ComponentType](out iterator: Self.Query)"
-            )
+            function_name="HostStorage.query[filter: Filter](mut self, ...)"
         ):
-            comptime assert constrain_components_unique[
-                *Ts
-            ](), "Duplicate component types in query are not allowed."
-            comptime component_count = len(Ts)
-
-            var bitmask: BitMask
-
-            comptime if not component_count:
-                bitmask = BitMask()
-            else:
-                bitmask = BitMask(Self.component_manager.get_id_arr[*Ts]())
-
-            iterator = Self.Query[has_without_mask=False](
-                Pointer(to=self._archetypes), Pointer(to=self._locks), bitmask
+            comptime bitmask_filter = filter.get_bitmask_filter[
+                *Self.ComponentTypes
+            ]()
+            iterator = Self.Iterator[
+                ImmOrigin(origin_of(self._archetypes)),
+                origin_of(self._locks),
+                row_filter=filter,
+            ](
+                Pointer(to=self._archetypes).as_imm(),
+                bitmask_filter,
+                Pointer(to=self._locks),
             )
 
     @always_inline
@@ -259,7 +284,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """Returns a new or recycled [..entity.Entity].
 
         The given component types are added to the entity.
-        Do not use during [.Storage.query] iteration!
+        Do not use during [.HostStorage.query] iteration!
 
         ⚠️ Important:
         Entities are intended to be stored and passed around via copy, not via pointers! See [..entity.Entity].
@@ -295,7 +320,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             components: The components to add to the entity.
 
         Raises:
-            Error: If the world is [.Storage.is_locked locked].
+            Error: If the world is [.HostStorage.is_locked locked].
 
         Returns:
             The new or recycled [..entity.Entity].
@@ -303,7 +328,8 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "Storage.add_entity[*Ts: ComponentType](var *components: *Ts)"
+                "HostStorage.add_entity[*Ts: ComponentType](var *components:"
+                " *Ts)"
             )
         ):
             comptime assert Self.component_manager.contains_components[
@@ -360,12 +386,12 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """Adds a batch of [..entity.Entity Entities].
 
         The given component types are added to the entities.
-        Do not use during [.Storage.query] iteration!
+        Do not use during [.HostStorage.query] iteration!
 
         Example:
 
         ```mojo {doctest="add_entity_comps" global=true hide=true}
-        from larecs import World, Resources
+        from larecs import World, ResourceStorage
 
         @fieldwise_init
         struct Position(Copyable, Movable):
@@ -386,7 +412,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             count = 5
         ):
             # Do things with the newly created entities
-            position = entity.get[Position]()
+            position = entity.unsafe_get[Position]()
         ```
 
         Parameters:
@@ -397,7 +423,8 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             count: The number of entities to add.
 
         Raises:
-            LarecsError: If the world is [.Storage.is_locked locked].
+            LarecsError: If the world is [.HostStorage.is_locked locked].
+            LarecsError: If `count` is negative.
 
         Returns:
             An iterator to the new or recycled [..entity.Entity Entities].
@@ -405,7 +432,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "Storage.add_entities[*Ts: ComponentType](*components: *Ts,"
+                "HostStorage.add_entities[*Ts: ComponentType](*components: *Ts,"
                 " count: Int, out iterator: Self.Iterator)"
             )
         ):
@@ -416,14 +443,15 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 *Ts
             ](), "Duplicate component types in add_entities are not allowed."
 
-            debug_assert(0 <= count, "Count must be non-negative.")
+            if count < 0:
+                raise LarecsError(WorldError.negative_count)
 
             if count == 0:
                 try:
                     iterator = {
                         Self.ArchetypeIterator[
                             origin_of(self._archetypes),
-                            has_without_mask=False,
+                            has_exclude_mask=False,
                         ](Pointer(to=self._archetypes), []),
                         Pointer(to=self._locks),
                         {[]},
@@ -455,7 +483,10 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 comptime assert Self.component_manager.contains_components[
                     T
                 ](), "Component type is not part of the world."
-                archetype.set_component_range[T](
+                # These rows were just appended by `_create_entities` and
+                # hold uninitialized memory for `T`, so they must be
+                # initialized rather than assigned.
+                archetype.init_component_range[T](
                     first_index_in_archetype, count, components[i]
                 )
 
@@ -463,7 +494,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 iterator = {
                     Self.ArchetypeIterator[
                         origin_of(self._archetypes),
-                        has_without_mask=False,
+                        has_exclude_mask=False,
                     ](Pointer(to=self._archetypes), [archetype_index]),
                     Pointer(to=self._locks),
                     {[first_index_in_archetype]},
@@ -481,7 +512,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "Storage._create_entities(archetype_index: Int, count: Int)"
+                "HostStorage._create_entities(archetype_index: Int, count: Int)"
             )
         ):
             debug_assert(count > 0, "Count must be positive.")
@@ -515,7 +546,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         Removes an [..entity.Entity], making it eligible for recycling.
 
-        Do not use during [.Storage.query] iteration!
+        Do not use during [.HostStorage.query] iteration!
 
         Args:
             entity: The entity to remove.
@@ -524,9 +555,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: If the world is locked or the entity does not exist.
         """
         self._assert_unlocked()
-        self._assert_alive(entity)
+        self.assert_alive(entity)
 
-        with Zone(function_name="Storage.remove_entity(entity: Entity)"):
+        with Zone(function_name="HostStorage.remove_entity(entity: Entity)"):
             var entity_loc = self._entity_locations[entity.get_id()]
             ref old_archetype = self._archetypes.unsafe_get(
                 entity_loc.archetype_index
@@ -566,39 +597,40 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                     swap_entity.get_id()
                 ].entity_index = entity_loc.entity_index
 
-    def remove_entities(mut self, query: QueryInfo) raises LarecsError:
+    def remove_entities(mut self, filter: BitMaskFilter) raises LarecsError:
         """
         Removes multiple [..entity.Entity Entities] based on the provided query, making them eligible for recycling.
 
         Example:
 
         ```mojo {doctest="apply" global=true hide=true}
-        from larecs import World, MutableEntityAccessor
+        from larecs import World, MutArchetypeRowAccessor, Filter
         from testing import assert_equal, assert_false
         ```
 
         ```mojo {doctest="apply"}
         world = World[Float32, Float64]()
-        _ = world.add_entity(Float32(0))
-        _ = world.add_entity(Float32(0), Float64(0))
-        _ = world.add_entity(Float64(0))
+        _ = world.storage.add_entity(Float32(0))
+        _ = world.storage.add_entity(Float32(0), Float64(0))
+        _ = world.storage.add_entity(Float64(0))
 
         # Remove all entities with a Float32 component.
-        world.storage.remove_entities(world.storage.query[Float32]())
+        world.storage.remove_entities(world.filter[Filter().include[Float32]()]())
         ```
 
         Args:
-            query: The query to determine which entities to remove. Note, you can
-                    either use [..query.Query] or [..query.QueryInfo].
+            filter: The filter to determine which entities to remove.
 
         Raises:
             LarecsError: If the world is locked.
         """
         self._assert_unlocked()
 
-        with Zone(function_name="Storage.remove_entities(query: QueryInfo)"):
+        with Zone(
+            function_name="HostStorage.remove_entities(query: QueryInfo)"
+        ):
             for ref archetype in self._get_archetype_iterator(
-                query.mask, query.without_mask
+                filter.include_mask, filter.exclude_mask
             ):
                 for entity in archetype.get_entities():
                     try:
@@ -633,9 +665,28 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
         Args:
             entity: The entity to check.
+
+        Returns:
+            True if the entity is still alive.
         """
-        with Zone(function_name="Storage.is_alive(entity: Entity)"):
+        with Zone(function_name="HostStorage.is_alive(entity: Entity)"):
             return self._entity_pool.is_alive(entity)
+
+    @always_inline
+    def assert_alive(self, entity: Entity) raises LarecsError:
+        """Ensures that an [..entity.Entity] is still alive.
+
+        Args:
+            entity: The entity to validate.
+
+        Raises:
+            LarecsError: If the entity does not exist.
+        """
+        with Zone(function_name="HostStorage.assert_alive(entity: Entity)"):
+            if not self.is_alive(entity):
+                raise LarecsError(
+                    EntityError.non_existent_entity.with_entities(entity)
+                )
 
     @always_inline
     def has[T: ComponentType](self, entity: Entity) raises LarecsError -> Bool:
@@ -650,14 +701,17 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
         Raises:
             LarecsError: If the entity does not exist.
+
+        Returns:
+            True if the entity has the component.
         """
         with Zone(
-            function_name="Storage.has[T: ComponentType](entity: Entity)"
+            function_name="HostStorage.has[T: ComponentType](entity: Entity)"
         ):
             comptime assert Self.component_manager.contains_components[
                 T
             ](), "Component type not in component manager"
-            self._assert_alive(entity)
+            self.assert_alive(entity)
             return self._archetypes.unsafe_get(
                 index(self._entity_locations[entity.get_id()].archetype_index)
             ).has_components[T]()
@@ -678,17 +732,23 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Parameters:
             T: The type of the component. Constraints: Must be in the component manager.
 
+        Args:
+            entity: The entity whose component to access.
+
         Raises:
             LarecsError: If the entity is not alive or does not have the component.
+
+        Returns:
+            A reference to the component value.
         """
         comptime assert Self.component_manager.contains_components[
             T
         ](), "Component type not in component manager"
+        self.assert_alive(entity)
         var entity_loc = self._entity_locations[entity.get_id()]
-        self._assert_alive(entity)
 
         with Zone(
-            function_name="Storage.get[T: ComponentType](entity: Entity)"
+            function_name="HostStorage.get[T: ComponentType](entity: Entity)"
         ):
             if not self._archetypes.unsafe_get(
                 entity_loc.archetype_index
@@ -722,14 +782,14 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "Storage.set[T: ComponentType](entity: Entity, var"
+                "HostStorage.set[T: ComponentType](entity: Entity, var"
                 " component: T)"
             )
         ):
             comptime assert Self.component_manager.contains_components[
                 T
             ](), "Component type not in component manager"
-            self._assert_alive(entity)
+            self.assert_alive(entity)
             var entity_loc = self._entity_locations[entity.get_id()]
             self._archetypes.unsafe_get(
                 entity_loc.archetype_index
@@ -755,7 +815,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         """
         with Zone(
             function_name=(
-                "Storage.set[*Ts: ComponentType](entity: Entity, var"
+                "HostStorage.set[*Ts: ComponentType](entity: Entity, var"
                 " *components: *Ts)"
             )
         ):
@@ -766,7 +826,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 *Ts
             ](), "Duplicate component types in set are not allowed."
 
-            self._assert_alive(entity)
+            self.assert_alive(entity)
             var entity_loc = self._entity_locations[entity.get_id()]
             self._archetypes.unsafe_get(
                 entity_loc.archetype_index
@@ -788,11 +848,11 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be added because they are already present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
-                "Storage.add[*Ts: ComponentType](entity: Entity, var"
+                "HostStorage.add[*Ts: ComponentType](entity: Entity, var"
                 " *add_components: *Ts)"
             )
         ):
@@ -814,21 +874,21 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be added because they are already present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
-                "Storage.add[*Ts: ComponentType](var *add_components: *Ts,"
+                "HostStorage.add[*Ts: ComponentType](var *add_components: *Ts,"
                 " entity: Entity)"
             )
         ):
             self._remove_and_add(entity, *add_components^)
 
     def add[
-        has_without_mask: Bool, //, *Ts: ComponentType
+        *Ts: ComponentType
     ](
         mut self,
-        query: QueryInfo[has_without_mask=has_without_mask],
+        filter: BitMaskFilter[_],
         var *add_components: *Ts,
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
@@ -837,14 +897,14 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         ],
     ) raises LarecsError:
         """
-        Adds components to multiple [..entity.Entity Entities] at once that are specified by a [..query.Query].
-        The provided query must ensure that matching entities do not already have one or more of the
+        Adds components to multiple [..entity.Entity Entities] at once that are matched by the [..filter.BitMaskFilter].
+        The provided filter must ensure that matching entities do not already have one or more of the
         components to add.
 
         **Example:**
 
         ```mojo {doctest="add_query_comps" global=true}
-        from larecs import World
+        from larecs import World, Filter
 
         @fieldwise_init
         struct Position(Copyable, Movable):
@@ -857,37 +917,39 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             var y: Float64
 
         world = World[Position, Velocity]()
-        _ = world.add_entities(Position(0, 0), 100)
+        _ = world.storage.add_entities(Position(0, 0), count=100)
 
         for entity in world.storage.add[Velocity](
-            world.storage.query[Position]().without_mask[Velocity](),
+            world.filter[Filter().include[Position]().exclude[Velocity]()](),
             Velocity(0.5, -0.5),
         ):
-            velocity = entity.get[Velocity]()
-            position = entity.get[Position]()
+            velocity = entity.unsafe_get[Velocity]()
+            position = entity.unsafe_get[Position]()
             entity.set[Position](Position(position.x + velocity.x, position.y + velocity.y))
             entity.set[Velocity](Velocity(velocity.x - 0.05, velocity.y - 0.05))
         ```
 
         Parameters:
-            has_without_mask: Whether the query has a without mask.
             Ts: The types of the components to add. Constraints: Must be in the component manager and contain no duplicates.
 
         Args:
-            query: The query specifying which entities to modify. The query must explicitly exclude existing entities
+            filter: The filter specifying which entities to modify. The filter must explicitly exclude existing entities
                 that already have some of the components to add.
             add_components: The components to add.
 
         Raises:
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
-            Error: when called with a query that could match existing entities that already have at least one of the
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
+            Error: when called with a filter that could match existing entities that already have at least one of the
                 components to add.
+
+        Returns:
+            An iterator over the modified entities.
         """
         with Zone(
             function_name=(
-                "Storage.add[has_without_mask: Bool, *Ts: ComponentType](query:"
-                " QueryInfo, var *add_components: *Ts, out iterator:"
-                " Self.Iterator)"
+                "HostStorage.add[has_exclude_mask: Bool, *Ts:"
+                " ComponentType](filter: BitMaskFilter, var *add_components:"
+                " *Ts, out iterator: Self.Iterator)"
             )
         ):
             comptime assert Self.component_manager.contains_components[
@@ -898,7 +960,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             ](), "Duplicate component types in add are not allowed."
 
             return self._batch_remove_and_add(
-                query,
+                filter,
                 *add_components^,
             )
 
@@ -915,10 +977,12 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
-            function_name="Storage.remove[*Ts: ComponentType](entity: Entity)"
+            function_name=(
+                "HostStorage.remove[*Ts: ComponentType](entity: Entity)"
+            )
         ):
             comptime assert constrain_components_unique[
                 *Ts
@@ -932,10 +996,10 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             )
 
     def remove[
-        *Ts: ComponentType, has_without_mask: Bool = False
+        *Ts: ComponentType
     ](
         mut self,
-        query: QueryInfo[has_without_mask=has_without_mask],
+        filter: BitMaskFilter[_],
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
@@ -943,13 +1007,13 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         ],
     ) raises LarecsError:
         """
-        Removes components from multiple entities at once, specified by a [..query.Query].
-        The provided query must ensure that matching entities have all of the components that should get removed.
+        Removes components from entities matched by the [..filter.BitMaskFilter] at once.
+        The filter must ensure that matching entities have all of the components that should get removed.
 
         Example:
 
         ```mojo {doctest="remove_query_comps" global=true}
-        from larecs import World
+        from larecs import World, Filter
 
         @fieldwise_init
         struct Position(Copyable, Movable):
@@ -962,35 +1026,37 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             var y: Float64
 
         world = World[Position, Velocity]()
-        _ = world.add_entities(Position(0, 0), Velocity(1, 0), 100)
+        _ = world.storage.add_entities(Position(0, 0), Velocity(1, 0), count=100)
 
         for entity in world.storage.remove[Velocity](
-            world.storage.query[Position, Velocity]()
+            world.filter[Filter().include[Position, Velocity]()]()
         ):
-            position = entity.get[Position]()
+            position = entity.unsafe_get[Position]()
         ```
 
         Parameters:
             Ts: The types of the components to remove. Constraints: Must be in the component manager and contain no duplicates.
-            has_without_mask: Whether the query has a without mask.
 
         Args:
-            query: The query to determine which entities to modify.
+            filter: The filter to determine which entities to modify.
 
         Raises:
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
-            Error: when called with a query that could match entities that don't have all of the components to remove.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
+            Error: when called with a filter that could match entities that don't have all of the components to remove.
+
+        Returns:
+            An iterator over the modified entities.
         """
 
         with Zone(
             function_name=(
-                "Storage.remove[*Ts: ComponentType, has_without_mask:"
-                " Bool](query: QueryInfo, out iterator: Self.Iterator)"
+                "HostStorage.remove[*Ts: ComponentType](filter: BitMaskFilter,"
+                " out iterator: Self.Iterator)"
             )
         ):
             # Note:
             #     This operation can never map multiple archetypes onto one, due to the requirement that components to remove
-            #     must be already present on archetypes matched by the query. Therefore, we can apply the transformation to
+            #     must be already present on archetypes matched by the filter. Therefore, we can apply the transformation to
             #     each matching archetype individually, without checking for edge cases where multiple archetypes get merged
             #     into one.  This also enables potential parallelization optimizations.
             comptime assert constrain_components_unique[
@@ -1003,7 +1069,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             return self._batch_remove_and_add[
                 rem_size=len(Ts),
                 remove_ids=Self._optional_component_ids[*Ts],
-            ](query)
+            ](filter)
 
     @always_inline
     def replace[
@@ -1015,7 +1081,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         remove_ids=Self.component_manager.get_id_arr[*Ts](),
     ]:
         """
-        Returns a [.Replacer] for removing and adding components to an [..entity.Entity] in one go.
+        Returns a [..host_storage.Replacer] for removing and adding components to an [..entity.Entity] in one go.
 
         Use as `world.replace[Comp1, Comp2]().by(comp3, comp4, comp5, entity=entity)`.
 
@@ -1023,8 +1089,11 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
         Parameters:
             Ts: The types of the components to remove.
+
+        Returns:
+            A [..host_storage.Replacer] configured to remove the given component types.
         """
-        with Zone(function_name="Storage.replace[*Ts: ComponentType]()"):
+        with Zone(function_name="HostStorage.replace[*Ts: ComponentType]()"):
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in replace are not allowed."
@@ -1055,11 +1124,11 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be added because they are already present.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
-                "Storage._remove_and_add[*Ts: ComponentType, rem_size: Int,"
+                "HostStorage._remove_and_add[*Ts: ComponentType, rem_size: Int,"
                 " remove_ids: Array[ComponentId, rem_size]](entity:"
                 " Entity, var *add_components: *Ts)"
             )
@@ -1075,7 +1144,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             comptime add_ids = Self.component_manager.get_id_arr[*Ts]()
 
             self._assert_unlocked()
-            self._assert_alive(entity)
+            self.assert_alive(entity)
 
             # Reserve space for the possibility that a new archetype gets created
             # This ensure that no further allocations can happen in this function and
@@ -1096,7 +1165,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 if not old_archetype_mask.contains(remove_mask):
                     raise LarecsError(
                         ComponentError.missing_components_on_remove.with_components(
-                            old_archetype_mask ^ remove_mask
+                            remove_mask & ~old_archetype_mask
                         )
                     )
 
@@ -1134,31 +1203,40 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 component_ids, old_archetype.get_node_index()
             )
             ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
+
+            # Removing and re-adding the same component set keeps the entity
+            # in its current archetype. These rows are initialized, so replace
+            # their values in place rather than appending and moving onto self.
+            if old_archetype_idx == new_archetype_idx:
+                old_archetype.set_components[*Ts](
+                    index_in_old_archetype, *add_components^
+                )
+                return
+
             ref new_archetype = self._archetypes.unsafe_get(new_archetype_idx)
             var index_in_new_archetype = new_archetype.add_entity(entity)
 
             # Move component data from old archetype to new archetype.
-            comptime for id in range(Self.component_manager.component_count):
-                comptime T = Self.ComponentTypes[id]
-                if not old_archetype.has_components[T]():
-                    continue
-
-                comptime if rem_size:
-                    if not new_archetype.has_components[T]():
-                        continue
-
-                new_archetype.set_components[T](
-                    index_in_new_archetype,
-                    old_archetype.get_component[T](
-                        index_in_old_archetype
-                    ).copy(),
-                )
+            # `index_in_new_archetype` is a row that `add_entity` just
+            # appended, so it holds uninitialized memory and must be
+            # initialized rather than assigned.
+            new_archetype._storage.unsafe_move_shared_components_from(
+                index_in_new_archetype,
+                Pointer(to=old_archetype._storage).as_unsafe_any_origin(),
+                1,
+                index_in_old_archetype,
+            )
 
             new_archetype.init_components[*Ts](
                 index_in_new_archetype, *add_components^
             )
 
-            var swapped = old_archetype.remove(index_in_old_archetype)
+            var new_archetype_mask = new_archetype.get_mask().copy()
+            var swapped = (
+                old_archetype.unsafe_remove_after_moving_shared_components(
+                    index_in_old_archetype, new_archetype_mask
+                )
+            )
             if swapped:
                 var swap_entity = old_archetype.get_entity(
                     entity_loc.entity_index
@@ -1178,10 +1256,10 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         remove_ids: Array[ComponentId, rem_size] = Array[ComponentId, rem_size](
             uninitialized=True
         ),
-        has_without_mask: Bool = False,
+        has_exclude_mask: Bool = False,
     ](
         mut self,
-        query: QueryInfo[has_without_mask=has_without_mask],
+        filter: BitMaskFilter[is_excluding=has_exclude_mask],
         var *add_components: *Ts,
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
@@ -1190,32 +1268,32 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         ],
     ) raises LarecsError:
         """
-        Adds and removes components to multiple [..entity.Entity Entities] specified by a [..query.QueryInfo].
+        Adds and removes components to multiple [..entity.Entity Entities] matched by the [..filter.BitMaskFilter].
 
         Parameters:
             Ts:                 The types of the components to add. Constraints: Must be in the component manager and contain no duplicates.
             rem_size:           The number of components to remove.
             remove_ids:         The IDs of the components to remove.
-            has_without_mask:   Whether the query has a without mask.
+            has_exclude_mask:   Whether the query has a without mask.
 
         Args:
-            query:          The query to determine which entities to modify.
+            filter:          The filter to determine which entities to modify.
             add_components: The components to add.
 
         Returns:
             An iterator over the modified entities.
 
         Raises:
-            LarecsError: when called with a query that could match existing entities that already have at least one of the
+            LarecsError: when called with a filter that could match existing entities that already have at least one of the
                 components to add.
-            LarecsError: when called with a query that could match entities that don't have all of the components to remove.
-            LarecsError: when called on a locked world. Do not use during [.Storage.query] iteration.
+            LarecsError: when called with a filter that could match entities that don't have all of the components to remove.
+            LarecsError: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
-                "Storage._batch_remove_and_add[*Ts: ComponentType, rem_size:"
-                " Int, remove_ids: Array[ComponentId, rem_size],"
-                " has_without_mask: Bool](query: QueryInfo, var"
+                "HostStorage._batch_remove_and_add[*Ts: ComponentType,"
+                " rem_size: Int, remove_ids: Array[ComponentId, rem_size],"
+                " has_exclude_mask: Bool](filter: BitMaskFilter, var"
                 " *add_components: *Ts, out iterator: Self.Iterator)"
             )
         ):
@@ -1245,13 +1323,13 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             var remove_mask = BitMask(runtime_remove_ids)
 
             comptime if add_size:
-                # If query could match archetypes that already have at least one of the components, raise an error
+                # If the filter could match archetypes that already have at least one of the components, raise an error
                 # FIXME: When https://github.com/modular/modular/issues/5347 is fixed, we can use short-circuiting here.
 
                 var strict_check_needed: Bool
 
-                comptime if has_without_mask:
-                    strict_check_needed = not query.without_mask[].contains(
+                comptime if has_exclude_mask:
+                    strict_check_needed = not filter.exclude_mask[].contains(
                         add_mask
                     )
                 else:
@@ -1259,7 +1337,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
                 if strict_check_needed:
                     for archetype in self._get_archetype_iterator(
-                        query.mask, query.without_mask
+                        filter.include_mask, filter.exclude_mask
                     ):
                         var archetype_mask = archetype.get_mask()
 
@@ -1274,19 +1352,19 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                             )
 
             comptime if rem_size:
-                # If query could match archetypes that don't have all of the components, raise an error
-                if not query.mask.contains(remove_mask):
+                # If the filter could match archetypes that don't have all of the components, raise an error
+                if not filter.include_mask.contains(remove_mask):
                     raise LarecsError(
                         ComponentError.missing_components_on_remove_query.with_components(
-                            query.mask ^ remove_mask
+                            remove_mask & ~filter.include_mask
                         )
                     )
 
-                comptime if has_without_mask:
-                    if query.without_mask[].contains_any(remove_mask):
+                comptime if has_exclude_mask:
+                    if filter.exclude_mask[].contains_any(remove_mask):
                         raise LarecsError(
                             ComponentError.missing_components_on_remove_query.with_components(
-                                query.without_mask[] & remove_mask
+                                filter.exclude_mask[] & remove_mask
                             )
                         )
 
@@ -1324,10 +1402,10 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                 capacity=min(len(self._archetypes), _2kb_of_UInt_or_Int)
             )
 
-            # Search for the archetype that matches the query mask
+            # Search for the archetypes that match the filter
             with self._locked():
                 for ref old_archetype1 in self._get_archetype_iterator(
-                    query.mask, query.without_mask
+                    filter.include_mask, filter.exclude_mask
                 ):
                     # Two cases per matching archetype A:
                     # 1. If an archetype B with the new component combination exists, move entities from A to B
@@ -1357,6 +1435,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                         arch_start_idcs.append(0)
                         changed_archetype_idcs.append(new_archetype_idx)
 
+                        # The archetype did not change, so these rows
+                        # already hold valid values that must be destroyed
+                        # before assigning the new ones.
                         comptime for i in range(add_size):
                             comptime T = Ts[i]
                             new_archetype.set_component_range[T](
@@ -1370,16 +1451,20 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                         to=old_archetype
                     ).as_unsafe_any_origin()
                     var arch_start_idx = (
-                        new_archetype.extend_from_archetype_unsafe(
-                            old_archetype_unsafe, old_archetype_size
+                        new_archetype.unsafe_move_all_from_archetype(
+                            old_archetype_unsafe
                         )
                     )
                     arch_start_idcs.append(arch_start_idx)
                     changed_archetype_idcs.append(new_archetype_idx)
 
+                    # These rows were just appended by
+                    # `unsafe_move_all_from_archetype` and hold uninitialized
+                    # memory for the newly added components, so they must
+                    # be initialized rather than assigned.
                     comptime for i in range(add_size):
                         comptime T = Ts[i]
-                        new_archetype.set_component_range[T](
+                        new_archetype.init_component_range[T](
                             arch_start_idx,
                             old_archetype_size,
                             add_components[i].copy(),
@@ -1387,14 +1472,14 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
                     # Update entity index mappings for the moved entity range.
                     for entity_idx in range(old_archetype_size):
-                        var entity = old_archetype.get_entity(entity_idx)
+                        var entity = new_archetype.get_entity(
+                            arch_start_idx + entity_idx
+                        )
                         self._entity_locations[
                             entity.get_id()
                         ] = EntityLocation(
                             arch_start_idx + entity_idx, new_archetype_idx
                         )
-
-                    old_archetype.clear()
 
             # Return iterator to iterate over the changed entities.
             try:
@@ -1416,37 +1501,19 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: If the world is locked.
         """
-        with Zone(function_name="Storage._assert_unlocked()"):
+        with Zone(function_name="HostStorage._assert_unlocked()"):
             if self.is_locked():
                 raise LarecsError(WorldError.world_is_locked)
 
     @always_inline
-    def _assert_alive(self, entity: Entity) raises LarecsError:
-        """
-        Checks if the entity is alive, and raises if not.
-
-        Args:
-            entity: The entity to check.
-
-        Raises:
-            Error: If the entity does not exist.
-        """
-        with Zone(function_name="Storage._assert_alive(entity: Entity)"):
-            if not self._entity_pool.is_alive(entity):
-                raise LarecsError(
-                    EntityError.non_existent_entity.with_entities(entity)
-                )
-
-    @always_inline
     def apply[
-        OperationType: def(accessor: MutableEntityAccessor) raises -> None,
+        OperationType: def(accessor: MutArchetypeRowAccessor) raises -> None,
         //,
-        has_without_mask: Bool = False,
         *,
         unroll_factor: Int = 1,
     ](
         mut self,
-        query: QueryInfo[has_without_mask=has_without_mask],
+        filter: BitMaskFilter[_],
         operation: OperationType,
     ) raises LarecsError:
         """
@@ -1454,12 +1521,11 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
         Parameters:
             OperationType: The type of the operation to apply.
-            has_without_mask: Whether the query has a without mask.
             unroll_factor: The unroll factor for the operation
                 (see [vectorize doc](https://docs.modular.com/mojo/stdlib/algorithm/functional/vectorize)).
 
         Args:
-            query: The query to determine which entities to apply the operation to.
+            filter: The filter to determine which entities to apply the operation to.
             operation: The operation to apply.
 
         Raises:
@@ -1469,8 +1535,8 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
         with Zone(
             function_name=(
-                "Storage.apply[OperationType, has_without_mask: Bool, *,"
-                " unroll_factor: Int](query: QueryInfo, operation:"
+                "HostStorage.apply[OperationType, *,"
+                " unroll_factor: Int](filter: BitMaskFilter, operation:"
                 " OperationType)"
             )
         ):
@@ -1479,29 +1545,29 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
             with self._locked():
                 for ref archetype in Self.ArchetypeIterator(
                     Pointer(to=self._archetypes),
-                    query.copy(),
+                    filter.copy(),
                 ):
                     for i in range(len(archetype)):
                         try:
-                            ref entity = archetype.get_entity_accessor(i)
+                            ref entity = archetype.get_row_accessor(i)
                             operation(entity)
                         except:
                             raise LarecsError(UnknownError())
 
-    # BUG: Mojo cannot correctly infer the simd_width for `Storage.apply` therefore disable this for now.
+    # BUG: Mojo cannot correctly infer the simd_width for `HostStorage.apply` therefore disable this for now.
     #
     # def apply[
     #     OperationType: def[simd_width: Int](
-    #         accessor: MutableEntityAccessor
+    #         accessor: MutArchetypeRowAccessor
     #     ) raises -> None,
     #     //,
-    #     has_without_mask: Bool = False,
+    #     has_exclude_mask: Bool = False,
     #     *,
     #     simd_width: Int = 1,
     #     unroll_factor: Int = 1,
     # ](
     #     mut self,
-    #     query: QueryInfo[has_without_mask=has_without_mask],
+    #     query: QueryInfo[has_exclude_mask=has_exclude_mask],
     #     operation: OperationType,
     # ) raises LarecsError:
     #     """
@@ -1522,7 +1588,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
     #     Parameters:
     #         OperationType: The type of the operation to apply.
-    #         has_without_mask: Whether the query has a without mask.
+    #         has_exclude_mask: Whether the query has a without mask.
     #         simd_width: The SIMD width for the operation
     #             (see [vectorize doc](https://docs.modular.com/mojo/stdlib/algorithm/backend/vectorize/vectorize)).
     #         unroll_factor: The unroll factor for the operation
@@ -1540,7 +1606,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
     #     Example:
     #     ```mojo {doctest="apply" global=true hide=true}
-    #     from larecs import World, MutableEntityAccessor
+    #     from larecs import World, MutArchetypeRowAccessor
     #     ```
 
     #     ```mojo {doctest="apply"}
@@ -1549,7 +1615,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     #     world = World[Float64]()
     #     e = world.add_entity()
 
-    #     def operation[simd_width: Int](accessor: MutableEntityAccessor) capturing:
+    #     def operation[simd_width: Int](accessor: MutArchetypeRowAccessor) capturing:
     #         # Define the operation to apply here.
     #         # Note that due to the immature
     #         # capturing system of Mojo, the world may be
@@ -1583,7 +1649,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     #     ```
 
     #     """
-    #     with TraceGuard(name="Storage.apply simd"):
+    #     with TraceGuard(name="HostStorage.apply simd"):
     #         self._assert_unlocked()
 
     #         with self._locked():
@@ -1594,7 +1660,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
     #                 @always_inline
     #                 def closure[width: Int](i: Int) {read}:
-    #                     accessor = archetype[].get_entity_accessor(i)
+    #                     accessor = archetype[].get_row_accessor(i)
     #                     try:
     #                         operation[width](accessor)
     #                     except:
@@ -1606,11 +1672,11 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
     #                 )
 
     def _get_entity_iterator[
-        has_without_mask: Bool = False, has_start_indices: Bool = False
+        has_exclude_mask: Bool = False, has_start_indices: Bool = False
     ](
         mut self,
-        mask: BitMask,
-        without_mask: StaticOptional[BitMask, has_without_mask],
+        include_mask: BitMask,
+        exclude_mask: StaticOptional[BitMask, has_exclude_mask],
         var start_indices: StaticOptional[List[Int], has_start_indices] = None,
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
@@ -1622,20 +1688,20 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Creates an iterator over all [..entity.Entity Entities] that have / do not have the components in the provided masks.
 
         Parameters:
-            has_without_mask: Whether a without_mask is provided.
+            has_exclude_mask: Whether an exclude_mask is provided.
             has_start_indices: Whether start_indices are provided.
 
 
         Args:
-            mask:          The mask of components to include.
-            without_mask:  The mask of components to exclude.
-            start_indices: The start indices of the iterator. See [..query._WorldEntityIterator].
+            include_mask:   The mask of components to include.
+            exclude_mask:   The mask of components to exclude.
+            start_indices: The start indices of the iterator. See [..iteration._WorldEntityIterator].
         """
         with Zone(
             function_name=(
-                "Storage._get_entity_iterator[has_without_mask: Bool,"
-                " has_start_indices: Bool](mask: BitMask, without_mask:"
-                " StaticOptional[BitMask, has_without_mask], var start_indices:"
+                "HostStorage._get_entity_iterator[has_exclude_mask: Bool,"
+                " has_start_indices: Bool](include_mask: BitMask, exclude_mask:"
+                " StaticOptional[BitMask, has_exclude_mask], var start_indices:"
                 " StaticOptional[List[Int], has_start_indices], out iterator:"
                 " Self.Iterator)"
             )
@@ -1647,9 +1713,9 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
                     has_start_indices=has_start_indices,
                 ](
                     Pointer(to=self._archetypes),
-                    QueryInfo(
-                        mask,
-                        without_mask.copy(),
+                    BitMaskFilter(
+                        include_mask,
+                        exclude_mask.copy(),
                     ),
                     Pointer(to=self._locks),
                     start_indices^,
@@ -1659,42 +1725,46 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
 
     @always_inline
     def _get_archetype_iterator[
-        has_without_mask: Bool = False
+        has_exclude_mask: Bool = False
     ](
         ref self,
-        mask: BitMask,
-        without_mask: StaticOptional[BitMask, has_without_mask] = None,
+        include_mask: BitMask,
+        exclude_mask: StaticOptional[BitMask, has_exclude_mask] = None,
         out iterator: Self.ArchetypeIterator[
-            origin_of(self._archetypes), has_without_mask=has_without_mask
+            origin_of(self._archetypes), has_exclude_mask=has_exclude_mask
         ],
     ):
         """
-        Creates an iterator over all archetypes that match the query.
+        Creates an iterator over all archetypes that are matched by the filter.
 
         Returns:
-            An iterator over all archetypes that match the query.
+            An iterator over all archetypes that are matched by the filter.
         """
         with Zone(
             function_name=(
-                "Storage._get_archetype_iterator[has_without_mask: Bool](mask:"
-                " BitMask, without_mask: StaticOptional[BitMask,"
-                " has_without_mask], out iterator: Self.ArchetypeIterator)"
+                "HostStorage._get_archetype_iterator[has_exclude_mask_mask:"
+                " Bool](include_mask: BitMask, exclude_mask:"
+                " StaticOptional[BitMask, has_exclude_mask], out iterator:"
+                " Self.ArchetypeIterator)"
             )
         ):
             iterator = Self.ArchetypeIterator(
                 Pointer(to=self._archetypes),
-                QueryInfo(
-                    mask,
-                    without_mask.copy(),
+                BitMaskFilter(
+                    include_mask,
+                    exclude_mask.copy(),
                 ),
             )
 
     @always_inline
     def is_locked(self, out result: Bool):
         """
-        Returns whether the world is locked by any [.Storage.query queries].
+        Returns whether the world is locked by any [.HostStorage.query queries].
+
+        Returns:
+            True if the world is currently locked.
         """
-        with Zone(function_name="Storage.is_locked(out result: Bool)"):
+        with Zone(function_name="HostStorage.is_locked(out result: Bool)"):
             return self._locks.is_locked()
 
     @always_inline
@@ -1708,7 +1778,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             LarecsError: when the world is already locked by the maximum number of locks (256 in the current implementation).
         """
-        with Zone(function_name="Storage._lock(out lock: Int)"):
+        with Zone(function_name="HostStorage._lock(out lock: Int)"):
             try:
                 return self._locks.lock()
             except:
@@ -1722,7 +1792,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Args:
             lock: The lock bit to unlock.
         """
-        with Zone(function_name="Storage._unlock(lock: Int)"):
+        with Zone(function_name="HostStorage._unlock(lock: Int)"):
             try:
                 self._locks.unlock(lock)
             except e:
@@ -1739,7 +1809,7 @@ struct Storage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             A context manager that unlocks the world when it goes out of scope.
         """
-        with Zone(function_name="Storage._locked()"):
+        with Zone(function_name="HostStorage._locked()"):
             return LockedContext(Pointer(to=self._locks))
 
 
@@ -1824,10 +1894,10 @@ struct Replacer[
         remove_ids: The IDs of the components to remove.
     """
 
-    comptime Storage = Storage[*Self.ComponentTypes]
-    """The Storage type modified by this replacer."""
+    comptime HostStorage = HostStorage[*Self.ComponentTypes]
+    """The HostStorage type modified by this replacer."""
 
-    var _storage: Pointer[Self.Storage, Self.storage_origin]
+    var _storage: Pointer[Self.HostStorage, Self.storage_origin]
     """Pointer to the storage modified by this replacer."""
 
     def by(self, entity: Entity) raises LarecsError:
@@ -1840,7 +1910,7 @@ struct Replacer[
         Raises:
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(function_name="Replacer.by(entity: Entity)"):
             self._storage[]._remove_and_add[
@@ -1865,7 +1935,7 @@ struct Replacer[
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be added because they are already present.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
@@ -1896,7 +1966,7 @@ struct Replacer[
             Error: when called for a removed (and potentially recycled) entity.
             Error: when called with components that can't be added because they are already present.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
         with Zone(
             function_name=(
@@ -1912,86 +1982,87 @@ struct Replacer[
 
     def by[
         *AddTs: ComponentType,
-        has_without_mask: Bool = False,
     ](
         self,
-        query: QueryInfo[has_without_mask=has_without_mask],
+        filter: BitMaskFilter[_],
         var *components: *AddTs,
-        out iterator: Self.Storage.Iterator[
+        out iterator: Self.HostStorage.Iterator[
             origin_of(self._storage[]._archetypes),
             origin_of(self._storage[]._locks),
             has_start_indices=True,
         ],
     ) raises LarecsError:
         """
-        Removes and adds the components to multiple [..entity.Entity Entities] specified by a [..query.Query].
+        Removes and adds the components to multiple [..entity.Entity Entities] matched by the [..filter.BitMaskFilter].
 
         Parameters:
             AddTs: The types of the components to add.
-            has_without_mask: Whether the query has a without mask.
 
         Args:
-            query:     The query to determine which entities to modify.
+            filter:     The filter to determine which entities to modify.
             components: The components to add.
 
         Raises:
             Error: when called with components that can't be added because they are already present.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
+
+        Returns:
+            An iterator over the modified entities.
         """
         with Zone(
             function_name=(
-                "Replacer.by[*AddTs: ComponentType, has_without_mask:"
-                " Bool](query: QueryInfo, var *components: *AddTs, out"
-                " iterator: Self.Storage.Iterator)"
+                "Replacer.by[*AddTs: ComponentType](filter: BitMaskFilter, var"
+                " *components: *AddTs, out iterator: Self.HostStorage.Iterator)"
             )
         ):
             return self.by(
                 *components^,
-                query=query,
+                filter=filter,
             )
 
     def by[
-        *AddTs: ComponentType,
-        has_without_mask: Bool = False,
+        *AddTs: ComponentType
     ](
         self,
         var *components: *AddTs,
-        query: QueryInfo[has_without_mask=has_without_mask],
-        out iterator: Self.Storage.Iterator[
+        filter: BitMaskFilter[_],
+        out iterator: Self.HostStorage.Iterator[
             origin_of(self._storage[]._archetypes),
             origin_of(self._storage[]._locks),
             has_start_indices=True,
         ],
     ) raises LarecsError:
         """
-        Removes and adds the components to multiple [..entity.Entity Entities] specified by a [..query.Query].
+        Removes and adds the components to multiple [..entity.Entity Entities] matched by the [..filter.BitMaskFilter].
 
         Parameters:
             AddTs: The types of the components to add.
-            has_without_mask: Whether the query has a without mask.
 
         Args:
             components: The components to add.
-            query:     The query to determine which entities to modify.
+            filter:     The filter to determine which entities to modify.
 
         Raises:
             Error: when called with components that can't be added because they are already present.
             Error: when called with components that can't be removed because they are not present.
-            Error: when called on a locked world. Do not use during [.Storage.query] iteration.
+            Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
+
+        Returns:
+            An iterator over the modified entities.
         """
 
         with Zone(
             function_name=(
-                "Replacer.by[*AddTs: ComponentType, has_without_mask: Bool](var"
+                "Replacer.by[*AddTs: ComponentType, has_exclude_mask: Bool](var"
                 " *components: *AddTs, query: QueryInfo, out iterator:"
-                " Self.Storage.Iterator)"
+                " Self.HostStorage.Iterator)"
             )
         ):
             return self._storage[]._batch_remove_and_add[
                 rem_size=Self.size,
                 remove_ids=Self.remove_ids,
             ](
-                query,
+                filter,
                 *components^,
             )

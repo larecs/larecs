@@ -1,6 +1,11 @@
+"""Fixed-size bitmasks used to identify component sets.
+
+Provides `BitMask`, a 256-bit mask used throughout the ECS to represent
+which components an archetype or query includes or excludes.
+"""
+
 from std.bit import pop_count, bit_not
 from std.collections.check_bounds import check_bounds
-from .filter import MaskFilter
 from .types import ComponentId
 from std.hashlib import Hasher
 from std.io.write import Writable, Writer
@@ -135,10 +140,11 @@ struct _BitMask[total_bits: Int](
         Args:
             bytes: The raw byte data representing the bitmask state.
         """
-        comptime assert (
-            Self.total_bits.is_power_of_two()
-        ), "BitMask size must be a power of two."
-        self._bytes = bytes
+        with Zone(function_name="BitMask.__init__(bytes: Self.BytesType)"):
+            comptime assert (
+                Self.total_bits.is_power_of_two()
+            ), "BitMask size must be a power of two."
+            self._bytes = bytes
 
     @always_inline
     def __init__[size: Int](out self, bits: Array[Int, size]):
@@ -152,13 +158,16 @@ struct _BitMask[total_bits: Int](
         Args:
             bits: An inline array of bit indices to set to True.
         """
-        comptime assert (
-            Self.total_bits.is_power_of_two()
-        ), "BitMask size must be a power of two."
-        self._bytes = Self.BytesType()
+        with Zone(
+            function_name="BitMask.__init__[size: Int](bits: Array[Int, size])"
+        ):
+            comptime assert (
+                Self.total_bits.is_power_of_two()
+            ), "BitMask size must be a power of two."
+            self._bytes = Self.BytesType()
 
-        comptime for i in range(size):
-            self.set[True](bits[i])
+            comptime for i in range(size):
+                self.set[True](bits[i])
 
     @always_inline
     def __init__(out self, *bits: Int):
@@ -169,12 +178,13 @@ struct _BitMask[total_bits: Int](
         Args:
             bits: Variadic bit indices to set to True.
         """
-        comptime assert (
-            Self.total_bits.is_power_of_two()
-        ), "BitMask size must be a power of two."
-        self._bytes = Self.BytesType()
-        for bit in bits:
-            self.set[True](bit)
+        with Zone(function_name="BitMask.__init__(*bits: Int)"):
+            comptime assert (
+                Self.total_bits.is_power_of_two()
+            ), "BitMask size must be a power of two."
+            self._bytes = Self.BytesType()
+            for bit in bits:
+                self.set[True](bit)
 
     @always_inline
     def __hash__[H: Hasher](self, mut hasher: H):
@@ -425,22 +435,6 @@ struct _BitMask[total_bits: Int](
             return bits.contains(self)
 
     @always_inline
-    def exclusive(self) -> MaskFilter[Self.total_bits]:
-        """Creates a [..filter.MaskFilter] which filters for exactly the mask's components.
-
-        Matches only entities that have exactly the given components, and no other.
-        This creates a filter that excludes all components not in this mask.
-
-        Returns:
-            A [..filter.MaskFilter] configured for exact component matching.
-        """
-        with Zone(function_name="BitMask.exclusive()"):
-            return MaskFilter[Self.total_bits](
-                include=self,
-                exclude=~self,
-            )
-
-    @always_inline
     def get(self, bit: Int) -> Bool:
         """Reports whether the bit at the given index is set.
 
@@ -482,15 +476,16 @@ struct _BitMask[total_bits: Int](
         Args:
             bit: The index of the bit to modify.
         """
-        check_bounds(bit, Self.total_bits)
+        with Zone(function_name="BitMask.set[value: Bool](bit: Int)"):
+            check_bounds(bit, Self.total_bits)
 
-        var idx = bit >> 3  # equivalent to bit // 8
-        var offset = UInt8(bit) & 7  # equivalent to bit - (8 * idx)
+            var idx = bit >> 3  # equivalent to bit // 8
+            var offset = UInt8(bit) & 7  # equivalent to bit - (8 * idx)
 
-        comptime if value:
-            self._bytes[idx] |= 1 << offset
-        else:
-            self._bytes[idx] &= ~(1 << offset)
+            comptime if value:
+                self._bytes[idx] |= 1 << offset
+            else:
+                self._bytes[idx] &= ~(1 << offset)
 
     @always_inline
     def set(mut self, *comps: Int, value: Bool):

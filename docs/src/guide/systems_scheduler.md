@@ -12,7 +12,8 @@ be added or removed as required.
 ## Systems
 
 Systems can be thought of as functions that take a
-{{< api World >}} instance and perform operations on the
+{{< api SystemContext >}}, giving them access to a
+{{< api World >}} instance, and perform operations on the
 world's entities and/or resources. However, to allow storing intermediate
 variables between multiple system calls, and to
 support special initialization and finalization operations,
@@ -22,33 +23,47 @@ systems to implement {{< api System.initialize initialize >}}, and
 {{< api System.finalize finalize >}} methods, called before or
 after the ECS run, respectively, and an {{< api System.update update >}}
 method, called at every step of the ECS run.
-Each of these methods takes a {{< api World >}} instance
-on which they perform the desired operations.
+Each of these methods takes a `SystemContext` instance,
+whose `world` field points at the world on which they perform the
+desired operations.
 
 ```mojo {doctest="guide_systems_scheduler" global=true}
-from larecs import World, System
+from larecs import World, System, SystemContext, KernelContext, Filter
+
+# Component mutation always happens inside a kernel like this one, run
+# through the system's SystemContext -- see it invoked in Move.update()
+# below.
+comptime move_filter = Filter().include[Position, Velocity]()
+
+def move_entities(context: KernelContext[move_filter]):
+    for entity in context:
+        entity.get[Position]().x += entity.get[Velocity]().dx
+        entity.get[Position]().y += entity.get[Velocity]().dy
 
 @fieldwise_init
 struct Move(System):
 
     # This is executed once at the beginning
-    fn initialize(mut self, mut world: World) raises:
+    def initialize(mut self, mut context: SystemContext[...]) raises:
         # We do not need to do anything here
         pass
 
     # This is executed in each step
-    fn update(mut self, mut world: World) raises:
-
+    def update(mut self, mut context: SystemContext[...]) raises:
         # Move all entities with a position and velocity
-        for entity in world.storage.query[Position, Velocity]():
-            entity.get[Position]().x += entity.get[Velocity]().dx
-            entity.get[Position]().y += entity.get[Velocity]().dy
+        context.run[move_entities]()
 
     # This is executed at the end
-    fn finalize(mut self, mut world: World) raises:
+    def finalize(mut self, mut context: SystemContext[...]) raises:
         # We do not need to do anything here
         pass
 ```
+
+> [!Note]
+> `SystemContext[...]` uses `...` to let the compiler infer the context's
+> world origin and component types from where the system is used, rather
+> than spelling them out. The `world` field is a `Pointer`, so it must be
+> dereferenced (`context.world[]`) to reach the world itself.
 
 ## Scheduler
 
@@ -83,18 +98,18 @@ struct Velocity(Movable, Copyable):
 struct AddMovers[count: Int](System):
 
     # This is executed once at the beginning
-    fn initialize(mut self, mut world: World) raises:
-        _ = world.add_entities(
-            Position(0, 0), Velocity(1, 0), count=10
+    def initialize(mut self, mut context: SystemContext[...]) raises:
+        _ = context.world[].storage.add_entities(
+            Position(0, 0), Velocity(1, 0), count=Self.count
         )
 
     # This is executed in each step
-    fn update(mut self, mut world: World) raises:
+    def update(mut self, mut context: SystemContext[...]) raises:
         # We do not need to do anything here
         pass
 
     # This is executed at the end
-    fn finalize(mut self, mut world: World) raises:
+    def finalize(mut self, mut context: SystemContext[...]) raises:
         # We do not need to do anything here
         pass
 
@@ -103,30 +118,30 @@ struct Logger[interval: Int](System):
 
     var _logging_step: Int
 
-    fn __init__(out self):
+    def __init__(out self):
         self._logging_step = 0
 
-    fn _print_positions(self, mut world: World) raises:
-        for entity in world.storage.query[Position, Velocity]():
+    def _print_positions(self, mut context: SystemContext[...]) raises:
+        for entity in context.world[].storage.query[Filter().include[Position, Velocity]()]():
             ref pos = entity.get[Position]()
             print("(", pos.x, ",", pos.y, ")")
 
     # This is executed once at the beginning
-    fn initialize(mut self, mut world: World) raises:
-        print("Starting with", len(world.storage.query[Position, Velocity]()),
+    def initialize(mut self, mut context: SystemContext[...]) raises:
+        print("Starting with", len(context.world[].storage.query[Filter().include[Position, Velocity]()]()),
               "moving entities.")
 
     # This is executed in each step
-    fn update(mut self, mut world: World) raises:
+    def update(mut self, mut context: SystemContext[...]) raises:
         if not self._logging_step % self.interval:
             print("Current Mover positions:")
-            self._print_positions(world)
+            self._print_positions(context)
         self._logging_step += 1
 
     # This is executed at the end
-    fn finalize(mut self, mut world: World) raises:
+    def finalize(mut self, mut context: SystemContext[...]) raises:
         print("Final positions:")
-        self._print_positions(world)
+        self._print_positions(context)
 ```
 
 Now we can create a scheduler and add the systems to it.
@@ -138,15 +153,26 @@ from larecs import Scheduler
 
 Create and run the scheduler:
 
-```mojo {doctest="guide_systems_scheduler"}
-# Create a scheduler
-scheduler = Scheduler[Position, Velocity]()
+```mojo {doctest="guide_systems_scheduler" global=true}
+def main() raises:
+    # Create a scheduler
+    var scheduler = Scheduler[Position, Velocity]()
 
-# Add the systems to the scheduler
-scheduler.add_system(AddMovers[10]())
-scheduler.add_system(Move())
-scheduler.add_system(Logger[2]())
+    # Add the systems to the scheduler
+    scheduler.add_system(AddMovers[10]())
+    scheduler.add_system(Move())
+    scheduler.add_system(Logger[2]())
 
-# Run the scheduler for 10 steps
-scheduler.run(10)
+    # Run the scheduler for 10 steps
+    scheduler.run(10)
 ```
+
+## GPU execution
+
+`SystemContext.run`/`KernelContext`, as used by `Move` above, is not just
+how components get mutated -- it can also run on an accelerator, by passing
+`on_gpu=True`, instead of the CPU. The same kernel function works on both
+targets unchanged; see the {{< api SystemContext.run >}} and
+{{< api KernelContext >}} API docs for details. GPU execution requires an
+available accelerator and the corresponding Mojo GPU toolchain -- on
+systems without one, `on_gpu=True` kernels fall back to CPU execution.
