@@ -183,31 +183,29 @@ struct Filter[
                     return i
             return -1
 
-    def reads[T: ComponentType](self) -> Bool:
-        """Returns whether this filter allows reading component ``T``.
+    comptime reads[T: ComponentType] = Self._read.ComponentTypes.contains[T]()
+    """Returns whether this filter allows reading component ``T``.
 
-        Parameters:
-            T: The component type to check.
+    Parameters:
+        T: The component type to check.
 
-        Returns:
-            True when ``T`` is accessible for reading, via `read` or
-            `include`.
-        """
-        with Zone(function_name="Filter.reads[T: ComponentType]()"):
-            return Self._read.ComponentTypes.contains[T]()
+    Returns:
+        True when ``T`` is accessible for reading, via `read` or
+        `include`.
+    """
 
-    def writes[T: ComponentType](self) -> Bool:
-        """Returns whether this filter allows writing component ``T``.
+    comptime writes[T: ComponentType] = Self._written.ComponentTypes.contains[
+        T
+    ]()
+    """Returns whether this filter allows writing component ``T``.
 
-        Parameters:
-            T: The component type to check.
+    Parameters:
+        T: The component type to check.
 
-        Returns:
-            True when ``T`` is accessible for writing, via `write` or
-            `include`.
-        """
-        with Zone(function_name="Filter.writes[T: ComponentType]()"):
-            return Self._written.ComponentTypes.contains[T]()
+    Returns:
+        True when ``T`` is accessible for writing, via `write` or
+        `include`.
+    """
 
     def get_include_mask[*ComponentTypes: ComponentType](self) -> BitMask:
         """Returns the bitmask of the components this filter includes.
