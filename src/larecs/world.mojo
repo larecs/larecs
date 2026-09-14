@@ -128,7 +128,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         """
         with Zone(
             function_name=(
-                "World.filter[filter: Filter](self) ->"
+                "World.filter[filter: Filter]() ->"
                 " BitMaskFilter[len(filter._exclude) > 0 or"
                 " filter._is_exclusive]"
             )
