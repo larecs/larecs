@@ -120,6 +120,10 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         """
         Returns a bitmask filter for querying entities matching the given filter criteria.
 
+        Note:
+            The only use case for this is to create a [..filter.Filter] at comptime, materialize it to make runtime mutations
+            and then use it for some ECS operation.
+
         Parameters:
             filter: The comptime filter specifying which components to match against.
 
