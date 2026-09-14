@@ -2,208 +2,71 @@
 type = "docs"
 title = "Vectorization"
 weight = 70
+draft = true
 +++
 
-A major feature of Mojo is its native support for
-vectorized operations, processing multiple values in
-one go via `SIMD`. This can improve
-the computational performance of our code significantly.
+Mojo supports vectorized operations with `SIMD`, but Larecs🌲 does not
+currently expose an explicit SIMD-batch interface for component iteration.
+Component-processing code should use the [systems and kernels
+API](../systems_scheduler): the scheduler runs a system, and the system calls
+{{< api SystemContext.run >}} with a kernel that receives a
+{{< api KernelContext >}}. The system owns the application logic and lifecycle;
+the kernel describes the filtered component work that can execute on the CPU
+or GPU.
 
-> [!Warning]
-> Applying a vectorized operation across `simd_width`-sized batches of
-> entities via {{< api HostStorage.apply apply >}} is currently disabled:
-> Mojo cannot yet correctly infer the `simd_width` parameter for this call
-> pattern, so the SIMD-batched overload of `apply` is commented out in
-> Larecs🌲's source until that is resolved upstream. The
-> [non-vectorized `apply`](../queries_iteration#applying-functions-to-entities-in-queries)
-> that runs one entity at a time remains available and is the
-> recommended way to apply a function to entities today.
->
-> The rest of this chapter explains the underlying memory-layout
-> considerations, which stay relevant preparation for when vectorized
-> `apply` returns. The code below is illustrative only and is not compiled
-> as part of the documentation build.
+```mojo {doctest="guide_vectorization" global=true}
+from larecs import Scheduler, System, SystemContext, KernelContext, Filter
 
-> [!Caution]
-> Using vectorized functions is an an advanced feature,
-> requiring some knowledge about Mojo and SIMD. Mistakes
-> can lead to serious bugs that are difficult to track down.
-
-## Preliminary imports
-
-Below, we need some advanced Mojo and
-Larecs🌲 features, which we can import as follows:
-
-```mojo
-from sys.info import simdwidthof, sizeof
-from larecs import World, MutArchetypeRowAccessor
-```
-
-## Considering the memory layout
-
-Before we can implement a vectorized function that can process
-multiple entities at once, we need to have a look at
-the memory layout of the components
-we want to consider. Suppose we want to process the
-`Position` components of a chunk of entities. Each entity's
-`Position` has two attributes `x` and `y`. In order to work with these
-attributes in vectorized computations, we need all `x` values
-and all `y` values to be in contiguous `SIMD` vectors, respectively.
-
-However, the `x` and `y` attributes are not stored next to each other
-in memory. Instead, an array of `Position` components would look like this:
-
-```
-Position[0].x | Position[0].y | Position[1].x | Position[1].y | ...
-```
-
-Hence, accessing the `x` attribute of multiple `Position` components
-requires us to skip the `y` attributes.
-
-```mojo
 @fieldwise_init
-struct Position(Copyable, Movable):
+struct Position(Copyable, Movable, TrivialRegisterPassable):
     var x: Float64
     var y: Float64
 
 @fieldwise_init
-struct Velocity(Copyable, Movable):
+struct Velocity(Copyable, Movable, TrivialRegisterPassable):
     var dx: Float64
     var dy: Float64
 
-var world = World[Position, Velocity]()
-_ = world.storage.add_entities(Position(0, 0), Velocity(1, 0), count=10)
+comptime move_filter = Filter().include[Position].read[Velocity]()
+
+def move_entities(context: KernelContext[move_filter]):
+    for entity in context:
+        ref pos = entity.get[Position]()
+        ref vel = entity.get[Velocity]()
+        pos.x += vel.dx
+        pos.y += vel.dy
+
+@fieldwise_init
+struct Move(System):
+    def update(mut self, mut context: SystemContext[...]) raises:
+        context.run[move_entities]()
 ```
 
-Loading elements from memory while leaving out some values
-is called _strided_ loading. Here, `stride` refers to the
-"step width" between the memory address of two loaded elements.
-In our case, the stride is `2`, because the distance between the
-memory addresses from the first `x` attribute to the second
-is _twice_ the size of a single `x` attribute.
+```mojo {doctest="guide_vectorization" global=true}
+def main() raises:
+    var scheduler = Scheduler[Position, Velocity]()
+    _ = scheduler.world.storage.add_entities(
+        Position(0, 0), Velocity(1, 0), count=10
+    )
 
-> [!Note]
-> The `stride` is given in multiples of the
-> considered attribute's size. While this makes it easy
-> to work with components whose attributes are all of the same type,
-> it may be tricky or even impossible to process components
-> with heterogeneous attribute types.
+    scheduler.add_system(Move())
+    scheduler.run(1)
+```
 
-> [!Caution]
-> Choosing the wrong `stride` may lead to undefined behavior,  
-> causing crashes or errors that are extremely difficult to track down.
+The CPU path runs the kernel against each matching archetype's homogeneous
+component columns. The GPU path distributes the same entity loop across GPU
+threads and copies only the component directions declared by the filter. For
+example, `move_filter` uploads both component columns but downloads only the
+modified `Position` column.
 
-We may store the stride information in a `comptime` variable.
+In `Move.update`, pass `on_gpu=True` to run a compatible kernel on an
+available accelerator:
 
 ```mojo
-comptime stride = 2
-
-# Alternatively, we could use the `sizeof` function
-# to calculate the stride automatically.
-comptime stride_ = Int(sizeof[Position]() / sizeof[__type_of(Position(0, 0).x)]())
+context.run[move_entities, on_gpu=True]()
 ```
 
-Note that the `Velocity` component also has two `Float64`
-attributes and thus the same stride as the `Position`
-component.
-
-## Defining a vectorized operation
-
-Now we can define our vectorized move operation.
-It needs to accept an integer parameter `simd_width`,
-which denotes how many entities will be processed at once.
-Let us revisit the `move` operation we defined in the
-[queries and iteration](../queries_iteration#applying-functions-to-entities-in-queries)
-chapter and add support for vectorized computation. The
-updated signature of the function reads as follows:
-
-```mojo
-def move[simd_width: Int](accessor: MutArchetypeRowAccessor) raises:
-```
-
-Again we start implementing `move` by obtaining pointers
-to the `Position` and `Velocity` components.
-
-```mojo
-    var pos = Pointer(to=accessor.get[Position]())
-    var vel = Pointer(to=accessor.get[Velocity]())
-```
-
-The `accessor` argument gives access to a single entity. However,
-the referenced entity is the _first_ of a _batch_ of `simd_width`
-entities, each with the same components. The `move` function will not be
-called for any other entity in this batch.
-
-The components of the batched entities are guaranteed
-to be stored in contiguous memory, respectively.
-However, loading a components' individual
-attributes in a batch is an "unsafe" operation, as it requires
-us to specify the stride manually.
-Hence, we need `Pointer`s to the components.
-
-```mojo
-    var pos_x_ptr = Pointer(to=pos[].x)
-    var pos_y_ptr = Pointer(to=pos[].y)
-    var vel_x_ptr = Pointer(to=vel[].dx)
-    var vel_y_ptr = Pointer(to=vel[].dy)
-```
-
-Now we can load `simd_width` values of `x` and `y`
-into temporary `SIMD` vectors using the `strided_load` method
-and do the same for the `dx` and `dy` attributes of `Velocity`.
-
-```mojo
-    var pos_x = pos_x_ptr.strided_load[width=simd_width](stride)
-    var pos_y = pos_y_ptr.strided_load[width=simd_width](stride)
-    var vel_x = vel_x_ptr.strided_load[width=simd_width](stride)
-    var vel_y = vel_y_ptr.strided_load[width=simd_width](stride)
-```
-
-Next, we implement the actual "move" logic as if the
-vectors were simple scalars.
-
-```mojo
-    pos_x += vel_x
-    pos_y += vel_y
-```
-
-Finally, we store the updated positions at their original
-memory locations using the `strided_store` method.
-
-```mojo
-    pos_x_ptr.strided_store[width=simd_width](pos_x, stride)
-    pos_y_ptr.strided_store[width=simd_width](pos_y, stride)
-```
-
-> [!Tip]
-> It can be worthwhile to define project-specific load and store
-> functions that take care of stride and width and
-> thereby reduce the complexity of the code.
-
-## Applying a vectorized operation to all entities
-
-What remains to be done -- once vectorized `apply` is available again --
-is to apply the move operation to all entities. The vectorized version of
-{{< api HostStorage.apply apply >}} would require providing a value for the
-`simd_width` parameter, denoting the maximal number of entities that can
-be processed at once efficiently. Typically, this corresponds to the
-`SIMD` width of our machine, obtainable via the `simdwidthof` function.
-
-```mojo
-# How many `Float64` values can we process at once?
-comptime simd_width = simdwidthof[Float64]()
-
-# Apply the move operation to all entities with a position and a velocity
-# (illustrative -- see the warning at the top of this chapter)
-world.storage.apply[
-    filter=Filter().include[Position, Velocity](), simd_width=simd_width
-](move)
-```
-
-> [!Note]
-> The overhead from
-> the extra load and store operations can exceed the gain
-> from SIMD operations in simple functions such as the `move`
-> function considered here. Thorough benchmarking is required to
-> determine whether the use of `SIMD` is beneficial in a specific
-> case.
+GPU execution requires GPU-safe component types and the corresponding Mojo
+toolchain. If you need explicit CPU `SIMD` batching, that is not part of the
+public systems API yet; avoid depending on archetype storage internals, whose
+layout and iteration contracts may change.

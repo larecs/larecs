@@ -1613,6 +1613,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             if self.is_locked():
                 raise LarecsError(WorldError.world_is_locked)
 
+    @doc_hidden
     @always_inline
     def apply[
         OperationType: def(accessor: MutArchetypeRowAccessor) raises -> None,
@@ -1662,6 +1663,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                         except:
                             raise LarecsError(UnknownError())
 
+    @doc_hidden
     @always_inline
     def apply[
         OperationType: def(accessor: MutArchetypeRowAccessor) raises -> None,
