@@ -113,9 +113,10 @@ struct World[*component_types: ComponentType](Copyable, Sized):
             for archetype in self.storage._archetypes:
                 size += len(archetype)
 
+    @staticmethod
     def filter[
         filter: Filter
-    ](self) -> BitMaskFilter[len(filter._exclude) > 0 or filter._is_exclusive]:
+    ]() -> BitMaskFilter[len(filter._exclude) > 0 or filter._is_exclusive]:
         """
         Returns a bitmask filter for querying entities matching the given filter criteria.
 

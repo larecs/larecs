@@ -151,8 +151,9 @@ You can add components to multiple entities that match a query using the
     _ = world.storage.add_entities(Position(0, 0), count=10)
 
     # Add a Velocity component to all entities that have Position but not Velocity
-    for entity in world.storage.add(
-        world.filter[Filter().include[Position].exclude[Velocity]()](),
+    for entity in world.storage.add[
+        Velocity, filter=Filter().include[Position].exclude[Velocity]()
+    ](
         Velocity(1.0, 0.5),
     ):
         ref pos = entity.unsafe_get[Position]()
@@ -178,9 +179,9 @@ Similar methods exist also for {{< api HostStorage.remove removing >}} and
     _ = world.storage.add_entities(Position(0, 0), Velocity(1.0, 1.0), count=10)
 
     # Remove the Velocity component from all entities that have both Position and Velocity
-    for entity in world.storage.remove[Velocity](
-        world.filter[Filter().include[Position, Velocity]()]()
-    ):
+    for entity in world.storage.remove[
+        Velocity, filter=Filter().include[Position, Velocity]()
+    ]():
         ref pos = entity.unsafe_get[Position]()
 ```
 
@@ -192,9 +193,10 @@ components should be used as replacement.
     _ = world.storage.add_entities(Position(0, 0), count=10)
 
     # Replace Position with Velocity for all entities that have only a Position
-    for entity in world.storage.replace[Position]().by(
+    for entity in world.storage.replace[Position]().by[
+        filter=Filter().include[Position].exclusive()
+    ](
         Velocity(2.0, 2.0),
-        filter=world.filter[Filter().include[Position].exclusive()](),
     ):
         ref vel = entity.unsafe_get[Velocity]()
 ```

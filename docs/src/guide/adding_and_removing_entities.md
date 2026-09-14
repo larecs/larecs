@@ -91,7 +91,7 @@ can be done with {{< api HostStorage.remove_entities remove_entities >}} as foll
 
 ```mojo {doctest="guide_add_remove_entities" global=true}
     # Remove all entities that have a Position component
-    world.storage.remove_entities(world.filter[Filter().include[Position]()]())
+    world.storage.remove_entities[Filter().include[Position]()]()
 ```
 
 More on queries can be found in the chapter [Queries and iteration](../queries_iteration).

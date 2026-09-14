@@ -148,6 +148,24 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             self._archetypes = [Self.Archetype()]
             self._locks = LockManager()
 
+    @staticmethod
+    def filter[
+        filter: Filter
+    ]() -> BitMaskFilter[len(filter._exclude) > 0 or filter._is_exclusive]:
+        """Returns the runtime representation of a compile-time filter.
+
+        Parameters:
+            filter: The compile-time filter to materialize.
+
+        Returns:
+            A bitmask filter for this storage's component types.
+        """
+        with Zone(function_name="HostStorage.filter[filter: Filter]()"):
+            comptime bitmask_filter = filter.get_bitmask_filter[
+                *Self.ComponentTypes
+            ]()
+            return bitmask_filter
+
     @always_inline
     def query[
         filter: Filter
@@ -597,6 +615,22 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     swap_entity.get_id()
                 ].entity_index = entity_loc.entity_index
 
+    @always_inline
+    def remove_entities[filter: Filter](mut self) raises LarecsError:
+        """Removes all entities matching a compile-time filter.
+
+        Parameters:
+            filter: The compile-time filter specifying which entities to
+                remove.
+
+        Raises:
+            LarecsError: If the storage is locked.
+        """
+        with Zone(
+            function_name="HostStorage.remove_entities[filter: Filter]()"
+        ):
+            self.remove_entities(Self.filter[filter]())
+
     def remove_entities(mut self, filter: BitMaskFilter) raises LarecsError:
         """
         Removes multiple [..entity.Entity Entities] based on the provided query, making them eligible for recycling.
@@ -615,7 +649,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         _ = world.storage.add_entity(Float64(0))
 
         # Remove all entities with a Float32 component.
-        world.storage.remove_entities(world.filter[Filter().include[Float32]()]())
+        world.storage.remove_entities[Filter().include[Float32]()]()
         ```
 
         Args:
@@ -919,8 +953,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         world = World[Position, Velocity]()
         _ = world.storage.add_entities(Position(0, 0), count=100)
 
-        for entity in world.storage.add[Velocity](
-            world.filter[Filter().include[Position]().exclude[Velocity]()](),
+        for entity in world.storage.add[
+            Velocity,
+            filter=Filter().include[Position]().exclude[Velocity](),
+        ](
             Velocity(0.5, -0.5),
         ):
             velocity = entity.unsafe_get[Velocity]()
@@ -963,6 +999,44 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 filter,
                 *add_components^,
             )
+
+    @always_inline
+    def add[
+        *Ts: ComponentType,
+        filter: Filter,
+    ](
+        mut self,
+        var *add_components: *Ts,
+        out iterator: Self.Iterator[
+            origin_of(self._archetypes),
+            origin_of(self._locks),
+            has_start_indices=True,
+        ],
+    ) raises LarecsError:
+        """Adds components to all entities matching a compile-time filter.
+
+        Parameters:
+            Ts: The types of the components to add.
+            filter: The compile-time filter specifying which entities to
+                modify.
+
+        Args:
+            add_components: The component values to add.
+
+        Raises:
+            LarecsError: If the storage is locked or the filter can match an
+                entity already carrying an added component.
+
+        Returns:
+            An iterator over the modified entities.
+        """
+        with Zone(
+            function_name=(
+                "HostStorage.add[*Ts: ComponentType, filter: Filter](var"
+                " *add_components: *Ts, out iterator: Self.Iterator)"
+            )
+        ):
+            return self.add(Self.filter[filter](), *add_components^)
 
     def remove[*Ts: ComponentType](mut self, entity: Entity) raises LarecsError:
         """
@@ -1028,9 +1102,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         world = World[Position, Velocity]()
         _ = world.storage.add_entities(Position(0, 0), Velocity(1, 0), count=100)
 
-        for entity in world.storage.remove[Velocity](
-            world.filter[Filter().include[Position, Velocity]()]()
-        ):
+        for entity in world.storage.remove[
+            Velocity, filter=Filter().include[Position, Velocity]()
+        ]():
             position = entity.unsafe_get[Position]()
         ```
 
@@ -1070,6 +1144,40 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 rem_size=len(Ts),
                 remove_ids=Self._optional_component_ids[*Ts],
             ](filter)
+
+    @always_inline
+    def remove[
+        *Ts: ComponentType,
+        filter: Filter,
+    ](
+        mut self,
+        out iterator: Self.Iterator[
+            origin_of(self._archetypes),
+            origin_of(self._locks),
+            has_start_indices=True,
+        ],
+    ) raises LarecsError:
+        """Removes components from entities matching a compile-time filter.
+
+        Parameters:
+            Ts: The types of the components to remove.
+            filter: The compile-time filter specifying which entities to
+                modify.
+
+        Raises:
+            LarecsError: If the storage is locked or the filter can match an
+                entity missing a removed component.
+
+        Returns:
+            An iterator over the modified entities.
+        """
+        with Zone(
+            function_name=(
+                "HostStorage.remove[*Ts: ComponentType, filter: Filter](out"
+                " iterator: Self.Iterator)"
+            )
+        ):
+            return self.remove[*Ts](Self.filter[filter]())
 
     @always_inline
     def replace[
@@ -1553,6 +1661,38 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                             operation(entity)
                         except:
                             raise LarecsError(UnknownError())
+
+    @always_inline
+    def apply[
+        OperationType: def(accessor: MutArchetypeRowAccessor) raises -> None,
+        //,
+        filter: Filter,
+        *,
+        unroll_factor: Int = 1,
+    ](mut self, operation: OperationType) raises LarecsError:
+        """Applies an operation to entities matching a compile-time filter.
+
+        Parameters:
+            OperationType: The type of the operation to apply.
+            filter: The compile-time filter specifying which entities to
+                modify.
+            unroll_factor: The operation's unroll factor.
+
+        Args:
+            operation: The operation to apply to each matching entity.
+
+        Raises:
+            LarecsError: If the storage is locked or the operation raises.
+        """
+        with Zone(
+            function_name=(
+                "HostStorage.apply[OperationType, filter: Filter, *,"
+                " unroll_factor: Int](operation: OperationType)"
+            )
+        ):
+            self.apply[unroll_factor=unroll_factor](
+                Self.filter[filter](), operation
+            )
 
     # BUG: Mojo cannot correctly infer the simd_width for `HostStorage.apply` therefore disable this for now.
     #
@@ -2065,4 +2205,46 @@ struct Replacer[
             ](
                 filter,
                 *components^,
+            )
+
+    @always_inline
+    def by[
+        *AddTs: ComponentType,
+        filter: Filter,
+    ](
+        self,
+        var *components: *AddTs,
+        out iterator: Self.HostStorage.Iterator[
+            origin_of(self._storage[]._archetypes),
+            origin_of(self._storage[]._locks),
+            has_start_indices=True,
+        ],
+    ) raises LarecsError:
+        """Replaces components on entities matching a compile-time filter.
+
+        Parameters:
+            AddTs: The types of the components to add.
+            filter: The compile-time filter specifying which entities to
+                modify.
+
+        Args:
+            components: The component values to add.
+
+        Raises:
+            LarecsError: If the storage is locked or the filter does not
+                satisfy the component replacement constraints.
+
+        Returns:
+            An iterator over the modified entities.
+        """
+        with Zone(
+            function_name=(
+                "Replacer.by[*AddTs: ComponentType, filter: Filter](var"
+                " *components: *AddTs, out iterator:"
+                " Self.HostStorage.Iterator)"
+            )
+        ):
+            return self.by(
+                *components^,
+                filter=Self.HostStorage.filter[filter](),
             )

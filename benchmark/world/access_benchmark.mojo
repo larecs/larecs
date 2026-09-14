@@ -134,10 +134,9 @@ def benchmark_apply_expexp_1_comp_100_000(
                     pass
 
             for _ in range(100):
-                world.storage.apply[unroll_factor=3](
-                    world.filter[Filter().include[Position]()](),
-                    operation_plus,
-                )
+                world.storage.apply[
+                    filter=Filter().include[Position](), unroll_factor=3
+                ](operation_plus)
 
         except e:
             print(e)

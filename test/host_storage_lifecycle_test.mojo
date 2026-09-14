@@ -1,8 +1,7 @@
 """HostStorage-level tests for lifecycle safety, bounds safety, and typed errors.
 
 These exercise `HostStorage` directly (rather than through `World`) so they
-stay decoupled from the higher-level query API. Batch/filter based operations
-are driven through `BitMaskFilter` directly for the same reason.
+stay decoupled from the higher-level query API.
 """
 
 from std.testing import *
@@ -10,8 +9,7 @@ from std.memory import alloc, dealloc, Layout, Allocation
 
 from larecs.host_storage import HostStorage
 from larecs.entity import Entity
-from larecs.bitmask import BitMask
-from larecs.filter import BitMaskFilter
+from larecs.filter import Filter
 from larecs.error import LarecsError, WorldError, EntityError, ComponentError
 from larecs.test_utils import *
 
@@ -212,11 +210,10 @@ def test_host_storage_remove_batch_missing_component_mask() raises:
     var storage = HS()
     _ = storage.add_entities(Position(1.0, 2.0), count=3)
 
-    comptime position_id = HS.component_manager.get_id[Position]()
     comptime velocity_id = HS.component_manager.get_id[Velocity]()
 
     with assert_raises(contains="(" + String(velocity_id) + ")"):
-        _ = storage.remove[Velocity](BitMaskFilter(BitMask(position_id)))
+        _ = storage.remove[Velocity, filter=Filter().include[Position]()]()
 
 
 # ===----------------------------------------------------------------------=== #
@@ -288,15 +285,14 @@ def test_host_storage_add_migration_non_trivial_component() raises:
         created += 1
     assert_equal(created, 4)
 
-    comptime tracked_id = HS.component_manager.get_id[TrackedComponent]()
     var base_copies = counters.copy_counter()
     var base_moves = counters.move_counter()
     var base_dels = counters.del_counter()
 
     var migrated = 0
-    for _ in storage.add[LargerComponent](
-        BitMaskFilter(BitMask(tracked_id)), LargerComponent(0, 0, 0)
-    ):
+    for _ in storage.add[
+        LargerComponent, filter=Filter().include[TrackedComponent]()
+    ](LargerComponent(0, 0, 0)):
         migrated += 1
     assert_equal(migrated, 4)
 
@@ -389,10 +385,9 @@ def test_host_storage_remove_entities_non_trivial_component() raises:
         count += 1
     assert_equal(count, 3)
 
-    comptime tracked_id = HS.component_manager.get_id[TrackedComponent]()
     var base_dels = counters.del_counter()
 
-    storage.remove_entities(BitMaskFilter(BitMask(tracked_id)))
+    storage.remove_entities[Filter().include[TrackedComponent]()]()
 
     assert_equal(counters.del_counter() - base_dels, count)
 

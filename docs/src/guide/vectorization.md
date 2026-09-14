@@ -195,10 +195,9 @@ comptime simd_width = simdwidthof[Float64]()
 
 # Apply the move operation to all entities with a position and a velocity
 # (illustrative -- see the warning at the top of this chapter)
-world.storage.apply[simd_width=simd_width](
-    world.filter[Filter().include[Position, Velocity]()](),
-    move,
-)
+world.storage.apply[
+    filter=Filter().include[Position, Velocity](), simd_width=simd_width
+](move)
 ```
 
 > [!Note]

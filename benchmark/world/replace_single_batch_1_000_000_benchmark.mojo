@@ -25,14 +25,16 @@ def benchmark_replace_1_comp_batch_1_000_000(
     def bench_fn() {imm, mut world}:
         """Run one replace-forward and replace-back cycle."""
         try:
-            _ = world.storage.replace[FlexibleComponent[0]]().by(
+            _ = world.storage.replace[FlexibleComponent[0]]().by[
+                filter=Filter().include[FlexibleComponent[0]]()
+            ](
                 FlexibleComponent[1](3.0, 4.0),
-                filter=world.filter[Filter().include[FlexibleComponent[0]]()](),
             )
 
-            _ = world.storage.replace[FlexibleComponent[1]]().by(
+            _ = world.storage.replace[FlexibleComponent[1]]().by[
+                filter=Filter().include[FlexibleComponent[1]]()
+            ](
                 FlexibleComponent[0](1.0, 2.0),
-                filter=world.filter[Filter().include[FlexibleComponent[1]]()](),
             )
 
         except e:
