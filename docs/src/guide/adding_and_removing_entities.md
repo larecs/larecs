@@ -11,6 +11,11 @@ methods of {{< api World World.storage >}}.
 Revisiting our earlier example of a world with `Position` and
 `Velocity`, this reads as follows:
 
+The examples in this chapter mutate a `World` directly to demonstrate its
+storage API. This is useful for setup and isolated changes. In application
+logic, these operations should generally be performed by a
+[system](../systems_scheduler) through its `SystemContext`.
+
 ```mojo {doctest="guide_add_remove_entities" global=true hide=true}
 from larecs import World, Filter
 

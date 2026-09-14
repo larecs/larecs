@@ -5,10 +5,11 @@ weight = 40
 +++
 
 Iterating over entities can be done via
-classic `for` loops applied to [queries](#queries),
-or via an [`apply`](#applying-functions-to-entities-in-queries)
-operation, which applies a given function to all entities
-conforming to a query.
+classic `for` loops applied to [queries](#queries). Queries provide
+read-only access to their results. In application logic, systems are the
+principal place for mutations; use a
+[kernel](#processing-components-with-kernels) to update components across all
+entities matching a filter.
 
 ## Queries
 
@@ -22,8 +23,7 @@ iterate over all entities with a `Position` and a `Velocity` component,
 we can do this as follows:
 
 ```mojo {doctest="guide_queries_iteration" global=true hide=true}
-from larecs import World, Entity, Filter, MutArchetypeRowAccessor
-from std.testing import *
+from larecs import World, Filter, SystemContext, KernelContext
 
 @fieldwise_init
 struct Position(Copyable, Movable):
@@ -34,6 +34,15 @@ struct Position(Copyable, Movable):
 struct Velocity(Copyable, Movable):
     var dx: Float64
     var dy: Float64
+
+comptime move_filter = Filter().include[Position].read[Velocity]()
+
+def move_entities(context: KernelContext[move_filter]):
+    for entity in context:
+        ref pos = entity.get[Position]()
+        ref vel = entity.get[Velocity]()
+        pos.x += vel.dx
+        pos.y += vel.dy
 ```
 
 ```mojo {doctest="guide_queries_iteration" global=true hide=true}
@@ -49,16 +58,13 @@ def main() raises:
     _ = world.storage.add_entity(Position(1, 0), Velocity(1, 0))
 
     # Query all entities that have a position.
-    # Calling `query` immediately locks the storage; see
-    # "Preventing iterator invalidation" below.
     var query = world.storage.query[Filter().include[Position]()]()
 
     # Of the entities we have just added,
     # two have a position component
     print(len(query)) # "2"
 
-    # Query iterators are copyable. A copy starts at the same position and
-    # acquires its own structural-change lock.
+    # Query iterators are copyable. A copy starts at the same position.
     var query_copy = query.copy()
 
     # Now let us iterate over the queried entities
@@ -70,8 +76,7 @@ def main() raises:
             + String(pos.x) + ", " + String(pos.y) + ")"
         )
 
-    # The copy has an independent cursor and lock, so it can be consumed
-    # separately and remains valid after the original iterator is destroyed.
+    # The copy has an independent cursor, so it can be consumed separately.
     for _ in query_copy^:
         pass
 ```
@@ -120,13 +125,12 @@ directly provides methods to get and check the existence
 of components, so that we do not need to call the storage's
 methods for this, making the code more efficient. Since `query`'s
 iterator gives read-only access, components can only be read this
-way, not written -- see
-[Preventing iterator invalidation](#preventing-iterator-invalidation-the-locked-world)
-below for how to mutate them.
+way, not written. Use a [kernel](#processing-components-with-kernels) from a
+system to mutate matching components.
 
 Because a query's filter guarantees which components every matching
 entity has, {{< api ArchetypeRowAccessor.get get >}} checks its
-component type against that filter at *compile time*: requesting a
+component type against that filter at _compile time_: requesting a
 component the filter didn't include is a compile error, not a runtime
 one. For a component the filter doesn't guarantee -- typically one
 you only conditionally access after checking
@@ -160,117 +164,25 @@ checks at runtime and raises if the component is missing.
 > stored in a container. Use {{< api ArchetypeRowAccessor.get_entity >}}
 > instead if you need to store the entity for later use.
 
-## Preventing iterator invalidation: the locked world
+## Processing components with kernels
 
-Adding/removing entities to/from the world
-or components to/from entities
-while iterating could invalidate the iterator. That is,
-the iterator could leave out some entities or consider
-some entities multiple times.
-To prevent this, Larecs🌲 locks the storage during iterations.
-This means that methods that change how many entities
-exist in the world or which components entities have
-will raise exceptions if called during iteration.
+A kernel is a component-processing function passed to
+{{< api SystemContext.run >}}. It receives a {{< api KernelContext >}} and
+iterates over the entities matching its filter. The filter declares which
+components the kernel can write and which it can only read. The same kernel
+can run on the CPU or, for supported component types, a GPU accelerator.
 
-Queries and batch operations return a `LockedWorldEntityIterator`. This wrapper
-owns both the internal, lock-free `_WorldEntityIterator` and a
-structural-change lock acquired for its lifetime, and it forwards iteration
-(`next`, `len`, `bool`) straight to the wrapped iterator while holding that
-lock—there is no separate accessor to unwrap. The lock stays held for the
-wrapper's lifetime, including between calls to `next`, `len`, and `bool`, and
-is released on destruction—even when a loop exits early. Moving the wrapper
-transfers the existing lock; exhausting the iterator does not unlock it while
-the wrapper remains alive.
-
-Locked iterators are copyable. Calling `copy()` preserves the iterator's
-current traversal position and acquires a distinct structural-change lock for
-the copy. Each iterator releases only its own lock, so destroying or consuming
-one copy does not unlock the storage while another copy remains alive. Because
-Mojo's `Copyable` interface cannot return an error, copying aborts if the
-storage's lock capacity is exhausted. Moving an iterator with `^` remains the
-way to transfer it without acquiring another lock.
-
-These locks are not thread mutexes; they only prevent structural changes.
-Component values reached through this iterator are themselves read-only --
-mutate components from inside a system instead, via {{< api SystemContext.run >}}
-(see [Systems and the scheduler](../systems_scheduler)).
+The `move_entities` kernel declared above writes `Position` and only reads
+`Velocity`. The following direct construction demonstrates how the context
+invokes it:
 
 ```mojo {doctest="guide_queries_iteration" global=true}
-    for entity in world.storage.query[Filter().include[Position]()]():
-
-        # Adding entities to the world while iterating
-        # is forbidden.
-        with assert_raises():
-            _ = world.storage.add_entity(Velocity(1, 0)) # Raises an exception
-
-        # Changing components of an entity while iterating
-        # is forbidden.
-        with assert_raises():
-            world.storage.add(entity.get_entity(), Velocity(2, 3)) # Raises an exception
+    var context = SystemContext(world)
+    context.run[move_entities]()
 ```
 
-If we want to add or remove components from entities while iterating,
-we need to store the entities in an intermediate
-container and iterate over them in
-a separate loop. Consider the following example, where we
-add a `Velocity` component to all entities that have a `Position`
-but no `Velocity` component:
-
-```mojo {doctest="guide_queries_iteration" global=true}
-    # A container for the entities
-    var entities = List[Entity]()
-    for entity in world.storage.query[
-        Filter().include[Position].exclude[Velocity]()
-    ]():
-
-        # Store the entity for later use
-        entities.append(entity.get_entity())
-
-    # Add a velocity component to all stored entities
-    for entity in entities:
-        # We can add components to the entity
-        # because we are not iterating over the storage
-        world.storage.add(entity, Velocity(1, 0))
-```
-
-> [!Note]
-> As shown [earlier](../adding_and_removing_entities#batch-addition),
-> adding a component to entities matched by a query directly (without an
-> intermediate container) is also possible and more efficient -- as long
-> as the query excludes entities that already have the component being
-> added.
-
-## Applying functions to entities in queries
-
-We may want to apply a certain operation to all entities
-that have certain components. This can be achieved with
-the {{< api HostStorage.apply apply >}} method. This method
-iterates over all entities matching a filter and
-calls the provided function with the entities as arguments.
-The function must take a {{< api MutArchetypeRowAccessor >}}
-as its only argument. Applying a function to all entities
-can be more convenient than iterating over the entities
-manually.
-
-For example, if we want to apply a function that moves all entities
-with a `Position` and a `Velocity` component, we can do this as follows:
-
-```mojo {doctest="guide_queries_iteration" global=true}
-    # Define the move operation
-    def move(accessor: MutArchetypeRowAccessor) raises:
-        ref move_pos = accessor.unsafe_get[Position]()
-        ref move_vel = accessor.unsafe_get[Velocity]()
-        move_pos.x += move_vel.dx
-        move_pos.y += move_vel.dy
-
-    # Apply the move operation to all entities with a position and a velocity
-    world.storage.apply(
-        world.filter[Filter().include[Position, Velocity]()](),
-        move,
-    )
-```
-
-> [!Caution]
-> The storage is locked during the iteration, just like during a normal
-> query iteration. Do not attempt to add or remove entities or components
-> from inside the operation.
+In an application, the scheduler supplies this context to each system's
+lifecycle methods, and the system calls `run` from there. The system is the
+scheduled unit of application logic; the kernel is the function it delegates
+filtered component processing to. See
+[Systems and the scheduler](../systems_scheduler) for the complete pattern.

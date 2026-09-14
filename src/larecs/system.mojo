@@ -413,7 +413,7 @@ struct SystemContext[
         *,
         on_gpu: Bool = False,
     ](mut self) raises:
-        """Runs a system function over rows matching ``filter``.
+        """Runs a kernel over component rows matching ``filter``.
 
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
@@ -664,7 +664,7 @@ struct SystemContext[
         *,
         on_gpu: Bool = False,
     ](mut self, kernel_func: KernelFunc) raises where not on_gpu:
-        """Runs a system function over rows matching ``filter``.
+        """Runs a kernel closure over component rows matching ``filter``.
 
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
@@ -675,7 +675,9 @@ struct SystemContext[
             on_gpu: Whether to execute the kernel against device storage.
 
         Args:
-            kernel_func: The kernel closure to run once per matching row.
+            kernel_func: The kernel closure to run once per matching
+                archetype. Its context iterates over that archetype's matching
+                rows.
 
         Note:
             Resource access through a *capturing* kernel closure has been

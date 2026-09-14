@@ -2,7 +2,7 @@
 
 Provides `LockedWorldEntityIterator`, the read-only entity iterator returned
 by [..host_storage.HostStorage.query], and `EntityAccessorIterator`, which
-walks the dense rows seen by a system kernel.
+walks the dense component rows seen by a kernel.
 """
 
 from std.gpu import global_idx

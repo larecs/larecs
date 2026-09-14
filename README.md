@@ -53,10 +53,20 @@ on how to use Larecs🌲.
 
 Below there is a simple example covering the most important functionality.
 Have a look at the `examples` subdirectory for more elaborate examples.
+The example mutates the world directly during setup, then hands it to a
+`Scheduler`; systems are the principal place for state-changing application
+logic, and they delegate filtered component processing to kernels.
 
 ```mojo
 # Import the package
-from larecs import World
+from larecs import (
+    World,
+    Scheduler,
+    System,
+    SystemContext,
+    KernelContext,
+    Filter,
+)
 
 
 # Define components
@@ -77,6 +87,25 @@ struct Velocity(Copyable, Movable):
     var y: Float64
 
 
+# Define filtered component processing as a kernel
+comptime move_filter = Filter().include[Position].read[Velocity]()
+
+
+def move(context: KernelContext[move_filter]):
+    for entity in context:
+        ref position = entity.get[Position]()
+        ref velocity = entity.get[Velocity]()
+        position.x += velocity.x
+        position.y += velocity.y
+
+
+# Put state-changing application logic in a system
+@fieldwise_init
+struct Move(System):
+    def update(mut self, mut context: SystemContext[...]) raises:
+        context.run[move]()
+
+
 # Run the ECS
 def main() raises:
     # Create a world, list all components that will / may be used
@@ -94,14 +123,17 @@ def main() raises:
         # of the entity by a Velocity component
         world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity)
 
-    # We can query entities with specific components
-    for entity in world.storage.query[Position, Velocity]():
-        # Get references to specific components
-        ref position = entity.get[Position]()
-        ref velocity = entity.get[Velocity]()
+    # Queries provide read-only access to matching components
+    for entity in world.storage.query[
+        Filter().include[Position, Velocity]()
+    ]():
+        _ = entity.get[Position]()
+        _ = entity.get[Velocity]()
 
-        position.x += velocity.x
-        position.y += velocity.y
+    # Run state-changing application logic through the scheduler
+    var scheduler = Scheduler(world^)
+    scheduler.add_system(Move())
+    scheduler.run(1)
 ```
 
 ## Development utilities

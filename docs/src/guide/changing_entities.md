@@ -8,6 +8,12 @@ Entities may be changed by altering the values / attributes
 of their components, adding new components, or removing
 existing components.
 
+This chapter uses the `World` API directly to demonstrate each operation. In
+application logic, [systems](../systems_scheduler) are the principal place for
+these state changes. A system can access an individual entity through its
+`SystemContext`, while updates over all entities matching a filter belong in
+a [kernel](../queries_iteration#processing-components-with-kernels).
+
 ## Accessing and changing individual components
 
 The values of an entity's component can be

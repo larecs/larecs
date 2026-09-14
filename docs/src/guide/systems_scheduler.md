@@ -11,34 +11,56 @@ be added or removed as required.
 
 ## Systems
 
-Systems can be thought of as functions that take a
-{{< api SystemContext >}}, giving them access to a
-{{< api World >}} instance, and perform operations on the
-world's entities and/or resources. However, to allow storing intermediate
-variables between multiple system calls, and to
-support special initialization and finalization operations,
-systems are expressed as structs implementing the
-{{< api System >}} trait. This trait requires
-systems to implement {{< api System.initialize initialize >}}, and
-{{< api System.finalize finalize >}} methods, called before or
-after the ECS run, respectively, and an {{< api System.update update >}}
-method, called at every step of the ECS run.
-Each of these methods takes a `SystemContext` instance,
-whose `world` field points at the world on which they perform the
-desired operations.
+Systems are the principal way to mutate the state of the ECS. Application
+logic that creates or removes entities, changes components, or updates
+resources should generally live in a system, where the scheduler can run it
+in a defined order with access to the appropriate context.
+
+Systems are structs implementing the {{< api System >}} trait, so they can
+retain state between calls. A system implements
+{{< api System.update update >}}, which is called at every step of the ECS run.
+It can also override the default no-op
+{{< api System.initialize initialize >}} and
+{{< api System.finalize finalize >}} methods, which run before and after the
+update loop.
+
+Each lifecycle method receives a {{< api SystemContext >}}. Its `world` field
+provides access to entities, components, and resources for individual or
+structural changes. For component processing across every entity matching a
+filter, the system calls {{< api SystemContext.run >}} with a kernel. A kernel
+is a function that receives a {{< api KernelContext >}}; it is not itself a
+system and is not registered with the scheduler.
 
 ```mojo {doctest="guide_systems_scheduler" global=true}
-from larecs import World, System, SystemContext, KernelContext, Filter
+from larecs import (
+    World,
+    System,
+    SystemContext,
+    KernelContext,
+    Filter,
+    Resources,
+    ResourceType,
+)
 
-# Component mutation always happens inside a kernel like this one, run
-# through the system's SystemContext -- see it invoked in Move.update()
-# below.
-comptime move_filter = Filter().include[Position, Velocity]()
+@fieldwise_init
+struct Time(ResourceType, TrivialRegisterPassable):
+    var delta: Float64
 
-def move_entities(context: KernelContext[move_filter]):
+# This kernel writes Position and reads Velocity for every matching entity.
+# Move.update invokes it through the system's SystemContext below.
+comptime move_resources = Resources[Time]()
+
+def move_entities(
+    context: KernelContext[
+        Filter().include[Position].read[Velocity](), move_resources
+    ]
+):
+    ref time = context.resources.get[Time]()
     for entity in context:
-        entity.get[Position]().x += entity.get[Velocity]().dx
-        entity.get[Position]().y += entity.get[Velocity]().dy
+        ref pos = entity.get[Position]()
+        ref vel = entity.get[Velocity]()
+        pos.x += vel.dx * time.delta
+        pos.y += vel.dy * time.delta
 
 @fieldwise_init
 struct Move(System):
@@ -73,22 +95,22 @@ and a list of systems. The scheduler has
 {{< api Scheduler.initialize initialize >}},
 {{< api Scheduler.update update >}}, and {{< api Scheduler.finalize finalize >}}
 methods, which call the respective functions of all
-considered systems in the order they are added to the scheduler.
+registered systems in the order they are added to the scheduler.
 In addition, the scheduler has a {{< api Scheduler.run run >}}
-method, which initializes the systems, runs them a desired
-number of times, and finalizes them.
+method, which initializes the systems, calls their `update` methods a requested
+number of times, and then finalizes them.
 
 To construct an example of a scheduler, let us define
 further systems for adding entities and logging their positions.
 
 ```mojo {doctest="guide_systems_scheduler" global=true hide=true}
 @fieldwise_init
-struct Position(Movable, Copyable):
+struct Position(Movable, Copyable, TrivialRegisterPassable):
     var x: Float64
     var y: Float64
 
 @fieldwise_init
-struct Velocity(Movable, Copyable):
+struct Velocity(Movable, Copyable, TrivialRegisterPassable):
     var dx: Float64
     var dy: Float64
 ```
@@ -158,6 +180,9 @@ def main() raises:
     # Create a scheduler
     var scheduler = Scheduler[Position, Velocity]()
 
+    # Add every resource required by a kernel before it can run
+    scheduler.world.resources.add(Time(1.0))
+
     # Add the systems to the scheduler
     scheduler.add_system(AddMovers[10]())
     scheduler.add_system(Move())
@@ -167,12 +192,26 @@ def main() raises:
     scheduler.run(10)
 ```
 
+## Resources in kernels
+
+Systems may access the world's resource storage directly through
+`context.world[].resources`, for example when adding a resource during
+`initialize`. The example above adds `Time` before `Move` runs and declares it
+in the kernel's `Resources[Time]()` list. See
+[Resources](../resources#using-resources-in-kernels) for the complete kernel
+API, missing-resource behavior, mutation semantics, and runnable examples.
+
 ## GPU execution
 
-`SystemContext.run`/`KernelContext`, as used by `Move` above, is not just
-how components get mutated -- it can also run on an accelerator, by passing
-`on_gpu=True`, instead of the CPU. The same kernel function works on both
-targets unchanged; see the {{< api SystemContext.run >}} and
-{{< api KernelContext >}} API docs for details. GPU execution requires an
-available accelerator and the corresponding Mojo GPU toolchain -- on
-systems without one, `on_gpu=True` kernels fall back to CPU execution.
+The `SystemContext.run` call used by `Move` executes its kernel on the CPU by
+default. Pass `on_gpu=True` to run a compatible kernel on an accelerator. The
+same kernel function works on both targets unchanged; see the
+{{< api SystemContext.run >}} and {{< api KernelContext >}} API docs for
+details. GPU execution requires an available accelerator and the corresponding
+Mojo GPU toolchain. On systems without one, `on_gpu=True` kernels fall back to
+CPU execution.
+
+Required resources use the same `context.resources.get[T]()` API on the GPU.
+Resource transfer constraints, shared-write safety, and the non-capturing
+kernel requirement are covered in
+[Resources](../resources#using-resources-in-kernels).

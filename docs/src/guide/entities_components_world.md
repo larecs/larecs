@@ -9,7 +9,9 @@ The ECS concept is composed of three principal elements:
 
 - [Entities](#entities) represent game objects or simulation entities, like individuals in a population model.
 - [Components](#components) are the data associated to entities, i.e. their properties or state variables.
-- [Systems](../systems_scheduler) contain the game or simulation logic that manipulates entities and their components, using so-called queries.
+- [Systems](../systems_scheduler) contain the game or simulation logic that
+  reads and mutates ECS state. They use a system context to access the world
+  and to run kernels over filtered sets of components.
 
 In an ECS, each entity is "composed of" an arbitrary set of components that can be added and removed at run-time.
 This modular design enables the development of highly flexible and reusable games or simulations.

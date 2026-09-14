@@ -44,14 +44,15 @@ struct Scheduler[*ComponentTypes: ComponentType](Copyable):
     ```
 
     ```mojo {doctest="scheduler" global=true}
-    # Component mutation always happens inside a kernel like this one,
-    # run through the system's SystemContext.
-    comptime move_filter = Filter().include[Position, Velocity]()
+    # A system delegates filtered component processing to a kernel like this.
+    comptime move_filter = Filter().include[Position].read[Velocity]()
 
     def move_entities(context: KernelContext[move_filter]):
         for entity in context:
-            entity.get[Position]().x += entity.get[Velocity]().x
-            entity.get[Position]().y += entity.get[Velocity]().y
+            ref pos = entity.get[Position]()
+            ref vel = entity.get[Velocity]()
+            pos.x += vel.x
+            pos.y += vel.y
 
     @fieldwise_init
     struct MySystem(System):
