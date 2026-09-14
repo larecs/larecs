@@ -6,14 +6,14 @@ from larecs import MutableEntityAccessor
 
 
 def benchmark_get_1_000_000(mut bencher: Bencher):
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
 
     @always_inline
     def bench_fn() {imm, mut world}:
         try:
-            entity = world.storage.add_entity(pos, vel)
+            var entity = world.storage.add_entity(pos, vel)
             for _ in range(1_000_000):
                 keep(world.storage.get[Position](entity).x)
 
@@ -24,23 +24,23 @@ def benchmark_get_1_000_000(mut bencher: Bencher):
 
 
 def prevent_inlining_get() raises:
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    world = SmallWorld()
-    entity = world.storage.add_entity(pos, vel)
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
+    var entity = world.storage.add_entity(pos, vel)
     keep(world.storage.get[Position](entity).x)
 
 
 def benchmark_set_1_comp_1_000_000(mut bencher: Bencher):
-    pos = Position(1.0, 2.0)
-    pos2 = Position(2.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var pos2 = Position(2.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
 
     @always_inline
     def bench_fn() {imm, mut world}:
         try:
-            entity = world.storage.add_entity(pos, vel)
+            var entity = world.storage.add_entity(pos, vel)
             for _ in range(500_000):
                 world.storage.set(entity, pos2)
                 world.storage.set(entity, pos)
@@ -52,11 +52,11 @@ def benchmark_set_1_comp_1_000_000(mut bencher: Bencher):
 
 
 def prevent_inlining_set_1_comp() raises:
-    pos = Position(1.0, 2.0)
-    pos2 = Position(2.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    world = SmallWorld()
-    entity = world.storage.add_entity(pos, vel)
+    var pos = Position(1.0, 2.0)
+    var pos2 = Position(2.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
+    var entity = world.storage.add_entity(pos, vel)
     world.storage.set(entity, pos2)
     world.storage.set(entity, pos)
 
@@ -64,23 +64,23 @@ def prevent_inlining_set_1_comp() raises:
 def benchmark_set_5_comp_1_000_000(
     mut bencher: Bencher,
 ):
-    c1 = FlexibleComponent[1](1.0, 2.0)
-    c2 = FlexibleComponent[2](1.0, 2.0)
-    c3 = FlexibleComponent[3](1.0, 2.0)
-    c4 = FlexibleComponent[4](1.0, 2.0)
-    c5 = FlexibleComponent[5](1.0, 2.0)
+    var c1 = FlexibleComponent[1](1.0, 2.0)
+    var c2 = FlexibleComponent[2](1.0, 2.0)
+    var c3 = FlexibleComponent[3](1.0, 2.0)
+    var c4 = FlexibleComponent[4](1.0, 2.0)
+    var c5 = FlexibleComponent[5](1.0, 2.0)
 
-    c1_2 = FlexibleComponent[1](2.0, 4.0)
-    c2_2 = FlexibleComponent[2](2.0, 4.0)
-    c3_2 = FlexibleComponent[3](2.0, 4.0)
-    c4_2 = FlexibleComponent[4](2.0, 4.0)
-    c5_2 = FlexibleComponent[5](2.0, 4.0)
-    world = SmallWorld()
+    var c1_2 = FlexibleComponent[1](2.0, 4.0)
+    var c2_2 = FlexibleComponent[2](2.0, 4.0)
+    var c3_2 = FlexibleComponent[3](2.0, 4.0)
+    var c4_2 = FlexibleComponent[4](2.0, 4.0)
+    var c5_2 = FlexibleComponent[5](2.0, 4.0)
+    var world = SmallWorld()
 
     @always_inline
     def bench_fn() {imm, mut world}:
         try:
-            entity = world.storage.add_entity(c1, c2, c3, c4, c5)
+            var entity = world.storage.add_entity(c1, c2, c3, c4, c5)
             for _ in range(500_000):
                 world.storage.set(entity, c1_2, c2_2, c3_2, c4_2, c5_2)
                 world.storage.set(entity, c1, c2, c3, c4, c5)
@@ -92,20 +92,20 @@ def benchmark_set_5_comp_1_000_000(
 
 
 def prevent_inlining_set_5_comp() raises:
-    c1 = FlexibleComponent[1](1.0, 2.0)
-    c2 = FlexibleComponent[2](1.0, 2.0)
-    c3 = FlexibleComponent[3](1.0, 2.0)
-    c4 = FlexibleComponent[4](1.0, 2.0)
-    c5 = FlexibleComponent[5](1.0, 2.0)
+    var c1 = FlexibleComponent[1](1.0, 2.0)
+    var c2 = FlexibleComponent[2](1.0, 2.0)
+    var c3 = FlexibleComponent[3](1.0, 2.0)
+    var c4 = FlexibleComponent[4](1.0, 2.0)
+    var c5 = FlexibleComponent[5](1.0, 2.0)
 
-    c1_2 = FlexibleComponent[1](2.0, 4.0)
-    c2_2 = FlexibleComponent[2](2.0, 4.0)
-    c3_2 = FlexibleComponent[3](2.0, 4.0)
-    c4_2 = FlexibleComponent[4](2.0, 4.0)
-    c5_2 = FlexibleComponent[5](2.0, 4.0)
+    var c1_2 = FlexibleComponent[1](2.0, 4.0)
+    var c2_2 = FlexibleComponent[2](2.0, 4.0)
+    var c3_2 = FlexibleComponent[3](2.0, 4.0)
+    var c4_2 = FlexibleComponent[4](2.0, 4.0)
+    var c5_2 = FlexibleComponent[5](2.0, 4.0)
 
-    world = SmallWorld()
-    entity = world.storage.add_entity(c1, c2, c3, c4, c5)
+    var world = SmallWorld()
+    var entity = world.storage.add_entity(c1, c2, c3, c4, c5)
     world.storage.set(entity, c1_2, c2_2, c3_2, c4_2, c5_2)
     world.storage.set(entity, c1, c2, c3, c4, c5)
 
@@ -185,7 +185,7 @@ def benchmark_apply_expexp_1_comp_100_000(
 
 
 def run_all_world_access_benchmarks() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     run_all_world_access_benchmarks(bench)
     bench.dump_report()
 

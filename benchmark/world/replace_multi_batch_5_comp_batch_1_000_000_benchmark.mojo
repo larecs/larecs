@@ -10,7 +10,7 @@ def benchmark_replace_5_comp_batch_1_000_000(
     Args:
         bencher: Benchmark harness that executes the measured closure.
     """
-    world = SmallWorld()
+    var world = SmallWorld()
     try:
         _ = world.storage.add_entities(
             FlexibleComponent[0](1.0, 2.0),

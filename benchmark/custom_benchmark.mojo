@@ -6,7 +6,7 @@ from std.benchmark import (
 
 def DefaultConfig() raises -> BenchConfig:
     """Returns the default configuration for benchmarking."""
-    config = BenchConfig(
+    var config = BenchConfig(
         min_runtime_secs=2.0, max_runtime_secs=10.0, max_batch_size=50
     )
     config.verbose_timing = True

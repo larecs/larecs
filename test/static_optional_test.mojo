@@ -28,11 +28,11 @@ def test_comptime_optional_copy() raises:
 def test_comptime_optional_move_del() raises:
     def factory(
         var val: MemTestStruct[
-            MutUntrackedOrigin, MutUntrackedOrigin, MutUntrackedOrigin
+            MutUnsafeAnyOrigin, MutUnsafeAnyOrigin, MutUnsafeAnyOrigin
         ],
         out result: StaticOptional[
             MemTestStruct[
-                MutUntrackedOrigin, MutUntrackedOrigin, MutUntrackedOrigin
+                MutUnsafeAnyOrigin, MutUnsafeAnyOrigin, MutUnsafeAnyOrigin
             ],
             True,
         ],

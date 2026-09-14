@@ -33,7 +33,7 @@ from custom_benchmark import DefaultBench
 
 
 def run_all_world_benchmarks() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     run_all_world_benchmarks(bench)
     bench.dump_report()
 

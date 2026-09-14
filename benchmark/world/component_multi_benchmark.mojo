@@ -6,18 +6,18 @@ from larecs.test_utils import *
 def benchmark_add_remove_5_comp_1_000_000(
     mut bencher: Bencher,
 ):
-    c1 = FlexibleComponent[1](1.0, 2.0)
-    c2 = FlexibleComponent[2](1.0, 2.0)
-    c3 = FlexibleComponent[3](1.0, 2.0)
-    c4 = FlexibleComponent[4](1.0, 2.0)
-    c5 = FlexibleComponent[5](1.0, 2.0)
-    pos = Position(1.0, 2.0)
-    world = SmallWorld()
+    var c1 = FlexibleComponent[1](1.0, 2.0)
+    var c2 = FlexibleComponent[2](1.0, 2.0)
+    var c3 = FlexibleComponent[3](1.0, 2.0)
+    var c4 = FlexibleComponent[4](1.0, 2.0)
+    var c5 = FlexibleComponent[5](1.0, 2.0)
+    var pos = Position(1.0, 2.0)
+    var world = SmallWorld()
 
     @always_inline
     def bench_fn() {imm, mut world}:
         try:
-            entity = world.storage.add_entity(pos)
+            var entity = world.storage.add_entity(pos)
             for _ in range(1_000_000):
                 world.storage.add(entity, c1, c2, c3, c4, c5)
                 world.storage.remove[
@@ -35,7 +35,7 @@ def benchmark_add_remove_5_comp_1_000_000(
 
 
 def run_all_world_component_multi_benchmarks() raises:
-    bench = DefaultBench()
+    var bench = DefaultBench()
     run_all_world_component_multi_benchmarks(bench)
     bench.dump_report()
 
