@@ -8,14 +8,14 @@ from larecs.error import WorldError
 
 
 def test_query_length() raises:
-    world = SmallWorld()
+    var world = SmallWorld()
 
-    c0 = FlexibleComponent[0](1.0, 2.0)
-    c1 = FlexibleComponent[1](3.0, 4.0)
-    c2 = FlexibleComponent[2](5.0, 6.0)
-    c3 = FlexibleComponent[3](7.0, 8.0)
+    var c0 = FlexibleComponent[0](1.0, 2.0)
+    var c1 = FlexibleComponent[1](3.0, 4.0)
+    var c2 = FlexibleComponent[2](5.0, 6.0)
+    var c3 = FlexibleComponent[3](7.0, 8.0)
 
-    n = 50
+    var n = 50
 
     for _ in range(n):
         _ = world.storage.add_entity(c0, c1, c2)
@@ -100,8 +100,8 @@ def test_query_length() raises:
     )
     assert_equal(len(world.storage.query()), 5 * n)
 
-    iterator = world.storage.query[FlexibleComponent[0]]().__iter__()
-    size = len(iterator)
+    var iterator = world.storage.query[FlexibleComponent[0]]().__iter__()
+    var size = len(iterator)
     while iterator:
         _ = iterator.__next__()
         size -= 1
@@ -109,14 +109,14 @@ def test_query_length() raises:
 
 
 def test_query_result_ids() raises:
-    world = SmallWorld()
+    var world = SmallWorld()
 
-    c1 = FlexibleComponent[1](3.0, 4.0)
-    c2 = FlexibleComponent[2](5.0, 6.0)
+    var c1 = FlexibleComponent[1](3.0, 4.0)
+    var c2 = FlexibleComponent[2](5.0, 6.0)
 
-    n = 50
+    var n = 50
 
-    entities = List[Entity]()
+    var entities = List[Entity]()
 
     for i in range(n):
         entities.append(
@@ -129,7 +129,7 @@ def test_query_result_ids() raises:
             world.storage.add_entity(FlexibleComponent[0](1.0, Float32(i)), c2)
         )
 
-    i = 0
+    var i = 0
     for var entity in world.storage.query[FlexibleComponent[0]]():
         assert_equal(
             entity.get_entity(),
@@ -146,20 +146,20 @@ def test_query_result_ids() raises:
 
 
 def test_query_get_set() raises:
-    world = SmallWorld()
+    var world = SmallWorld()
 
-    c0 = FlexibleComponent[0](1.0, 2.0)
-    c1 = FlexibleComponent[1](3.0, 4.0)
-    c2 = FlexibleComponent[2](5.0, 6.0)
+    var c0 = FlexibleComponent[0](1.0, 2.0)
+    var c1 = FlexibleComponent[1](3.0, 4.0)
+    var c2 = FlexibleComponent[2](5.0, 6.0)
 
-    n = 50
+    var n = 50
 
-    entities = List[Entity]()
+    var entities = List[Entity]()
 
     for _ in range(n):
         entities.append(world.storage.add_entity(c0, c1, c2))
 
-    i = 0
+    var i = 0
     for entity in world.storage.query[FlexibleComponent[0]]():
         entity.get[FlexibleComponent[0]]().y = Float32(i)
         i += 1
@@ -174,20 +174,20 @@ def test_query_get_set() raises:
 
 
 def test_query_component_reference() raises:
-    world = SmallWorld()
+    var world = SmallWorld()
 
-    c0 = FlexibleComponent[0](1.0, 2.0)
-    c1 = FlexibleComponent[1](3.0, 4.0)
-    c2 = FlexibleComponent[2](5.0, 6.0)
+    var c0 = FlexibleComponent[0](1.0, 2.0)
+    var c1 = FlexibleComponent[1](3.0, 4.0)
+    var c2 = FlexibleComponent[2](5.0, 6.0)
 
-    n = 50
+    var n = 50
 
-    entities = List[Entity]()
+    var entities = List[Entity]()
 
     for _ in range(n):
         entities.append(world.storage.add_entity(c0, c1, c2))
 
-    i = 0
+    var i = 0
     for entity in world.storage.query[FlexibleComponent[0]]():
         ref a = entity.get[FlexibleComponent[0]]()
         a.y = Float32(i)
@@ -203,15 +203,15 @@ def test_query_component_reference() raises:
 
 
 def test_query_has_component() raises:
-    world = SmallWorld()
+    var world = SmallWorld()
 
-    c0 = FlexibleComponent[0](1.0, 2.0)
-    c1 = FlexibleComponent[1](3.0, 4.0)
-    c2 = FlexibleComponent[2](5.0, 6.0)
+    var c0 = FlexibleComponent[0](1.0, 2.0)
+    var c1 = FlexibleComponent[1](3.0, 4.0)
+    var c2 = FlexibleComponent[2](5.0, 6.0)
 
-    n = 50
+    var n = 50
 
-    entities = List[Entity]()
+    var entities = List[Entity]()
 
     for _ in range(n):
         entities.append(world.storage.add_entity(c0, c1, c2))
@@ -224,9 +224,9 @@ def test_query_has_component() raises:
 
 
 def test_query_empty() raises:
-    world = SmallWorld()
-    query = world.storage.query[FlexibleComponent[0]]()
-    cnt = 0
+    var world = SmallWorld()
+    var query = world.storage.query[FlexibleComponent[0]]()
+    var cnt = 0
     for entity in query:
         assert_true(entity.has[FlexibleComponent[0]]())
         assert_true(world.storage.is_locked())
@@ -236,19 +236,19 @@ def test_query_empty() raises:
 
 
 def test_query_iterator_locks_on_creation() raises:
-    world = SmallWorld()
+    var world = SmallWorld()
 
-    c0 = FlexibleComponent[0](1.0, 2.0)
-    c1 = FlexibleComponent[1](3.0, 4.0)
+    var c0 = FlexibleComponent[0](1.0, 2.0)
+    var c1 = FlexibleComponent[1](3.0, 4.0)
     _ = world.storage.add_entity(c0)
 
-    iterator = world.storage.query[FlexibleComponent[0]]().__iter__()
+    var iterator = world.storage.query[FlexibleComponent[0]]().__iter__()
     assert_true(world.storage.is_locked())
 
     with assert_raises():
         _ = world.storage.add_entity(c0, c1)
 
-    count = 0
+    var count = 0
     while iterator:
         _ = iterator.__next__()
         count += 1
@@ -257,12 +257,12 @@ def test_query_iterator_locks_on_creation() raises:
 
 
 def test_query_without() raises:
-    world = SmallWorld()
-    c0 = FlexibleComponent[0](1.0, 2.0)
-    c1 = FlexibleComponent[1](3.0, 4.0)
-    c2 = FlexibleComponent[2](5.0, 6.0)
+    var world = SmallWorld()
+    var c0 = FlexibleComponent[0](1.0, 2.0)
+    var c1 = FlexibleComponent[1](3.0, 4.0)
+    var c2 = FlexibleComponent[2](5.0, 6.0)
 
-    n = 10
+    var n = 10
 
     for _ in range(n):
         _ = world.storage.add_entity(c0)
@@ -270,14 +270,14 @@ def test_query_without() raises:
         _ = world.storage.add_entity(c0, c1, c2)
         _ = world.storage.add_entity(c2)
 
-    query = world.storage.query[FlexibleComponent[0]]().without[
+    var query = world.storage.query[FlexibleComponent[0]]().without[
         FlexibleComponent[1]
     ]()
-    query2 = world.storage.query[FlexibleComponent[0]]()
+    var query2 = world.storage.query[FlexibleComponent[0]]()
 
     assert_equal(len(query), n)
 
-    count = 0
+    var count = 0
     for entity in query:
         assert_true(entity.has[FlexibleComponent[0]]())
         assert_false(entity.has[FlexibleComponent[1]]())
@@ -305,20 +305,20 @@ def test_query_without() raises:
 
 
 def test_query_exclusive() raises:
-    world = SmallWorld()
-    c0 = FlexibleComponent[0](1.0, 2.0)
-    c1 = FlexibleComponent[1](3.0, 4.0)
+    var world = SmallWorld()
+    var c0 = FlexibleComponent[0](1.0, 2.0)
+    var c1 = FlexibleComponent[1](3.0, 4.0)
 
-    n = 10
+    var n = 10
 
     for _ in range(n):
         _ = world.storage.add_entity(c0)
         _ = world.storage.add_entity(c0, c1)
 
-    query = world.storage.query[FlexibleComponent[0]]().exclusive()
+    var query = world.storage.query[FlexibleComponent[0]]().exclusive()
     assert_equal(len(query), n)
 
-    count = 0
+    var count = 0
     for entity in query:
         assert_true(entity.has[FlexibleComponent[0]]())
         assert_false(entity.has[FlexibleComponent[1]]())
@@ -330,12 +330,12 @@ def test_query_exclusive() raises:
 
 
 def test_query_without_builder_ownership() raises:
-    world = SmallWorld()
-    c0 = FlexibleComponent[0](1.0, 2.0)
-    c1 = FlexibleComponent[1](3.0, 4.0)
-    c2 = FlexibleComponent[2](5.0, 6.0)
+    var world = SmallWorld()
+    var c0 = FlexibleComponent[0](1.0, 2.0)
+    var c1 = FlexibleComponent[1](3.0, 4.0)
+    var c2 = FlexibleComponent[2](5.0, 6.0)
 
-    n = 10
+    var n = 10
 
     for _ in range(n):
         _ = world.storage.add_entity(c0)
@@ -343,23 +343,23 @@ def test_query_without_builder_ownership() raises:
         _ = world.storage.add_entity(c0, c2)
         _ = world.storage.add_entity(c0, c1, c2)
 
-    chained = (
+    var chained = (
         world.storage.query[FlexibleComponent[0]]()
         .without[FlexibleComponent[1]]()
         .without[FlexibleComponent[2]]()
     )
     assert_equal(len(chained), n)
 
-    query = world.storage.query[FlexibleComponent[0]]()
-    copied = query.copy().without[FlexibleComponent[1]]()
+    var query = world.storage.query[FlexibleComponent[0]]()
+    var copied = query.copy().without[FlexibleComponent[1]]()
     assert_equal(len(copied), 2 * n)
     assert_equal(len(query), 4 * n)
 
-    moved_source = world.storage.query[FlexibleComponent[0]]()
-    moved = moved_source^.without[FlexibleComponent[2]]()
+    var moved_source = world.storage.query[FlexibleComponent[0]]()
+    var moved = moved_source^.without[FlexibleComponent[2]]()
     assert_equal(len(moved), 2 * n)
 
-    exclusive = (
+    var exclusive = (
         world.storage.query[FlexibleComponent[0]]()
         .without[FlexibleComponent[1]]()
         .exclusive()
@@ -368,16 +368,16 @@ def test_query_without_builder_ownership() raises:
 
 
 def test_query_lock() raises:
-    world = SmallWorld()
+    var world = SmallWorld()
 
-    c0 = FlexibleComponent[0](1.0, 2.0)
-    c1 = FlexibleComponent[1](3.0, 4.0)
-    c2 = FlexibleComponent[2](5.0, 6.0)
+    var c0 = FlexibleComponent[0](1.0, 2.0)
+    var c1 = FlexibleComponent[1](3.0, 4.0)
+    var c2 = FlexibleComponent[2](5.0, 6.0)
 
     _ = world.storage.add_entity(c0, c1)
-    entity = world.storage.add_entity(c0, c1)
+    var entity = world.storage.add_entity(c0, c1)
 
-    first = True
+    var first = True
     for _ in world.storage.query[FlexibleComponent[0]]():
         if not first:
             break
@@ -414,12 +414,12 @@ def test_query_lock() raises:
 
 
 def test_query_requires_available_lock() raises:
-    world = SmallWorld()
+    var world = SmallWorld()
 
-    c0 = FlexibleComponent[0](1.0, 2.0)
+    var c0 = FlexibleComponent[0](1.0, 2.0)
     _ = world.storage.add_entity(c0)
 
-    locks = List[Int]()
+    var locks = List[Int]()
     for _ in range(world.storage._locks.bit_pool.capacity):
         locks.append(world.storage._lock())
 
@@ -432,7 +432,7 @@ def test_query_requires_available_lock() raises:
 
     assert_false(world.storage.is_locked())
 
-    count = 0
+    var count = 0
     for _ in world.storage.query[FlexibleComponent[0]]():
         count += 1
 
@@ -442,13 +442,13 @@ def test_query_requires_available_lock() raises:
 def test_query_archetype_iterator() raises:
     comptime Archetype = _Archetype[FlexibleComponent[0]]
 
-    a1 = Archetype(0, BitMask(0))
-    a2 = Archetype(0, BitMask(0))
-    a3 = Archetype(2, BitMask(0, 1))
+    var a1 = Archetype(0, BitMask(0))
+    var a2 = Archetype(0, BitMask(0))
+    var a3 = Archetype(2, BitMask(0, 1))
     _ = a1.add_entity(Entity(0, 0))
     _ = a2.add_entity(Entity(0, 0))
     _ = a3.add_entity(Entity(0, 0))
-    archetypes: List[Archetype] = [a1^, a2^, a3^]
+    var archetypes: List[Archetype] = [a1^, a2^, a3^]
     var count = 0
 
     for _ in _ArchetypeIterator(Pointer(to=archetypes), [0, 1, 2]):

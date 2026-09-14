@@ -31,7 +31,7 @@ struct UpdateOnlySystem(System):
 
 def test_scheduler_default_lifecycle_hooks() raises:
     """Systems can rely on default initialize and finalize hooks."""
-    scheduler = Scheduler[Int]()
+    var scheduler = Scheduler[Int]()
     scheduler.add_system(UpdateOnlySystem())
     scheduler.run(3)
     assert_equal(len(scheduler.world), 3)
@@ -56,8 +56,8 @@ struct TestSystem[copies: Int, count: Int = 10](System):
             entity.get[Int]() += 1
 
     def finalize(mut self, mut world: World) raises:
-        sum = 0
-        counter = 0
+        var sum = 0
+        var counter = 0
         for entity in world.storage.query[Int]():
             sum += entity.get[Int]()
             counter += 1
@@ -67,7 +67,7 @@ struct TestSystem[copies: Int, count: Int = 10](System):
 
 
 def test_test_system() raises:
-    scheduler = Scheduler[Int, Float64]()
+    var scheduler = Scheduler[Int, Float64]()
     scheduler.add_system(TestSystem[2]())
     scheduler.add_system(TestSystem[2]())
     scheduler.run(3)

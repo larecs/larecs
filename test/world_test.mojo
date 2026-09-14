@@ -12,11 +12,11 @@ from larecs.test_utils import *
 
 
 def test_add_entity() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
 
-    entity = world.storage.add_entity()
+    var entity = world.storage.add_entity()
     assert_true(entity.get_id() == 1)
     assert_false(entity.is_zero())
 
@@ -30,10 +30,10 @@ def test_add_entity() raises:
 
 
 def test_add_entities() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    i = 0
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var i = 0
     for entity in world.storage.add_entities(pos, vel, count=23):
         assert_equal(entity.get[Position]().x, pos.x)
         assert_equal(entity.get[Position]().y, pos.y)
@@ -64,15 +64,15 @@ def test_add_entities() raises:
 
 
 def test_add_entities_iterator_length() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
 
-    iterator = world.storage.add_entities(pos, vel, count=12)
-    iter = (iterator^).__iter__()
+    var iterator = world.storage.add_entities(pos, vel, count=12)
+    var iter = (iterator^).__iter__()
     for remaining in range(12, 0, -1):
         assert_equal(len(iter), remaining)
-        entity = iter.__next__()
+        var entity = iter.__next__()
         assert_equal(entity.get[Position]().x, pos.x)
         assert_equal(entity.get[Velocity]().dy, vel.dy)
 
@@ -85,16 +85,16 @@ def test_add_entities_location_after_append_to_archetype() raises:
     The second batch starts at a non-zero row in the same archetype. Entity
     handles from that batch must point at their actual archetype rows.
     """
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
     _ = world.storage.add_entities(pos, count=3)
 
-    entities = List[Entity]()
+    var entities = List[Entity]()
     for accessor in world.storage.add_entities(pos, count=2):
         entities.append(accessor.get_entity())
 
     assert_equal(len(entities), 2)
-    expected_archetype_index = world.storage._entity_locations[
+    var expected_archetype_index = world.storage._entity_locations[
         entities[0].get_id()
     ].archetype_index
     assert_equal(
@@ -117,10 +117,10 @@ def test_add_entities_location_after_append_to_archetype() raises:
 
 
 def test_world_len() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    entity_count = 0
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var entity_count = 0
     entity_count += len(world.storage.add_entities(pos, vel, count=12))
     assert_equal(len(world), entity_count)
     entity_count += len(
@@ -138,11 +138,11 @@ def test_world_len() raises:
 
 
 def test_world_remove_entities() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
 
-    entity_count = 0
+    var entity_count = 0
     entity_count += len(world.storage.add_entities(pos, vel, count=12))
     entity_count += len(
         world.storage.add_entities(
@@ -173,7 +173,7 @@ def test_world_remove_entities() raises:
     assert_equal(len(world.storage.query[Position]()), 13)
     assert_equal(len(world), 13)
 
-    entity = world.storage.add_entity(pos, vel)
+    var entity = world.storage.add_entity(pos, vel)
     assert_equal(entity.get_id(), entity_count)
     assert_equal(entity.get_generation(), 1)
     entity = world.storage.add_entity(pos, vel)
@@ -182,10 +182,10 @@ def test_world_remove_entities() raises:
 
 
 def test_entity_get() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    entity = world.storage.add_entity(pos, vel)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var entity = world.storage.add_entity(pos, vel)
     assert_equal(world.storage.get[Position](entity).x, pos.x)
     world.storage.get[Position](entity).x = 123
     assert_equal(world.storage.get[Position](entity).x, 123)
@@ -196,9 +196,9 @@ def test_entity_get() raises:
 
 
 def test_get_archetype_index() raises:
-    world = SmallWorld()
-    pos = Position(12, 654)
-    vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
+    var pos = Position(12, 654)
+    var vel = Velocity(0.1, 0.2)
     _ = world.storage.add_entity(pos)
     _ = world.storage.add_entity(vel)
     _ = world.storage.add_entity(pos, vel)
@@ -225,15 +225,15 @@ def test_get_archetype_index() raises:
 
 
 def test_set_component() raises:
-    world = SmallWorld()
-    pos = Position(3.0, 4.0)
-    entity = world.storage.add_entity(pos)
+    var world = SmallWorld()
+    var pos = Position(3.0, 4.0)
+    var entity = world.storage.add_entity(pos)
     pos = Position(2.0, 7.0)
     world.storage.set(entity, pos)
     assert_equal(world.storage.get[Position](entity).x, pos.x)
     assert_equal(world.storage.get[Position](entity).y, pos.y)
 
-    vel = Velocity(0.3, 0.4)
+    var vel = Velocity(0.3, 0.4)
     entity = world.storage.add_entity(pos, vel)
     pos = Position(12, 654)
     vel = Velocity(0.1, 0.2)
@@ -245,10 +245,10 @@ def test_set_component() raises:
 
 
 def test_remove_entity() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    entity = world.storage.add_entity(pos, vel)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var entity = world.storage.add_entity(pos, vel)
     world.storage.remove_entity(entity)
 
     with assert_raises():
@@ -260,11 +260,11 @@ def test_remove_entity() raises:
 
 
 def test_remove_archetype() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    entity1 = world.storage.add_entity(pos, vel)
-    entity2 = world.storage.add_entity(pos, vel)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var entity1 = world.storage.add_entity(pos, vel)
+    var entity2 = world.storage.add_entity(pos, vel)
     world.storage.remove_entity(entity1)
 
     with assert_raises():
@@ -282,17 +282,17 @@ def test_remove_archetype() raises:
 
 
 def test_world_has_component() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    entity = world.storage.add_entity(pos)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var entity = world.storage.add_entity(pos)
     assert_true(world.storage.has[Position](entity))
     assert_false(world.storage.has[Velocity](entity))
 
 
 def test_world_add() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    entity = world.storage.add_entity(pos)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var entity = world.storage.add_entity(pos)
     assert_true(world.storage.has[Position](entity))
     assert_false(world.storage.has[Velocity](entity))
     world.storage.add(entity, Velocity(0.1, 0.2))
@@ -305,9 +305,9 @@ def test_world_add() raises:
 
 
 def test_world_batch_add() raises:
-    world = SmallWorld()
-    n = 100
-    entities = List[Entity]()
+    var world = SmallWorld()
+    var n = 100
+    var entities = List[Entity]()
     for i in range(n):
         entities.append(
             world.storage.add_entity(Position(Float64(i), Float64(i + 1)))
@@ -326,7 +326,7 @@ def test_world_batch_add() raises:
     assert_equal(len(world.storage.query[Position]().without[Velocity]()), 0)
     assert_equal(len(world.storage.query[Position, Velocity]()), n)
     for i in range(n):
-        entity = entities[i]
+        var entity = entities[i]
         assert_equal(world.storage.get[Position](entity).x, Float64(i))
         assert_equal(world.storage.get[Position](entity).y, Float64(i + 1))
         assert_equal(world.storage.get[Velocity](entity).dx, 0.1)
@@ -352,10 +352,10 @@ def test_world_batch_add() raises:
 
 
 def test_world_remove() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    entity = world.storage.add_entity(pos, vel)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var entity = world.storage.add_entity(pos, vel)
     assert_true(world.storage.has[Position](entity))
     assert_true(world.storage.has[Velocity](entity))
     world.storage.remove[Position](entity)
@@ -375,10 +375,10 @@ def test_world_remove() raises:
     assert_equal(len(world.storage._archetypes[0]._entities), 1)
 
     # Test swapping
-    entity1 = world.storage.add_entity(pos, vel)
-    entity2 = world.storage.add_entity(pos, vel)
-    index1 = world.storage._entity_locations[entity1._id].entity_index
-    index2 = world.storage._entity_locations[entity2._id].entity_index
+    var entity1 = world.storage.add_entity(pos, vel)
+    var entity2 = world.storage.add_entity(pos, vel)
+    var index1 = world.storage._entity_locations[entity1._id].entity_index
+    var index2 = world.storage._entity_locations[entity2._id].entity_index
     assert_not_equal(index1, index2)
     world.storage.remove[Position](entity1)
     assert_equal(
@@ -387,8 +387,8 @@ def test_world_remove() raises:
 
 
 def test_world_batch_remove() raises:
-    world = SmallWorld()
-    n = 100
+    var world = SmallWorld()
+    var n = 100
     _ = world.storage.add_entities(
         Position(1.0, 2.0), Velocity(0.1, 0.2), count=n
     )
@@ -415,10 +415,10 @@ def test_world_batch_remove() raises:
 
 
 def test_remove_and_add() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    entity = world.storage.add_entity(pos)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var entity = world.storage.add_entity(pos)
     assert_true(world.storage.has[Position](entity))
     assert_false(world.storage.has[Velocity](entity))
 
@@ -442,10 +442,10 @@ def test_remove_and_add() raises:
 
 
 def test_replace_remove_only() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
-    entity = world.storage.add_entity(pos, vel)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
+    var entity = world.storage.add_entity(pos, vel)
 
     world.storage.replace[Velocity]().by(entity)
 
@@ -456,9 +456,9 @@ def test_replace_remove_only() raises:
 
 
 def test_batch_remove_and_add() raises:
-    world = SmallWorld()
-    n = 100
-    entities = List[Entity]()
+    var world = SmallWorld()
+    var n = 100
+    var entities = List[Entity]()
     for i in range(n):
         entities.append(
             world.storage.add_entity(
@@ -497,7 +497,7 @@ def test_batch_remove_and_add() raises:
         n,
     )
     for i in range(n):
-        entity = entities[i]
+        var entity = entities[i]
         assert_equal(world.storage.get[Position](entity).x, Float64(i))
         assert_equal(world.storage.get[Position](entity).y, Float64(i + 1))
         assert_equal(world.storage.get[FlexibleComponent[1]](entity).x, 3.0)
@@ -519,9 +519,9 @@ def test_batch_remove_and_add() raises:
 
 
 def test_world_batch_add_multiple_source_archetypes() raises:
-    world = SmallWorld()
-    plain_entities = List[Entity]()
-    flex_entities = List[Entity]()
+    var world = SmallWorld()
+    var plain_entities = List[Entity]()
+    var flex_entities = List[Entity]()
 
     for i in range(6):
         plain_entities.append(
@@ -542,18 +542,18 @@ def test_world_batch_add_multiple_source_archetypes() raises:
         assert_true(entity.has[Position]())
         assert_true(entity.has[Velocity]())
 
-    first_plain_arch = world.storage._entity_locations[
+    var first_plain_arch = world.storage._entity_locations[
         plain_entities[0].get_id()
     ].archetype_index
-    first_flex_arch = world.storage._entity_locations[
+    var first_flex_arch = world.storage._entity_locations[
         flex_entities[0].get_id()
     ].archetype_index
 
     assert_not_equal(first_plain_arch, first_flex_arch)
 
     for i in range(len(plain_entities)):
-        entity = plain_entities[i]
-        loc = world.storage._entity_locations[entity.get_id()]
+        var entity = plain_entities[i]
+        var loc = world.storage._entity_locations[entity.get_id()]
         assert_equal(loc.archetype_index, first_plain_arch)
         assert_equal(loc.entity_index, i)
         assert_equal(world.storage.get[Position](entity).x, Float64(i))
@@ -563,8 +563,8 @@ def test_world_batch_add_multiple_source_archetypes() raises:
         assert_false(world.storage.has[FlexibleComponent[0]](entity))
 
     for i in range(len(flex_entities)):
-        entity = flex_entities[i]
-        loc = world.storage._entity_locations[entity.get_id()]
+        var entity = flex_entities[i]
+        var loc = world.storage._entity_locations[entity.get_id()]
         assert_equal(loc.archetype_index, first_flex_arch)
         assert_equal(loc.entity_index, i)
         assert_equal(world.storage.get[Position](entity).x, Float64(100 + i))
@@ -590,7 +590,7 @@ struct Resource2(ResourceType):
 
 
 def test_world_resource_access() raises:
-    world = World[Position, Velocity]()
+    var world = World[Position, Velocity]()
     world.resources.add(Resource1(2), Resource2(4))
     assert_equal(world.resources.get[Resource1]().value, 2)
     assert_equal(world.resources.get[Resource2]().value, 4)
@@ -607,11 +607,11 @@ def test_world_resource_access() raises:
 
 
 def test_world_apply() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
 
-    new_pos = pos.copy()
+    var new_pos = pos.copy()
     new_pos.x += vel.dx
     new_pos.y += vel.dy
 
@@ -634,7 +634,7 @@ def test_world_apply() raises:
 
 
 def test_world_lock() raises:
-    world = SmallWorld()
+    var world = SmallWorld()
     _ = world.storage.add_entity(Position(1.0, 2.0))
     assert_false(world.storage.is_locked())
 
@@ -688,12 +688,12 @@ def test_world_lock() raises:
 
 
 def test_world_copy() raises:
-    world = SmallWorld()
-    pos = Position(1.0, 2.0)
-    vel = Velocity(0.1, 0.2)
+    var world = SmallWorld()
+    var pos = Position(1.0, 2.0)
+    var vel = Velocity(0.1, 0.2)
 
-    entity = world.storage.add_entity(pos, vel)
-    world_copy = world.copy()
+    var entity = world.storage.add_entity(pos, vel)
+    var world_copy = world.copy()
 
     assert_equal(
         world.storage.get[Position](entity).x,

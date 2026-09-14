@@ -896,6 +896,7 @@ struct _WorldEntityIterator[
                 if not self._archetype_iterator:
                     raise StopIteration()
 
+                var start_idx: Int
                 comptime if Self.has_start_indices:
                     start_idx = self._start_indices[][
                         self._current_archetype_index
@@ -939,18 +940,19 @@ struct _WorldEntityIterator[
             if self._entity_iterator:
                 size += len(self._entity_iterator)
 
-            archetype_iter_copy = self._archetype_iterator.copy()
+            var archetype_iter_copy = self._archetype_iterator.copy()
 
-            archetype_idx = self._current_archetype_index
+            var archetype_idx = self._current_archetype_index
 
             for ref archetype in archetype_iter_copy^:
+                var start_idx: Int
                 comptime if Self.has_start_indices:
                     start_idx = self._start_indices[][archetype_idx]
                 else:
                     start_idx = 0
                 archetype_idx += 1
 
-                entity_iter = Self._UnsafeArchetypeEntityIterator(
+                var entity_iter = Self._UnsafeArchetypeEntityIterator(
                     Pointer(to=archetype).unsafe_origin_cast[
                         UntrackedOrigin[mut=Self.archetype_list_mutability]
                     ]()[],

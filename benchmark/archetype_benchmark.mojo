@@ -47,7 +47,3 @@ def run_all_archetype_benchmarks(mut bench: Bench) raises:
         benchmark_archetype_bitmask_contains_1_000_000,
         BenchId("10^6 * archetype bitmask contains"),
     )
-
-
-def main() raises:
-    run_all_archetype_benchmarks()

@@ -2,9 +2,6 @@ from std.benchmark import Bench, Bencher, BenchId
 from custom_benchmark import DefaultBench
 from larecs.test_utils import *
 
-# FIXME There is a compiler inlining bug which leads to wrong query bitmasks being passed to the replace operation
-#   when this is compiled together with other benchmarks. Either run this as a standalone executable or wait until the bug is fixed.
-
 
 def benchmark_replace_1_comp_batch_1_000_000(
     mut bencher: Bencher,

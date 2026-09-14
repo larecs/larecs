@@ -656,7 +656,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
 
             self._length -= 1
 
-            need_swap = remove_idx != self._length
+            var need_swap = remove_idx != self._length
 
             for ref column in self._columns:
                 if column._data:
@@ -766,6 +766,9 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
                 comp_id: Int
             ](var component: Ts[comp_id]) capturing -> None:
                 comptime T = Ts[comp_id]
+                var base_comp_ptr: Pointer[
+                    T, UntrackedOrigin[mut=origin_of(self).mut]
+                ]
                 try:
                     base_comp_ptr = self.get_component_ptr[T]()
                 except:
@@ -812,6 +815,9 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
                 comp_id: Int
             ](var component: Ts[comp_id]) capturing -> None:
                 comptime T = Ts[comp_id]
+                var base_comp_ptr: Pointer[
+                    T, UntrackedOrigin[mut=origin_of(self).mut]
+                ]
                 try:
                     base_comp_ptr = self.get_component_ptr[T]()
                 except:
@@ -1447,7 +1453,7 @@ struct Archetype[
             )
             _assert_range_in_bounds(from_idx, count, len(source[]))
 
-            start_index = self._storage._length
+            var start_index = self._storage._length
 
             if count == 0:
                 return start_index
@@ -1511,7 +1517,7 @@ struct Archetype[
         ):
             debug_assert(count > 0, "Count must be positive.")
 
-            start_index = self._storage._length
+            var start_index = self._storage._length
 
             self._storage.reserve(
                 add=count

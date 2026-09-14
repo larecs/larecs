@@ -23,7 +23,7 @@ def test_unsafe_box_copy_move_del() raises:
 
 
 def test_unsafe_box_value() raises:
-    box = UnsafeBox(42)
+    var box = UnsafeBox(42)
     assert_equal(box.unsafe_get[Int](), 42)
 
 
@@ -31,5 +31,5 @@ comptime functions = __functions_in_module()
 
 
 def main() raises:
-    suite = TestSuite.discover_tests[functions]()
+    var suite = TestSuite.discover_tests[functions]()
     suite^.run()

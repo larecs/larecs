@@ -455,7 +455,7 @@ struct _BitMask[total_bits: Int](
 
             var idx = bit >> 3  # equivalent to bit // 8
             var offset = bit & 7  # equivalent to bit - (8 * idx)
-            mask = 1 << UInt8(offset)
+            var mask = 1 << UInt8(offset)
             return (self._bytes[idx] & mask) == mask
 
     @always_inline

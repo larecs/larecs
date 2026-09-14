@@ -1,6 +1,6 @@
 [workspace]
 authors = ["Mose Schmiedel <mose@schmiednet.de>"]
-channels = ["https://conda.modular.com/max-nightly", "conda-forge"]
+channels = ["https://conda.modular.com/max", "conda-forge"]
 name = "scripts"
 platforms = ["osx-arm64", "linux-64"]
 version = "0.1.0"

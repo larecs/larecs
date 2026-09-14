@@ -158,7 +158,7 @@ def test_archetype_get_entity() raises:
     var archetype = Archetype(0, mask2)
 
     var entity = Entity(0, 0)
-    idx = archetype.add_entity(entity)
+    var idx = archetype.add_entity(entity)
     assert_equal(archetype.get_entity(idx), entity)
 
 
@@ -196,17 +196,17 @@ def test_archetype_has_component() raises:
 def test_archetype_move() raises:
     var archetype = Archetype(0, mask2)
 
-    idx = archetype.add_entity(Entity())
+    var idx = archetype.add_entity(Entity())
     archetype.set_components(
         idx,
         LargerComponent(1.0, 2.0, 3.0),
         FlexibleComponent[1](4.0, 5.0),
     )
 
-    storage_ptr_large = archetype._storage.get_component_ptr[
+    var storage_ptr_large = archetype._storage.get_component_ptr[
         LargerComponent
     ]().unsafe_offset(idx)
-    storage_ptr_flex = archetype._storage.get_component_ptr[
+    var storage_ptr_flex = archetype._storage.get_component_ptr[
         FlexibleComponent[1]
     ]().unsafe_offset(idx)
 
@@ -230,7 +230,7 @@ def test_archetype_move() raises:
 
 def test_archetype_copy() raises:
     var archetype = Archetype(0, mask2)
-    idx = archetype.add_entity(Entity())
+    var idx = archetype.add_entity(Entity())
     archetype.set_components(
         idx,
         LargerComponent(1.0, 2.0, 3.0),
@@ -261,8 +261,8 @@ def test_archetype_copy() raises:
 
 def test_entity_accessor_set_components() raises:
     var archetype = Archetype(0, mask2)
-    entity_idx = archetype.add_entity(Entity(10, 3))
-    entity = archetype.get_entity_accessor(entity_idx)
+    var entity_idx = archetype.add_entity(Entity(10, 3))
+    var entity = archetype.get_entity_accessor(entity_idx)
 
     entity.set(
         LargerComponent(1.0, 2.0, 3.0),
@@ -479,6 +479,6 @@ comptime functions = __functions_in_module()
 
 
 def main() raises:
-    suite = TestSuite.discover_tests[functions]()
+    var suite = TestSuite.discover_tests[functions]()
 
     suite^.run()

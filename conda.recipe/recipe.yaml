@@ -24,14 +24,14 @@ build:
 
 requirements:
   build:
-    - mojo-compiler >=1.0.0b3.dev2026080406, <2
-    - mojo-tracy >= 0.6.0, <0.7.0
+    - mojo-compiler >=1.0.0b2, <2
+    - mojo-tracy >=1.0.0, <2
   host:
-    - mojo-compiler >=1.0.0b3.dev2026080406, <2
-    - mojo-tracy >= 0.6.0, <0.7.0
+    - ${{ pin_compatible('mojo-compiler') }}
+    - ${{ pin_compatible('mojo-tracy') }}
   run:
-    - mojo-compiler >=1.0.0b3.dev2026080406, <2
-    - mojo-tracy >= 0.6.0, <0.7.0
+    - ${{ pin_compatible('mojo-compiler') }}
+    - ${{ pin_compatible('mojo-tracy') }}
 
 tests:
   - script:
@@ -42,7 +42,7 @@ tests:
       run:
         - clang >=22.1.7, <23
         - mogo-tester >=2.3.2
-        - mojo-compiler >=1.0.0b3.dev2026080406, <2
+        - mojo-compiler >=1.0.0b2, <2
     files:
       source:
         - test/

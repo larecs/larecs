@@ -35,7 +35,7 @@ struct EntityPool(Copyable, Movable, Sized):
             if self._available == 0:
                 return self._get_new()
 
-            curr = self._next
+            var curr = self._next
             self._entities[self._next]._id, self._next = (
                 self._next,
                 self._entities[self._next].get_id(),
@@ -60,7 +60,7 @@ struct EntityPool(Copyable, Movable, Sized):
 
             self._entities[entity.get_id()]._generation += 1
 
-            tmp = self._next
+            var tmp = self._next
             self._next = entity.get_id()
             self._entities[entity.get_id()]._id = tmp
             self._available += 1

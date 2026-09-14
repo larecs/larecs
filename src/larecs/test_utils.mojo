@@ -121,7 +121,7 @@ def get_random_bitmask_list(
     list = List[BitMask]()
     list.reserve(count)
     for _ in range(count):
-        bytes = Array[Scalar[DType.int], BitMask.total_bytes // 4](
+        var bytes = Array[Scalar[DType.int], BitMask.total_bytes // 4](
             uninitialized=True
         )
         random.randint(bytes.unsafe_ptr(), 4, range_start, range_end)
@@ -139,7 +139,7 @@ def get_random_bitmask() -> BitMask:
     Returns:
         A bitmask with each bit set independently at random.
     """
-    mask = BitMask()
+    var mask = BitMask()
     for i in range(BitMask.total_bits):
         if random.random_float64() < 0.5:
             mask.set[True](i)
@@ -560,9 +560,9 @@ def test_copy_move_del[
         AssertionError: If any copy, move, or delete count differs from the expected value.
     """
 
-    copy_counter = alloc[Int](1)
-    move_counter = alloc[Int](1)
-    del_counter = alloc[Int](1)
+    var copy_counter = alloc[Int](1)
+    var move_counter = alloc[Int](1)
+    var del_counter = alloc[Int](1)
     copy_counter.unsafe_write(0)
     move_counter.unsafe_write(0)
     del_counter.unsafe_write(0)
@@ -570,7 +570,7 @@ def test_copy_move_del[
     var test_del_counter = 0
     var test_move_counter = init_moves
     var test_copy_counter = 0
-    container = container_factory(
+    var container = container_factory(
         MemTestStruct[
             MutUntrackedOrigin, MutUntrackedOrigin, MutUntrackedOrigin
         ](copy_counter, move_counter, del_counter)
@@ -582,7 +582,7 @@ def test_copy_move_del[
     assert_equal(copy_counter[], test_copy_counter)
 
     # Copy
-    container2 = container.copy()
+    var container2 = container.copy()
     test_copy_counter += 1
     test_move_counter += copy_moves
     assert_equal(del_counter[], test_del_counter)

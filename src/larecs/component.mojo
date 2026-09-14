@@ -23,7 +23,7 @@ def constrain_components_unique[*Ts: ComponentType]() -> Bool:
     Returns:
         True when no component type appears more than once.
     """
-    set = Set[String]()
+    var set = Set[String]()
     comptime for i in range(len(Ts)):
         _ = set.insert(reflect[Ts[i]].name())
     return len(set) == len(Ts)

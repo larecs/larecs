@@ -12,9 +12,9 @@ def test_entity_pool_constructor() raises:
 
 
 def test_entity_pool() raises:
-    p = EntityPool()
+    var p = EntityPool()
 
-    expected_all: List[Entity] = [
+    var expected_all: List[Entity] = [
         Entity(0),
         Entity(1),
         Entity(2),
@@ -32,11 +32,11 @@ def test_entity_pool() raises:
     with assert_raises():
         p.recycle(p._entities[0])
 
-    e0 = p._entities[1]
+    var e0 = p._entities[1]
     p.recycle(e0)
     assert_false(p.is_alive(e0), "Dead entity should not be alive")
 
-    e0_old = e0
+    var e0_old = e0
     e0 = p.get()
     expected_all[1]._generation += 1
     assert_true(
@@ -70,20 +70,20 @@ def test_entity_pool() raises:
 
 
 def test_entity_pool_stochastic() raises:
-    p = EntityPool()
+    var p = EntityPool()
 
     for _ in range(10):
         p.reset()
         assert_equal(0, len(p))
         assert_equal(0, p.available())
 
-        alive = Dict[Entity, Bool]()
+        var alive = Dict[Entity, Bool]()
         for _ in range(10):
-            e = p.get()
+            var e = p.get()
             alive[e] = True
 
         for item in alive.items():
-            e, isAlive = item.key, item.value
+            var e, isAlive = item.key, item.value
             assert_equal(
                 isAlive,
                 p.is_alive(e),
@@ -98,7 +98,7 @@ def test_entity_pool_stochastic() raises:
             alive[e] = False
 
         for item in alive.items():
-            e, isAlive = item.key, item.value
+            var e, isAlive = item.key, item.value
             assert_equal(
                 isAlive,
                 p.is_alive(e),
@@ -109,11 +109,11 @@ def test_entity_pool_stochastic() raises:
             )
 
         for _ in range(10):
-            e = p.get()
+            var e = p.get()
             alive[e] = True
 
         for item in alive.items():
-            e, isAlive = item.key, item.value
+            var e, isAlive = item.key, item.value
             assert_equal(
                 isAlive,
                 p.is_alive(e),
@@ -126,7 +126,7 @@ def test_entity_pool_stochastic() raises:
         assert_equal(0, p._available, "No more _entities should be available")
 
         for item in alive.items():
-            e, isAlive = item.key, item.value
+            var e, isAlive = item.key, item.value
             if not isAlive or random_float64() > 0.75:
                 continue
 
@@ -134,7 +134,7 @@ def test_entity_pool_stochastic() raises:
             alive[e] = False
 
         for item in alive.items():
-            e, a = item.key, item.value
+            var e, a = item.key, item.value
             assert_equal(
                 a,
                 p.is_alive(e),
@@ -146,7 +146,7 @@ def test_entity_pool_stochastic() raises:
 
 
 def test_bit_pool_constructor() raises:
-    p = BitPool()
+    var p = BitPool()
 
     assert_equal(p.capacity, 256)
     assert_equal(p._length, 0)
@@ -154,14 +154,14 @@ def test_bit_pool_constructor() raises:
 
 
 def test_bit_pool_fresh_allocation() raises:
-    p = BitPool()
+    var p = BitPool()
 
     for i in range(p.capacity):
         assert_equal(i, p.get())
 
 
 def test_bit_pool_exhaustion() raises:
-    p = BitPool()
+    var p = BitPool()
 
     for _ in range(p.capacity):
         _ = p.get()
@@ -171,7 +171,7 @@ def test_bit_pool_exhaustion() raises:
 
 
 def test_bit_pool_recycle_lifo() raises:
-    p = BitPool()
+    var p = BitPool()
 
     for _ in range(10):
         _ = p.get()
@@ -184,7 +184,7 @@ def test_bit_pool_recycle_lifo() raises:
 
 
 def test_bit_pool_recycle_full_capacity() raises:
-    p = BitPool()
+    var p = BitPool()
 
     for i in range(p.capacity):
         assert_equal(i, p.get())
@@ -200,7 +200,7 @@ def test_bit_pool_recycle_full_capacity() raises:
 
 
 def test_bit_pool_reset() raises:
-    p = BitPool()
+    var p = BitPool()
 
     for i in range(32):
         assert_equal(i, p.get())
@@ -221,7 +221,7 @@ def test_bit_pool_reset() raises:
 
 
 def test_bit_pool_recycle_after_reset() raises:
-    p = BitPool()
+    var p = BitPool()
 
     for _ in range(p.capacity):
         _ = p.get()

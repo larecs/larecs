@@ -4,10 +4,10 @@ from larecs._utils import concatenate_arrays
 
 
 def test_concatenate_arrays_uint8() raises:
-    left: Array[UInt8, 3] = [1, 2, 3]
-    right: Array[UInt8, 2] = [4, 5]
+    var left: Array[UInt8, 3] = [1, 2, 3]
+    var right: Array[UInt8, 2] = [4, 5]
 
-    result = concatenate_arrays(left, right)
+    var result = concatenate_arrays(left, right)
 
     assert_equal(len(result), 5)
     assert_equal(result[0], 1)
@@ -18,10 +18,10 @@ def test_concatenate_arrays_uint8() raises:
 
 
 def test_concatenate_arrays_uint16() raises:
-    left: Array[UInt16, 0] = []
-    right: Array[UInt16, 2] = [3003, 4004]
+    var left: Array[UInt16, 0] = []
+    var right: Array[UInt16, 2] = [3003, 4004]
 
-    result = concatenate_arrays(left, right)
+    var result = concatenate_arrays(left, right)
 
     assert_equal(len(result), 2)
     assert_equal(result[0], 3003)
