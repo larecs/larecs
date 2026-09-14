@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout Larecs
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install pixi CLI
         run: |
           curl -ssL https://pixi.sh/install.sh | bash

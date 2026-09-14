@@ -183,6 +183,7 @@ benchmark/simd_benchmark.mojo
 # Mojo packages
 *.mojopkg
 *.mojoc
+*.o
 
 # Profiling & Debuginfo
 *.ptrace

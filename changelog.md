@@ -1,9 +1,12 @@
 # Changelog
 
-## [Unreleased](https://github.com/samufi/larecs/compare/v0.5.0b4...main)
+## [Unreleased](https://github.com/larecs/larecs/compare/v1.0.0b1...main)
+
+## [1.0.0b1 (2026-09-14)](https://github.com/larecs/larecs/compare/v0.5.0b4...v1.0.0b1)
 
 ### Breaking changes
 
+- Update to Mojo 1.0 and adjust the public API to the stable language release.
 - Rename `Resources` to `ResourceStorage`; `Resources` now denotes a compile-time list of resource types that a system/kernel declares it needs.
 - Rename `Storage` to `HostStorage` and add a mirrored `DeviceStorage` for GPU execution.
 - Replace the `Query` builder with filtered iterators: `HostStorage.query` now takes compile-time filters, locks immediately, and enforces read-only access (component mutation goes through systems).
@@ -22,25 +25,25 @@
 - Preserve component lifecycle invariants and world mutations across system dispatch.
 - Fix several interior-origin bugs affecting `ResourceStorage` and `HostStorage.get()`.
 
-## [0.5.0b4](https://github.com/samufi/larecs/compare/v0.5.0b3...v0.5.0b4)
+## [0.5.0b4](https://github.com/larecs/larecs/compare/v0.5.0b3...v0.5.0b4)
 
 ### Hotfix
 
 - Strip leading 'v' from release version tags in CI.
 
-## [0.5.0b3](https://github.com/samufi/larecs/compare/v0.5.0b2...v0.5.0b3)
+## [0.5.0b3](https://github.com/larecs/larecs/compare/v0.5.0b2...v0.5.0b3)
 
 ### Hotfix
 
 - Authentication with Prefix.dev in CI for package upload.
 
-## [0.5.0b2](https://github.com/samufi/larecs/compare/v0.5.0b1...v0.5.0b2)
+## [0.5.0b2](https://github.com/larecs/larecs/compare/v0.5.0b1...v0.5.0b2)
 
 ### Hotfix
 
 - Define matrix in CI for release builds.
 
-## [0.5.0b1](https://github.com/samufi/larecs/compare/v0.4.0...v0.5.0b1)
+## [0.5.0b1](https://github.com/larecs/larecs/compare/v0.4.0...v0.5.0b1)
 
 ### Breaking changes
 
@@ -97,7 +100,7 @@
 - Add helper `QueryInfo.matches` to encapsulate query matching logic
 - Add bit-wise operations for `BitMask`
 
-## [v0.4.0 (2025-08-06)](https://github.com/samufi/larecs/compare/v0.3.0...v0.4.0)
+## [v0.4.0 (2025-08-06)](https://github.com/larecs/larecs/compare/v0.3.0...v0.4.0)
 
 ### Breaking changes
 
@@ -110,7 +113,7 @@
 - Remove boilerplate code that can now be synthesized automatically.
 - Disable some tests that cannot be executed in the new Mojo version due to a bug.
 
-## [v0.3.0 (2025-06-23)](https://github.com/samufi/larecs/compare/v0.2.0...v0.3.0)
+## [v0.3.0 (2025-06-23)](https://github.com/larecs/larecs/compare/v0.2.0...v0.3.0)
 
 ### Breaking changes
 
@@ -126,7 +129,7 @@
 - Remove the `@value` decorator in favour of the `@fieldwise_init` decorator and explicit trait conformance.
 - Refactor the internal type `ComptimeOptional` to `StaticOptional` so as to match the naming conventions of the standard library.
 
-## [v0.2.0 (2025-05-14)](https://github.com/samufi/larecs/compare/v0.1.0...v0.2.0)
+## [v0.2.0 (2025-05-14)](https://github.com/larecs/larecs/compare/v0.1.0...v0.2.0)
 
 ### Breaking changes
 
@@ -139,6 +142,6 @@
 - Introduce a new `TypeIdentifiable` trait for types that can be identified by a type ID.
 - Move resources into the storage instead of copying them. This is much more performant if resources are large.
 
-## [v0.1.0 (2025-04-08)](https://github.com/samufi/larecs/tree/v0.1.0)
+## [v0.1.0 (2025-04-08)](https://github.com/larecs/larecs/tree/v0.1.0)
 
 Initial release of Larecs🌲.

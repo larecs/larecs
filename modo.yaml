@@ -9,7 +9,7 @@ source:
 
 # Full URLs of package sources. Used to create source links.
 source-url:
-  larecs: https://github.com/samufi/larecs/blob/main/src/larecs
+  larecs: https://github.com/larecs/larecs/blob/main/src/larecs
 
 # Output directory.
 output: docs/site/content

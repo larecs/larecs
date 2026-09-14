@@ -1,4 +1,4 @@
-module github.com/samufi/larecs
+module github.com/larecs/larecs
 
 go 1.23.0
 

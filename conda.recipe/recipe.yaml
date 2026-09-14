@@ -1,5 +1,5 @@
 context:
-  version: ${{ env.get("LARECS_VERSION", default="0.5.0b4") | default("0.5.0b4", true) }} # the default filter is needed to map empty strings to the fallback version
+  version: ${{ env.get("LARECS_VERSION", default="1.0.0b1") | default("1.0.0b1", true) }} # the default filter is needed to map empty strings to the fallback version
 
 package:
   name: "larecs"
@@ -18,7 +18,7 @@ source:
     - README.md
 
 build:
-  number: 2
+  number: 0
   script:
     - mojo precompile src/larecs -o ${{ PREFIX }}/lib/mojo/larecs.mojoc
 
@@ -51,11 +51,11 @@ tests:
         - test/
 
 about:
-  homepage: https://samufi.github.io/larecs/
+  homepage: https://larecs.github.io/larecs/
   license: LGPL-3.0-only
   license_file: LICENSE
   summary: A performance-oriented archetype-based ECS for Mojo🔥.
-  repository: https://github.com/samufi/larecs
+  repository: https://github.com/larecs/larecs
 
 extra:
   maintainers:

@@ -1,4 +1,4 @@
-baseURL: https://samufi.github.io/larecs/
+baseURL: https://larecs.github.io/larecs/
 languageCode: en-us
 title: Larecs🌲
 disablePathToLower: true
@@ -27,7 +27,7 @@ menu:
         type: search
     - name: GitHub
       weight: 4
-      url: "https://github.com/samufi/larecs"
+      url: "https://github.com/larecs/larecs"
       params:
         icon: github
 
