@@ -1,8 +1,20 @@
+"""Locking of the world to prevent structural changes during iteration.
+
+Provides `LockManager` for structural-change lock bits and `LockGuard` for
+owning one bit until it is transferred into an owning container such as
+`LockedWorldEntityIterator`. These types are not thread-synchronization
+primitives.
+"""
+
 from tracy import Zone
+
+from std.os import abort
 
 from .bitmask import BitMask
 from .pool import BitPool
 from ._internal_error import InternalError
+from .error import WorldError
+from .debug_utils import debug_warn
 
 
 @fieldwise_init
@@ -32,6 +44,9 @@ struct LockManager(Copyable, Movable):
 
         Raises:
             InternalError: If the number of locks exceeds 256.
+
+        Returns:
+            The acquired lock bit.
         """
         with Zone(function_name="LockManager.lock()"):
             try:
@@ -45,6 +60,9 @@ struct LockManager(Copyable, Movable):
     def unlock(mut self, lock: Int) raises InternalError:
         """
         Unlocks the given lock bit.
+
+        Args:
+            lock: The lock bit to release, as returned by `lock()`.
 
         Raises:
             LockError: If the lock is not set.
@@ -60,6 +78,9 @@ struct LockManager(Copyable, Movable):
     def is_locked(self) -> Bool:
         """
         IsLocked returns whether the world is locked by any queries.
+
+        Returns:
+            True if any lock bit is currently set.
         """
         with Zone(function_name="LockManager.is_locked()"):
             return not self.locks.is_zero()
@@ -73,9 +94,66 @@ struct LockManager(Copyable, Movable):
             self.locks = BitMask()
             self.bit_pool.reset()
 
-    # @always_inline
-    # def locked(mut self) -> LockedContext[origin_of(self)]:
-    #     """
-    #     Returns a locked context.
-    #     """
-    #     return LockedContext(Pointer(to=self))
+
+struct LockGuard[lock_origin: MutOrigin](Copyable, Movable):
+    """Owns one structural-change lock until destruction.
+
+    Moving transfers ownership without acquiring another lock. Copying
+    acquires a distinct lock that is released independently. Because the
+    `Copyable` trait cannot report errors, copying aborts if no lock is
+    available. Acquire a guard before constructing a value that needs
+    protection during initialization, then transfer it into the owning
+    container, such as `LockedWorldEntityIterator`.
+
+    Parameters:
+        lock_origin: The origin of the lock manager, which must outlive the guard.
+    """
+
+    var _manager: Pointer[LockManager, Self.lock_origin]
+    var _lock: Int
+
+    @always_inline
+    def __init__(
+        out self, manager: Pointer[LockManager, Self.lock_origin]
+    ) raises:
+        """Acquires one structural-change lock.
+
+        Args:
+            manager: The lock manager to acquire a lock from.
+
+        Raises:
+            Error: If no lock is available.
+        """
+        self._manager = manager
+        try:
+            self._lock = self._manager[].lock()
+        except:
+            raise Error(WorldError.out_of_locks.msg())
+
+    @always_inline
+    def __init__(out self, *, copy: Self):
+        """Copies the guard by acquiring a distinct structural-change lock.
+
+        Args:
+            copy: The guard whose lock manager the new guard will use.
+
+        Notes:
+            Aborts if no lock is available because `Copyable.__init__` cannot
+            raise an error.
+        """
+        self._manager = copy._manager
+        try:
+            self._lock = self._manager[].lock()
+        except:
+            abort("LockGuard.copy: no structural-change lock is available")
+
+    def __deinit__(deinit self):
+        """Releases the owned lock, warning if its bit was already cleared."""
+        with Zone(function_name="LockGuard.__deinit__()"):
+            try:
+                self._manager[].unlock(self._lock)
+            except _:
+                debug_warn(
+                    t"Failed to unlock the lock {self._lock}. This should not"
+                    t" happen."
+                )

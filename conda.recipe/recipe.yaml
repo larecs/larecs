@@ -25,13 +25,16 @@ build:
 requirements:
   build:
     - mojo-compiler >=1.0.0b2, <2
-    - mojo-tracy >=1.0.0, <2
+    - mojo-tracy >=1.1.0, <2
+    - max >=26.5.0, <27
   host:
     - ${{ pin_compatible('mojo-compiler') }}
     - ${{ pin_compatible('mojo-tracy') }}
+    - ${{ pin_compatible('max') }}
   run:
     - ${{ pin_compatible('mojo-compiler') }}
     - ${{ pin_compatible('mojo-tracy') }}
+    - ${{ pin_compatible('max') }}
 
 tests:
   - script:

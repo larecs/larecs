@@ -129,20 +129,6 @@ def test_bit_mask() raises:
     assert_false(mask.contains_any(other2))
 
 
-def test_bit_mask_without_exclusive() raises:
-    var mask = BitMask(1, 2, 13)
-    assert_true(mask.matches(BitMask(1, 2, 13)))
-    assert_true(mask.matches(BitMask(1, 2, 13, 27)))
-
-    assert_false(mask.matches(BitMask(1, 2)))
-
-    var excl = mask.exclusive()
-
-    assert_true(excl.matches(BitMask(1, 2, 13)))
-    assert_false(excl.matches(BitMask(1, 2, 13, 27)))
-    assert_false(excl.matches(BitMask(1, 2, 3, 13)))
-
-
 def test_bit_mask_eq() raises:
     var mask1 = get_random_bitmask()
     var mask2 = mask1

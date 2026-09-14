@@ -1,5 +1,6 @@
 from std.benchmark import Bench, Bencher, BenchId
 from custom_benchmark import DefaultBench
+from larecs.filter import Filter
 from larecs.test_utils import *
 
 
@@ -24,13 +25,15 @@ def benchmark_replace_1_comp_batch_1_000_000(
     def bench_fn() {imm, mut world}:
         """Run one replace-forward and replace-back cycle."""
         try:
-            _ = world.storage.replace[FlexibleComponent[0]]().by(
-                world.storage.query[FlexibleComponent[0]](),
+            _ = world.storage.replace[FlexibleComponent[0]]().by[
+                filter=Filter().include[FlexibleComponent[0]]()
+            ](
                 FlexibleComponent[1](3.0, 4.0),
             )
 
-            _ = world.storage.replace[FlexibleComponent[1]]().by(
-                world.storage.query[FlexibleComponent[1]](),
+            _ = world.storage.replace[FlexibleComponent[1]]().by[
+                filter=Filter().include[FlexibleComponent[1]]()
+            ](
                 FlexibleComponent[0](1.0, 2.0),
             )
 

@@ -1,3 +1,9 @@
+"""Component type registration and validation.
+
+Provides `ComponentManager`, which assigns compile-time IDs to component
+types and offers helpers for checking their validity.
+"""
+
 from std.collections.check_bounds import check_bounds
 from std.sys import size_of
 
@@ -12,6 +18,63 @@ from .types import ComponentId
 comptime ComponentType = Copyable & Deinitable
 """The trait that components must conform to."""
 
+comptime GPUComponentType = TrivialRegisterPassable
+"""Trait subset of [.ComponentType] safe for GPU raw-byte transfer.
+
+`SystemContext.run(..., on_gpu=True)` moves component columns between host
+and device buffers via a plain byte copy (see
+[..device_storage.DeviceComponentStorage]): the destination never runs
+`T`'s copy constructor or destructor, only `memcpy`s its bytes. That is
+only sound for a type with no non-trivial state -- no owned heap
+allocation, no custom copy/move/destroy logic -- since a bitwise copy of
+such a type would corrupt or leak it. `TrivialRegisterPassable` already
+encodes exactly that constraint at the type-system level (bitwise
+copyable, trivially destroyed, and transitively so for every member), so
+it is reused here rather than inventing a new marker trait.
+
+It also already implies `Copyable & Deinitable` (i.e. [.ComponentType]),
+so it alone is the constraint -- composing it with `ComponentType` would
+be redundant.
+"""
+
+
+def constrain_gpu_safe_components[*Ts: ComponentType]() -> Bool:
+    """Checks whether all component types are safe for GPU raw-byte transfer.
+
+    Parameters:
+        Ts: The component types to check.
+
+    Returns:
+        True when every type in ``Ts`` conforms to [.GPUComponentType].
+    """
+    with Zone(
+        function_name=(
+            "component.constrain_gpu_safe_components[*Ts: ComponentType]()"
+        )
+    ):
+        comptime for i in range(len(Ts)):
+            comptime if not conforms_to(Ts[i], GPUComponentType):
+                return False
+        return True
+
+
+@fieldwise_init
+struct Components[*ComponentTypes: ComponentType](Sized):
+    """A compile-time list of component types.
+
+    Parameters:
+        ComponentTypes: The listed component types.
+    """
+
+    def __len__(self) -> Int:
+        """Returns the number of component types included by the filter.
+
+        Returns:
+            The number of component types.
+        """
+        with Zone(function_name="Components.__len__()"):
+            return len(self.ComponentTypes)
+
 
 @always_inline
 def constrain_components_unique[*Ts: ComponentType]() -> Bool:
@@ -23,10 +86,15 @@ def constrain_components_unique[*Ts: ComponentType]() -> Bool:
     Returns:
         True when no component type appears more than once.
     """
-    var set = Set[String]()
-    comptime for i in range(len(Ts)):
-        _ = set.insert(reflect[Ts[i]].name())
-    return len(set) == len(Ts)
+    with Zone(
+        function_name=(
+            "component.constrain_components_unique[*Ts: ComponentType]()"
+        )
+    ):
+        var set = Set[String]()
+        comptime for i in range(len(Ts)):
+            _ = set.insert(reflect[Ts[i]].name())
+        return len(set) == len(Ts)
 
 
 def constrain_valid_components[*Ts: ComponentType]() -> Bool:
@@ -35,8 +103,16 @@ def constrain_valid_components[*Ts: ComponentType]() -> Bool:
 
     Parameters:
         Ts: The components to check.
+
+    Returns:
+        True when there is at least one component type and all are unique.
     """
-    return len(Ts) > 0 and constrain_components_unique[*Ts]()
+    with Zone(
+        function_name=(
+            "component.constrain_valid_components[*Ts: ComponentType]()"
+        )
+    ):
+        return len(Ts) > 0 and constrain_components_unique[*Ts]()
 
 
 struct ComponentManager[
@@ -60,6 +136,9 @@ struct ComponentManager[
     comptime _registry = Self._create_registry()
     """The registry mapping component type names to their IDs."""
 
+    comptime _component_size = Self._calc_component_sizes()
+    """A mapping from component ID to their size."""
+
     @staticmethod
     @always_inline
     def _create_registry(out dict: Dict[String, ComponentId]):
@@ -69,15 +148,52 @@ struct ComponentManager[
         Returns:
             A dictionary mapping component type names to their IDs.
         """
-        comptime assert Self.component_count <= Self.max_size, (
-            "Too many component types. See `BitMask.total_bits` for the maximum"
-            " size allowed."
-        )
+        with Zone(
+            function_name=(
+                "ComponentManager._create_registry(out dict:"
+                " Dict[String, ComponentId])"
+            )
+        ):
+            comptime assert Self.component_count <= Self.max_size, (
+                "Too many component types. See `BitMask.total_bits` for the"
+                " maximum size allowed."
+            )
 
-        dict = {}
-        comptime for i in range(len(Self.ComponentTypes)):
-            comptime T = Self.ComponentTypes[i]
-            dict[reflect[T].name()] = ComponentId(i)
+            dict = {}
+            comptime for i in range(len(Self.ComponentTypes)):
+                comptime T = Self.ComponentTypes[i]
+                dict[reflect[T].name()] = ComponentId(i)
+
+    @staticmethod
+    @always_inline
+    def _calc_component_sizes(out sizes: Array[Int, Self.component_count]):
+        """Calculate the size of each component type."""
+        with Zone(
+            function_name=(
+                "ComponentManager._calc_component_sizes(out sizes:"
+                " Array[Int, Self.component_count])"
+            )
+        ):
+            sizes = Array[Int, Self.component_count](fill=0)
+            comptime for i in range(len(Self.ComponentTypes)):
+                comptime T = Self.ComponentTypes[i]
+                sizes[i] = size_of[T]()
+
+    @staticmethod
+    @always_inline
+    def get_size(component_id: ComponentId) -> Int:
+        """Get the size of a component type.
+
+        Args:
+            component_id: The ID of the component type.
+
+        Returns:
+            The size of the component type, in bytes.
+        """
+        with Zone(
+            function_name="ComponentManager.get_size(component_id: ComponentId)"
+        ):
+            return materialize[Self._component_size]()[component_id]
 
     @staticmethod
     @always_inline
@@ -90,11 +206,16 @@ struct ComponentManager[
         Returns:
             True if all component types are registered, False otherwise.
         """
-        comptime for i in range(len(Ts)):
-            comptime T = Ts[i]
-            comptime if reflect[T].name() not in Self._registry:
-                return False
-        return True
+        with Zone(
+            function_name=(
+                "ComponentManager.contains_components[*Ts: ComponentType]()"
+            )
+        ):
+            comptime for i in range(len(Ts)):
+                comptime T = Ts[i]
+                comptime if reflect[T].name() not in Self._registry:
+                    return False
+            return True
 
     @staticmethod
     @always_inline
@@ -104,9 +225,14 @@ struct ComponentManager[
         Parameters:
             Ts: The component types to check.
         """
-        comptime assert Self.contains_components[
-            *Ts
-        ](), "Not all component types are valid for this component manager."
+        with Zone(
+            function_name=(
+                "ComponentManager.assert_valid_components[*Ts: ComponentType]()"
+            )
+        ):
+            comptime assert Self.contains_components[
+                *Ts
+            ](), "Not all component types are valid for this component manager."
 
     @staticmethod
     @always_inline
@@ -119,12 +245,13 @@ struct ComponentManager[
         Returns:
             The ID of the component type.
         """
-        comptime assert Self.contains_components[
-            T
-        ](), "Component type not in component manager"
+        with Zone(function_name="ComponentManager.get_id[T: ComponentType]()"):
+            comptime assert Self.contains_components[
+                T
+            ](), "Component type not in component manager"
 
-        comptime id = Self._registry.get(reflect[T].name())
-        return id.unsafe_value()
+            comptime id = Self._registry.get(reflect[T].name())
+            return id.unsafe_value()
 
     @staticmethod
     @always_inline
@@ -140,13 +267,19 @@ struct ComponentManager[
         Constraints:
             The component types must be pair-wise different.
         """
-        comptime assert constrain_components_unique[
-            *Ts
-        ](), "Duplicate component types in get_id_arr are not allowed."
-        ids = Array[ComponentId, len(Ts)](uninitialized=True)
+        with Zone(
+            function_name=(
+                "ComponentManager.get_id_arr[*Ts: ComponentType](out ids:"
+                " Array[ComponentId, len(Ts)])"
+            )
+        ):
+            comptime assert constrain_components_unique[
+                *Ts
+            ](), "Duplicate component types in get_id_arr are not allowed."
+            ids = Array[ComponentId, len(Ts)](uninitialized=True)
 
-        comptime for i in range(len(Ts)):
-            ids[i] = Self.get_id[Ts[i]]()
+            comptime for i in range(len(Ts)):
+                ids[i] = Self.get_id[Ts[i]]()
 
     def write_to(self, mut writer: Some[Writer]):
         """Writes the component manager to a writer.
@@ -154,10 +287,33 @@ struct ComponentManager[
         Args:
             writer: The writer to write to.
         """
-        writer.write("ComponentManager[")
-        comptime if len(Self.ComponentTypes) > 0:
-            writer.write(reflect[Self.ComponentTypes[0]].name())
-        comptime for i in range(1, len(Self.ComponentTypes)):
-            writer.write(", ")
-            writer.write(reflect[Self.ComponentTypes[i]].name())
-        writer.write("]")
+        with Zone(
+            function_name="ComponentManager.write_to(mut writer: Some[Writer])"
+        ):
+            writer.write("ComponentManager[")
+            comptime if len(Self.ComponentTypes) > 0:
+                writer.write(self.get_type_name(0))
+            comptime for i in range(1, len(Self.ComponentTypes)):
+                writer.write(", ")
+                writer.write(self.get_type_name(i))
+            writer.write("]")
+
+    @staticmethod
+    def get_type_name(id: ComponentId) -> StaticString:
+        """Get the name of a component type.
+
+        Args:
+            id: The ID of the component type.
+
+        Returns:
+            The name of the component type, or `"<UNKNOWN_COMPONENT>"`
+            if no component type has this ID.
+        """
+        with Zone(
+            function_name="ComponentManager.get_type_name(id: ComponentId)"
+        ):
+            comptime for i in range(len(Self.ComponentTypes)):
+                if id == i:
+                    return reflect[Self.ComponentTypes[i]].name()
+
+            return "<UNKNOWN_COMPONENT>"

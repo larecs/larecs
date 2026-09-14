@@ -10,7 +10,14 @@ permissions: {}
 
 jobs:
   build_and_test:
-    runs-on: ubuntu-latest
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
 
     defaults:
       run:
@@ -32,6 +39,27 @@ jobs:
         run: |
           if pixi run mojo format src test benchmark 2>&1 | grep -E "reformatted|error|failed" ; then echo "Formatter failed" ; exit 1 ; else echo "Formatting OK"; fi
 
+      - name: Report GPU accelerator availability
+        run: |
+          printf '%s\n' \
+            'from std.sys import has_accelerator' \
+            '' \
+            '' \
+            'def main():' \
+            '    print("has_accelerator() =", has_accelerator())' \
+            > /tmp/gpu_probe.mojo
+          echo "== GPU accelerator availability on this runner =="
+          pixi run mojo run /tmp/gpu_probe.mojo || echo "Could not probe accelerator availability"
+          echo
+          echo "GPU-specific test files (test/gpu_*_test.mojo):"
+          find test -maxdepth 1 -name 'gpu_*_test.mojo' -print | sort
+          echo
+          echo "NOTE: each file above guards its GPU-specific assertions with"
+          echo "'comptime if not has_accelerator(): return', so on a runner"
+          echo "without an accelerator they still compile, run, and report PASS"
+          echo "without exercising any GPU code path. Compare against the"
+          echo "has_accelerator() output above to tell skipped from executed."
+
       - name: Run tests
         run: |
           pixi run tests test
@@ -43,4 +71,36 @@ jobs:
       - name: Run examples
         run: |
           cd examples/satellites
+          export MPLBACKEND=Agg
           pixi run satellites
+
+      - name: Package smoke test
+        run: |
+          # Mirrors the README's "Installation" instructions: precompile the
+          # package as a Mojo user would, then use it from a separate scratch
+          # project via only the packaged .mojoc file (no -I into the repo's
+          # src/), catching packaging regressions the -I-based tests and
+          # examples above wouldn't.
+          set -e
+          cd src
+          pixi run mojo precompile larecs -o larecs.mojoc
+          test -f larecs.mojoc
+          mkdir -p /tmp/larecs_pkg_smoke_test
+          cp larecs.mojoc /tmp/larecs_pkg_smoke_test/
+          printf '%s\n' \
+            'from larecs import World' \
+            '' \
+            '' \
+            '@fieldwise_init' \
+            'struct Position(Copyable, Movable):' \
+            '    var x: Float64' \
+            '    var y: Float64' \
+            '' \
+            '' \
+            'def main() raises:' \
+            '    var world = World[Position]()' \
+            '    var entity = world.storage.add_entity(Position(1.0, 2.0))' \
+            '    print("packaged larecs.mojoc works:", world.storage.get[Position](entity).x)' \
+            > /tmp/larecs_pkg_smoke_test/smoke.mojo
+          cd "${GITHUB_WORKSPACE}"
+          pixi run mojo run -I /tmp/larecs_pkg_smoke_test /tmp/larecs_pkg_smoke_test/smoke.mojo

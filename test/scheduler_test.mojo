@@ -1,4 +1,14 @@
-from larecs import World, Scheduler, System, ResourceType, ComponentType
+from larecs import (
+    World,
+    Scheduler,
+    System,
+    ResourceType,
+    Resources,
+    ComponentType,
+    SystemContext,
+    KernelContext,
+    Filter,
+)
 from std.testing import *
 
 
@@ -14,19 +24,14 @@ struct UpdateOnlySystem(System):
         """Construct an update-only system."""
         self.updates = 0
 
-    def update[
-        *ComponentTypes: ComponentType
-    ](mut self, mut world: World[*ComponentTypes]) raises:
+    def update(mut self, mut context: SystemContext[...]) raises:
         """Adds one entity during each update.
 
-        Parameters:
-            ComponentTypes: The component types in the world.
-
         Args:
-            world: The world to update.
+            context: The system context.
         """
         self.updates += 1
-        _ = world.storage.add_entity(1)
+        _ = context.world[].storage.add_entity(1)
 
 
 def test_scheduler_default_lifecycle_hooks() raises:
@@ -44,24 +49,41 @@ struct TestSystem[copies: Int, count: Int = 10](System):
     def __init__(out self):
         self.a = 0
 
-    def initialize(mut self, mut world: World) raises:
+    def initialize(mut self, mut context: SystemContext[...]) raises:
         assert_equal(self.a, 0)
-        _ = world.storage.add_entities(self.a, count=Self.count)
+        _ = context.world[].storage.add_entities(self.a, count=Self.count)
         self.a = 1
 
-    def update(mut self, mut world: World) raises:
+    def update(mut self, mut context: SystemContext[...]) raises:
         assert_equal(self.a, 1)
-        assert_equal(len(world), Self.count * self.copies)
-        for entity in world.storage.query[Int]():
-            entity.get[Int]() += 1
+        assert_equal(len(context.world[]), Self.count * Self.copies)
 
-    def finalize(mut self, mut world: World) raises:
+        comptime filter = Filter().include[Int]()
+
+        def increment_entities(context: KernelContext[filter]):
+            for entity in context:
+                entity.get[Int]() += 1
+
+        context.run[increment_entities]()
+
+    def finalize(mut self, mut context: SystemContext[...]) raises:
         var sum = 0
         var counter = 0
-        for entity in world.storage.query[Int]():
-            sum += entity.get[Int]()
-            counter += 1
-        world.resources.set[add_if_not_found=True](
+
+        comptime filter = Filter().include[Int]()
+
+        def sum_entities(
+            context: KernelContext[filter],
+        ) {mut sum, mut counter}:
+            for entity in context:
+                sum += entity.get[Int]()
+                counter += 1
+
+        context.run(sum_entities)
+
+        assert_equal(counter, Self.count * Self.copies)
+
+        context.world[].resources.set[add_if_not_found=True](
             MeanState(Float64(sum) / Float64(counter))
         )
 
@@ -75,6 +97,37 @@ def test_test_system() raises:
         scheduler.world.resources.get[MeanState]().value,
         6,
     )
+
+
+@fieldwise_init
+struct Scale(ResourceType):
+    var value: Int
+
+
+def scale_entities(
+    context: KernelContext[Filter().include[Int](), Resources[Scale]()]
+):
+    """Multiplies every matching entity's value by the `Scale` resource."""
+    ref scale = context.resources.get[Scale]()
+    for entity in context:
+        entity.get[Int]() *= scale.value
+
+
+def test_kernel_context_required_resources() raises:
+    """A kernel can declare and read a resource via `KernelContext.resources`.
+    """
+    var world = World[Int]()
+    world.resources.add(Scale(3))
+    _ = world.storage.add_entities(1, count=5)
+
+    var context = SystemContext(world)
+    context.run[scale_entities]()
+
+    var total = 0
+    for entity in world.storage.query[Filter().include[Int]()]():
+        total += entity.get[Int]()
+
+    assert_equal(total, 15)
 
 
 comptime functions = __functions_in_module()

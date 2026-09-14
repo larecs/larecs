@@ -1,14 +1,18 @@
 from std.random import random
 from std.python import PythonObject, Python
-from larecs import World
+from larecs import World, SystemContext, KernelContext, Filter, Resources
 from components import Position, Velocity
 from parameters import Parameters, GRAVITATIONAL_CONSTANT
 
 
-def move(mut world: World) raises:
-    ref parameters = world.resources.get[Parameters]()
+def move(
+    context: KernelContext[
+        Filter().include[Position, Velocity](), Resources[Parameters]()
+    ]
+):
+    ref parameters = context.resources.get[Parameters]()
 
-    for entity in world.storage.query[Position, Velocity]():
+    for entity in context:
         ref position = entity.get[Position]()
         ref velocity = entity.get[Velocity]()
 
@@ -16,15 +20,21 @@ def move(mut world: World) raises:
         position.y += velocity.y * parameters.dt
 
 
-def accelerate(mut world: World) raises:
-    ref parameters = world.resources.get[Parameters]()
+def accelerate(
+    context: KernelContext[
+        Filter().include[Position, Velocity](), Resources[Parameters]()
+    ]
+):
+    ref parameters = context.resources.get[Parameters]()
     var constant = -GRAVITATIONAL_CONSTANT * parameters.mass * parameters.dt
 
-    for entity in world.storage.query[Position, Velocity]():
+    for entity in context:
         ref position = entity.get[Position]()
         ref velocity = entity.get[Velocity]()
 
-        var multiplier = constant * (position.x**2 + position.y**2) ** (-1.5)
+        var multiplier = constant * (position.x**2 + position.y**2) ** (
+            -1.5
+        )
 
         velocity.x += position.x * multiplier
         velocity.y += position.y * multiplier
@@ -52,17 +62,33 @@ def add_satellites(mut world: World, count: Int) raises:
         )
 
 
-def position_to_numpy(mut world: World, out numpy_array: PythonObject) raises:
-    var iterator = world.storage.query[Position]()
-
+def position_to_numpy(
+    mut context: SystemContext[...], out numpy_array: PythonObject
+) raises:
     var np = Python.import_module("numpy")
-    numpy_array = np.zeros(Python.tuple(len(iterator), 2))
 
-    var i = 0
-    for entity in iterator:
-        var position = entity.get[Position]()
+    var length = 0
 
-        numpy_array[i, 0] = position.x
-        numpy_array[i, 1] = position.y
+    def count_position_entities(
+        context: KernelContext[Filter().include[Position]()],
+    ) {mut length}:
+        for _ in context:
+            length += 1
 
-        i += 1
+    context.run(count_position_entities)
+
+    numpy_array = np.zeros(Python.tuple(length, 2))
+
+    def collect_positions(
+        context: KernelContext[Filter().include[Position]()],
+    ) {mut numpy_array}:
+        for entity in context:
+            ref position = entity.get[Position]()
+
+            try:
+                numpy_array[entity.idx, 0] = position.x
+                numpy_array[entity.idx, 1] = position.y
+            except:
+                pass
+
+    context.run(collect_positions)

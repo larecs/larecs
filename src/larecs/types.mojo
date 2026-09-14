@@ -1,3 +1,5 @@
+"""Shared integer type aliases used across the ECS."""
+
 # Eid is the entity identifier/index type.
 comptime EntityId = Int
 """The integer type used for entity identifiers."""
