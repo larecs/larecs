@@ -1,7 +1,11 @@
 # Larecs🌲 – Lightweight archetype-based ECS
 
 Larecs🌲 is a performance-oriented archetype-based ECS for [Mojo](https://www.modular.com/mojo)🔥.
-Its architecture is based on the Go ECS [Arche](https://github.com/mlange-42/arche). The package is still under construction, so be aware that parts of the API might change in future versions.
+Its architecture is based on the Go ECS [Arche](https://github.com/mlange-42/arche).
+Larecs 1.0 is currently in beta, so public APIs may still change before the
+stable 1.0.0 release. After that release, public APIs follow semantic
+versioning unless they are explicitly marked experimental. GPU execution is
+currently such an experimental API.
 
 ## Features
 
@@ -48,7 +52,7 @@ To let VSCode and the language server know of Larecs🌲, include it as follows:
 
 ## Usage
 
-Refer to the [API docs](https://samufi.github.io/larecs/) for details
+Refer to the [API docs](https://larecs.github.io/larecs/) for details
 on how to use Larecs🌲.
 
 Below there is a simple example covering the most important functionality.

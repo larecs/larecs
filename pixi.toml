@@ -12,7 +12,7 @@ channels = [
 description = "Larecs🌲 is a performance-oriented archetype-based ECS for Mojo🔥."
 name = "larecs"
 platforms = ["linux-64", "osx-arm64"]
-version = "0.5.0b4"
+version = "1.0.0b1"
 preview = ["pixi-build"]
 
 [tasks]

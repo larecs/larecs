@@ -34,7 +34,7 @@ jobs:
           if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
             echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
           else
-            echo "version=0.5.0b4" >> "$GITHUB_OUTPUT"
+            echo "version=1.0.0b1" >> "$GITHUB_OUTPUT"
           fi
   build:
     name: Build package

@@ -6,7 +6,7 @@ package:
   version: ${{ version }}
 
 source:
-  - git: https://github.com/samufi/larecs.git
+  - git: https://github.com/larecs/larecs.git
     rev: 3ee51b8c4975ea408c20931fbaf3c7220a8b7983
     filter:
       - src/
@@ -49,11 +49,11 @@ tests:
         - test/
 
 about:
-  homepage: https://samufi.github.io/larecs/
+  homepage: https://larecs.github.io/larecs/
   license: LGPL-3.0-only
   license_file: LICENSE
   summary: A performance-oriented archetype-based ECS for Mojo🔥.
-  repository: https://github.com/samufi/larecs
+  repository: https://github.com/larecs/larecs
 
 extra:
   maintainers:
