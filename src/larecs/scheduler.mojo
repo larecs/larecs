@@ -20,7 +20,7 @@ from std.reflection import reflect
 from tracy import Zone, frame_mark
 
 
-struct Scheduler[*ComponentTypes: ComponentType](Movable):
+struct Scheduler[*ComponentTypes: ComponentType](Copyable):
     """
     Manages the execution of systems in a world.
 
