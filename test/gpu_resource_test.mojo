@@ -18,13 +18,10 @@ from larecs import (
 )
 
 
-# `TrivialRegisterPassable` satisfies `GPUResourceType` (see
-# resource.mojo): `SystemContext.run(..., on_gpu=True)` moves required
-# resources as raw bytes, which is only compile-time-permitted for a type
-# with no non-trivial state. `Int32`, this file's component type, is
-# already `TrivialRegisterPassable` as a builtin scalar.
+# Required resources must be trivially movable for raw-byte transfer.
+# Scale contains only an Int32 and needs no TrivialRegisterPassable conformance.
 @fieldwise_init
-struct Scale(ResourceType, TrivialRegisterPassable):
+struct Scale(ResourceType):
     var value: Int32
 
 

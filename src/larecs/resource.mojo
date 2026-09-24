@@ -7,6 +7,7 @@ Provides `Resources`, a compile-time list of resource types, and
 from std.collections.dict import Dict, DictKeyError
 from std.reflection import reflect
 from std.sys import size_of
+from std.memory import is_trivially_movable
 
 from max.gpu.host import DeviceBuffer, DeviceContext, DevicePointer
 
@@ -18,18 +19,12 @@ comptime ResourceType = Copyable & Deinitable
 """The trait that resources must conform to."""
 
 comptime GPUResourceType = TrivialRegisterPassable
-"""Trait subset of [.ResourceType] safe for GPU raw-byte transfer.
+"""Legacy trait alias retained for compatibility.
 
-Mirrors [..component.GPUComponentType]: a kernel run with `on_gpu=True`
-uploads and downloads required resources via
-[..device_storage.DeviceResourceStorage], a plain byte copy to and from a
-device buffer, which is only sound for a type with no non-trivial state.
-`TrivialRegisterPassable` encodes that constraint; see
-[..component.GPUComponentType]'s docstring for the full rationale.
-
-It also already implies `Copyable & Deinitable` (i.e. [.ResourceType]), so
-it alone is the constraint -- composing it with `ResourceType` would be
-redundant.
+GPU resource validation uses [.constrain_gpu_safe_resources] to check trivial
+movability instead of requiring conformance to this trait. Resources must also
+contain only data valid on the device; trivial movability alone does not make
+host pointers device-accessible.
 """
 
 
@@ -40,7 +35,7 @@ def constrain_gpu_safe_resources[*Ts: ResourceType]() -> Bool:
         Ts: The resource types to check.
 
     Returns:
-        True when every type in ``Ts`` conforms to [.GPUResourceType].
+        True when every type in ``Ts`` is trivially movable.
     """
     with Zone(
         function_name=(
@@ -48,7 +43,7 @@ def constrain_gpu_safe_resources[*Ts: ResourceType]() -> Bool:
         )
     ):
         comptime for i in range(len(Ts)):
-            comptime if not conforms_to(Ts[i], GPUResourceType):
+            comptime if not is_trivially_movable[Ts[i]]():
                 return False
         return True
 
