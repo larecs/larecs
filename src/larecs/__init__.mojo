@@ -100,6 +100,7 @@ Exports:
  - device_storage.DeviceComponentStorage
  - device_storage.DeviceResourceStorage
  - entity.Entity
+ - entity.EntityAccessor
  - error.ComponentError
  - error.EntityError
  - error.LarecsError
