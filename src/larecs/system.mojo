@@ -9,6 +9,7 @@ kernel on CPU or GPU.
 from std.builtin.device_passable import DevicePassable, DeviceTypeEncoder
 from std.math import ceildiv
 from std.sys import has_accelerator
+from std.reflection import reflect_fn
 
 from max.gpu.host import DevicePointer
 
@@ -427,10 +428,10 @@ struct SystemContext[
                 execution path fails to allocate or synchronize.
         """
         with Zone(
-            function_name=(
-                "SystemContext.run[filter: Filter, required_resources:"
-                " Resources, //, KernelFunc: def(KernelContext[filter,"
-                " required_resources]) thin -> None, *, on_gpu: Bool]()"
+            function_name=String(
+                t"SystemContext.run[filter: Filter, required_resources:"
+                t" Resources, //, KernelFunc:"
+                t" {reflect_fn[KernelFunc].display_name()} , *, on_gpu: Bool]()"
             )
         ):
             var length = 0
