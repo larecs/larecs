@@ -1,4 +1,8 @@
-from larecs.resource import ResourceStorage, ResourceType
+from larecs.resource import (
+    ResourceStorage,
+    ResourceType,
+    constrain_gpu_safe_resources,
+)
 from std.testing import *
 
 
@@ -15,6 +19,37 @@ struct Resource2(ResourceType):
 @fieldwise_init
 struct Resource3(ResourceType):
     var value: Int
+
+
+@fieldwise_init
+struct NonTriviallyMovableResource(ResourceType):
+    var value: Int
+
+    def __init__(out self, *, deinit move: Self):
+        """Moves the resource using a custom move constructor.
+
+        Args:
+            move: The resource to consume.
+        """
+        self.value = move.value
+
+
+def test_gpu_resource_movability() raises:
+    """Checks empty, trivial, and mixed resource lists.
+
+    Raises:
+        Error: If resource validation accepts or rejects an incorrect list.
+    """
+    assert_true(constrain_gpu_safe_resources[]())
+    assert_true(constrain_gpu_safe_resources[Resource1]())
+    assert_true(constrain_gpu_safe_resources[Resource1, Resource2]())
+    assert_false(constrain_gpu_safe_resources[NonTriviallyMovableResource]())
+    assert_false(
+        constrain_gpu_safe_resources[Resource1, NonTriviallyMovableResource]()
+    )
+    assert_false(
+        constrain_gpu_safe_resources[NonTriviallyMovableResource, Resource1]()
+    )
 
 
 def test_reseource_init() raises:

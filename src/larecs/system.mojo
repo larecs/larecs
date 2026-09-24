@@ -535,8 +535,7 @@ struct SystemContext[
                     *required_resources.ResourceTypes
                 ](), (
                     "SystemContext.run(..., on_gpu=True) requires every"
-                    " required resource type to be GPU-safe (conform to"
-                    " GPUResourceType, i.e. TrivialRegisterPassable) for raw"
+                    " required resource type to be trivially movable for raw"
                     " byte transfer between host and device."
                 )
 
