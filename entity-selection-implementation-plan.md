@@ -16,7 +16,7 @@ below; intentionally retained compatibility work is called out explicitly.
 - [x] Use the commit boundaries below as reviewable implementation units. Do not
   publish, push, or create a release as part of this task.
 - [x] Do not re-open settled choices: locked results, context batch entry points,
-  consuming selection mutations, reusable kernel execution, intersection-based
+  in-place selection mutations, reusable kernel execution, intersection-based
   kernel filtering, and mutation results containing only modified entities.
 - [x] Resolve routine signature details through compiler experiments. Ask the
   user only if evidence requires changing the agreed semantics.
@@ -30,7 +30,7 @@ Relevant files: `src/larecs/lock.mojo`, `src/larecs/system.mojo`,
 
 - [x] Prototype an origin-bound, movable, noncopyable `EntitySelection` with
   explicit range triples and a single owned guard.
-- [x] Compile examples proving repeated borrowed execution, consuming mutation,
+- [x] Compile examples proving repeated borrowed execution, in-place mutation,
   returned selection ownership, release/destruction, and world lifetime safety.
 - [x] Choose and document exact public operation names and release syntax;
   mirror existing storage conventions and `SystemContext.run` overloads.
@@ -92,7 +92,7 @@ builders, and the new selection module if introduced.
   that contains only the newly created rows.
 - [x] Expose filtered batch add/remove/replace on `SystemContext`, returning the
   modified rows through the same selection type.
-- [x] Add consuming add/remove/replace entry points on `EntitySelection`, with
+- [x] Add in-place add/remove/replace entry points on `EntitySelection`, with
   optional filtering restricted to existing selection membership.
 - [x] Preserve replacement builder behavior or provide and document a consistent
   equivalent; ensure intermediate builders preserve lock ownership and origins.
@@ -179,7 +179,7 @@ Split internal iterator retirement into a separate refactor commit if substantia
   `docs/src/guide/changing_entities.md`, and relevant system/query guides.
 - [x] Add runnable examples of creation followed by a kernel and filtered
   add/remove/replace chains, including repeated CPU/GPU execution and release.
-- [x] Explain filtering, consumption, lock conflicts, empty selections, invalid
+- [x] Explain filtering, in-place updates, lock conflicts, empty selections, invalid
   component requests, and migration from the former iterator results.
 - [x] Preserve the documented `ResourceStorage.get` `UnsafeAnyOrigin` contract.
 - [ ] Add selected-batch benchmarks alongside
@@ -214,15 +214,36 @@ Gate: documented examples are executable and the performance impact is measured.
 
 ## Implementation evidence
 
+### In-place mutation revision
+
+The user's revised contract supersedes the original consuming mutation API:
+`EntitySelection.add`, `remove`, and `replace` take `mut self`, return nothing,
+and update the same selection's membership under its existing guard.
+
+- [x] Update selection methods and `SystemContext` entry points.
+- [x] Migrate examples, tests, and the mutation benchmark to repeated calls.
+- [x] Verify invalid add/remove/replace requests preserve membership and lock,
+  allowing successful mutations afterward on the same selection.
+- [x] Preserve filtering semantics and scope-owned lock cleanup.
+- [x] Full tests: 24/24 files, including 17 selection tests under ASAN and
+  actual Metal GPU execution. Seven supported guide doctests pass; the eight
+  existing generated-doctest exclusions remain. API docs and formatting pass.
+- [x] Updated benchmark runs successfully: 64-row in-place add/remove cycle
+  measured 0.02116 ms. This validation run overlapped test compilation, so it
+  is not a controlled comparison with the earlier performance measurements.
+- [x] Context entry-point errors release their temporary selection while
+  direct selection errors preserve the caller-owned guard. `git diff --check`
+  passes.
+
 ### Context-manager extension
 
 - [x] Support `with context.add_entities(...) as selected` and transfer an
   existing selection with `with selection^ as selected`.
 - [x] Retain one manager-owned guard while scoped selections execute kernels
-  and consume mutation chains; release it on normal, error, and early exit.
+  and perform in-place mutations; release it on normal, error, and early exit.
 - [x] Compiler-check that a scoped selection cannot escape to a world-bound
   result and that entering a named noncopyable selection requires transfer.
-- [x] Validate normal exit, errors, failed consuming mutations, early return,
+- [x] Validate normal exit, errors, failed in-place mutations, early return,
   break, empty/unbound scopes, and explicitly releasing the scoped view.
 - [x] Full suite: 24/24 files pass, including real Metal GPU tests; final
   selection tests: 16/16 pass with ASAN. Guide doctests: 7/7 supported examples
