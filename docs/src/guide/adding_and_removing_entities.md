@@ -72,6 +72,22 @@ exactly the new rows and owning the world's structural-change lock:
     created^.release()
 ```
 
+Use a `with` block to release the lock automatically, including when an error
+or early return exits the block:
+
+```mojo {doctest="guide_add_remove_entities" global=true}
+    with context.add_entities(Position(0, 0), count=10) as selected:
+        selected = selected^.add(Velocity(1, 0))
+        selected.run[place_batch]()
+        selected.run[place_batch]()
+    # The structural lock is released here.
+```
+
+For an existing selection, write `with selection^ as selected:` to transfer
+ownership into the manager. The bound selection cannot escape the block's
+manager. The manager retains the lock until exit, even if the bound selection
+is consumed or explicitly released inside the block.
+
 > [!Note]
 > A selection can run kernels repeatedly. Component-changing methods consume
 > it and return a replacement selection while transferring the same lock.

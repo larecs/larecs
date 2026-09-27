@@ -214,6 +214,25 @@ Gate: documented examples are executable and the performance impact is measured.
 
 ## Implementation evidence
 
+### Context-manager extension
+
+- [x] Support `with context.add_entities(...) as selected` and transfer an
+  existing selection with `with selection^ as selected`.
+- [x] Retain one manager-owned guard while scoped selections execute kernels
+  and consume mutation chains; release it on normal, error, and early exit.
+- [x] Compiler-check that a scoped selection cannot escape to a world-bound
+  result and that entering a named noncopyable selection requires transfer.
+- [x] Validate normal exit, errors, failed consuming mutations, early return,
+  break, empty/unbound scopes, and explicitly releasing the scoped view.
+- [x] Full suite: 24/24 files pass, including real Metal GPU tests; final
+  selection tests: 16/16 pass with ASAN. Guide doctests: 7/7 supported examples
+  pass (eight existing unsupported generated examples skipped). API docs
+  regenerate, formatting and `git diff --check` pass.
+
+The manager owns the guard and the returned selection borrows its origin.
+Entry copies only range metadata and does not allocate another lock. Explicit
+exit cleanup avoids Mojo 1.0 deferring destruction after a consuming enter.
+
 The implementing agent should append concise entries here as work proceeds:
 
 | Phase | Commit or files | Checks and outcomes | Limitations or follow-up |

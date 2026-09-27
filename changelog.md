@@ -4,6 +4,9 @@
 
 ### Added
 
+- Support `with` blocks for `EntitySelection`, including consuming mutation
+  chains and automatic lock release on normal, early, and exceptional exits.
+
 - Add movable, noncopyable `EntitySelection` results for system batch creation
   and filtered component changes, with consuming add/remove/replace chains and
   reusable CPU/GPU kernel execution over exact selected rows.
