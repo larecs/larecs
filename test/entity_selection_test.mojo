@@ -135,22 +135,42 @@ def test_selection_destruction_releases_once() raises:
     assert_false(world.storage.is_locked())
 
 
-def test_failed_selection_mutation_releases_without_changes() raises:
-    """A predictable mutation error consumes its guard before changing rows.
+def test_failed_selection_mutations_preserve_membership_and_lock() raises:
+    """Validation errors preserve the selection for subsequent operations.
 
     Raises:
         Error: If setup or an assertion fails.
     """
-    var world = World[Counter]()
+    var world = World[Counter, Tag]()
     var context = SystemContext(world)
     var selection = context.add_entities(Counter(1), count=2)
     var raised = False
     try:
-        _ = selection^.add(Counter(2))
+        selection.add(Counter(2))
     except:
         raised = True
 
     assert_true(raised)
+    assert_equal(len(selection), 2)
+    assert_true(selection._authorizes_structural_change())
+    raised = False
+    try:
+        selection.remove[Tag]()
+    except:
+        raised = True
+    assert_true(raised)
+    assert_equal(len(selection), 2)
+    raised = False
+    try:
+        selection.replace[remove=Components[Tag]()](Counter(9))
+    except:
+        raised = True
+    assert_true(raised)
+    assert_equal(len(selection), 2)
+    assert_true(selection._authorizes_structural_change())
+    selection.add(Tag(4))
+    selection.remove[Tag]()
+    selection^.release()
     assert_false(world.storage.is_locked())
     var count = 0
     for row in world.storage.query[Filter().include[Counter]()]():
@@ -160,7 +180,7 @@ def test_failed_selection_mutation_releases_without_changes() raises:
 
 
 def test_create_add_replace_remove_chain() raises:
-    """A consuming mutation chain retains exact membership and one lock.
+    """Repeated in-place mutations retain exact membership and one lock.
 
     Raises:
         Error: If an operation or assertion fails.
@@ -169,13 +189,13 @@ def test_create_add_replace_remove_chain() raises:
     var context = SystemContext(world)
     var selection = context.add_entities(Counter(1), count=4)
     assert_equal(len(selection), 4)
-    var with_tags = selection^.add(Tag(7))
-    assert_equal(len(with_tags), 4)
-    var replaced = with_tags^.replace[remove=Components[Counter](),](Counter(9))
-    assert_equal(len(replaced), 4)
-    var counters_only = replaced^.remove[Tag]()
-    assert_equal(len(counters_only), 4)
-    counters_only^.release()
+    selection.add(Tag(7))
+    assert_equal(len(selection), 4)
+    selection.replace[remove=Components[Counter]()](Counter(9))
+    assert_equal(len(selection), 4)
+    selection.remove[Tag]()
+    assert_equal(len(selection), 4)
+    selection^.release()
 
     var count = 0
     for row in world.storage.query[Filter().include[Counter]()]():
@@ -298,9 +318,9 @@ def test_disjoint_partial_ranges_preserve_unselected_rows_and_locations() raises
     var selection = context._empty_selection()
     selection._ranges.append(EntityRange(1, 1, 1))
     selection._ranges.append(EntityRange(1, 4, 1))
-    var tagged = selection^.add(Tag(5))
-    assert_equal(len(tagged), 2)
-    tagged^.release()
+    selection.add(Tag(5))
+    assert_equal(len(selection), 2)
+    selection^.release()
 
     for i in range(6):
         assert_equal(world.storage.get[Counter](entities[i]).value, i)
@@ -324,8 +344,8 @@ def test_selected_mutation_preserves_heap_owned_components() raises:
     var context = SystemContext(world)
     var selection = context._empty_selection()
     selection._ranges.append(EntityRange(1, 1, 1))
-    var tagged = selection^.add(Tag(9))
-    tagged^.release()
+    selection.add(Tag(9))
+    selection^.release()
 
     assert_equal(world.storage.get[HeapValues](first).values[1], 2)
     assert_equal(world.storage.get[HeapValues](second).values[1], 4)
@@ -350,13 +370,10 @@ def test_context_replace_across_archetypes_and_empty_results() raises:
         filter=Filter().include[Counter](),
     ](Counter(7))
     assert_equal(len(replaced), 2)
-    var empty = (
-        replaced
-        ^.remove[Tag, filter=Filter().include[Tag]().exclude[Counter]()]()
-    )
-    assert_equal(len(empty), 0)
-    assert_true(empty._is_world_locked())
-    empty^.release()
+    replaced.remove[Tag, filter=Filter().include[Tag]().exclude[Counter]()]()
+    assert_equal(len(replaced), 0)
+    assert_true(replaced._is_world_locked())
+    replaced^.release()
     assert_equal(world.storage.get[Counter](first).value, 7)
     assert_equal(world.storage.get[Counter](second).value, 7)
 
@@ -373,7 +390,7 @@ def test_selection_context_manager() raises:
     with context.add_entities(Counter(1), count=3) as selection:
         assert_true(selection._authorizes_structural_change())
         selection.run[increment_selected]()
-        selection = selection^.add(Tag(7))
+        selection.add(Tag(7))
         selection.run[increment_selected]()
         assert_true(selection._authorizes_structural_change())
     assert_false(world.storage.is_locked())
@@ -398,7 +415,7 @@ def test_selection_context_manager_error() raises:
 
 
 def test_selection_context_manager_failed_mutation() raises:
-    """A consuming failure inside a scope releases the guard exactly once.
+    """A mutation failure propagating out of a scope releases its guard.
 
     Raises:
         Error: If setup or an assertion fails.
@@ -408,7 +425,26 @@ def test_selection_context_manager_failed_mutation() raises:
     var caught = False
     try:
         with context.add_entities(Counter(1), count=2) as selection:
-            _ = selection^.add(Counter(2))
+            selection.add(Counter(2))
+    except:
+        caught = True
+    assert_true(caught)
+    assert_false(world.storage.is_locked())
+    _ = world.storage.add_entity(Counter(3))
+
+
+def test_context_mutation_failure_releases_temporary_selection() raises:
+    """Context entry-point failures release their locally owned guard.
+
+    Raises:
+        Error: If setup or an assertion fails.
+    """
+    var world = World[Counter]()
+    _ = world.storage.add_entity(Counter(1))
+    var context = SystemContext(world)
+    var caught = False
+    try:
+        _ = context.add[Counter, filter=Filter().include[Counter]()](Counter(2))
     except:
         caught = True
     assert_true(caught)

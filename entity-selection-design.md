@@ -16,7 +16,7 @@ identity-tracking proposal.
 
 ## Agreed public behavior
 
-| Operation | Input scope | Returned selection |
+| Operation | Input scope | Resulting membership |
 | --- | --- | --- |
 | Batch creation on `SystemContext` | Newly created entities | Exactly the new rows |
 | Batch add/remove/replace on `SystemContext` | Entities matching the operation filter | Exactly the modified entities |
@@ -31,16 +31,16 @@ identity-tracking proposal.
 - A kernel skips nonmatching selected entities without reporting a filter error.
   If no entities match, it performs no kernel invocation or GPU launch.
 - A filtered component operation returns only entities actually modified.
-  Skipped entities remain unchanged in the world and leave the returned selection.
-- Selection component operations consume the old selection and return a new one.
-  Repeated kernel calls borrow it instead.
+  Skipped entities remain unchanged in the world and leave the selection.
+- Selection component operations update the same selection in place and return
+  nothing. Kernel calls borrow it without changing membership.
 - Selections are movable and initially noncopyable.
 - An empty result is a valid locked selection. Its lifetime follows the same
   ownership rules as a nonempty result.
 
 An intended workflow is: create a batch, initialize it with a GPU kernel, add
 components to the batch, run another kernel, replace or remove components, then
-release the selection. Each structural step replaces the previous selection.
+release the selection. Each structural step updates that same selection.
 
 ## API shape and ownership
 
@@ -52,7 +52,7 @@ closure overload; do not add unsupported GPU lexical captures.
 Use the existing storage API's naming and overload conventions when exposing
 batch creation and component operations through `SystemContext` and selections.
 Determine exact Mojo signatures in a small compiler-checked ownership prototype
-before implementing the full API. In particular, verify consuming receivers,
+before implementing the full API. In particular, verify mutable receivers,
 returned origins, chained calls, and explicit release. Do not assume a `with`
 statement gives a usable owning selection without proving its lifetime behavior.
 
@@ -67,8 +67,8 @@ Compiler validation on Mojo 1.0 established the following concrete surface:
 - `SystemContext.add[*Ts, filter=...](components...) -> EntitySelection`
 - `SystemContext.remove[*Ts, filter=...]() -> EntitySelection`
 - `SystemContext.replace[remove=Components[*Ts](), filter=...](components...)`
-- consuming `EntitySelection.add`, `remove`, and `replace` with the same direct
-  replacement form; reusable thin/CPU-closure `EntitySelection.run`; and
+- in-place `EntitySelection.add`, `remove`, and `replace` (`mut self`, no return
+  value) with the same direct replacement form; reusable thin/CPU-closure `EntitySelection.run`; and
   consuming `selection^.release()`.
 
 Mojo rejects two variadic type packs in one signature, so replacement uses a
@@ -83,7 +83,7 @@ construction is kept internal; context entry points establish the borrow.
 Selections also support `with context.add_entities(...) as selected:` and
 `with selection^ as selected:`. The manager retains the owning guard and
 `__enter__(mut self)` returns a noncopyable selection whose world origin is
-narrowed to the manager's origin. This scoped selection supports consuming
+narrowed to the manager's origin. This scoped selection supports in-place
 mutations and repeated kernel calls but cannot escape its manager. Its range
 metadata is copied on entry; no additional lock is acquired. `__exit__(mut
 self)` releases the owned guard exactly once on normal, early, and exceptional
@@ -137,13 +137,14 @@ lock bypass or temporarily clear the lock mask.
 
 For a context mutation, validate ordinary unlocked-world requirements, acquire
 the result guard before modifying storage, and transfer it to the result. For a
-selection mutation, transfer its existing guard through the operation into the
-new selection. There must be no unlocked interval or second lock allocation
+selection mutation, retain its existing guard and update its range metadata
+in place. There must be no unlocked interval or second lock allocation
 after a successful mutation.
 
-On failure, RAII must release the guard exactly once. Consuming operations do
-not promise that the original selection is returned after failure. Validate
-predictable errors before modifying rows. Preserve valid component lifetimes
+Validation failures preserve the selection's membership and existing guard,
+allowing subsequent calls on the same object. Context entry-point failures
+release their locally owned guard through RAII. Validate predictable errors
+before modifying rows. Preserve valid component lifetimes
 and entity-location mappings if an operation raises. Full transactional rollback
 is not part of this feature; document the actual guarantee for any remaining
 fallible mutation steps before exposing them.
@@ -168,7 +169,7 @@ or factor its internals to accept exact selected ranges:
    values, and destroy removed values exactly once.
 6. Compact source storage and update entity locations for both transferred
    entities and source entities moved by compaction.
-7. Build exact destination ranges and transfer the guard into the result.
+7. Build exact destination ranges and update the selection under its existing guard.
 
 Partial selections must not call the whole-archetype move path. A correctness-first
 partial-row implementation can process source rows in descending index order to

@@ -156,18 +156,18 @@ Each returns a locked selection containing only rows actually modified:
 ```mojo {doctest="guide_change_entities" global=true}
     var context = SystemContext(world)
     var created = context.add_entities(Position(0, 0), count=10)
-    var moving = created^.add[
+    created.add[
         Velocity, filter=Filter().include[Position].exclude[Velocity]()
     ](Velocity(1.0, 0.5))
 ```
 
 An omitted selection-operation filter means no restriction beyond the saved
 membership. A supplied filter is intersected with that membership; skipped
-rows are unchanged and do not appear in the returned selection. Kernel filter
+rows are unchanged and leave the selection's updated membership. Kernel filter
 mismatches simply skip rows, but invalid component requests still raise.
 
 ```mojo {doctest="guide_change_entities" global=true}
-    var stationary = moving^.remove[Velocity]()
+    created.remove[Velocity]()
 ```
 
 Selection replacement uses a compile-time `Components` list for removed types;
@@ -175,13 +175,13 @@ the replacement value types are inferred from the arguments. This direct form
 avoids an intermediate builder that would also need to own the lock.
 
 ```mojo {doctest="guide_change_entities" global=true}
-    var replaced = stationary^.replace[
+    created.replace[
         remove=Components[Position](),
     ](Velocity(2.0, 2.0))
-    replaced^.release()
+    created^.release()
 ```
 
 > [!Important]
-> Component-changing calls consume their input selection even if they raise;
-> predictable validation happens before rows are changed, and RAII releases the
-> lock exactly once. Do not expect the old selection back after an error.
+> Selection component-changing calls mutate the same object and return nothing.
+> Validation errors preserve its membership and lock, so it can be used again.
+> Release it explicitly when finished, or use a `with` block for cleanup.

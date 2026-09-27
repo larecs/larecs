@@ -129,7 +129,7 @@ def _bench_disjoint_selection(mut bencher: Bencher):
 
 
 def _bench_selected_mutation_chain(mut bencher: Bencher):
-    """Measures add/remove chains transferring one selection guard.
+    """Measures repeated in-place add/remove operations under one guard.
 
     Args:
         bencher: Benchmark driver.
@@ -139,17 +139,13 @@ def _bench_selected_mutation_chain(mut bencher: Bencher):
         var world = World[Value, SelectedTag]()
         _populate(world)
         var context = SystemContext(world)
-        var selection = Optional(
-            context.add_entities(Value(1.0), count=SELECTION_SIZE)
-        )
+        var selection = context.add_entities(Value(1.0), count=SELECTION_SIZE)
 
         def run_once() {mut selection}:
             try:
-                var current = selection.take()
-                current = current^.add(SelectedTag(1))
-                current = current^.remove[SelectedTag]()
-                keep(len(current))
-                selection = current^
+                selection.add(SelectedTag(1))
+                selection.remove[SelectedTag]()
+                keep(len(selection))
             except e:
                 print(e)
 

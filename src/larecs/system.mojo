@@ -165,9 +165,9 @@ struct EntitySelection[
     A selection borrows its world, is movable and noncopyable, and keeps the
     world structurally locked until ``release``, destruction, or scope exit.
     A ``with`` block retains the guard and lends a scope-bound selection that
-    supports the same kernels and consuming mutation chains. Kernel runs
-    borrow a selection; component mutations consume it and return a new
-    selection while transferring the same guard.
+    supports the same kernels and in-place mutations. Kernel runs borrow a
+    selection; component mutations update its membership in place while
+    retaining the same guard.
 
     Parameters:
         world_origin: The origin of the borrowed world.
@@ -245,7 +245,7 @@ struct EntitySelection[
 
         Returns:
             A noncopyable selection bound to this scope, sharing its existing
-            lock. Consuming mutations preserve that scope-bound borrow.
+            lock. In-place mutations preserve that scope-bound borrow.
         """
         # Narrow the world borrow to this manager's lifetime. The manager
         # retains the origin-bound world pointer and the sole owning guard;
@@ -301,7 +301,7 @@ struct EntitySelection[
 
     def add[
         *Ts: ComponentType, filter: Filter = Filter()
-    ](deinit self, *components: *Ts, out result: Self) raises LarecsError:
+    ](mut self, *components: *Ts) raises LarecsError:
         """Adds components to selected rows matching an optional filter.
 
         Parameters:
@@ -315,31 +315,25 @@ struct EntitySelection[
             LarecsError: If another structural lock exists or the component
                 request is invalid for a candidate row.
 
-        Returns:
-            A selection containing exactly the modified rows and the same
-            continuously owned structural lock.
+        Note:
+            Updates this selection to exactly the modified rows, retaining its
+            lock. Validation errors leave its membership and lock unchanged.
         """
         comptime assert constrain_components_unique[
             *Ts
         ](), "Duplicate component types in add are not allowed."
-        var next_ranges: List[EntityRange]
-        try:
-            next_ranges = self._world[].storage._batch_remove_and_add_ranges(
-                self._ranges,
-                self._world[].storage.filter[filter](),
-                Int(Pointer(to=self._world[].storage._locks)),
-                self._lock,
-                *components,
-            )
-        except e:
-            self^.release()
-            raise e^
+        var next_ranges = self._world[].storage._batch_remove_and_add_ranges(
+            self._ranges,
+            self._world[].storage.filter[filter](),
+            Int(Pointer(to=self._world[].storage._locks)),
+            self._lock,
+            *components,
+        )
         self._ranges = next_ranges^
-        result = self^
 
     def remove[
         *Ts: ComponentType, filter: Filter = Filter()
-    ](deinit self, out result: Self) raises LarecsError:
+    ](mut self) raises LarecsError:
         """Removes components from selected rows matching an optional filter.
 
         Parameters:
@@ -350,35 +344,29 @@ struct EntitySelection[
             LarecsError: If another structural lock exists or a candidate row
                 lacks a removed component.
 
-        Returns:
-            A selection containing exactly the modified rows and the same
-            continuously owned structural lock.
+        Note:
+            Updates this selection to exactly the modified rows, retaining its
+            lock. Validation errors leave its membership and lock unchanged.
         """
         comptime assert constrain_components_unique[
             *Ts
         ](), "Duplicate component types in remove are not allowed."
-        var next_ranges: List[EntityRange]
-        try:
-            next_ranges = self._world[].storage._batch_remove_and_add_ranges[
-                rem_size=len(Ts),
-                remove_ids=Self.World.HostStorage._optional_component_ids[*Ts],
-            ](
-                self._ranges,
-                self._world[].storage.filter[filter](),
-                Int(Pointer(to=self._world[].storage._locks)),
-                self._lock,
-            )
-        except e:
-            self^.release()
-            raise e^
+        var next_ranges = self._world[].storage._batch_remove_and_add_ranges[
+            rem_size=len(Ts),
+            remove_ids=Self.World.HostStorage._optional_component_ids[*Ts],
+        ](
+            self._ranges,
+            self._world[].storage.filter[filter](),
+            Int(Pointer(to=self._world[].storage._locks)),
+            self._lock,
+        )
         self._ranges = next_ranges^
-        result = self^
 
     def replace[
         remove: Components,
         filter: Filter = Filter(),
         *AddTs: ComponentType,
-    ](deinit self, *components: *AddTs, out result: Self) raises LarecsError:
+    ](mut self, *components: *AddTs) raises LarecsError:
         """Replaces components on selected rows matching an optional filter.
 
         Parameters:
@@ -393,9 +381,9 @@ struct EntitySelection[
             LarecsError: If another structural lock exists or the component
                 request is invalid for a candidate row.
 
-        Returns:
-            A selection containing exactly the modified rows and the same
-            continuously owned structural lock.
+        Note:
+            Updates this selection to exactly the modified rows, retaining its
+            lock. Validation errors leave its membership and lock unchanged.
         """
         comptime assert constrain_components_unique[
             *remove.ComponentTypes
@@ -403,26 +391,20 @@ struct EntitySelection[
         comptime assert constrain_components_unique[
             *AddTs
         ](), "Duplicate replacement component types are not allowed."
-        var next_ranges: List[EntityRange]
-        try:
-            next_ranges = self._world[].storage._batch_remove_and_add_ranges[
-                *AddTs,
-                rem_size=len(remove.ComponentTypes),
-                remove_ids=Self.World.HostStorage._optional_component_ids[
-                    *remove.ComponentTypes
-                ],
-            ](
-                self._ranges,
-                self._world[].storage.filter[filter](),
-                Int(Pointer(to=self._world[].storage._locks)),
-                self._lock,
-                *components,
-            )
-        except e:
-            self^.release()
-            raise e^
+        var next_ranges = self._world[].storage._batch_remove_and_add_ranges[
+            *AddTs,
+            rem_size=len(remove.ComponentTypes),
+            remove_ids=Self.World.HostStorage._optional_component_ids[
+                *remove.ComponentTypes
+            ],
+        ](
+            self._ranges,
+            self._world[].storage.filter[filter](),
+            Int(Pointer(to=self._world[].storage._locks)),
+            self._lock,
+            *components,
+        )
         self._ranges = next_ranges^
-        result = self^
 
     def run[
         filter: Filter,
@@ -1129,7 +1111,8 @@ struct SystemContext[
             A locked selection containing exactly the modified rows.
         """
         var candidates = self._select[filter]()
-        selection = candidates^.add(*components)
+        candidates.add(*components)
+        selection = candidates^
 
     def remove[
         *Ts: ComponentType, filter: Filter
@@ -1150,7 +1133,8 @@ struct SystemContext[
             A locked selection containing exactly the modified rows.
         """
         var candidates = self._select[filter]()
-        selection = candidates^.remove[*Ts]()
+        candidates.remove[*Ts]()
+        selection = candidates^
 
     def replace[
         remove: Components,
@@ -1178,7 +1162,8 @@ struct SystemContext[
             A locked selection containing exactly the modified rows.
         """
         var candidates = self._select[filter]()
-        selection = candidates^.replace[remove=remove](*components)
+        candidates.replace[remove=remove](*components)
+        selection = candidates^
 
     def run[
         filter: Filter,

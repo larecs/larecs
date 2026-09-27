@@ -77,7 +77,7 @@ or early return exits the block:
 
 ```mojo {doctest="guide_add_remove_entities" global=true}
     with context.add_entities(Position(0, 0), count=10) as selected:
-        selected = selected^.add(Velocity(1, 0))
+        selected.add(Velocity(1, 0))
         selected.run[place_batch]()
         selected.run[place_batch]()
     # The structural lock is released here.
@@ -89,8 +89,8 @@ manager. The manager retains the lock until exit, even if the bound selection
 is consumed or explicitly released inside the block.
 
 > [!Note]
-> A selection can run kernels repeatedly. Component-changing methods consume
-> it and return a replacement selection while transferring the same lock.
+> A selection can run kernels repeatedly. Component-changing methods update
+> its membership in place and retain the same lock; they return nothing.
 > Call `selection^.release()` when finished, or let it be destroyed. While it
 > lives, unrelated creation, deletion, and archetype changes are rejected.
 > An empty selection is still locked and follows the same rule.
