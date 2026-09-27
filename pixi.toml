@@ -42,6 +42,9 @@ mogo-tester = ">=2.3.3,<3"
 CC = "clang"
 CXX = "clang++"
 
+[target.osx-arm64.activation]
+scripts = ["scripts/activate_macos_sdk.sh"]
+
 [target.linux-64.dependencies]
 sysroot_linux-64 = ">=2.34,<3"
 
