@@ -2,6 +2,18 @@
 
 ## [Unreleased](https://github.com/larecs/larecs/compare/v1.0.0b1...main)
 
+### Added
+
+- Add movable, noncopyable `EntitySelection` results for system batch creation
+  and filtered component changes, with consuming add/remove/replace chains and
+  reusable CPU/GPU kernel execution over exact selected rows.
+
+### Changed
+
+- Prefer selection kernels over iterating low-level host-storage batch mutation
+  results; selections keep structural changes locked until explicit release or
+  destruction.
+
 ## [1.0.0b1 (2026-09-14)](https://github.com/larecs/larecs/compare/v0.5.0b4...v1.0.0b1)
 
 ### Breaking changes
