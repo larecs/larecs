@@ -11,6 +11,8 @@ from std.sys.info import is_gpu
 
 from larecs import (
     Captures,
+    Entity,
+    EntityRange,
     Filter,
     KernelContext,
     MutCapture,
@@ -138,6 +140,35 @@ def test_gpu_selection_preserves_resources_captures_and_write_only() raises:
         for row in world.storage.query[Filter().include[Position, Tag]()]():
             assert_equal(row.get[Position]().value, 6.0)
             assert_equal(row.get[Tag]().value, 9)
+
+
+def test_gpu_selection_packs_disjoint_ranges_across_archetypes() raises:
+    """One launch packs disjoint spans from multiple archetypes exactly.
+
+    Raises:
+        Error: If device execution or an assertion fails.
+    """
+    comptime if has_accelerator():
+        var world = World[Position, Tag]()
+        var plain = List[Entity]()
+        for i in range(5):
+            plain.append(world.storage.add_entity(Position(Float32(i))))
+        var tagged = world.storage.add_entity(Position(20.0), Tag(1))
+
+        var context = SystemContext(world)
+        var selection = context._empty_selection()
+        selection._ranges.append(EntityRange(1, 1, 1))
+        selection._ranges.append(EntityRange(1, 3, 1))
+        selection._ranges.append(EntityRange(2, 0, 1))
+        selection.run[add_one, on_gpu=True]()
+        selection^.release()
+
+        for i in range(5):
+            var expected = Float32(i)
+            if i == 1 or i == 3:
+                expected += 1.0
+            assert_equal(world.storage.get[Position](plain[i]).value, expected)
+        assert_equal(world.storage.get[Position](tagged).value, 21.0)
 
 
 def main() raises:

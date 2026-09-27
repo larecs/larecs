@@ -9,15 +9,18 @@ from std.testing import (
 )
 
 from larecs import (
+    Captures,
     Entity,
     Components,
     EntityRange,
     Filter,
     KernelContext,
+    MutCapture,
     ResourceType,
     Resources,
     SystemContext,
     World,
+    mut_capture,
 )
 from larecs.error import WorldError
 
@@ -37,10 +40,21 @@ struct Tag(Copyable, Movable):
 
 
 @fieldwise_init
+struct HeapValues(Copyable, Movable):
+    """Heap-owning component used to verify partial-row moves."""
+
+    var values: List[Int]
+
+
+@fieldwise_init
 struct Visits(ResourceType):
     """Shared visit counter used by selected execution tests."""
 
     var value: Int
+
+
+comptime selected_cpu_bindings = Captures[MutCapture[Int]]()
+"""Mutable count copied back from a selected CPU thin kernel."""
 
 
 def increment_selected(
@@ -70,6 +84,20 @@ def count_selected_tags(
     ref visits = context.resources.get[Visits]()
     for _ in context:
         visits.value += 1
+
+
+def count_selected_capture(
+    context: KernelContext[
+        Filter().include[Counter](), capture_spec=selected_cpu_bindings
+    ],
+):
+    """Counts selected rows through an explicit mutable binding.
+
+    Args:
+        context: Selected counter rows and the bound count.
+    """
+    for _ in context:
+        context.captures.get[0]() += 1
 
 
 def test_selection_move_release_and_empty_lifecycle() raises:
@@ -105,6 +133,30 @@ def test_selection_destruction_releases_once() raises:
     assert_true(selection._is_world_locked())
     _ = selection^
     assert_false(world.storage.is_locked())
+
+
+def test_failed_selection_mutation_releases_without_changes() raises:
+    """A predictable mutation error consumes its guard before changing rows.
+
+    Raises:
+        Error: If setup or an assertion fails.
+    """
+    var world = World[Counter]()
+    var context = SystemContext(world)
+    var selection = context.add_entities(Counter(1), count=2)
+    var raised = False
+    try:
+        _ = selection^.add(Counter(2))
+    except:
+        raised = True
+
+    assert_true(raised)
+    assert_false(world.storage.is_locked())
+    var count = 0
+    for row in world.storage.query[Filter().include[Counter]()]():
+        assert_equal(row.get[Counter]().value, 1)
+        count += 1
+    assert_equal(count, 2)
 
 
 def test_create_add_replace_remove_chain() raises:
@@ -196,6 +248,8 @@ def test_selected_cpu_execution_is_bounded_reusable_and_filtered() raises:
     var selection = context.add_entities(Counter(1), count=3)
     selection.run[increment_selected]()
     selection.run[increment_selected]()
+    var bound_visits = 0
+    selection.run[count_selected_capture](mut_capture(bound_visits))
 
     var lexical_visits = 0
 
@@ -220,6 +274,7 @@ def test_selected_cpu_execution_is_bounded_reusable_and_filtered() raises:
     assert_equal(world.storage.get[Counter](untouched).value, 50)
     assert_equal(world.resources.get[Visits]().value, 6)
     assert_equal(lexical_visits, 3)
+    assert_equal(bound_visits, 3)
     var changed = 0
     for row in world.storage.query[Filter().include[Counter]()]():
         if row.get_entity() != untouched:
@@ -255,6 +310,31 @@ def test_disjoint_partial_ranges_preserve_unselected_rows_and_locations() raises
             assert_false(world.storage.has[Tag](entities[i]))
 
 
+def test_selected_mutation_preserves_heap_owned_components() raises:
+    """Partial mutation moves heap-owning values without aliasing or loss.
+
+    Raises:
+        Error: If mutation, lookup, or an assertion fails.
+    """
+    var world = World[HeapValues, Tag]()
+    var first = world.storage.add_entity(HeapValues([1, 2]))
+    var second = world.storage.add_entity(HeapValues([3, 4]))
+    var third = world.storage.add_entity(HeapValues([5, 6]))
+
+    var context = SystemContext(world)
+    var selection = context._empty_selection()
+    selection._ranges.append(EntityRange(1, 1, 1))
+    var tagged = selection^.add(Tag(9))
+    tagged^.release()
+
+    assert_equal(world.storage.get[HeapValues](first).values[1], 2)
+    assert_equal(world.storage.get[HeapValues](second).values[1], 4)
+    assert_equal(world.storage.get[HeapValues](third).values[1], 6)
+    assert_false(world.storage.has[Tag](first))
+    assert_equal(world.storage.get[Tag](second).value, 9)
+    assert_false(world.storage.has[Tag](third))
+
+
 def test_context_replace_across_archetypes_and_empty_results() raises:
     """Context replacement spans archetypes and an empty chain stays locked.
 
@@ -270,9 +350,10 @@ def test_context_replace_across_archetypes_and_empty_results() raises:
         filter=Filter().include[Counter](),
     ](Counter(7))
     assert_equal(len(replaced), 2)
-    var empty = replaced^.remove[
-        Tag, filter=Filter().include[Tag]().exclude[Counter]()
-    ]()
+    var empty = (
+        replaced
+        ^.remove[Tag, filter=Filter().include[Tag]().exclude[Counter]()]()
+    )
     assert_equal(len(empty), 0)
     assert_true(empty._is_world_locked())
     empty^.release()
