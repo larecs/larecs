@@ -4,7 +4,7 @@ from std.benchmark import Bench, BenchId, Bencher, keep
 from std.sys import has_accelerator
 
 from custom_benchmark import DefaultBench
-from larecs import Filter, KernelContext, SystemContext, World
+from larecs import EntityRange, Filter, KernelContext, SystemContext, World
 
 
 @fieldwise_init
@@ -102,6 +102,32 @@ def _bench_contiguous_selection[on_gpu: Bool](mut bencher: Bencher):
         print(e)
 
 
+def _bench_disjoint_selection(mut bencher: Bencher):
+    """Measures repeated CPU execution over disjoint single-row ranges.
+
+    Args:
+        bencher: Benchmark driver.
+    """
+    try:
+        var world = World[Value, SelectedTag]()
+        _populate(world)
+        var context = SystemContext(world)
+        var selection = context._empty_selection()
+        for i in range(SELECTION_SIZE):
+            selection._ranges.append(EntityRange(1, i * 2, 1))
+
+        def run_once() {mut selection}:
+            try:
+                selection.run[increment]()
+                keep(len(selection))
+            except e:
+                print(e)
+
+        bencher.iter(run_once)
+    except e:
+        print(e)
+
+
 def _bench_selected_mutation_chain(mut bencher: Bencher):
     """Measures add/remove chains transferring one selection guard.
 
@@ -150,6 +176,11 @@ def run_all_entity_selection_benchmarks(mut bench: Bench) raises:
         _bench_contiguous_selection[False],
         BenchId("selection cpu, 64 of 100k contiguous"),
         fixed_iterations=10_000,
+    )
+    bench.bench_function(
+        _bench_disjoint_selection,
+        BenchId("selection cpu, 64 of 100k disjoint"),
+        fixed_iterations=1_000,
     )
     bench.bench_function(
         _bench_selected_mutation_chain,
