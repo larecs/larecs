@@ -5,7 +5,9 @@
 # GPU kernel reliably crashes Apple's Metal compiler when compiled with
 # `-g`. See "Known issues" in AGENTS.md for the full writeup.
 
+from std.gpu import global_idx
 from std.sys import has_accelerator
+from std.sys.info import is_gpu
 from std.testing import *
 
 from larecs import (
@@ -59,9 +61,14 @@ def overwrite_scale(
 ):
     """Overwrites the `Scale` resource with a fixed value.
 
-    Every thread writes the same value, so the result is deterministic
-    regardless of which thread's write lands last.
+    Only the first thread writes, avoiding concurrent resource mutation.
+
+    Args:
+        context: Matching component rows and the shared scale resource.
     """
+    comptime if is_gpu():
+        if global_idx.x != 0:
+            return
     context.resources.get[Scale]() = Scale(42)
 
 
@@ -79,6 +86,51 @@ def test_kernel_context_resource_mutation_is_copied_back_to_host() raises:
     context.run[overwrite_scale, on_gpu=True]()
 
     assert_equal(world.resources.get[Scale]().value, 42)
+
+
+def update_with_local_captures(
+    context: KernelContext[Filter().include[Int32](), Resources[Scale]()]
+):
+    """Uses closures capturing variables local to each GPU thread.
+
+    Args:
+        context: Matching integer components and the shared scale resource.
+    """
+    var factor = context.resources.get[Scale]().value
+    var processed: Int32 = 0
+
+    def transform(value: Int32) {imm factor, mut processed} -> Int32:
+        """Transforms one component and counts this thread's processed rows.
+
+        Args:
+            value: The component value to scale.
+
+        Returns:
+            The scaled value plus this thread's processed row count.
+        """
+        processed += 1
+        return value * factor + processed
+
+    for entity in context:
+        entity.get[Int32]() = transform(entity.get[Int32]())
+
+
+def test_gpu_kernel_local_captures() raises:
+    """Captures kernel-local values without borrowing host stack memory.
+
+    Raises:
+        Error: If execution fails or a component has an unexpected value.
+    """
+    comptime if not has_accelerator():
+        return
+    var world = World[Int32]()
+    world.resources.add(Scale(3))
+    # More than one block, with a partially populated final block.
+    _ = world.storage.add_entities(Int32(2), count=37)
+    var context = SystemContext(world)
+    context.run[update_with_local_captures, on_gpu=True]()
+    for entity in world.storage.query[Filter().include[Int32]()]():
+        assert_equal(entity.get[Int32](), 7)
 
 
 comptime functions = __functions_in_module()

@@ -344,3 +344,9 @@ Required resources use the same `context.resources.get[T]()` API on the GPU.
 Resource transfer constraints, shared-write safety, and the non-capturing
 kernel requirement are covered in
 [Resources](../resources#using-resources-in-kernels).
+
+Use explicit bindings above to pass CPU-local values to GPU entry points;
+lexical CPU borrows are not transferred automatically. Nested closures **inside**
+a GPU kernel can capture that thread's kernel-local variables with `imm` and
+`mut`. Each thread owns its local values; updating a local capture does not
+update a variable on the host or communicate with other GPU threads.
