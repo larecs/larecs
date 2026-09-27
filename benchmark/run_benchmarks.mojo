@@ -4,6 +4,7 @@ import component_benchmark
 import query_benchmark
 import resources_benchmark
 import gpu_system_benchmark
+import entity_selection_benchmark
 from custom_benchmark import DefaultBench
 
 
@@ -15,4 +16,5 @@ def main() raises:
     component_benchmark.run_all_component_benchmarks(bench)
     resources_benchmark.run_all_resource_benchmarks(bench)
     gpu_system_benchmark.run_all_gpu_system_benchmarks(bench)
+    entity_selection_benchmark.run_all_entity_selection_benchmarks(bench)
     bench.dump_report()
