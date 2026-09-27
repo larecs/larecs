@@ -126,3 +126,20 @@ the `# SKIP_DEBUG` marker mogo-tester (>=2.3.0) supports -- see
 the underlying bug lives in Apple's Metal compiler, not in Mojo or larecs,
 and there is nothing to change in this codebase to avoid it beyond not
 compiling GPU kernels with `-g`.
+
+### macOS 27 SDK breaks linking (`libSystem.tbd ... unknown architecture`)
+
+The macOS 27 SDK's `.tbd` stubs list the new `arm64e.x1` architecture, which
+the conda-forge `ld64` used by `mojo build` cannot parse:
+
+```
+ld: warning: ignoring file .../MacOSX.sdk/usr/lib/libSystem.tbd, malformed file
+.../libSystem.tbd:4:20: error: unknown architecture
+Undefined symbols for architecture arm64: "_write", "_strlen", ...
+```
+
+**Fix**: `scripts/activate_macos_sdk.sh` runs as a pixi activation script on
+osx-arm64. If the default SDK is affected and `SDKROOT` is unset, it exports
+`SDKROOT` pointing at the newest installed SDK without `arm64e.x1` (e.g.
+`MacOSX26.sdk`). This needs an older SDK to be installed; it can be removed
+once conda-forge ships an `ld64` that understands the new stubs.
