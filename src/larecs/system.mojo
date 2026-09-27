@@ -163,7 +163,9 @@ struct EntitySelection[
     """Owns exact entity row ranges and one structural-change lock.
 
     A selection borrows its world, is movable and noncopyable, and keeps the
-    world structurally locked until ``release`` or destruction. Kernel runs
+    world structurally locked until ``release``, destruction, or scope exit.
+    A ``with`` block retains the guard and lends a scope-bound selection that
+    supports the same kernels and consuming mutation chains. Kernel runs
     borrow a selection; component mutations consume it and return a new
     selection while transferring the same guard.
 
@@ -178,6 +180,7 @@ struct EntitySelection[
     var _world: Pointer[Self.World, Self.world_origin]
     var _ranges: List[EntityRange]
     var _lock: Int
+    var _owns_lock: Bool
 
     @doc_hidden
     def __init__(
@@ -196,6 +199,7 @@ struct EntitySelection[
         """
         self._world = world
         self._ranges = ranges^
+        self._owns_lock = True
         try:
             self._lock = self._world[].storage._locks.lock()
         except:
@@ -204,6 +208,8 @@ struct EntitySelection[
     def __deinit__(deinit self):
         """Releases the selection's structural lock exactly once."""
         _ = self._ranges^
+        if not self._owns_lock:
+            return
         try:
             self._world[].storage._locks.unlock(self._lock)
         except:
@@ -221,12 +227,59 @@ struct EntitySelection[
         return size
 
     def release(deinit self):
-        """Consumes the selection and releases its structural lock."""
+        """Consumes the selection and releases any directly owned lock.
+
+        Inside a ``with`` block, the context manager retains the lock until
+        scope exit even if its borrowed selection is released earlier.
+        """
         _ = self._ranges^
+        if not self._owns_lock:
+            return
         try:
             self._world[].storage._locks.unlock(self._lock)
         except:
             pass
+
+    def __enter__(mut self) -> EntitySelection[origin_of(self), *Self.WorldTs]:
+        """Borrows the selection for a scoped batch workflow.
+
+        Returns:
+            A noncopyable selection bound to this scope, sharing its existing
+            lock. Consuming mutations preserve that scope-bound borrow.
+        """
+        # Narrow the world borrow to this manager's lifetime. The manager
+        # retains the origin-bound world pointer and the sole owning guard;
+        # the returned selection must not escape that manager.
+        return EntitySelection[origin_of(self), *Self.WorldTs](
+            self._world.unsafe_origin_cast[origin_of(self)](),
+            self._ranges.copy(),
+            self._lock,
+        )
+
+    @doc_hidden
+    def __init__(
+        out self,
+        world: Pointer[Self.World, Self.world_origin],
+        var ranges: List[EntityRange],
+        lock: Int,
+    ):
+        """Creates a scope-bound selection borrowing an existing lock.
+
+        Args:
+            world: World borrowed through the owning context manager.
+            ranges: Exact selected ranges.
+            lock: Lock retained by the owning context manager.
+        """
+        self._world = world
+        self._ranges = ranges^
+        self._lock = lock
+        self._owns_lock = False
+
+    def __exit__(mut self):
+        """Releases the scope's guard on normal, early, or exceptional exit."""
+        if self._owns_lock:
+            self._world[].storage._unlock(self._lock)
+            self._owns_lock = False
 
     @doc_hidden
     def _is_world_locked(self) -> Bool:

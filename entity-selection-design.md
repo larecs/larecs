@@ -80,6 +80,19 @@ the tracked world pointer plus its one owned lock bit, transfers both on move,
 and unlocks through that same world borrow on release or destruction. Direct
 construction is kept internal; context entry points establish the borrow.
 
+Selections also support `with context.add_entities(...) as selected:` and
+`with selection^ as selected:`. The manager retains the owning guard and
+`__enter__(mut self)` returns a noncopyable selection whose world origin is
+narrowed to the manager's origin. This scoped selection supports consuming
+mutations and repeated kernel calls but cannot escape its manager. Its range
+metadata is copied on entry; no additional lock is acquired. `__exit__(mut
+self)` releases the owned guard exactly once on normal, early, and exceptional
+exit. Releasing the scoped selection early does not release the manager's guard.
+
+Compiler checks rejected escaping the scoped selection to a world-bound return
+type. A consuming `__enter__` alone deferred destruction beyond normal block
+exit on Mojo 1.0, so explicit manager-owned exit cleanup is required.
+
 A selection operates on its own world; users do not supply another context to
 `.run`. If any internal entry point accepts a separate world or manager, validate
 that its ownership token belongs to that manager.

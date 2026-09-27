@@ -361,6 +361,127 @@ def test_context_replace_across_archetypes_and_empty_results() raises:
     assert_equal(world.storage.get[Counter](second).value, 7)
 
 
+def test_selection_context_manager() raises:
+    """Scoped selections retain one guard and release it on normal exit.
+
+    Raises:
+        Error: If selection creation or an assertion fails.
+    """
+    var world = World[Counter, Tag]()
+    world.resources.add(Visits(0))
+    var context = SystemContext(world)
+    with context.add_entities(Counter(1), count=3) as selection:
+        assert_true(selection._authorizes_structural_change())
+        selection.run[increment_selected]()
+        selection = selection^.add(Tag(7))
+        selection.run[increment_selected]()
+        assert_true(selection._authorizes_structural_change())
+    assert_false(world.storage.is_locked())
+    assert_equal(world.resources.get[Visits]().value, 6)
+
+
+def test_selection_context_manager_error() raises:
+    """A scoped selection releases its guard and propagates a body error.
+
+    Raises:
+        Error: If setup or an assertion fails.
+    """
+    var world = World[Counter]()
+    var context = SystemContext(world)
+    var pending = context.add_entities(Counter(1), count=2)
+    with assert_raises(contains="selection scope failure"):
+        with pending^ as selection:
+            assert_equal(len(selection), 2)
+            raise Error("selection scope failure")
+    assert_false(world.storage.is_locked())
+    _ = world.storage.add_entity(Counter(2))
+
+
+def test_selection_context_manager_failed_mutation() raises:
+    """A consuming failure inside a scope releases the guard exactly once.
+
+    Raises:
+        Error: If setup or an assertion fails.
+    """
+    var world = World[Counter]()
+    var context = SystemContext(world)
+    var caught = False
+    try:
+        with context.add_entities(Counter(1), count=2) as selection:
+            _ = selection^.add(Counter(2))
+    except:
+        caught = True
+    assert_true(caught)
+    assert_false(world.storage.is_locked())
+    _ = world.storage.add_entity(Counter(3))
+
+
+def _return_from_selection_scope(mut world: World[Counter]) raises -> Int:
+    """Returns early from a scope owning an empty selection.
+
+    Args:
+        world: World borrowed for the selection.
+
+    Raises:
+        Error: If selection creation fails.
+
+    Returns:
+        The empty selection's length.
+    """
+    var context = SystemContext(world)
+    var pending = context.add_entities(Counter(1), count=0)
+    with pending^ as selection:
+        return len(selection)
+
+
+def test_selection_context_manager_early_return() raises:
+    """Entering an existing empty selection and returning releases its lock.
+
+    Raises:
+        Error: If selection creation or an assertion fails.
+    """
+    var world = World[Counter]()
+    assert_equal(_return_from_selection_scope(world), 0)
+    assert_false(world.storage.is_locked())
+    _ = world.storage.add_entity(Counter(2))
+
+
+def test_selection_context_manager_without_binding_and_break() raises:
+    """Unbound empty scopes and loop exits release the guard.
+
+    Raises:
+        Error: If selection creation or an assertion fails.
+    """
+    var world = World[Counter]()
+    var context = SystemContext(world)
+    with context.add_entities(Counter(0), count=0):
+        pass
+    assert_false(world.storage.is_locked())
+    for _ in range(2):
+        with context.add_entities(Counter(1), count=1) as selection:
+            assert_true(selection._authorizes_structural_change())
+            break
+    assert_false(world.storage.is_locked())
+    assert_equal(len(world), 1)
+
+
+def test_selection_context_manager_retains_guard_after_release() raises:
+    """Releasing the scoped view does not unlock its still-active manager.
+
+    Raises:
+        Error: If selection creation or an assertion fails.
+    """
+    var world = World[Counter]()
+    var context = SystemContext(world)
+    with context.add_entities(Counter(1), count=1) as selection:
+        # Inspect the internal guard after consuming the borrowed view. This
+        # unsafe pointer is used only inside its owner's lexical scope.
+        var world_pointer = selection._world.as_unsafe_any_origin()
+        selection^.release()
+        assert_true(world_pointer[].storage.is_locked())
+    assert_false(world.storage.is_locked())
+
+
 def main() raises:
     """Runs entity-selection tests.
 
