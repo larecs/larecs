@@ -201,6 +201,50 @@ in the kernel's `Resources[Time]()` list. See
 [Resources](../resources#using-resources-in-kernels) for the complete kernel
 API, missing-resource behavior, mutation semantics, and runnable examples.
 
+## Capturing CPU kernels
+
+Pass a closure as an argument to `context.run(kernel)` to borrow surrounding
+values on the CPU. Use `imm` for read-only captures and `mut` for values the
+kernel updates. Capturing kernels may also declare required resources.
+
+```mojo {doctest="guide_cpu_captures" global=true}
+from larecs import World, SystemContext, KernelContext, Filter, Resources, ResourceType
+from std.testing import assert_equal
+
+@fieldwise_init
+struct Offset(ResourceType):
+    var value: Int32
+
+def main() raises:
+    var world = World[Int32]()
+    world.resources.add(Offset(2))
+    var entity = world.storage.add_entity(Int32(4))
+    var factor: Int32 = 3
+    var visits = 0
+
+    def scale_rows(
+        rows: KernelContext[Filter().include[Int32](), Resources[Offset]()]
+    ) {imm factor, mut visits}:
+        """Updates matching rows and counts visits.
+
+        Args:
+            rows: Components and resources available to the kernel.
+        """
+        for row in rows:
+            row.get[Int32]() = row.get[Int32]() * factor + rows.resources.get[Offset]().value
+            visits += 1
+
+    var context = SystemContext(world)
+    context.run(scale_rows)
+    assert_equal(visits, 1)
+    assert_equal(world.storage.get[Int32](entity), 14)
+```
+
+Execution is synchronous: changes to mutable captures are visible after
+`run` returns. The kernel runs once per matching archetype and visits only
+that archetype's rows. Do not structurally modify the world from a captured
+alias while those rows are being processed.
+
 ## GPU execution
 
 The `SystemContext.run` call used by `Move` executes its kernel on the CPU by

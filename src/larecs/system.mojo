@@ -453,20 +453,10 @@ struct SystemContext[
 
                 comptime for i in range(len(required_resources)):
                     comptime T = required_resources.ResourceTypes[i]
-                    # `Int(...)` then `unsafe_from_address=`, never
-                    # `unsafe_origin_cast` straight off `.get[T]()`'s `ref`:
-                    # the latter has been observed to free the resource
-                    # early (data corruption, confirmed by experimentation).
-                    # This exact construction is stress-tested reliable for
-                    # a non-capturing `KernelFunc` (this overload); it is
-                    # NOT safe for a capturing closure -- see the guard in
-                    # the other `run` overload.
-                    resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
-                        unsafe_from_address=Int(
-                            Pointer(
-                                to=self.world[].resources.get[T]()
-                            ).unsafe_bitcast[UInt8]()
-                        )
+                    resource_pointers[i] = (
+                        Pointer(to=self.world[].resources.get[T]())
+                        .unsafe_bitcast[UInt8]()
+                        .unsafe_origin_cast[MutUntrackedOrigin]()
                     )
 
                 var resource_accessor = ResourceAccessor[required_resources](
@@ -641,10 +631,6 @@ struct SystemContext[
 
                     comptime for i in range(len(required_resources)):
                         comptime T = required_resources.ResourceTypes[i]
-                        # Same address-round-trip caution as the `upload`
-                        # call site above applies here: the `ref`/`mut`
-                        # argument must be produced and consumed within this
-                        # one call, never routed through a variable.
                         device_resources.download[T](
                             self.world[].resources.get[T]()
                         )
@@ -669,7 +655,6 @@ struct SystemContext[
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
             required_resources: Compile-time resources the kernel may access.
-                Not yet supported on this overload -- see the note below.
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             on_gpu: Whether to execute the kernel against device storage.
@@ -680,23 +665,13 @@ struct SystemContext[
                 rows.
 
         Note:
-            Resource access through a *capturing* kernel closure has been
-            observed to read corrupted data intermittently (tracked as a
-            known issue; suspected compiler-level cause around resource
-            storage and closures). Until root-caused, ``required_resources``
-            is rejected here at compile time. The other ``run`` overload
-            (a non-capturing kernel function) does not have this problem --
-            use it for resource-reading kernels in the meantime.
+            Captures may borrow CPU-local values with ``imm`` or ``mut``.
+            Resource access uses the same API as the non-capturing overload.
+            This overload executes synchronously on the CPU only.
 
         Raises:
-            Error: If `kernel_func` raises.
+            Error: If a required resource is missing.
         """
-        comptime assert len(required_resources) == 0, (
-            "SystemContext.run(kernel_func) does not yet support"
-            " required_resources on a capturing closure (data corruption"
-            " observed) -- use the non-capturing `run[KernelFunc]()`"
-            " overload instead."
-        )
         with Zone(
             function_name=(
                 "SystemContext.run[filter: Filter, required_resources:"
@@ -714,14 +689,19 @@ struct SystemContext[
                 )
             )
 
-            # `required_resources` is asserted empty above, so this is
-            # always an empty accessor -- kept as a real (trivial) value
-            # rather than special-cased, so `KernelContext`'s shape stays
-            # identical to the other `run` overload's.
-            var resource_accessor = ResourceAccessor[required_resources](
-                ResourceAccessor[required_resources].Pointers(
-                    uninitialized=True
+            var resource_pointers = ResourceAccessor[
+                required_resources
+            ].Pointers(uninitialized=True)
+            comptime for i in range(len(required_resources)):
+                comptime T = required_resources.ResourceTypes[i]
+                resource_pointers[i] = (
+                    Pointer(to=self.world[].resources.get[T]())
+                    .unsafe_bitcast[UInt8]()
+                    .unsafe_origin_cast[MutUntrackedOrigin]()
                 )
+
+            var resource_accessor = ResourceAccessor[required_resources](
+                resource_pointers^
             )
 
             # A filter can match multiple archetypes. Run the kernel once per

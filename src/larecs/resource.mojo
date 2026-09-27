@@ -290,7 +290,14 @@ struct ResourceStorage(Copyable, Movable, Sized):
             Error: If the resource does not exist.
 
         Returns:
-            A reference to the resource.
+            A reference with ``UnsafeAnyOrigin``, preserving the mutability
+            of the storage access.
+
+        Note:
+            Keep ``UnsafeAnyOrigin`` until Mojo's origin system can model
+            the ownership relation between the resource container and its
+            separately allocated resource values. Tying this reference to
+            the storage origin is not a suitable interim replacement.
         """
         with Zone(function_name="ResourceStorage.get[T: ResourceType]()"):
             try:
