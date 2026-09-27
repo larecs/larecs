@@ -93,6 +93,11 @@ main()
 ```
 
 Exports:
+ - capture.Captures
+ - capture.ReadCapture
+ - capture.MutCapture
+ - capture.read_capture
+ - capture.mut_capture
  - archetype.ArchetypeRowAccessor
  - archetype.MutArchetypeRowAccessor
  - component.ComponentManager
@@ -141,3 +146,11 @@ from .lock import LockGuard, LockManager
 from .filter import Filter, BitMaskFilter
 from .system import System, SystemContext, KernelContext
 from .scheduler import Scheduler
+
+from .capture import (
+    Captures,
+    ReadCapture,
+    MutCapture,
+    read_capture,
+    mut_capture,
+)

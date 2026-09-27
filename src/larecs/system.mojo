@@ -27,6 +27,13 @@ from .resource import (
     constrain_gpu_safe_resources,
 )
 from .device_storage import DeviceResourceStorage
+from .capture import (
+    Captures,
+    CaptureAccessor,
+    CaptureBindingType,
+    _bind_captures,
+    DeviceCaptureStorage,
+)
 
 
 trait System(Copyable, Deinitable, Movable):
@@ -198,13 +205,16 @@ struct ResourceAccessor[resources: Resources](Copyable):
 
 @fieldwise_init
 struct KernelContext[
-    filter: Filter, required_resources: Resources = Resources[]()
+    filter: Filter,
+    required_resources: Resources = Resources[](),
+    capture_spec: Captures = Captures[](),
 ](Copyable):
     """Component columns, resources, and row/thread counts available to a kernel body.
 
     Parameters:
         filter: The comptime [..filter.Filter] describing the accessed components.
         required_resources: Compile-time resources the kernel may access.
+        capture_spec: Ordered read-only and mutable CPU-local capture slots.
     """
 
     var length: Int32
@@ -219,6 +229,9 @@ struct KernelContext[
     var _columns: Self.Columns
     """Byte pointers to each included component's column, indexed by position in ``filter``."""
 
+    var captures: CaptureAccessor[Self.capture_spec]
+    """Explicitly bound CPU-local values available to this kernel."""
+
     var resources: ResourceAccessor[Self.required_resources]
     """Accessor for the kernel's required resources."""
 
@@ -227,6 +240,11 @@ struct KernelContext[
         var columns: Self.Columns,
         var resources: ResourceAccessor[Self.required_resources],
         *,
+        var capture_columns: Array[
+            Pointer[UInt8, MutUntrackedOrigin], len(Self.capture_spec)
+        ] = Array[Pointer[UInt8, MutUntrackedOrigin], len(Self.capture_spec)](
+            uninitialized=True
+        ),
         length: Int32,
         thread_count: Int32,
     ):
@@ -235,6 +253,7 @@ struct KernelContext[
         Args:
             columns: Byte pointers to each included component's column.
             resources: Accessor for the kernel's required resources.
+            capture_columns: Pointers to the bound local values.
             length: Total number of rows the kernel operates over.
             thread_count: Number of threads participating in the launch.
         """
@@ -249,6 +268,7 @@ struct KernelContext[
             self.thread_count = thread_count
             self._columns = columns^
             self.resources = resources^
+            self.captures = CaptureAccessor[Self.capture_spec](capture_columns^)
 
     def __iter__(self) -> EntityAccessorIterator[Self.filter]:
         """Returns an iterator over the rows matching ``filter``.
@@ -263,16 +283,21 @@ struct KernelContext[
 
 @fieldwise_init
 struct HostKernelContext[
-    filter: Filter, required_resources: Resources = Resources[]()
+    filter: Filter,
+    required_resources: Resources = Resources[](),
+    capture_spec: Captures = Captures[](),
 ](Copyable, DevicePassable):
     """Device-passable view of the component columns used by a kernel.
 
     Parameters:
         filter: The comptime [..filter.Filter] describing the accessed components.
         required_resources: Compile-time resources the kernel may access.
+        capture_spec: Ordered read-only and mutable CPU-local capture slots.
     """
 
-    comptime device_type = KernelContext[Self.filter, Self.required_resources]
+    comptime device_type = KernelContext[
+        Self.filter, Self.required_resources, Self.capture_spec
+    ]
     """The device-side type this host context is encoded into."""
 
     @staticmethod
@@ -305,11 +330,20 @@ struct HostKernelContext[
     var _resource_pointers: Self.ResourceBuffers
     """Device pointers to each required resource's buffer, indexed by position in ``required_resources``."""
 
+    comptime CaptureBuffers = Array[
+        DevicePointer[mut=True, dtype=DType.uint8, origin=MutUntrackedOrigin],
+        len(Self.capture_spec),
+    ]
+    var _capture_pointers: Self.CaptureBuffers
+
     def __init__(
         out self,
         var columns: Self.Columns,
         var resource_pointers: Self.ResourceBuffers,
         *,
+        var capture_pointers: Self.CaptureBuffers = Self.CaptureBuffers(
+            uninitialized=True
+        ),
         length: Int32,
         thread_count: Int32,
     ):
@@ -318,6 +352,7 @@ struct HostKernelContext[
         Args:
             columns: Device pointers to each included component's column.
             resource_pointers: Device pointers to each required resource's buffer.
+            capture_pointers: Device pointers to uploaded CPU-local values.
             length: Total number of rows the kernel operates over.
             thread_count: Number of threads participating in the launch.
         """
@@ -330,6 +365,7 @@ struct HostKernelContext[
         ):
             self._columns = columns^
             self._resource_pointers = resource_pointers^
+            self._capture_pointers = capture_pointers^
             self.length = length
             self.thread_count = thread_count
 
@@ -374,6 +410,17 @@ struct HostKernelContext[
                 resource_pointers^
             )
 
+            var capture_columns = Array[
+                Pointer[UInt8, MutUntrackedOrigin], len(Self.capture_spec)
+            ](uninitialized=True)
+            comptime for i in range(len(Self.capture_spec)):
+                capture_columns[i] = (
+                    self._capture_pointers[i].buffer().unsafe_ptr()
+                )
+            dst[].captures = CaptureAccessor[Self.capture_spec](
+                capture_columns^
+            )
+
 
 @fieldwise_init
 struct SystemContext[
@@ -409,19 +456,27 @@ struct SystemContext[
     def run[
         filter: Filter,
         required_resources: Resources = Resources[](),
+        capture_spec: Captures = Captures[](),
         //,
-        KernelFunc: def(KernelContext[filter, required_resources]) thin -> None,
-        *,
+        KernelFunc: def(
+            KernelContext[filter, required_resources, capture_spec]
+        ) thin -> None,
+        *Bindings: CaptureBindingType,
         on_gpu: Bool = False,
-    ](mut self) raises:
+    ](mut self, *bindings: *Bindings) raises:
         """Runs a kernel over component rows matching ``filter``.
 
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
             required_resources: Compile-time resources the kernel may access.
+            capture_spec: Ordered read-only and mutable CPU-local capture slots.
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
+            Bindings: The inferred types of the supplied capture bindings.
             on_gpu: Whether to execute the kernel against device storage.
+
+        Args:
+            bindings: Explicit read-only and mutable bindings in declared slot order.
 
         Raises:
             Error: If a required resource is missing, or if the device
@@ -434,6 +489,7 @@ struct SystemContext[
                 t" {reflect_fn[KernelFunc].display_name()} , *, on_gpu: Bool]()"
             )
         ):
+            var host_captures = _bind_captures[capture_spec](*bindings)
             var length = 0
             comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
             comptime exclude_mask = filter.get_exclude_mask[*Self.WorldTs]()
@@ -469,7 +525,7 @@ struct SystemContext[
                 # local to that archetype.
                 for ref archetype in matching_archetypes^:
                     var kernel_columns = KernelContext[
-                        filter, required_resources
+                        filter, required_resources, capture_spec
                     ].Columns(uninitialized=True)
 
                     comptime for i in range(len(filter)):
@@ -483,10 +539,11 @@ struct SystemContext[
                         ]()
 
                     var kernel_context = KernelContext[
-                        filter, required_resources
+                        filter, required_resources, capture_spec
                     ](
                         kernel_columns^,
                         resource_accessor.copy(),
+                        capture_columns=host_captures._pointers.copy(),
                         # Each archetype's columns are separate SoA
                         # allocations, not offsets into one shared buffer
                         # (unlike the GPU path below, which flattens every
@@ -540,6 +597,14 @@ struct SystemContext[
                         " instead."
                     )
 
+                # No component columns exist for an unmatched filter. Validate
+                # resources without allocating or launching any device work.
+                if length == 0:
+                    comptime for i in range(len(required_resources)):
+                        comptime T = required_resources.ResourceTypes[i]
+                        _ = Pointer(to=self.world[].resources.get[T]())
+                    return
+
                 # Reuse the world's device storage across calls instead of
                 # discarding it: `DeviceComponentStorage.copy_from_host`
                 # already grows each column lazily as needed, so replacing
@@ -552,11 +617,22 @@ struct SystemContext[
                 # follow it.
                 ref device_storage = self.world[]._device_storage[]
 
+                var device_captures = DeviceCaptureStorage[capture_spec](
+                    device_storage._device_context, host_captures
+                )
+                var capture_pointers = HostKernelContext[
+                    filter, required_resources, capture_spec
+                ].CaptureBuffers(uninitialized=True)
+                comptime for i in range(len(capture_spec)):
+                    capture_pointers[i] = rebind[
+                        DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
+                    ](device_captures._buffers[i].unsafe_value().device_ptr())
+
                 var device_resources = DeviceResourceStorage[
                     required_resources
                 ](device_storage._device_context)
                 var resource_pointers = HostKernelContext[
-                    filter, required_resources
+                    filter, required_resources, capture_spec
                 ].ResourceBuffers(uninitialized=True)
 
                 comptime for i in range(len(required_resources)):
@@ -565,7 +641,7 @@ struct SystemContext[
                     resource_pointers[i] = device_resources.get_device_ptr[T]()
 
                 var kernel_columns = HostKernelContext[
-                    filter, required_resources
+                    filter, required_resources, capture_spec
                 ].Columns(uninitialized=True)
 
                 comptime for i in range(len(filter)):
@@ -600,10 +676,11 @@ struct SystemContext[
                 var grid_dim = ceildiv(length, BLOCK_SIZE)
                 if length > 0:
                     var kernel_context = HostKernelContext[
-                        filter, required_resources
+                        filter, required_resources, capture_spec
                     ](
                         kernel_columns^,
                         resource_pointers^,
+                        capture_pointers=capture_pointers^,
                         length=Int32(length),
                         thread_count=Int32(grid_dim * BLOCK_SIZE),
                     )
@@ -640,29 +717,38 @@ struct SystemContext[
                     # share the same underlying device context and a single
                     # synchronize flushes every operation enqueued above by
                     # either one.
-                    device_storage.synchronize()
+                    device_captures.copy_back(host_captures)
+                device_storage.synchronize()
 
     def run[
         filter: Filter,
         required_resources: Resources = Resources[](),
+        capture_spec: Captures = Captures[](),
         //,
-        KernelFunc: def(KernelContext[filter, required_resources]) -> None,
-        *,
+        KernelFunc: def(
+            KernelContext[filter, required_resources, capture_spec]
+        ) -> None,
+        *Bindings: CaptureBindingType,
         on_gpu: Bool = False,
-    ](mut self, kernel_func: KernelFunc) raises where not on_gpu:
+    ](
+        mut self, kernel_func: KernelFunc, *bindings: *Bindings
+    ) raises where not on_gpu:
         """Runs a kernel closure over component rows matching ``filter``.
 
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
             required_resources: Compile-time resources the kernel may access.
+            capture_spec: Ordered read-only and mutable CPU-local capture slots.
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
+            Bindings: The inferred types of the supplied capture bindings.
             on_gpu: Whether to execute the kernel against device storage.
 
         Args:
             kernel_func: The kernel closure to run once per matching
                 archetype. Its context iterates over that archetype's matching
                 rows.
+            bindings: Explicit read-only and mutable bindings in declared slot order.
 
         Note:
             Captures may borrow CPU-local values with ``imm`` or ``mut``.
@@ -680,6 +766,7 @@ struct SystemContext[
                 " Bool](kernel_func: KernelFunc)"
             )
         ):
+            var host_captures = _bind_captures[capture_spec](*bindings)
             comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
             comptime exclude_mask = filter.get_exclude_mask[*Self.WorldTs]()
             var matching_archetypes = (
@@ -710,7 +797,7 @@ struct SystemContext[
             # that archetype.
             for ref archetype in matching_archetypes^:
                 var kernel_columns = KernelContext[
-                    filter, required_resources
+                    filter, required_resources, capture_spec
                 ].Columns(uninitialized=True)
 
                 comptime for i in range(len(filter)):
@@ -719,9 +806,12 @@ struct SystemContext[
                         T
                     ]().unsafe_bitcast[UInt8]()
 
-                var kernel_context = KernelContext[filter, required_resources](
+                var kernel_context = KernelContext[
+                    filter, required_resources, capture_spec
+                ](
                     kernel_columns^,
                     resource_accessor.copy(),
+                    capture_columns=host_captures._pointers.copy(),
                     # See the matching comment in the other `run` overload:
                     # each archetype's columns are a separate allocation, so
                     # the row loop must stop at this archetype's own length,
