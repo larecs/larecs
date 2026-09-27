@@ -6,6 +6,11 @@ from larecs import (
     Filter,
     Resources,
     ResourceType,
+    Captures,
+    ReadCapture,
+    MutCapture,
+    read_capture,
+    mut_capture,
 )
 from larecs.test_utils import SmallWorld, FlexibleComponent
 from std.testing import *
@@ -215,6 +220,40 @@ def test_cpu_closure_missing_resource_raises() raises:
     with assert_raises():
         context.run(missing_resource_kernel)
     assert_false(called)
+
+
+def test_cpu_closure_with_explicit_capture_bindings() raises:
+    """Combines lexical captures with explicitly bound CPU-local values.
+
+    Raises:
+        Error: If setup, execution, or an assertion fails.
+    """
+    var world = World[Int32]()
+    var entity = world.storage.add_entity(Int32(2))
+    var factor: Int32 = 3
+    var output: Int32 = 0
+    var visits = 0
+    comptime slots = Captures[ReadCapture[Int32], MutCapture[Int32]]()
+
+    def bound_kernel(
+        rows: KernelContext[Filter().include[Int32](), capture_spec=slots]
+    ) {mut visits}:
+        """Updates each row and both kinds of mutable capture.
+
+        Args:
+            rows: Components and explicit capture bindings.
+        """
+        for row in rows:
+            row.get[Int32]() *= rows.captures.get[0]()
+            rows.captures.get[1]() += row.get[Int32]()
+            visits += 1
+
+    var context = SystemContext(world)
+    context.run(bound_kernel, read_capture(factor), mut_capture(output))
+    assert_equal(visits, 1)
+    assert_equal(factor, 3)
+    assert_equal(output, 6)
+    assert_equal(world.storage.get[Int32](entity), 6)
 
 
 comptime functions = __functions_in_module()
