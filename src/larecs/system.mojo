@@ -16,7 +16,13 @@ from max.gpu.host import DevicePointer
 from tracy import Zone
 
 from .world import World
-from .component import ComponentType, constrain_gpu_safe_components
+from .entity import EntityRange
+from .error import LarecsError, WorldError
+from .component import (
+    ComponentType,
+    Components,
+    constrain_gpu_safe_components,
+)
 from .filter import Filter
 from .iteration import EntityAccessorIterator
 from .unsafe_box import UnsafeBox
@@ -34,6 +40,7 @@ from .capture import (
     _bind_captures,
     DeviceCaptureStorage,
 )
+from .component import constrain_components_unique
 
 
 trait System(Copyable, Deinitable, Movable):
@@ -147,6 +154,479 @@ def _finalize_system[
 
 comptime BLOCK_SIZE = 2**4
 """Number of GPU threads per block used when launching kernels."""
+
+
+struct EntitySelection[
+    world_origin: MutOrigin,
+    *WorldTs: ComponentType,
+](Movable, Sized):
+    """Owns exact entity row ranges and one structural-change lock.
+
+    A selection borrows its world, is movable and noncopyable, and keeps the
+    world structurally locked until ``release`` or destruction. Kernel runs
+    borrow a selection; component mutations consume it and return a new
+    selection while transferring the same guard.
+
+    Parameters:
+        world_origin: The origin of the borrowed world.
+        WorldTs: All component types supported by the world.
+    """
+
+    comptime World = World[*Self.WorldTs]
+    """The concrete world type borrowed by this selection."""
+
+    var _world: Pointer[Self.World, Self.world_origin]
+    var _ranges: List[EntityRange]
+    var _lock: Int
+
+    @doc_hidden
+    def __init__(
+        out self,
+        world: Pointer[Self.World, Self.world_origin],
+        var ranges: List[EntityRange],
+    ) raises LarecsError:
+        """Acquires a structural lock and initializes a selection.
+
+        Args:
+            world: The world containing the selected rows.
+            ranges: Exact bounded row ranges owned by the selection.
+
+        Raises:
+            LarecsError: If no structural lock is available.
+        """
+        self._world = world
+        self._ranges = ranges^
+        try:
+            self._lock = self._world[].storage._locks.lock()
+        except:
+            raise LarecsError(WorldError.out_of_locks)
+
+    def __deinit__(deinit self):
+        """Releases the selection's structural lock exactly once."""
+        _ = self._ranges^
+        try:
+            self._world[].storage._locks.unlock(self._lock)
+        except:
+            pass
+
+    def __len__(self) -> Int:
+        """Returns the number of selected entity rows.
+
+        Returns:
+            The sum of all explicit range counts.
+        """
+        var size = 0
+        for entity_range in self._ranges:
+            size += entity_range.row_count
+        return size
+
+    def release(deinit self):
+        """Consumes the selection and releases its structural lock."""
+        _ = self._ranges^
+        try:
+            self._world[].storage._locks.unlock(self._lock)
+        except:
+            pass
+
+    @doc_hidden
+    def _is_world_locked(self) -> Bool:
+        """Returns whether the borrowed world has any structural lock.
+
+        Returns:
+            True when at least one structural guard is active.
+        """
+        return self._world[].storage._locks.is_locked()
+
+    @doc_hidden
+    def _authorizes_structural_change(self) -> Bool:
+        """Returns whether this selection owns the world's sole lock.
+
+        Returns:
+            True when this selection can authorize a structural mutation.
+        """
+        return self._world[].storage._locks.owns_only(self._lock)
+
+    def add[
+        *Ts: ComponentType, filter: Filter = Filter()
+    ](deinit self, *components: *Ts, out result: Self) raises LarecsError:
+        """Adds components to selected rows matching an optional filter.
+
+        Parameters:
+            Ts: Component types to add.
+            filter: Additional filter intersected with this selection.
+
+        Args:
+            components: Component values copied into every modified row.
+
+        Raises:
+            LarecsError: If another structural lock exists or the component
+                request is invalid for a candidate row.
+
+        Returns:
+            A selection containing exactly the modified rows and the same
+            continuously owned structural lock.
+        """
+        comptime assert constrain_components_unique[
+            *Ts
+        ](), "Duplicate component types in add are not allowed."
+        var next_ranges = self._world[].storage._batch_remove_and_add_ranges(
+            self._ranges,
+            self._world[].storage.filter[filter](),
+            Int(Pointer(to=self._world[].storage._locks)),
+            self._lock,
+            *components,
+        )
+        self._ranges = next_ranges^
+        result = self^
+
+    def remove[
+        *Ts: ComponentType, filter: Filter = Filter()
+    ](deinit self, out result: Self) raises LarecsError:
+        """Removes components from selected rows matching an optional filter.
+
+        Parameters:
+            Ts: Component types to remove.
+            filter: Additional filter intersected with this selection.
+
+        Raises:
+            LarecsError: If another structural lock exists or a candidate row
+                lacks a removed component.
+
+        Returns:
+            A selection containing exactly the modified rows and the same
+            continuously owned structural lock.
+        """
+        comptime assert constrain_components_unique[
+            *Ts
+        ](), "Duplicate component types in remove are not allowed."
+        var next_ranges = self._world[].storage._batch_remove_and_add_ranges[
+            rem_size=len(Ts),
+            remove_ids=Self.World.HostStorage._optional_component_ids[*Ts],
+        ](
+            self._ranges,
+            self._world[].storage.filter[filter](),
+            Int(Pointer(to=self._world[].storage._locks)),
+            self._lock,
+        )
+        self._ranges = next_ranges^
+        result = self^
+
+    def replace[
+        remove: Components,
+        filter: Filter = Filter(),
+        *AddTs: ComponentType,
+    ](deinit self, *components: *AddTs, out result: Self) raises LarecsError:
+        """Replaces components on selected rows matching an optional filter.
+
+        Parameters:
+            remove: Component types to remove before adding replacements.
+            filter: Additional filter intersected with this selection.
+            AddTs: Inferred component types to add.
+
+        Args:
+            components: Replacement values copied into modified rows.
+
+        Raises:
+            LarecsError: If another structural lock exists or the component
+                request is invalid for a candidate row.
+
+        Returns:
+            A selection containing exactly the modified rows and the same
+            continuously owned structural lock.
+        """
+        comptime assert constrain_components_unique[
+            *remove.ComponentTypes
+        ](), "Duplicate component types in replace are not allowed."
+        comptime assert constrain_components_unique[
+            *AddTs
+        ](), "Duplicate replacement component types are not allowed."
+        var next_ranges = self._world[].storage._batch_remove_and_add_ranges[
+            *AddTs,
+            rem_size=len(remove.ComponentTypes),
+            remove_ids=Self.World.HostStorage._optional_component_ids[
+                *remove.ComponentTypes
+            ],
+        ](
+            self._ranges,
+            self._world[].storage.filter[filter](),
+            Int(Pointer(to=self._world[].storage._locks)),
+            self._lock,
+            *components,
+        )
+        self._ranges = next_ranges^
+        result = self^
+
+    def run[
+        filter: Filter,
+        required_resources: Resources = Resources[](),
+        capture_spec: Captures = Captures[](),
+        //,
+        KernelFunc: def(
+            KernelContext[filter, required_resources, capture_spec]
+        ) thin -> None,
+        *Bindings: CaptureBindingType,
+        on_gpu: Bool = False,
+    ](mut self, *bindings: *Bindings) raises:
+        """Runs a thin CPU or GPU kernel on selected rows matching ``filter``.
+
+        Parameters:
+            filter: Kernel filter intersected with saved selection membership.
+            required_resources: Resources available to the kernel.
+            capture_spec: Explicit read-only and mutable capture slots.
+            KernelFunc: Thin kernel function to invoke.
+            Bindings: Inferred explicit capture binding types.
+            on_gpu: Whether to pack and execute matching rows on the GPU.
+
+        Args:
+            bindings: Capture bindings in ``capture_spec`` order.
+
+        Raises:
+            Error: If bindings or resources are invalid, or GPU execution fails.
+        """
+        var host_captures = _bind_captures[capture_spec](*bindings)
+        var matching_ranges = List[EntityRange]()
+        var total_length = 0
+        comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
+        for selected_range in self._ranges:
+            ref archetype = self._world[].storage._archetypes.unsafe_get(
+                selected_range.archetype_index
+            )
+            if selected_range.row_count > 0 and bitmask_filter.matches(
+                archetype.get_mask()
+            ):
+                matching_ranges.append(selected_range)
+                total_length += selected_range.row_count
+
+        comptime if not has_accelerator() or not on_gpu:
+            var resource_pointers = ResourceAccessor[
+                required_resources
+            ].Pointers(uninitialized=True)
+            comptime for i in range(len(required_resources)):
+                comptime T = required_resources.ResourceTypes[i]
+                resource_pointers[i] = (
+                    Pointer(to=self._world[].resources.get[T]())
+                    .unsafe_bitcast[UInt8]()
+                    .unsafe_origin_cast[MutUntrackedOrigin]()
+                )
+            var resource_accessor = ResourceAccessor[required_resources](
+                resource_pointers^
+            )
+
+            for selected_range in matching_ranges:
+                ref archetype = self._world[].storage._archetypes.unsafe_get(
+                    selected_range.archetype_index
+                )
+                var kernel_columns = KernelContext[
+                    filter, required_resources, capture_spec
+                ].Columns(uninitialized=True)
+                comptime for i in range(len(filter)):
+                    comptime T = filter._include.ComponentTypes[i]
+                    kernel_columns[i] = (
+                        archetype._storage.get_component_ptr[T]()
+                        .unsafe_offset(selected_range.first_row)
+                        .unsafe_bitcast[UInt8]()
+                    )
+                var kernel_context = KernelContext[
+                    filter, required_resources, capture_spec
+                ](
+                    kernel_columns^,
+                    resource_accessor.copy(),
+                    capture_columns=host_captures._pointers.copy(),
+                    length=Int32(selected_range.row_count),
+                    thread_count=1,
+                )
+                KernelFunc(kernel_context)
+        else:
+            comptime assert constrain_gpu_safe_components[
+                *filter._include.ComponentTypes
+            ](), (
+                "EntitySelection.run(..., on_gpu=True) requires every"
+                " accessed component type to be GPU-safe."
+            )
+            comptime assert constrain_gpu_safe_resources[
+                *required_resources.ResourceTypes
+            ](), (
+                "EntitySelection.run(..., on_gpu=True) requires every"
+                " required resource type to be trivially movable."
+            )
+            if not self._world[]._device_storage:
+                raise Error(
+                    "EntitySelection.run(..., on_gpu=True) requires a working"
+                    " GPU device context."
+                )
+
+            # Required resources and explicit bindings remain validated even
+            # when the range/filter intersection is empty.
+            if total_length == 0:
+                comptime for i in range(len(required_resources)):
+                    comptime T = required_resources.ResourceTypes[i]
+                    _ = Pointer(to=self._world[].resources.get[T]())
+                return
+
+            ref device_storage = self._world[]._device_storage[]
+            var device_captures = DeviceCaptureStorage[capture_spec](
+                device_storage._device_context, host_captures
+            )
+            var capture_pointers = HostKernelContext[
+                filter, required_resources, capture_spec
+            ].CaptureBuffers(uninitialized=True)
+            comptime for i in range(len(capture_spec)):
+                capture_pointers[i] = rebind[
+                    DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
+                ](device_captures._buffers[i].unsafe_value().device_ptr())
+
+            var device_resources = DeviceResourceStorage[required_resources](
+                device_storage._device_context
+            )
+            var resource_pointers = HostKernelContext[
+                filter, required_resources, capture_spec
+            ].ResourceBuffers(uninitialized=True)
+            comptime for i in range(len(required_resources)):
+                comptime T = required_resources.ResourceTypes[i]
+                device_resources.upload[T](self._world[].resources.get[T]())
+                resource_pointers[i] = device_resources.get_device_ptr[T]()
+
+            var kernel_columns = HostKernelContext[
+                filter, required_resources, capture_spec
+            ].Columns(uninitialized=True)
+            comptime for i in range(len(filter)):
+                comptime T = filter._include.ComponentTypes[i]
+                comptime if filter.reads[T]:
+                    var packed_offset = 0
+                    for selected_range in matching_ranges:
+                        ref archetype = (
+                            self._world[].storage._archetypes.unsafe_get(
+                                selected_range.archetype_index
+                            )
+                        )
+                        var source = Span(
+                            unsafe_ptr=archetype._storage.get_component_ptr[
+                                T
+                            ]().unsafe_offset(selected_range.first_row),
+                            length=selected_range.row_count,
+                        )
+                        device_storage.copy_from_host[T](
+                            source, offset=packed_offset
+                        )
+                        packed_offset += selected_range.row_count
+                else:
+                    device_storage.ensure_column[T](total_length)
+                kernel_columns[i] = device_storage.get_device_ptr[T]()
+
+            var grid_dim = ceildiv(total_length, BLOCK_SIZE)
+            var kernel_context = HostKernelContext[
+                filter, required_resources, capture_spec
+            ](
+                kernel_columns^,
+                resource_pointers^,
+                capture_pointers=capture_pointers^,
+                length=Int32(total_length),
+                thread_count=Int32(grid_dim * BLOCK_SIZE),
+            )
+            device_storage._device_context.enqueue_function[KernelFunc](
+                kernel_context,
+                grid_dim=grid_dim,
+                block_dim=BLOCK_SIZE,
+            )
+
+            comptime for i in range(len(filter)):
+                comptime T = filter._include.ComponentTypes[i]
+                comptime if filter.writes[T]:
+                    var packed_offset = 0
+                    for selected_range in matching_ranges:
+                        ref archetype = (
+                            self._world[].storage._archetypes.unsafe_get(
+                                selected_range.archetype_index
+                            )
+                        )
+                        device_storage.copy_to_host[T](
+                            archetype._storage.get_component_ptr[
+                                T
+                            ]().unsafe_offset(selected_range.first_row),
+                            offset=packed_offset,
+                            length=selected_range.row_count,
+                        )
+                        packed_offset += selected_range.row_count
+
+            comptime for i in range(len(required_resources)):
+                comptime T = required_resources.ResourceTypes[i]
+                device_resources.download[T](self._world[].resources.get[T]())
+            device_captures.copy_back(host_captures)
+            device_storage.synchronize()
+
+    def run[
+        filter: Filter,
+        required_resources: Resources = Resources[](),
+        capture_spec: Captures = Captures[](),
+        //,
+        KernelFunc: def(
+            KernelContext[filter, required_resources, capture_spec]
+        ) -> None,
+        *Bindings: CaptureBindingType,
+        on_gpu: Bool = False,
+    ](
+        mut self, kernel_func: KernelFunc, *bindings: *Bindings
+    ) raises where not on_gpu:
+        """Runs a value-taking CPU closure on selected matching rows.
+
+        Parameters:
+            filter: Kernel filter intersected with saved selection membership.
+            required_resources: Resources available to the closure.
+            capture_spec: Explicit read-only and mutable capture slots.
+            KernelFunc: Inferred unified closure type.
+            Bindings: Inferred explicit capture binding types.
+            on_gpu: Must remain false; lexical GPU captures are unsupported.
+
+        Args:
+            kernel_func: Closure invoked once per matching selected range.
+            bindings: Capture bindings in ``capture_spec`` order.
+
+        Raises:
+            Error: If explicit bindings or required resources are invalid.
+        """
+        var host_captures = _bind_captures[capture_spec](*bindings)
+        var resource_pointers = ResourceAccessor[required_resources].Pointers(
+            uninitialized=True
+        )
+        comptime for i in range(len(required_resources)):
+            comptime T = required_resources.ResourceTypes[i]
+            resource_pointers[i] = (
+                Pointer(to=self._world[].resources.get[T]())
+                .unsafe_bitcast[UInt8]()
+                .unsafe_origin_cast[MutUntrackedOrigin]()
+            )
+        var resource_accessor = ResourceAccessor[required_resources](
+            resource_pointers^
+        )
+        comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
+        for selected_range in self._ranges:
+            ref archetype = self._world[].storage._archetypes.unsafe_get(
+                selected_range.archetype_index
+            )
+            if selected_range.row_count == 0 or not bitmask_filter.matches(
+                archetype.get_mask()
+            ):
+                continue
+            var kernel_columns = KernelContext[
+                filter, required_resources, capture_spec
+            ].Columns(uninitialized=True)
+            comptime for i in range(len(filter)):
+                comptime T = filter._include.ComponentTypes[i]
+                kernel_columns[i] = (
+                    archetype._storage.get_component_ptr[T]()
+                    .unsafe_offset(selected_range.first_row)
+                    .unsafe_bitcast[UInt8]()
+                )
+            var kernel_context = KernelContext[
+                filter, required_resources, capture_spec
+            ](
+                kernel_columns^,
+                resource_accessor.copy(),
+                capture_columns=host_captures._pointers.copy(),
+                length=Int32(selected_range.row_count),
+                thread_count=1,
+            )
+            kernel_func(kernel_context)
 
 
 @fieldwise_init
@@ -452,6 +932,185 @@ struct SystemContext[
             comptime assert origin_of(world).mut, "world must be mutable"
 
             self.world = Pointer(to=world)
+
+    @doc_hidden
+    def _empty_selection(
+        mut self,
+        out selection: EntitySelection[Self.world_origin, *Self.WorldTs],
+    ) raises LarecsError:
+        """Creates an empty locked selection for ownership validation.
+
+        Raises:
+            LarecsError: If no structural lock is available.
+
+        Returns:
+            An empty selection borrowing this context's world.
+        """
+        selection = EntitySelection[Self.world_origin, *Self.WorldTs](
+            self.world, List[EntityRange]()
+        )
+
+    def _select[
+        filter: Filter
+    ](
+        mut self,
+        out selection: EntitySelection[Self.world_origin, *Self.WorldTs],
+    ) raises LarecsError:
+        """Locks and snapshots bounded ranges matching ``filter``.
+
+        Parameters:
+            filter: Compile-time filter selecting whole source archetypes.
+
+        Raises:
+            LarecsError: If the world is already locked or no lock is available.
+
+        Returns:
+            A locked selection of the currently matching rows.
+        """
+        self.world[].storage._assert_unlocked()
+        selection = EntitySelection[Self.world_origin, *Self.WorldTs](
+            self.world, List[EntityRange]()
+        )
+        var bitmask_filter = self.world[].storage.filter[filter]()
+        for archetype_index in range(
+            len(selection._world[].storage._archetypes)
+        ):
+            ref archetype = selection._world[].storage._archetypes.unsafe_get(
+                archetype_index
+            )
+            if archetype and bitmask_filter.matches(archetype.get_mask()):
+                selection._ranges.append(
+                    EntityRange(archetype_index, 0, len(archetype))
+                )
+
+    def add_entities[
+        *Ts: ComponentType
+    ](
+        mut self,
+        *components: *Ts,
+        count: Int,
+        out selection: EntitySelection[Self.world_origin, *Self.WorldTs],
+    ) raises LarecsError:
+        """Creates a batch and returns exactly its rows as a locked selection.
+
+        Parameters:
+            Ts: Component types assigned to every new entity.
+
+        Args:
+            components: Initial component values copied into every new row.
+            count: Number of entities to create.
+
+        Raises:
+            LarecsError: If ``count`` is negative, the world is locked, or no
+                structural lock is available.
+
+        Returns:
+            A locked selection containing only the newly created rows.
+        """
+        comptime assert constrain_components_unique[
+            *Ts
+        ](), "Duplicate component types in add_entities are not allowed."
+        if count < 0:
+            raise LarecsError(WorldError.negative_count)
+        self.world[].storage._assert_unlocked()
+        selection = EntitySelection[Self.world_origin, *Self.WorldTs](
+            self.world, List[EntityRange]()
+        )
+        if count == 0:
+            return
+
+        comptime component_count = len(Ts)
+        var archetype_index: Int
+        comptime if component_count:
+            archetype_index = selection._world[].storage._get_archetype_index(
+                selection._world[].storage.component_manager.get_id_arr[*Ts]()
+            )
+        else:
+            archetype_index = 0
+        var first_row = selection._world[].storage._create_entities(
+            archetype_index, count
+        )
+        ref archetype = selection._world[].storage._archetypes.unsafe_get(
+            archetype_index
+        )
+        comptime for i in range(component_count):
+            comptime T = Ts[i]
+            archetype.init_component_range[T](first_row, count, components[i])
+        selection._ranges.append(EntityRange(archetype_index, first_row, count))
+
+    def add[
+        *Ts: ComponentType, filter: Filter
+    ](
+        mut self,
+        *components: *Ts,
+        out selection: EntitySelection[Self.world_origin, *Self.WorldTs],
+    ) raises LarecsError:
+        """Adds components to all rows matching ``filter``.
+
+        Parameters:
+            Ts: Component types to add.
+            filter: Compile-time operation filter.
+
+        Args:
+            components: Values copied into every modified row.
+
+        Raises:
+            LarecsError: If the world is locked or the request is invalid.
+
+        Returns:
+            A locked selection containing exactly the modified rows.
+        """
+        var candidates = self._select[filter]()
+        selection = candidates^.add(*components)
+
+    def remove[
+        *Ts: ComponentType, filter: Filter
+    ](
+        mut self,
+        out selection: EntitySelection[Self.world_origin, *Self.WorldTs],
+    ) raises LarecsError:
+        """Removes components from all rows matching ``filter``.
+
+        Parameters:
+            Ts: Component types to remove.
+            filter: Compile-time operation filter.
+
+        Raises:
+            LarecsError: If the world is locked or the request is invalid.
+
+        Returns:
+            A locked selection containing exactly the modified rows.
+        """
+        var candidates = self._select[filter]()
+        selection = candidates^.remove[*Ts]()
+
+    def replace[
+        remove: Components,
+        filter: Filter,
+        *AddTs: ComponentType,
+    ](
+        mut self,
+        *components: *AddTs,
+        out selection: EntitySelection[Self.world_origin, *Self.WorldTs],
+    ) raises LarecsError:
+        """Replaces components on all rows matching ``filter``.
+
+        Parameters:
+            remove: Component types to remove.
+            filter: Compile-time operation filter.
+            AddTs: Inferred replacement component types.
+
+        Args:
+            components: Values copied into every modified row.
+
+        Raises:
+            LarecsError: If the world is locked or the request is invalid.
+
+        Returns:
+            A locked selection containing exactly the modified rows.
+        """
+        var candidates = self._select[filter]()
+        selection = candidates^.replace[remove=remove](*components)
 
     def run[
         filter: Filter,

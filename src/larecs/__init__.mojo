@@ -137,14 +137,15 @@ from .error import (
     EntityError,
     UnknownError,
 )
-from .component import ComponentType
+from .component import ComponentType, Components
 from .types import ComponentId
 from .archetype import MutArchetypeRowAccessor, ArchetypeRowAccessor
 from .resource import Resources, ResourceStorage, ResourceType
 from .entity import Entity
 from .lock import LockGuard, LockManager
 from .filter import Filter, BitMaskFilter
-from .system import System, SystemContext, KernelContext
+from .system import System, SystemContext, KernelContext, EntitySelection
+from .entity import EntityRange
 from .scheduler import Scheduler
 
 from .capture import (
