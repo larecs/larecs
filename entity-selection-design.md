@@ -1,0 +1,214 @@
+# Locked entity selections for 1.0.0b2
+
+Status: implemented and compiler-validated on Mojo 1.0. Implements the
+changed-entity execution work in issue #170 and [the release checklist](v1.0.0b2.md).
+Execution steps live in [the agent implementation plan](entity-selection-implementation-plan.md).
+
+## Purpose
+
+Let systems create or structurally modify a batch of entities, then execute CPU
+or GPU kernels on exactly that batch. Support further component addition,
+removal, and replacement on the returned batch.
+
+The result is a locked, range-based `EntitySelection`. It does not track entity
+identities across unrelated structural changes. This replaces the earlier
+identity-tracking proposal.
+
+## Agreed public behavior
+
+| Operation | Input scope | Returned selection |
+| --- | --- | --- |
+| Batch creation on `SystemContext` | Newly created entities | Exactly the new rows |
+| Batch add/remove/replace on `SystemContext` | Entities matching the operation filter | Exactly the modified entities |
+| Batch add/remove/replace on a selection | Existing selection intersected with the operation filter | Exactly the modified entities, at their new locations |
+| Kernel execution on a selection | Selection intersected with the kernel filter | Selection remains reusable and unchanged in membership |
+
+- Expose batch operations through `SystemContext`.
+- A selection owns a structural-change lock until released or destroyed.
+- Kernels may write component values, resources, and mutable captures according
+  to their existing access declarations.
+- Unrelated entity creation, deletion, and archetype changes remain blocked.
+- A kernel skips nonmatching selected entities without reporting a filter error.
+  If no entities match, it performs no kernel invocation or GPU launch.
+- A filtered component operation returns only entities actually modified.
+  Skipped entities remain unchanged in the world and leave the returned selection.
+- Selection component operations consume the old selection and return a new one.
+  Repeated kernel calls borrow it instead.
+- Selections are movable and initially noncopyable.
+- An empty result is a valid locked selection. Its lifetime follows the same
+  ownership rules as a nonempty result.
+
+An intended workflow is: create a batch, initialize it with a GPU kernel, add
+components to the batch, run another kernel, replace or remove components, then
+release the selection. Each structural step replaces the previous selection.
+
+## API shape and ownership
+
+Use `EntitySelection` as the public type and `.run(...)` as its execution method.
+Mirror `SystemContext.run`'s supported kernel forms, filter inference, resource
+requirements, explicit capture bindings, and CPU/GPU switch. Retain the CPU
+closure overload; do not add unsupported GPU lexical captures.
+
+Use the existing storage API's naming and overload conventions when exposing
+batch creation and component operations through `SystemContext` and selections.
+Determine exact Mojo signatures in a small compiler-checked ownership prototype
+before implementing the full API. In particular, verify consuming receivers,
+returned origins, chained calls, and explicit release. Do not assume a `with`
+statement gives a usable owning selection without proving its lifetime behavior.
+
+The selection needs origin-bound access to its world, owned range metadata, and
+one lock guard. It must not outlive the world or leave borrowed component pointers
+usable after a structural operation. Do not erase world ownership origins merely
+to make the public API compile.
+
+Compiler validation on Mojo 1.0 established the following concrete surface:
+
+- `SystemContext.add_entities(*components, count=...) -> EntitySelection`
+- `SystemContext.add[*Ts, filter=...](components...) -> EntitySelection`
+- `SystemContext.remove[*Ts, filter=...]() -> EntitySelection`
+- `SystemContext.replace[remove=Components[*Ts](), filter=...](components...)`
+- consuming `EntitySelection.add`, `remove`, and `replace` with the same direct
+  replacement form; reusable thin/CPU-closure `EntitySelection.run`; and
+  consuming `selection^.release()`.
+
+Mojo rejects two variadic type packs in one signature, so replacement uses a
+compile-time `Components` value for removed types and infers the added types
+from values. The selection itself is the origin-bound RAII guard: storing a
+mutable world pointer and a separately origin-tracked pointer into that world's
+lock manager is rejected as overlapping mutable origins. It therefore stores
+the tracked world pointer plus its one owned lock bit, transfers both on move,
+and unlocks through that same world borrow on release or destruction. Direct
+construction is kept internal; context entry points establish the borrow.
+
+A selection operates on its own world; users do not supply another context to
+`.run`. If any internal entry point accepts a separate world or manager, validate
+that its ownership token belongs to that manager.
+
+## Range representation
+
+Represent membership as explicit triples:
+
+`(archetype_index, first_row, row_count)`
+
+Use counts, not ranges implicitly extending to the current archetype length.
+Ranges must be in bounds, nonoverlapping, and free of duplicate entity rows.
+Merge adjacent ranges in the same archetype when useful. Store indices rather
+than persistent archetype pointers: creating a destination archetype can
+reallocate the archetype list.
+
+Membership is recorded after each operation. Existing destination rows are
+never included merely because changed entities move into their archetype.
+Replacing values without changing the archetype records precisely the rows
+whose values were replaced. An operation assigning an equal value still counts
+as modification; no component equality comparison is required. A request with
+no component changes produces an empty selection, consistent with existing
+batch behavior.
+
+No stable entity ordering or CPU/GPU-equivalent row numbering is introduced.
+Entity identities remain stable; execution row indices retain the existing
+backend-local meaning.
+
+## Lock transfer and structural operations
+
+The structural lock is a mutation guard, not thread synchronization or exclusive
+component access.
+
+A selection may structurally modify its own rows only when its guard is the sole
+active structural lock. Another live query or selection could hold ranges made
+invalid by the mutation. Reject such a mutation before changing storage, using
+the existing locked-world error.
+
+Provide a narrow internal mutation path authorized by the owning guard. Check
+both manager identity and sole-lock ownership. Do not expose a general-purpose
+lock bypass or temporarily clear the lock mask.
+
+For a context mutation, validate ordinary unlocked-world requirements, acquire
+the result guard before modifying storage, and transfer it to the result. For a
+selection mutation, transfer its existing guard through the operation into the
+new selection. There must be no unlocked interval or second lock allocation
+after a successful mutation.
+
+On failure, RAII must release the guard exactly once. Consuming operations do
+not promise that the original selection is returned after failure. Validate
+predictable errors before modifying rows. Preserve valid component lifetimes
+and entity-location mappings if an operation raises. Full transactional rollback
+is not part of this feature; document the actual guarantee for any remaining
+fallible mutation steps before exposing them.
+
+## Component mutation engine
+
+Reuse the existing component type, duplicate-type, add/remove, and replacement
+validation rules. Kernel filter mismatch is harmless; an invalid component
+mutation request can still report an error. Apply row-dependent checks to the
+operation's candidate selection, not unrelated rows in the world. Retain
+existing filter-level constraints where required by the storage API.
+
+The current `HostStorage._batch_remove_and_add` moves whole archetypes. Extend
+or factor its internals to accept exact selected ranges:
+
+1. Snapshot candidate ranges and source archetypes before modifying storage.
+2. Validate the request and establish lock authorization.
+3. Resolve destination archetypes and reserve metadata/capacity where practical.
+4. For in-place replacement, assign only candidate rows, destroying replaced
+   values correctly.
+5. Otherwise, move retained components and entity identities, initialize added
+   values, and destroy removed values exactly once.
+6. Compact source storage and update entity locations for both transferred
+   entities and source entities moved by compaction.
+7. Build exact destination ranges and transfer the guard into the result.
+
+Partial selections must not call the whole-archetype move path. A correctness-first
+partial-row implementation can process source rows in descending index order to
+avoid invalidating pending indices during swap-removal. Preserve a fast path for
+whole-archetype transfers and optimize contiguous moves after correctness tests.
+Do not reprocess appended destination rows during the same operation. Confirm
+whether existing validation still guarantees distinct destinations; do not rely
+on that property without checking it for the new range path.
+
+## Shared kernel execution
+
+Factor execution around a source of matching row ranges. Ordinary context
+execution supplies whole matching archetypes; selected execution supplies the
+intersection of selection ranges and kernel filters. Keep the ordinary path
+lazy where possible to avoid an additional range allocation on every call.
+
+CPU execution offsets each component pointer by the range start and passes the
+range length to `KernelContext`. It invokes the kernel for each matching range,
+sharing the invocation's resource and capture bindings.
+
+GPU execution computes the total matching length, packs readable component
+spans into device columns, allocates writable columns, and launches over the
+packed rows. Copy writable component spans back to their original host ranges.
+Preserve write-only handling and existing resource/capture upload and copy-back
+rules. Retain the lock and transfer buffers until synchronization is complete,
+including safe cleanup on exceptional paths.
+
+An empty match does not allocate component buffers or launch a kernel. Preserve
+existing binding, resource, and device validation behavior; empty membership
+does not suppress unrelated API errors. Mutable captures and resources receive
+no kernel-driven changes.
+
+## Compatibility and exclusions
+
+- Replace mutation-result iterator usage with selected kernel execution in
+  examples and tests. Document this beta API migration.
+- Preserve ordinary queries and single-entity operations. `_WorldEntityIterator`
+  currently supports queries as well as mutation results: migrate its remaining
+  query duties before deleting it. Do not silently remove query behavior.
+- Keep low-level storage operations usable where needed, but avoid a second
+  implementation of mutation semantics. Document any changed return types.
+- Do not add selection entity deletion, long-lived identity tracking, selection
+  unions, copying, asynchronous execution, or general concurrency guarantees.
+- Heap-backed GPU resources and resource synchronization are separate work.
+- `ResourceStorage.get` retains `UnsafeAnyOrigin` until Mojo can model the
+  ownership relationship between `Resources` and stored resource values.
+
+## Acceptance criteria
+
+Only selected, matching entities are executed or modified, including when source
+or destination archetypes also contain unselected entities. Chained mutations
+preserve identity and valid locations. CPU and GPU produce the expected component
+values, captures, and resources. Locks prevent unrelated structural mutations,
+transfer safely through chains, and release on normal and exceptional exits.
+Ordinary queries and full-world execution retain their behavior. Benchmarks
+measure both selected execution and any regression in the ordinary path.

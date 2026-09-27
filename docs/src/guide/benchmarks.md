@@ -4,6 +4,16 @@ title = "Benchmarks"
 weight = 100
 +++
 
+The focused `entity_selection_benchmark.mojo` workload compares ordinary
+full-world CPU execution with contiguous and disjoint 64-row selections in a
+100,000-row world, a selected add/remove chain, and selected GPU execution when
+an accelerator is available. On the Apple Metal development host used for the
+1.0.0b2 work, one bounded run measured approximately 0.0253 ms for the 100k-row
+CPU path, 0.0000664 ms for the contiguous selection, 0.000556 ms for 64 disjoint
+single-row ranges, 0.00727 ms for the add/remove chain, and 0.379 ms for the GPU
+selection. These are development measurements, not a cross-version historical
+baseline; use the benchmark on target hardware for regression decisions.
+
 ## ECS operations
 
 TODO: Tabular overview of the runtime cost of typical ECS operations.

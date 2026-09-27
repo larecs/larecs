@@ -167,7 +167,7 @@ checks at runtime and raises if the component is missing.
 ## Processing components with kernels
 
 A kernel is a component-processing function passed to
-{{< api SystemContext.run >}}. It receives a {{< api KernelContext >}} and
+{{< api SystemContext.run >}} or {{< api EntitySelection.run >}}. It receives a {{< api KernelContext >}} and
 iterates over the entities matching its filter. The filter declares which
 components the kernel can write and which it can only read. The same kernel
 can run on the CPU or, for supported component types, a GPU accelerator.
@@ -180,6 +180,12 @@ invokes it:
     var context = SystemContext(world)
     context.run[move_entities]()
 ```
+
+Calling the same kernel through a selection intersects the kernel filter with
+the selection's saved ranges. The selection remains reusable; execution does
+not change its membership. CPU row indices are local to each selected range,
+while GPU rows index the packed launch, so neither is a stable entity or
+selection-wide index.
 
 In an application, the scheduler supplies this context to each system's
 lifecycle methods, and the system calls `run` from there. The system is the

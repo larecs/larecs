@@ -21,7 +21,7 @@ accessed and changed via the {{< api HostStorage.get get >}}
 method of {{< api World World.storage >}}.
 
 ```mojo {doctest="guide_change_entities" global=true hide=true}
-from larecs import World, Entity, Filter
+from larecs import World, Entity, Filter, Components, SystemContext
 from std.testing import *
 
 @fieldwise_init
@@ -149,64 +149,39 @@ individual operations on each entity.
 > when working with large numbers of entities, as they minimize memory
 > reorganization and improve cache locality.
 
-You can add components to multiple entities that match a query using the
-{{< api HostStorage.add add >}} method with a query:
+Use {{< api SystemContext.add add >}}, {{< api SystemContext.remove remove >}},
+and {{< api SystemContext.replace replace >}} for filtered batch changes.
+Each returns a locked selection containing only rows actually modified:
 
 ```mojo {doctest="guide_change_entities" global=true}
-    # Add 10 entities with only Position components
-    _ = world.storage.add_entities(Position(0, 0), count=10)
-
-    # Add a Velocity component to all entities that have Position but not Velocity
-    for entity in world.storage.add[
+    var context = SystemContext(world)
+    var created = context.add_entities(Position(0, 0), count=10)
+    var moving = created^.add[
         Velocity, filter=Filter().include[Position].exclude[Velocity]()
-    ](
-        Velocity(1.0, 0.5),
-    ):
-        ref pos = entity.unsafe_get[Position]()
-        ref vel = entity.unsafe_get[Velocity]()
+    ](Velocity(1.0, 0.5))
 ```
 
-This is significantly more efficient than adding components to entities one by one:
+An omitted selection-operation filter means no restriction beyond the saved
+membership. A supplied filter is intersected with that membership; skipped
+rows are unchanged and do not appear in the returned selection. Kernel filter
+mismatches simply skip rows, but invalid component requests still raise.
 
 ```mojo {doctest="guide_change_entities" global=true}
-    # Less efficient approach (avoid this for large numbers of entities)
-    var entities = List[Entity]()
-    for entity in world.storage.query[
-        Filter().include[Position].exclude[Velocity]()
-    ]():
-        entities.append(entity.get_entity())
+    var stationary = moving^.remove[Velocity]()
 ```
 
-Similar methods exist also for {{< api HostStorage.remove removing >}} and
-{{< api HostStorage.replace replacing >}} components from multiple entities at once.
+Selection replacement uses a compile-time `Components` list for removed types;
+the replacement value types are inferred from the arguments. This direct form
+avoids an intermediate builder that would also need to own the lock.
 
 ```mojo {doctest="guide_change_entities" global=true}
-    # Add 10 more entities with Position and Velocity components
-    _ = world.storage.add_entities(Position(0, 0), Velocity(1.0, 1.0), count=10)
-
-    # Remove the Velocity component from all entities that have both Position and Velocity
-    for entity in world.storage.remove[
-        Velocity, filter=Filter().include[Position, Velocity]()
-    ]():
-        ref pos = entity.unsafe_get[Position]()
-```
-
-For batch replace operations, you also need to use the {{< api Replacer.by by >}} helper method to specify which
-components should be used as replacement.
-
-```mojo {doctest="guide_change_entities" global=true}
-    # Add 10 more entities with only a Position component
-    _ = world.storage.add_entities(Position(0, 0), count=10)
-
-    # Replace Position with Velocity for all entities that have only a Position
-    for entity in world.storage.replace[Position]().by[
-        filter=Filter().include[Position].exclusive()
-    ](
-        Velocity(2.0, 2.0),
-    ):
-        ref vel = entity.unsafe_get[Velocity]()
+    var replaced = stationary^.replace[
+        remove=Components[Position](),
+    ](Velocity(2.0, 2.0))
+    replaced^.release()
 ```
 
 > [!Important]
-> The query must ensure that all matching entities have the components you want to remove;
-> otherwise an error will be raised.
+> Component-changing calls consume their input selection even if they raise;
+> predictable validation happens before rows are changed, and RAII releases the
+> lock exactly once. Do not expect the old selection back after an error.
