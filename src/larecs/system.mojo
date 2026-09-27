@@ -269,13 +269,18 @@ struct EntitySelection[
         comptime assert constrain_components_unique[
             *Ts
         ](), "Duplicate component types in add are not allowed."
-        var next_ranges = self._world[].storage._batch_remove_and_add_ranges(
-            self._ranges,
-            self._world[].storage.filter[filter](),
-            Int(Pointer(to=self._world[].storage._locks)),
-            self._lock,
-            *components,
-        )
+        var next_ranges: List[EntityRange]
+        try:
+            next_ranges = self._world[].storage._batch_remove_and_add_ranges(
+                self._ranges,
+                self._world[].storage.filter[filter](),
+                Int(Pointer(to=self._world[].storage._locks)),
+                self._lock,
+                *components,
+            )
+        except e:
+            self^.release()
+            raise e^
         self._ranges = next_ranges^
         result = self^
 
@@ -299,15 +304,20 @@ struct EntitySelection[
         comptime assert constrain_components_unique[
             *Ts
         ](), "Duplicate component types in remove are not allowed."
-        var next_ranges = self._world[].storage._batch_remove_and_add_ranges[
-            rem_size=len(Ts),
-            remove_ids=Self.World.HostStorage._optional_component_ids[*Ts],
-        ](
-            self._ranges,
-            self._world[].storage.filter[filter](),
-            Int(Pointer(to=self._world[].storage._locks)),
-            self._lock,
-        )
+        var next_ranges: List[EntityRange]
+        try:
+            next_ranges = self._world[].storage._batch_remove_and_add_ranges[
+                rem_size=len(Ts),
+                remove_ids=Self.World.HostStorage._optional_component_ids[*Ts],
+            ](
+                self._ranges,
+                self._world[].storage.filter[filter](),
+                Int(Pointer(to=self._world[].storage._locks)),
+                self._lock,
+            )
+        except e:
+            self^.release()
+            raise e^
         self._ranges = next_ranges^
         result = self^
 
@@ -340,19 +350,24 @@ struct EntitySelection[
         comptime assert constrain_components_unique[
             *AddTs
         ](), "Duplicate replacement component types are not allowed."
-        var next_ranges = self._world[].storage._batch_remove_and_add_ranges[
-            *AddTs,
-            rem_size=len(remove.ComponentTypes),
-            remove_ids=Self.World.HostStorage._optional_component_ids[
-                *remove.ComponentTypes
-            ],
-        ](
-            self._ranges,
-            self._world[].storage.filter[filter](),
-            Int(Pointer(to=self._world[].storage._locks)),
-            self._lock,
-            *components,
-        )
+        var next_ranges: List[EntityRange]
+        try:
+            next_ranges = self._world[].storage._batch_remove_and_add_ranges[
+                *AddTs,
+                rem_size=len(remove.ComponentTypes),
+                remove_ids=Self.World.HostStorage._optional_component_ids[
+                    *remove.ComponentTypes
+                ],
+            ](
+                self._ranges,
+                self._world[].storage.filter[filter](),
+                Int(Pointer(to=self._world[].storage._locks)),
+                self._lock,
+                *components,
+            )
+        except e:
+            self^.release()
+            raise e^
         self._ranges = next_ranges^
         result = self^
 
