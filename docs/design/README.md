@@ -15,10 +15,6 @@ decision record before changing an established behavior:
 | [0002](decisions/0002-gpu-system-execution.md) | Accepted | GPU system execution and transfer boundaries |
 | [0003](decisions/0003-grid-stride-entity-iteration.md) | Accepted | CPU/GPU grid-stride entity iteration |
 
-The [background notes](background/) preserve earlier measurements, sketches,
-and implementation plans. They may describe superseded code or proposed work;
-the decision records above state the current accepted contract.
-
 ## Recording a change
 
 1. Search this index and the requirements for an existing decision. Check the

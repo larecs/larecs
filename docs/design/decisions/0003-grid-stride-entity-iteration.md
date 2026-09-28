@@ -41,6 +41,5 @@ The iterator itself performs no host/device transfer or synchronization.
 The implementation is `EntityAccessorIterator` in `src/larecs/iteration.mojo`
 and its launch setup in `src/larecs/system.mojo`. The dedicated
 `test/grid_stride_iterator_test.mojo` traces row ownership on actual GPU
-hardware; system and selection tests exercise the kernel-facing path. The
-[original prototype notes](../background/grid-stride-iterator.md) preserve
-the sketch and test plan as history. See [ECS-09](../requirements.md).
+hardware; system and selection tests exercise the kernel-facing path. See
+[ECS-09](../requirements.md).

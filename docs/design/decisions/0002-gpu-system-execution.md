@@ -1,9 +1,6 @@
 # Decision 0002: GPU system execution and transfer boundaries
 
-Status: Accepted for the current experimental GPU API. Device residency,
-pinned-download staging, ahead-of-time compilation, and launch tuning in the
-[optimization notes](../background/gpu-system-execution-optimization.md) are
-proposals, not part of this decision.
+Status: Accepted for the current experimental GPU API.
 
 ## Context
 
@@ -36,9 +33,6 @@ Distinct offsets prevent later archetypes from overwriting earlier ones in a
 flat device column. Access modes avoid transfers that cannot affect the kernel
 result. Persistent column allocations avoid repeated allocation work without
 claiming that component values are resident or synchronized across calls.
-Historical Apple M4 measurements and the original optimization sequence are
-preserved in the [working notes](../background/gpu-system-execution-optimization.md);
-they are not a current performance baseline.
 
 ## Consequences
 
