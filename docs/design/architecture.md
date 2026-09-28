@@ -18,8 +18,10 @@ an exact-row [`EntitySelection`](decisions/0001-locked-entity-selections.md)
 after a batch mutation; that selection owns one lock and can perform further
 in-place changes or execute kernels on its current rows. The lock protects
 structural validity, while component read/write access is declared by the
-filter. CPU and GPU execution share this public model, although the GPU path
-packs selected spans into device columns and copies written spans back.
+filter. CPU and GPU execution share this public model. The GPU path
+[packs selected spans](decisions/0002-gpu-system-execution.md) into device
+columns and copies written spans back. Kernel row iteration follows the
+[grid-stride decision](decisions/0003-grid-stride-entity-iteration.md).
 
 The selection decision records the agreed behavior. Internal iterator and
 mutation-engine consolidation remains tracked in the
