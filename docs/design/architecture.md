@@ -5,13 +5,13 @@ The [requirements](requirements.md) state the contract; [decision records](READM
 capture choices and reasons. The [user guide](../src/guide/_index.md) explains
 the API in application code.
 
-| Layer | Responsibility | Implementation |
-| --- | --- | --- |
-| `World` | Owns the ECS state and declares its possible component types. | `src/larecs/world.mojo` |
+| Layer                                           | Responsibility                                                                                     | Implementation                                                                        |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `World`                                         | Owns the ECS state and declares its possible component types.                                      | `src/larecs/world.mojo`                                                               |
 | `HostStorage`, archetypes, and entity locations | Store component columns by archetype and maintain entity-to-row lookup through structural changes. | `src/larecs/host_storage.mojo`, `src/larecs/archetype.mojo`, `src/larecs/entity.mojo` |
-| Queries and filters | Select matching archetypes/rows for read-only iteration and kernel access declarations. | `src/larecs/iteration.mojo`, `src/larecs/filter.mojo` |
-| `SystemContext`, `KernelContext`, scheduler | Run ordered application logic and filtered CPU/GPU kernels. | `src/larecs/system.mojo`, `src/larecs/scheduler.mojo` |
-| Resources and device storage | Bind declared resource data and transfer supported component/resource values for GPU execution. | `src/larecs/resource.mojo`, `src/larecs/device_storage.mojo` |
+| Queries and filters                             | Select matching archetypes/rows for read-only iteration and kernel access declarations.            | `src/larecs/iteration.mojo`, `src/larecs/filter.mojo`                                 |
+| `SystemContext`, `KernelContext`, scheduler     | Run ordered application logic and filtered CPU/GPU kernels.                                        | `src/larecs/system.mojo`, `src/larecs/scheduler.mojo`                                 |
+| Resources and device storage                    | Bind declared resource data and transfer supported component/resource values for GPU execution.    | `src/larecs/resource.mojo`, `src/larecs/device_storage.mojo`                          |
 
 Queries borrow matching rows under a structural lock. A system can also obtain
 an exact-row [`EntitySelection`](decisions/0001-locked-entity-selections.md)
@@ -22,7 +22,3 @@ filter. CPU and GPU execution share this public model. The GPU path
 [packs selected spans](decisions/0002-gpu-system-execution.md) into device
 columns and copies written spans back. Kernel row iteration follows the
 [grid-stride decision](decisions/0003-grid-stride-entity-iteration.md).
-
-The selection decision records the agreed behavior. Internal iterator and
-mutation-engine consolidation remains tracked in the
-[implementation plan](../../entity-selection-implementation-plan.md).
