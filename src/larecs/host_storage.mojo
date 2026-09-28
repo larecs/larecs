@@ -38,6 +38,46 @@ from std.sys import size_of
 from tracy import Zone
 
 
+def _sort_entity_ranges(mut ranges: List[EntityRange]):
+    """Sort ranges by archetype and first row in O(n log n) time.
+
+    Args:
+        ranges: Ranges to order in place.
+    """
+    var scratch = ranges.copy()
+    var width = 1
+    while width < len(ranges):
+        var start = 0
+        while start < len(ranges):
+            var middle = min(start + width, len(ranges))
+            var end = min(middle + width, len(ranges))
+            var left = start
+            var right = middle
+            for destination in range(start, end):
+                if right == end or (
+                    left < middle
+                    and (
+                        ranges[left].archetype_index
+                        < ranges[right].archetype_index
+                        or (
+                            ranges[left].archetype_index
+                            == ranges[right].archetype_index
+                            and ranges[left].first_row
+                            <= ranges[right].first_row
+                        )
+                    )
+                ):
+                    scratch[destination] = ranges[left]
+                    left += 1
+                else:
+                    scratch[destination] = ranges[right]
+                    right += 1
+            start = end
+        for index in range(len(ranges)):
+            ranges[index] = scratch[index]
+        width *= 2
+
+
 struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     """
     Holds all the component and entity data for a world.
@@ -1570,8 +1610,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         var add_mask = BitMask(runtime_add_ids)
         var remove_mask = BitMask(runtime_remove_ids)
 
-        for range_index in range(len(ranges)):
-            var selected_range = ranges[range_index]
+        var ordered_ranges = ranges.copy()
+        _sort_entity_ranges(ordered_ranges)
+        for range_index in range(len(ordered_ranges)):
+            var selected_range = ordered_ranges[range_index]
             if (
                 selected_range.archetype_index < 0
                 or selected_range.archetype_index >= len(self._archetypes)
@@ -1582,17 +1624,14 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             ):
                 raise LarecsError(UnknownError())
 
-            for prior_index in range(range_index):
-                var prior = ranges[prior_index]
-                if prior.archetype_index == selected_range.archetype_index:
-                    var overlap = (
-                        selected_range.first_row
-                        < prior.first_row + prior.row_count
-                        and prior.first_row
-                        < selected_range.first_row + selected_range.row_count
-                    )
-                    if overlap:
-                        raise LarecsError(UnknownError())
+            if range_index > 0:
+                var prior = ordered_ranges[range_index - 1]
+                if (
+                    prior.archetype_index == selected_range.archetype_index
+                    and prior.first_row + prior.row_count
+                    > selected_range.first_row
+                ):
+                    raise LarecsError(UnknownError())
 
             ref archetype = self._archetypes.unsafe_get(
                 selected_range.archetype_index
@@ -1636,38 +1675,27 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 *add_components,
             )
 
-        var locations = List[EntityLocation](capacity=len(entities))
+        var locations = List[EntityRange](capacity=len(entities))
         for entity in entities:
-            locations.append(self._entity_locations[entity.get_id()])
+            var location = self._entity_locations[entity.get_id()]
+            locations.append(
+                EntityRange(location.archetype_index, location.entity_index, 1)
+            )
 
         # Stable ordering is not promised, but sorting locations makes exact
         # adjacent rows cheap to coalesce into a compact range list.
-        for i in range(1, len(locations)):
-            var current = locations[i]
-            var j = i
-            while j > 0:
-                var previous = locations[j - 1]
-                if previous.archetype_index < current.archetype_index or (
-                    previous.archetype_index == current.archetype_index
-                    and previous.entity_index <= current.entity_index
-                ):
-                    break
-                locations[j] = previous
-                j -= 1
-            locations[j] = current
+        _sort_entity_ranges(locations)
 
         for location in locations:
             if len(result_ranges) > 0:
                 ref last = result_ranges[len(result_ranges) - 1]
                 if (
                     last.archetype_index == location.archetype_index
-                    and last.first_row + last.row_count == location.entity_index
+                    and last.first_row + last.row_count == location.first_row
                 ):
                     last.row_count += 1
                     continue
-            result_ranges.append(
-                EntityRange(location.archetype_index, location.entity_index, 1)
-            )
+            result_ranges.append(location)
 
     @always_inline
     def _batch_remove_and_add[

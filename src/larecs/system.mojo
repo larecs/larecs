@@ -453,10 +453,10 @@ struct EntitySelection[
             ].Pointers(uninitialized=True)
             comptime for i in range(len(required_resources)):
                 comptime T = required_resources.ResourceTypes[i]
-                resource_pointers[i] = (
-                    Pointer(to=self._world[].resources.get[T]())
-                    .unsafe_bitcast[UInt8]()
-                    .unsafe_origin_cast[MutUntrackedOrigin]()
+                resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
+                    unsafe_from_address=Int(
+                        Pointer(to=self._world[].resources.get[T]())
+                    )
                 )
             var resource_accessor = ResourceAccessor[required_resources](
                 resource_pointers^
@@ -640,10 +640,10 @@ struct EntitySelection[
         )
         comptime for i in range(len(required_resources)):
             comptime T = required_resources.ResourceTypes[i]
-            resource_pointers[i] = (
-                Pointer(to=self._world[].resources.get[T]())
-                .unsafe_bitcast[UInt8]()
-                .unsafe_origin_cast[MutUntrackedOrigin]()
+            resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
+                unsafe_from_address=Int(
+                    Pointer(to=self._world[].resources.get[T]())
+                )
             )
         var resource_accessor = ResourceAccessor[required_resources](
             resource_pointers^
@@ -1221,10 +1221,10 @@ struct SystemContext[
 
                 comptime for i in range(len(required_resources)):
                     comptime T = required_resources.ResourceTypes[i]
-                    resource_pointers[i] = (
-                        Pointer(to=self.world[].resources.get[T]())
-                        .unsafe_bitcast[UInt8]()
-                        .unsafe_origin_cast[MutUntrackedOrigin]()
+                    resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
+                        unsafe_from_address=Int(
+                            Pointer(to=self.world[].resources.get[T]())
+                        )
                     )
 
                 var resource_accessor = ResourceAccessor[required_resources](
@@ -1493,10 +1493,10 @@ struct SystemContext[
             ].Pointers(uninitialized=True)
             comptime for i in range(len(required_resources)):
                 comptime T = required_resources.ResourceTypes[i]
-                resource_pointers[i] = (
-                    Pointer(to=self.world[].resources.get[T]())
-                    .unsafe_bitcast[UInt8]()
-                    .unsafe_origin_cast[MutUntrackedOrigin]()
+                resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
+                    unsafe_from_address=Int(
+                        Pointer(to=self.world[].resources.get[T]())
+                    )
                 )
 
             var resource_accessor = ResourceAccessor[required_resources](
