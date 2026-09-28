@@ -1,8 +1,15 @@
-# Locked entity selections for 1.0.0b2
+# Decision 0001: Locked entity selections
 
-Status: implemented and compiler-validated on Mojo 1.0. Implements the
-changed-entity execution work in issue #170 and [the release checklist](v1.0.0b2.md).
-Execution steps live in [the agent implementation plan](entity-selection-implementation-plan.md).
+Status: Accepted. The public behavior is implemented and compiler-validated on
+Mojo 1.0. Shared CPU plumbing, internal iterator/mutation migration, and
+controlled performance evidence remain open in
+[the implementation plan](../../../entity-selection-implementation-plan.md).
+
+Context: The changed-entity execution work in issue #170 and
+[the 1.0.0b2 checklist](../../../v1.0.0b2.md).
+
+Decision: Use locked, exact-range entity selections with in-place mutations and
+reusable CPU/GPU execution. The requirements and consequences follow below.
 
 ## Purpose
 
@@ -30,11 +37,12 @@ identity-tracking proposal.
 - Unrelated entity creation, deletion, and archetype changes remain blocked.
 - A kernel skips nonmatching selected entities without reporting a filter error.
   If no entities match, it performs no kernel invocation or GPU launch.
-- A filtered component operation returns only entities actually modified.
+- A filtered component operation keeps only entities actually modified in the
+  resulting selection.
   Skipped entities remain unchanged in the world and leave the selection.
 - Selection component operations update the same selection in place and return
   nothing. Kernel calls borrow it without changing membership.
-- Selections are movable and initially noncopyable.
+- Selections are movable and noncopyable.
 - An empty result is a valid locked selection. Its lifetime follows the same
   ownership rules as a nonempty result.
 
@@ -51,10 +59,8 @@ closure overload; do not add unsupported GPU lexical captures.
 
 Use the existing storage API's naming and overload conventions when exposing
 batch creation and component operations through `SystemContext` and selections.
-Determine exact Mojo signatures in a small compiler-checked ownership prototype
-before implementing the full API. In particular, verify mutable receivers,
-returned origins, chained calls, and explicit release. Do not assume a `with`
-statement gives a usable owning selection without proving its lifetime behavior.
+The concrete signatures and the `with` lifetime behavior were established by
+compiler-checked ownership prototypes before the full API was implemented.
 
 The selection needs origin-bound access to its world, owned range metadata, and
 one lock guard. It must not outlive the world or leave borrowed component pointers
@@ -157,8 +163,8 @@ mutation request can still report an error. Apply row-dependent checks to the
 operation's candidate selection, not unrelated rows in the world. Retain
 existing filter-level constraints where required by the storage API.
 
-The current `HostStorage._batch_remove_and_add` moves whole archetypes. Extend
-or factor its internals to accept exact selected ranges:
+The whole-archetype `HostStorage._batch_remove_and_add` path and exact selected
+range path must preserve these steps as their internals are consolidated:
 
 1. Snapshot candidate ranges and source archetypes before modifying storage.
 2. Validate the request and establish lock authorization.
@@ -226,3 +232,19 @@ values, captures, and resources. Locks prevent unrelated structural mutations,
 transfer safely through chains, and release on normal and exceptional exits.
 Ordinary queries and full-world execution retain their behavior. Benchmarks
 measure both selected execution and any regression in the ordinary path.
+
+## Rationale
+
+Exact ranges let a system process just the rows changed by a batch operation.
+Owning the structural guard makes those row positions valid across repeated
+kernel calls and in-place mutation. This was chosen over long-lived entity
+identity tracking, which would have different semantics and costs.
+
+## Consequences and evidence
+
+Callers must release or finish with a selection before unrelated structural
+changes. Query behavior and low-level storage operations remain supported while
+their internals are consolidated. The accepted requirements are
+[ECS-06 and ECS-07](../requirements.md); the
+[implementation plan](../../../entity-selection-implementation-plan.md)
+records compiler checks, tests, real GPU runs, and unfinished performance work.

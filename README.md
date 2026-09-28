@@ -55,6 +55,11 @@ To let VSCode and the language server know of Larecs🌲, include it as follows:
 Refer to the [API docs](https://larecs.github.io/larecs/) for details
 on how to use Larecs🌲.
 
+For contributors, [the design record](docs/design/README.md) collects the ECS
+requirements, architecture, and accepted decisions. Start there before changing
+behavior; it also explains how to propose or supersede a decision. The
+[agent guidelines](AGENTS.md) apply to automated contributors.
+
 Below there is a simple example covering the most important functionality.
 Have a look at the `examples` subdirectory for more elaborate examples.
 The example mutates the world directly during setup, then hands it to a

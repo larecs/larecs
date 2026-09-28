@@ -1,0 +1,24 @@
+# ECS requirements
+
+These are the current cross-cutting requirements for Larecs. They describe the
+existing contract rather than a release backlog. Feature-specific details and
+reasons live in [decision records](README.md); tests and source code are the
+implementation evidence. Update this file when an accepted decision changes a
+requirement, and link the relevant decision.
+
+| ID | Requirement | Evidence or detail |
+| --- | --- | --- |
+| ECS-01 | A `World` declares the component types it can contain at compile time. | [World guide](../src/guide/entities_components_world.md), `src/larecs/world.mojo` |
+| ECS-02 | An `Entity` is an identifier for a world-owned row; structural changes may move its components, so external component references must not be retained across them. | [World guide](../src/guide/entities_components_world.md), `src/larecs/entity.mojo` |
+| ECS-03 | Entities with the same component composition are stored in archetypes; entity locations must stay valid when rows move. | [Architecture](architecture.md), `src/larecs/host_storage.mojo` |
+| ECS-04 | Queries filter entities and expose read-only row access. A live query keeps its structural lock; copies have independent iteration cursors. | [Query guide](../src/guide/queries_iteration.md), `test/world_entity_iterator_test.mojo` |
+| ECS-05 | Systems run through a `SystemContext`; kernels process entities selected by component access filters on CPU or, experimentally, GPU. Declared resource and capture access governs those calls. | [Systems guide](../src/guide/systems_scheduler.md), `src/larecs/system.mojo` |
+| ECS-06 | Batch creation and component mutations in a system can yield a movable, noncopyable `EntitySelection` containing exactly the affected rows. Its lock lasts until release, destruction, or context-manager exit. | [Decision 0001](decisions/0001-locked-entity-selections.md) |
+| ECS-07 | Selection `add`, `remove`, and `replace` update the same selection in place. Selection execution intersects its membership with the kernel filter; empty matches launch no kernel. | [Decision 0001](decisions/0001-locked-entity-selections.md) |
+| ECS-08 | GPU raw-byte component and resource transfer accepts only types safe for that representation; heap-backed GPU resources require a separate transfer design. | [Resources guide](../src/guide/resources.md), [1.0.0b3 backlog](../../v1.0.0b3.md) |
+
+Performance and safety apply across these requirements: preserve valid
+component lifetimes and entity locations after structural changes, avoid
+unnecessary full-world work for small selections, and measure changes to hot
+paths with the relevant benchmarks. See [AGENTS.md](../../AGENTS.md) for the
+project's build, test, and benchmark commands.
