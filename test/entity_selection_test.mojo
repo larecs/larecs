@@ -71,6 +71,18 @@ def increment_selected(
         visits.value += 1
 
 
+def increment_selected_without_resources(
+    context: KernelContext[Filter().include[Counter]()],
+):
+    """Increments counters without a resource or capture binding.
+
+    Args:
+        context: Selected counter rows.
+    """
+    for entity in context:
+        entity.get[Counter]().value += 1
+
+
 def count_selected_tags(
     context: KernelContext[
         Filter().include[Counter, Tag](), Resources[Visits]()
@@ -395,6 +407,70 @@ def test_selection_context_manager() raises:
         assert_true(selection._authorizes_structural_change())
     assert_false(world.storage.is_locked())
     assert_equal(world.resources.get[Visits]().value, 6)
+
+
+def test_selection_runs_after_mutations_without_resources() raises:
+    """A selection executes a plain kernel after each component change.
+
+    Raises:
+        Error: If a mutation, kernel run, or assertion fails.
+    """
+    var world = World[Counter, Tag]()
+    var context = SystemContext(world)
+    var selection = context.add_entities(Counter(1), count=2)
+    selection.add(Tag(7))
+    selection.run[increment_selected_without_resources]()
+    selection.remove[Tag]()
+    selection.run[increment_selected_without_resources]()
+    selection.replace[remove=Components[Counter]()](Counter(10))
+    selection.run[increment_selected_without_resources]()
+    selection^.release()
+    assert_false(world.storage.is_locked())
+    var count = 0
+    for entity in world.storage.query[Filter().include[Counter]()]():
+        assert_equal(entity.get[Counter]().value, 11)
+        count += 1
+    assert_equal(count, 2)
+
+
+def test_scoped_selection_runs_after_adding_component() raises:
+    """A scoped selection runs a resource-free kernel after adding a component.
+
+    Raises:
+        Error: If a mutation, kernel run, or assertion fails.
+    """
+    var world = World[Counter, Tag]()
+    var context = SystemContext(world)
+    with context.add_entities(Counter(1), count=2) as selection:
+        selection.add(Tag(7))
+        selection.run[increment_selected_without_resources]()
+        selection.run[increment_selected_without_resources]()
+    assert_false(world.storage.is_locked())
+    var count = 0
+    for entity in world.storage.query[Filter().include[Counter, Tag]()]():
+        assert_equal(entity.get[Counter]().value, 3)
+        assert_equal(entity.get[Tag]().value, 7)
+        count += 1
+    assert_equal(count, 2)
+
+
+def test_scoped_selection_propagates_kernel_error_after_add() raises:
+    """A missing kernel resource propagates and releases the scoped lock.
+
+    Raises:
+        Error: If setup or an assertion fails.
+    """
+    var world = World[Counter, Tag]()
+    var context = SystemContext(world)
+    var caught = False
+    try:
+        with context.add_entities(Counter(1), count=2) as selection:
+            selection.add(Tag(7))
+            selection.run[increment_selected]()
+    except:
+        caught = True
+    assert_true(caught)
+    assert_false(world.storage.is_locked())
 
 
 def test_selection_context_manager_error() raises:
