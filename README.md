@@ -58,6 +58,8 @@ on how to use Larecs🌲.
 For contributors, [the design record](docs/design/README.md) collects the ECS
 requirements, architecture, and accepted decisions. Start there before changing
 behavior; it also explains how to propose or supersede a decision. The
+[roadmap](docs/roadmap.md) tracks upcoming work by priority, and the
+[changelog](changelog.md) records completed changes. The
 [agent guidelines](AGENTS.md) apply to automated contributors.
 
 Below there is a simple example covering the most important functionality.
@@ -231,23 +233,11 @@ the type system, but are a comparatively new and lightly-exercised path
 compared to trivial components; as with resources, using heap-allocated
 data in the ECS should generally be avoided unless you need it.
 
-## Next steps
+## Roadmap
 
-The goal of Larecs🌲 is to provide a user-friendly ECS with maximal efficiency.
-In the near future, Larecs🌲 will take the following steps:
-
-- [x] Add functionality for adding and removing multiple entities at once.
-- [ ] Add functionality for setting, adding and removing components of multiple entities at once.
-- [x] Improve the documentation
-- [x] Add a scheduler for easy setup of ECS.
-- [ ] Add built-in support for [event systems](https://mlange-42.github.io/arche/guide/events/index.html).
-- [x] Add further options to filter entities (e.g. "does not have component").
-- [ ] Add possibilities for parallel execution
-- [ ] Improve the API for systems (e.g. allow systems to stop the execution)
-- [ ] Add GPU support (in progress) -- systems can already run kernels on an accelerator via `SystemContext.run(..., on_gpu=True)`; this is experimental and still under active development
-- [ ] Improve the usability by switching to value unpacking in queries as soon as this is available in Mojo🔥.
-- [x] Fix using an inefficient dictionary for first-time archetype lookup.
-- [x] Allow the usage of complex types as components, i.e., types that have heap-allocated memory, for host-only (non-GPU) usage.
+See the [roadmap](docs/roadmap.md) for work planned for the next release,
+lower-priority work, and ideas without a release target. Completed work is
+recorded in the [changelog](changelog.md).
 
 ## License
 

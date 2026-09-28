@@ -3,10 +3,9 @@
 Status: Accepted. The public behavior is implemented and compiler-validated on
 Mojo 1.0. Shared CPU plumbing, internal iterator/mutation migration, and
 controlled performance evidence remain open in
-[the implementation plan](../../../entity-selection-implementation-plan.md).
+[the roadmap](../../roadmap.md).
 
-Context: The changed-entity execution work in issue #170 and
-[the 1.0.0b2 checklist](../../../v1.0.0b2.md).
+Context: The changed-entity execution work in issue #170.
 
 Decision: Use locked, exact-range entity selections with in-place mutations and
 reusable CPU/GPU execution. The requirements and consequences follow below.
@@ -245,6 +244,7 @@ identity tracking, which would have different semantics and costs.
 Callers must release or finish with a selection before unrelated structural
 changes. Query behavior and low-level storage operations remain supported while
 their internals are consolidated. The accepted requirements are
-[ECS-06 and ECS-07](../requirements.md); the
-[implementation plan](../../../entity-selection-implementation-plan.md)
-records compiler checks, tests, real GPU runs, and unfinished performance work.
+[ECS-06 and ECS-07](../requirements.md). The
+[roadmap](../../roadmap.md) tracks unfinished migration and performance work;
+`test/entity_selection_test.mojo`, `test/gpu_entity_selection_test.mojo`, and
+`benchmark/entity_selection_benchmark.mojo` provide implementation evidence.

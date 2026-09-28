@@ -3,7 +3,8 @@
 This directory is the source of truth for **accepted ECS requirements and design
 decisions**. It explains why an API or invariant exists. The public
 [`docs/src/guide/`](../src/guide/) teaches users how to use the library;
-release checklists and implementation plans track work and validation.
+the [roadmap](../roadmap.md) tracks unfinished work by priority, and the
+[changelog](../../changelog.md) records completed release history.
 
 Start with [requirements](requirements.md) for the current contract and
 [architecture](architecture.md) for the component map. Read the relevant
@@ -32,9 +33,9 @@ decision record before changing an established behavior:
    implementation/tests, and public guides as appropriate. If an accepted
    decision changes, add a new record and mark the old one `Superseded by
    [NNNN](...)`; retain its history.
-5. Put task lists, commit sequences, benchmark runs, and release status in
-   implementation plans or release files. Link them from a decision when they
-   provide evidence, but do not use them as the sole statement of the contract.
+5. Put unfinished tasks in the [roadmap](../roadmap.md). Keep detailed
+   implementation evidence in tests, benchmarks, or change history and link it
+   from a decision when useful; it is not the sole statement of the contract.
 
 New records can start with this outline:
 
