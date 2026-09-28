@@ -328,8 +328,8 @@ def test_disjoint_partial_ranges_preserve_unselected_rows_and_locations() raises
 
     var context = SystemContext(world)
     var selection = context._empty_selection()
-    selection._ranges.append(EntityRange(1, 1, 1))
     selection._ranges.append(EntityRange(1, 4, 1))
+    selection._ranges.append(EntityRange(1, 1, 1))
     selection.add(Tag(5))
     assert_equal(len(selection), 2)
     selection^.release()
@@ -340,6 +340,29 @@ def test_disjoint_partial_ranges_preserve_unselected_rows_and_locations() raises
             assert_equal(world.storage.get[Tag](entities[i]).value, 5)
         else:
             assert_false(world.storage.has[Tag](entities[i]))
+
+
+def test_overlapping_selection_ranges_fail_before_mutation() raises:
+    """Rejects overlapping out-of-order ranges without changing entities.
+
+    Raises:
+        Error: If setup or an assertion fails.
+    """
+    var world = World[Counter, Tag]()
+    var entities = List[Entity]()
+    for i in range(6):
+        entities.append(world.storage.add_entity(Counter(i)))
+
+    var context = SystemContext(world)
+    var selection = context._empty_selection()
+    selection._ranges.append(EntityRange(1, 2, 2))
+    selection._ranges.append(EntityRange(1, 1, 2))
+    with assert_raises():
+        selection.add(Tag(5))
+    assert_true(selection._authorizes_structural_change())
+    selection^.release()
+    for entity in entities:
+        assert_false(world.storage.has[Tag](entity))
 
 
 def test_selected_mutation_preserves_heap_owned_components() raises:

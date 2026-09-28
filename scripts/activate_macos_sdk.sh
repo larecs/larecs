@@ -18,18 +18,26 @@ _larecs_sdk_is_linkable() {
 if [ -z "${SDKROOT:-}" ]; then
     _larecs_default_sdk="$(xcrun --show-sdk-path 2>/dev/null)"
     if [ -n "$_larecs_default_sdk" ] && ! _larecs_sdk_is_linkable "$_larecs_default_sdk"; then
-        # Newest SDK first, ordered by the version in the directory name.
-        for _larecs_sdk in $(ls -d \
+        _larecs_developer_dir="$(xcode-select -p 2>/dev/null)"
+        _larecs_best_sdk=""
+        _larecs_best_name=""
+        for _larecs_sdk in \
             /Library/Developer/CommandLineTools/SDKs/MacOSX[0-9]*.sdk \
-            "$(xcode-select -p 2>/dev/null)"/Platforms/MacOSX.platform/Developer/SDKs/MacOSX[0-9]*.sdk \
-            2>/dev/null | awk -F/ '{ print $NF "\t" $0 }' | sort -V -r | cut -f 2); do
-            if _larecs_sdk_is_linkable "$_larecs_sdk"; then
-                export SDKROOT="$_larecs_sdk"
-                break
+            "$_larecs_developer_dir"/Platforms/MacOSX.platform/Developer/SDKs/MacOSX[0-9]*.sdk; do
+            if [ -d "$_larecs_sdk" ] && _larecs_sdk_is_linkable "$_larecs_sdk"; then
+                _larecs_name="${_larecs_sdk##*/}"
+                if [ -z "$_larecs_best_sdk" ] || \
+                    [ "$(printf '%s\n%s\n' "$_larecs_best_name" "$_larecs_name" | sort -V | tail -n 1)" = "$_larecs_name" ]; then
+                    _larecs_best_sdk="$_larecs_sdk"
+                    _larecs_best_name="$_larecs_name"
+                fi
             fi
         done
+        if [ -n "$_larecs_best_sdk" ]; then
+            export SDKROOT="$_larecs_best_sdk"
+        fi
     fi
-    unset _larecs_default_sdk _larecs_sdk
+    unset _larecs_default_sdk _larecs_developer_dir _larecs_sdk _larecs_name _larecs_best_sdk _larecs_best_name
 fi
 
 unset -f _larecs_sdk_is_linkable

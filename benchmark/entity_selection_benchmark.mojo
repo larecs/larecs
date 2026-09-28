@@ -1,6 +1,7 @@
 """Benchmarks exact selected execution and mutation in a large world."""
 
 from std.benchmark import Bench, BenchId, Bencher, keep
+from std.os import abort
 from std.sys import has_accelerator
 
 from custom_benchmark import DefaultBench
@@ -68,10 +69,12 @@ def _bench_full_world(mut bencher: Bencher):
                 context.run[increment]()
             except e:
                 print(e)
+                abort("Entity selection benchmark workload failed")
 
         bencher.iter(run_once)
     except e:
         print(e)
+        abort("Entity selection benchmark setup failed")
 
 
 def _bench_contiguous_selection[on_gpu: Bool](mut bencher: Bencher):
@@ -96,10 +99,12 @@ def _bench_contiguous_selection[on_gpu: Bool](mut bencher: Bencher):
                 keep(len(selection))
             except e:
                 print(e)
+                abort("Entity selection benchmark workload failed")
 
         bencher.iter(run_once)
     except e:
         print(e)
+        abort("Entity selection benchmark setup failed")
 
 
 def _bench_disjoint_selection(mut bencher: Bencher):
@@ -122,10 +127,12 @@ def _bench_disjoint_selection(mut bencher: Bencher):
                 keep(len(selection))
             except e:
                 print(e)
+                abort("Entity selection benchmark workload failed")
 
         bencher.iter(run_once)
     except e:
         print(e)
+        abort("Entity selection benchmark setup failed")
 
 
 def _bench_selected_mutation_chain(mut bencher: Bencher):
@@ -148,10 +155,41 @@ def _bench_selected_mutation_chain(mut bencher: Bencher):
                 keep(len(selection))
             except e:
                 print(e)
+                abort("Entity selection benchmark workload failed")
 
         bencher.iter(run_once)
     except e:
         print(e)
+        abort("Entity selection benchmark setup failed")
+
+
+def _bench_large_disjoint_mutation(mut bencher: Bencher):
+    """Measures mutation of many disjoint, reverse-ordered selected rows.
+
+    Args:
+        bencher: Benchmark driver.
+    """
+    try:
+        var world = World[Value, SelectedTag]()
+        _populate(world)
+        var context = SystemContext(world)
+        var selection = context._empty_selection()
+        for i in range(512):
+            selection._ranges.append(EntityRange(1, (511 - i) * 2, 1))
+
+        def run_once() {mut selection}:
+            try:
+                selection.add(SelectedTag(1))
+                selection.remove[SelectedTag]()
+                keep(len(selection))
+            except e:
+                print(e)
+                abort("Entity selection benchmark workload failed")
+
+        bencher.iter(run_once)
+    except e:
+        print(e)
+        abort("Entity selection benchmark setup failed")
 
 
 def run_all_entity_selection_benchmarks(mut bench: Bench) raises:
@@ -182,6 +220,11 @@ def run_all_entity_selection_benchmarks(mut bench: Bench) raises:
         _bench_selected_mutation_chain,
         BenchId("selection cpu, 64 add/remove chain"),
         fixed_iterations=100,
+    )
+    bench.bench_function(
+        _bench_large_disjoint_mutation,
+        BenchId("selection cpu, 512 disjoint add/remove"),
+        fixed_iterations=10,
     )
     comptime if has_accelerator():
         bench.bench_function(
