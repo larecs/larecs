@@ -223,8 +223,8 @@ def run_all_entity_selection_benchmarks(mut bench: Bench) raises:
     )
     bench.bench_function(
         _bench_large_disjoint_mutation,
-        BenchId("selection cpu, 512 disjoint add/remove"),
-        fixed_iterations=10,
+        BenchId("selection cpu, 512 disjoint add/remove first pass"),
+        fixed_iterations=1,
     )
     comptime if has_accelerator():
         bench.bench_function(
