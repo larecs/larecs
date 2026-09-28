@@ -13,6 +13,21 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 - **Archetypes**: Efficient storage for entities with the same component composition
 - **Queries**: Fast iteration over entities matching specific criteria
 
+## Design Records
+
+- Read [the design index](docs/design/README.md) and relevant
+  [requirements](docs/design/requirements.md) and decisions before changing
+  ECS behavior, ownership, storage, query, or execution semantics.
+- Record consequential new choices as numbered files in `docs/design/decisions/`
+  using the status, context, decision, rationale, consequences, and evidence
+  convention in the index. Mark unaccepted ideas `Proposed`.
+- When an accepted choice changes, add a superseding decision and update the
+  index and requirements; retain the earlier record for history. Update code,
+  tests, and user guides to match the accepted behavior.
+- Keep implementation tasks and release checklists separate from durable design
+  records; link them as evidence. Do not mark a requirement implemented solely
+  because it appears in a plan.
+
 ## Build/Test Commands
 
 - Run all tests: `pixi run tests test`

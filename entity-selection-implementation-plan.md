@@ -1,6 +1,6 @@
 # Agent implementation flow: locked entity selections
 
-Implement [the design](entity-selection-design.md) for the first remaining
+Implement [the design](docs/design/decisions/0001-locked-entity-selections.md) for the first remaining
 1.0.0b2 todo, issue #170. This file is the execution checklist; the linked design
 is the behavioral contract. Implementation and validation evidence are recorded
 below; intentionally retained compatibility work is called out explicitly.
@@ -259,7 +259,7 @@ The implementing agent should append concise entries here as work proceeds:
 | Phase | Commit or files | Checks and outcomes | Limitations or follow-up |
 | --- | --- | --- | --- |
 | Planning | This file and the linked design | Read `AGENTS.md`, `mojo-syntax`, `mojo-gpu-fundamentals`, and `closure-migration`; inspected the dirty worktree before editing | The two design/plan files were the only initial untracked changes and are now part of the documentation commit |
-| Ownership and API | `60e5750`, `40d2776`; `entity-selection-design.md` | Compiler experiments established the origin-bound RAII representation and direct `Components` replacement signature; focused lifecycle, sole-owner, empty, move, release, and raised-error tests pass | Mojo rejects a separately tracked guard pointer alongside the world pointer, so the selection itself owns the lock bit |
+| Ownership and API | `60e5750`, `40d2776`; [decision 0001](docs/design/decisions/0001-locked-entity-selections.md) | Compiler experiments established the origin-bound RAII representation and direct `Components` replacement signature; focused lifecycle, sole-owner, empty, move, release, and raised-error tests pass | Mojo rejects a separately tracked guard pointer alongside the world pointer, so the selection itself owns the lock bit |
 | Exact mutation | `60e5750`, `7d5d00c`; `test/entity_selection_test.mojo` | Disjoint and multi-archetype changes, existing destinations, swap-removal locations, empty results, invalid requests, and heap-owning components pass under ASAN | Predictable errors are preflighted; allocation failure after mutation begins is not transactionally rolled back |
 | CPU execution | `60e5750`; `37f6e5e` | Thin kernels, closures, resources, explicit mutable bindings, repeated calls, filter mismatch, and untouched rows pass | Selected and ordinary paths reuse capture/kernel/device primitives, but a follow-up can further consolidate their duplicated orchestration loops |
 | GPU execution | `60e5750`; `37f6e5e`, `7d5d00c` | Three selected GPU tests executed successfully on Apple Metal: nonzero offsets, changing sizes, write-only columns, resources/captures, and disjoint multi-archetype packing/scatter | `# SKIP_DEBUG` and `# SKIP_ASAN` disable those compile modes; they did not skip runtime execution. Heap-backed GPU resources remain out of scope |
