@@ -12,7 +12,13 @@ from tracy import Zone
 
 from .component import ComponentType, ComponentManager
 from .debug_utils import debug_warn
-from .resource import ResourceType, Resources
+from .resource import (
+    ResourceType,
+    Resources,
+    ResourceEncoder,
+    GPUResource,
+    KernelResourceView,
+)
 
 
 @fieldwise_init
@@ -397,7 +403,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             self._device_context.synchronize()
 
 
-struct DeviceResourceStorage[resources: Resources](Copyable):
+struct DeviceResourceStorage[resources: Resources]:
     """Owns one byte-addressed device buffer per resource type required by
     a kernel.
 
@@ -416,6 +422,7 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
     """The type of the per-resource device buffer array."""
     var _buffers: Self.Buffers
     var _device_context: DeviceContext
+    var _encoder: ResourceEncoder
 
     def __init__(out self, var device_context: DeviceContext):
         """Creates a device resource storage with no buffers uploaded yet.
@@ -431,12 +438,14 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
         ):
             self._buffers = Self.Buffers(fill=None)
             self._device_context = device_context^
+            self._encoder = ResourceEncoder.for_device(self._device_context)
 
     def upload[T: ResourceType](mut self, ref value: T) raises:
-        """Copies ``value`` into a freshly allocated device buffer.
+        """Uploads ``value`` into a freshly allocated device buffer.
 
-        The host value must remain alive until the queued copy completes.
-        This copies only the value's bytes, not any allocations it points to.
+        Ordinary resources are copied as bytes. GPUResource implementations
+        encode their kernel views and retain nested device allocations. The
+        host value must remain alive until its queued copy completes.
 
         Parameters:
             T: The type of the resource to upload. Must be part of
@@ -456,6 +465,17 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
             comptime id = Self.resources.index_of[T]()
             comptime assert id != -1, "T is not part of `resources`"
 
+            comptime if conforms_to(T, GPUResource):
+                var view = value.encode(self._encoder)
+                self._buffers[id] = self._device_context.enqueue_create_buffer[
+                    DType.uint8
+                ](size_of[KernelResourceView[T].Type]())
+                self._buffers[id].unsafe_value().enqueue_copy_from(
+                    Pointer(to=view).unsafe_bitcast[UInt8]()
+                )
+                self._device_context.synchronize()
+                return
+
             self._buffers[id] = self._device_context.enqueue_create_buffer[
                 DType.uint8
             ](size_of[T]())
@@ -464,11 +484,12 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
             )
 
     def download[T: ResourceType](self, mut value: T) raises:
-        """Copies the device buffer for ``T`` back into ``value``.
+        """Copies an ordinary resource buffer back into ``value``.
 
         Mirrors [.upload], but in the opposite direction: after a kernel
-        that may have mutated the resource has run, this pulls its bytes
-        back from the device buffer into the host-side value.
+        that may have mutated an ordinary resource has run, this pulls its
+        bytes back into the host-side value. ``GPUResource`` views are
+        currently read-only and are never downloaded.
 
         Parameters:
             T: The type of the resource to download. Must have been
@@ -488,6 +509,9 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
         ):
             comptime id = Self.resources.index_of[T]()
             comptime assert id != -1, "T is not part of `resources`"
+
+            comptime if conforms_to(T, GPUResource):
+                return
 
             if self._buffers[id] is None:
                 raise Error("Resource not uploaded: " + reflect[T].name())

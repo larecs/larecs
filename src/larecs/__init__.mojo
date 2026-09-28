@@ -121,6 +121,14 @@ Exports:
  - resource.Resources
  - resource.ResourceStorage
  - resource.ResourceType
+ - resource.Int32Dict
+ - resource.Int32DictView
+ - resource.Int32DictResource
+ - resource.StringDict
+ - resource.StringDictView
+ - resource.StringDictResource
+ - resource.GPUResource
+ - resource.ResourceEncoder
  - scheduler.Scheduler
  - system.System
  - system.SystemContext
@@ -140,7 +148,19 @@ from .error import (
 from .component import ComponentType, Components
 from .types import ComponentId
 from .archetype import MutArchetypeRowAccessor, ArchetypeRowAccessor
-from .resource import Resources, ResourceStorage, ResourceType
+from .resource import (
+    Resources,
+    ResourceStorage,
+    ResourceType,
+    Int32Dict,
+    Int32DictView,
+    Int32DictResource,
+    StringDict,
+    StringDictView,
+    StringDictResource,
+    GPUResource,
+    ResourceEncoder,
+)
 from .entity import Entity
 from .lock import LockGuard, LockManager
 from .filter import Filter, BitMaskFilter

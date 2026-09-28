@@ -9,6 +9,7 @@ kernel on CPU or GPU.
 from std.builtin.device_passable import DevicePassable, DeviceTypeEncoder
 from std.math import ceildiv
 from std.sys import has_accelerator
+from std.sys.info import is_gpu
 from std.reflection import reflect_fn
 
 from max.gpu.host import DevicePointer
@@ -31,6 +32,9 @@ from .resource import (
     ResourceType,
     ResourceStorage,
     constrain_gpu_safe_resources,
+    ResourceEncoder,
+    GPUResource,
+    KernelResourceView,
 )
 from .device_storage import DeviceResourceStorage
 from .capture import (
@@ -448,16 +452,10 @@ struct EntitySelection[
                 total_length += selected_range.row_count
 
         comptime if not has_accelerator() or not on_gpu:
-            var resource_pointers = ResourceAccessor[
-                required_resources
-            ].Pointers(uninitialized=True)
-            comptime for i in range(len(required_resources)):
-                comptime T = required_resources.ResourceTypes[i]
-                resource_pointers[i] = (
-                    Pointer(to=self._world[].resources.get[T]())
-                    .unsafe_bitcast[UInt8]()
-                    .unsafe_origin_cast[MutUntrackedOrigin]()
-                )
+            var staged_resources = ResourceEncoder()
+            var resource_pointers = _bind_host_resources[required_resources](
+                staged_resources, self._world[].resources
+            )
             var resource_accessor = ResourceAccessor[required_resources](
                 resource_pointers^
             )
@@ -486,6 +484,7 @@ struct EntitySelection[
                     thread_count=1,
                 )
                 KernelFunc(kernel_context)
+            _ = staged_resources.keep_alive()
         else:
             comptime assert constrain_gpu_safe_components[
                 *filter._include.ComponentTypes
@@ -497,7 +496,8 @@ struct EntitySelection[
                 *required_resources.ResourceTypes
             ](), (
                 "EntitySelection.run(..., on_gpu=True) requires every"
-                " required resource type to be trivially movable."
+                " required resource type to have a supported GPU transfer"
+                " path."
             )
             if not self._world[]._device_storage:
                 raise Error(
@@ -635,16 +635,10 @@ struct EntitySelection[
             Error: If explicit bindings or required resources are invalid.
         """
         var host_captures = _bind_captures[capture_spec](*bindings)
-        var resource_pointers = ResourceAccessor[required_resources].Pointers(
-            uninitialized=True
+        var staged_resources = ResourceEncoder()
+        var resource_pointers = _bind_host_resources[required_resources](
+            staged_resources, self._world[].resources
         )
-        comptime for i in range(len(required_resources)):
-            comptime T = required_resources.ResourceTypes[i]
-            resource_pointers[i] = (
-                Pointer(to=self._world[].resources.get[T]())
-                .unsafe_bitcast[UInt8]()
-                .unsafe_origin_cast[MutUntrackedOrigin]()
-            )
         var resource_accessor = ResourceAccessor[required_resources](
             resource_pointers^
         )
@@ -677,6 +671,7 @@ struct EntitySelection[
                 thread_count=1,
             )
             kernel_func(kernel_context)
+        _ = staged_resources.keep_alive()
 
 
 @fieldwise_init
@@ -685,11 +680,10 @@ struct ResourceAccessor[resources: Resources](Copyable):
     position in ``resources``.
 
     Backed by plain byte pointers rather than a [..resource.ResourceStorage]
-    reference, so the same representation works both for CPU kernels
-    (pointers into host resource storage) and GPU kernels (pointers into
-    device buffers uploaded for the call) -- mirroring how ``KernelContext``
-    already represents component columns as an array of byte pointers keyed
-    by position in the kernel's filter.
+    reference. Ordinary CPU resources point into host storage, while
+    GPUResource types point to their encoded kernel views. GPU pointers
+    address uploaded device buffers. ``KernelContext`` uses the same accessor
+    type on both targets.
 
     Parameters:
         resources: The resource types made available to the kernel.
@@ -708,8 +702,10 @@ struct ResourceAccessor[resources: Resources](Copyable):
     var _pointers: Self.Pointers
     """Byte pointers to each resource's buffer, indexed by position in ``resources``."""
 
-    def get[T: ResourceType](self) -> ref[MutUntrackedOrigin] T:
-        """Returns the resource of type T.
+    def get[
+        T: ResourceType
+    ](self) -> ref[MutUntrackedOrigin] KernelResourceView[T].Type:
+        """Returns a resource or its GPU-safe kernel view.
 
         Always returns a mutable reference, mirroring how
         `EntityAccessor.get` exposes component columns: the backing
@@ -724,13 +720,51 @@ struct ResourceAccessor[resources: Resources](Copyable):
             T: The type of the resource to retrieve.
 
         Returns:
-            The resource of type T.
+            A reference to ``T`` for an ordinary resource, or to
+            ``T.ViewType`` when ``T`` implements ``GPUResource``. Changes to
+            ``GPUResource`` views are not copied back to the host resource.
         """
         comptime id = Self.resources.index_of[T]()
         comptime assert (
             id != -1
         ), "T must be part of the kernel's required_resources"
-        return self._pointers[id].unsafe_bitcast[T]()[]
+        return self._pointers[id].unsafe_bitcast[KernelResourceView[T].Type]()[]
+
+
+def _bind_host_resources[
+    resources: Resources
+](
+    mut staged: ResourceEncoder,
+    mut storage: ResourceStorage,
+    out pointers: ResourceAccessor[resources].Pointers,
+) raises:
+    """Binds CPU kernel resources, encoding custom GPU resource views.
+
+    Parameters:
+        resources: The resources declared by the kernel.
+
+    Args:
+        staged: Storage that retains packed dictionary tables for the call.
+        storage: The world's host resource storage.
+
+    Returns:
+        The resource pointers through ``out pointers``.
+
+    Raises:
+        Error: If a required resource is absent or packing fails.
+    """
+    pointers = ResourceAccessor[resources].Pointers(uninitialized=True)
+    comptime for i in range(len(resources)):
+        comptime T = resources.ResourceTypes[i]
+        comptime if conforms_to(T, GPUResource):
+            var view = storage.get[T]().encode(staged)
+            pointers[i] = staged.store_view(view)
+        else:
+            pointers[i] = (
+                Pointer(to=storage.get[T]())
+                .unsafe_bitcast[UInt8]()
+                .unsafe_origin_cast[MutUntrackedOrigin]()
+            )
 
 
 @fieldwise_init
@@ -1215,17 +1249,10 @@ struct SystemContext[
                 length += len(archetype)
 
             comptime if not has_accelerator() or not on_gpu:
-                var resource_pointers = ResourceAccessor[
+                var staged_resources = ResourceEncoder()
+                var resource_pointers = _bind_host_resources[
                     required_resources
-                ].Pointers(uninitialized=True)
-
-                comptime for i in range(len(required_resources)):
-                    comptime T = required_resources.ResourceTypes[i]
-                    resource_pointers[i] = (
-                        Pointer(to=self.world[].resources.get[T]())
-                        .unsafe_bitcast[UInt8]()
-                        .unsafe_origin_cast[MutUntrackedOrigin]()
-                    )
+                ](staged_resources, self.world[].resources)
 
                 var resource_accessor = ResourceAccessor[required_resources](
                     resource_pointers^
@@ -1269,6 +1296,7 @@ struct SystemContext[
                         thread_count=1,
                     )
                     KernelFunc(kernel_context)
+                _ = staged_resources.keep_alive()
 
             else:
                 # `on_gpu=True` moves every accessed component and resource
@@ -1294,8 +1322,8 @@ struct SystemContext[
                     *required_resources.ResourceTypes
                 ](), (
                     "SystemContext.run(..., on_gpu=True) requires every"
-                    " required resource type to be trivially movable for raw"
-                    " byte transfer between host and device."
+                    " required resource type to have a supported GPU"
+                    " transfer path."
                 )
 
                 if not self.world[]._device_storage:
@@ -1488,16 +1516,10 @@ struct SystemContext[
                 )
             )
 
-            var resource_pointers = ResourceAccessor[
-                required_resources
-            ].Pointers(uninitialized=True)
-            comptime for i in range(len(required_resources)):
-                comptime T = required_resources.ResourceTypes[i]
-                resource_pointers[i] = (
-                    Pointer(to=self.world[].resources.get[T]())
-                    .unsafe_bitcast[UInt8]()
-                    .unsafe_origin_cast[MutUntrackedOrigin]()
-                )
+            var staged_resources = ResourceEncoder()
+            var resource_pointers = _bind_host_resources[required_resources](
+                staged_resources, self.world[].resources
+            )
 
             var resource_accessor = ResourceAccessor[required_resources](
                 resource_pointers^
@@ -1532,3 +1554,4 @@ struct SystemContext[
                     thread_count=1,
                 )
                 kernel_func(kernel_context)
+            _ = staged_resources.keep_alive()

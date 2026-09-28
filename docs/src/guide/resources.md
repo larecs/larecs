@@ -226,17 +226,73 @@ To run this same kernel on a GPU, replace its CPU `run` call with:
 ```
 
 For GPU execution, accessed components must conform to
-`TrivialRegisterPassable`; required resources must satisfy
-`is_trivially_movable`. Resources do not need to declare
-`TrivialRegisterPassable` themselves. Larecs copies each resource's bytes to
-the device before execution and back afterward, including kernel changes.
+`TrivialRegisterPassable`. Ordinary resources must have trivial copy, move,
+and deletion; Larecs copies their bytes to the device and back, including
+kernel changes. Resources that own dictionaries implement `GPUResource` to
+provide a GPU-safe view and an `encode()` method. The same
+`context.resources.get[T]()` call returns that view on both CPU and GPU.
+
+`Int32DictResource` and `StringDictResource` are wrappers for dictionaries
+with `Int32` and `String` keys respectively, and `Int32` values. Their host
+dictionary is in `.entries`; the kernel view provides `get_or(key, default)`.
+For example, a resource can contain both dictionary wrappers:
+
+```mojo
+@fieldwise_init
+struct LookupConfigView(TrivialRegisterPassable):
+    var bias: Int32
+    var labels: StringDictView
+
+@fieldwise_init
+struct LookupConfig(GPUResource):
+    comptime ViewType = LookupConfigView
+    var bias: Int32
+    var labels: StringDictResource
+
+    def encode(self, mut encoder: ResourceEncoder) raises -> LookupConfigView:
+        """Builds a kernel view from the resource fields.
+
+        Args:
+            encoder: Retains the dictionary table through execution.
+
+        Returns:
+            The kernel view.
+
+        Raises:
+            Error: If packing or upload fails.
+        """
+        return LookupConfigView(self.bias, self.labels.encode(encoder))
+
+# In a kernel requiring Resources[LookupConfig]():
+ref config = context.resources.get[LookupConfig]()
+var label = config.labels.get_or("player", -1)
+```
+
+Larecs packs a temporary table for CPU execution and uploads a device table
+for GPU execution. Host edits to `.entries` are visible on the next run.
+Dictionary lookup accepts string literals and `StringSlice` values whose
+bytes are accessible to the GPU.
+
+**Current limitation:** `GPUResource` kernel views, including dictionary
+fields, are read-only. They do not have a method to update an existing entry,
+and Larecs does not copy changes to a view back into the host resource after
+either a CPU or GPU run. Even though `get[T]()` returns a mutable reference,
+writing directly to a view field or its value buffer will not persist the
+change in `.entries`. Mutate `.entries` on the host between runs instead.
+Ordinary trivial resources still support kernel writes and GPU copy-back.
+
+A later release can add an existing-key update method to dictionary views and
+copy changed values back to `.entries`. Concurrent GPU writes to the same
+key will need an explicit synchronization strategy. Inserting or removing
+keys also requires changes to the table's occupancy and capacity and is
+outside that existing-key update work.
 
 Trivial movability does **not** make host heap allocations accessible to the
-GPU. The transfer does not follow pointers, copy `List` or `Dict` contents,
-or invoke `DevicePassable` encoding. Do not pass host-backed collections or
-host-side `TileTensor` descriptors as resources through this path. They need
-an explicit device representation and transfer support, which this API does
-not yet provide. Heap-backed resources remain supported in CPU kernels.
+GPU. Ordinary resource transfer does not follow pointers or invoke
+`DevicePassable` encoding. Other host-backed collections, including other
+`Dict` key/value types, and host-side `TileTensor` descriptors still need an
+explicit device representation. Heap-backed resources remain supported in
+CPU kernels.
 
 ## Removing resources
 

@@ -2,8 +2,16 @@ from larecs.resource import (
     ResourceStorage,
     ResourceType,
     constrain_gpu_safe_resources,
+    Int32Dict,
+    StringDict,
+    Int32DictView,
+    StringDictView,
+    ResourceEncoder,
+    Int32DictResource,
+    StringDictResource,
 )
 from std.testing import *
+from larecs import World, SystemContext, KernelContext, Filter, Resources
 
 
 @fieldwise_init
@@ -43,6 +51,11 @@ def test_gpu_resource_movability() raises:
     assert_true(constrain_gpu_safe_resources[]())
     assert_true(constrain_gpu_safe_resources[Resource1]())
     assert_true(constrain_gpu_safe_resources[Resource1, Resource2]())
+    assert_false(constrain_gpu_safe_resources[Int32Dict]())
+    assert_true(constrain_gpu_safe_resources[Int32DictResource]())
+    assert_false(constrain_gpu_safe_resources[StringDict]())
+    assert_true(constrain_gpu_safe_resources[StringDictResource]())
+    assert_false(constrain_gpu_safe_resources[Dict[Int32, Int64]]())
     assert_false(constrain_gpu_safe_resources[NonTriviallyMovableResource]())
     assert_false(
         constrain_gpu_safe_resources[Resource1, NonTriviallyMovableResource]()
@@ -50,6 +63,64 @@ def test_gpu_resource_movability() raises:
     assert_false(
         constrain_gpu_safe_resources[NonTriviallyMovableResource, Resource1]()
     )
+
+
+def test_host_dictionary_kernel_views() raises:
+    """Packed host tables expose the same trivial views as GPU kernels.
+
+    Raises:
+        Error: If table packing or an assertion fails.
+    """
+    comptime assert conforms_to(Int32DictView, TrivialRegisterPassable)
+    comptime assert conforms_to(StringDictView, TrivialRegisterPassable)
+
+    var integers = Int32Dict()
+    integers[3] = 30
+    var strings = StringDict()
+    strings["café"] = 40
+    var staged = ResourceEncoder()
+    var integer_view = staged.pack_int32(integers)
+    var string_view = staged.pack_string(strings)
+    assert_equal(integer_view.get_or(3, -1), 30)
+    assert_equal(integer_view.get_or(8, -1), -1)
+    assert_equal(string_view.get_or("café", -1), 40)
+    assert_equal(string_view.get_or("missing", -1), -1)
+    assert_equal(staged.keep_alive(), 16)
+
+
+def read_both_dictionaries(
+    context: KernelContext[
+        Filter().include[Int32](),
+        Resources[Int32DictResource, StringDictResource](),
+    ]
+):
+    """Reads two GPU-safe dictionary views in a CPU kernel.
+
+    Args:
+        context: Integer rows and the required dictionary resources.
+    """
+    var integers = context.resources.get[Int32DictResource]()
+    var strings = context.resources.get[StringDictResource]()
+    for entity in context:
+        entity.get[Int32]() = integers.get_or(3, -1) + strings.get_or("a", -1)
+
+
+def test_cpu_kernel_uses_packed_dictionary_views() raises:
+    """CPU kernel binding keeps both packed tables alive for the call.
+
+    Raises:
+        Error: If execution or an assertion fails.
+    """
+    var world = World[Int32]()
+    var integers = Int32DictResource()
+    integers.entries[3] = 30
+    var strings = StringDictResource()
+    strings.entries["a"] = 12
+    world.resources.add(integers^, strings^)
+    var entity = world.storage.add_entity(Int32(0))
+    var context = SystemContext(world)
+    context.run[read_both_dictionaries]()
+    assert_equal(world.storage.get[Int32](entity), 42)
 
 
 def test_reseource_init() raises:
