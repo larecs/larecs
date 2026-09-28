@@ -1,4 +1,9 @@
-# Grid-stride GPU entity iterator
+# Historical working notes: grid-stride GPU entity iterator
+
+These notes describe the original `system_sketch.mojo` prototype and its test
+plan. Some prototype-only statements no longer describe the archetype-backed
+implementation. The current accepted behavior is
+[decision 0003](../decisions/0003-grid-stride-entity-iteration.md).
 
 ## Goal
 

@@ -1,4 +1,10 @@
-# Optimizing GPU system execution
+# Historical working notes: optimizing GPU system execution
+
+These notes record measurements and an implementation plan from the Apple M4
+work. Some source line numbers, test names, and proposed phases are historical.
+The current accepted GPU execution contract is
+[decision 0002](../decisions/0002-gpu-system-execution.md); consult the source
+and current benchmarks before treating a measurement here as a new baseline.
 
 Plan for making `SystemContext.run[..., on_gpu=True]` fast. Every number
 below was measured on this machine (Apple M4, Metal backend) before the plan
