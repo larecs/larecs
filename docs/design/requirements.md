@@ -19,6 +19,7 @@ and link the relevant decision.
 | ECS-08 | GPU raw-byte component and resource transfer accepts only types safe for that representation; heap-backed GPU resources require a separate transfer design. | [Decision 0002](decisions/0002-gpu-system-execution.md), [roadmap](../roadmap.md) |
 | ECS-09 | Each matching kernel row is visited once: CPU iteration is sequential, while GPU threads partition a prepared row range by global thread index and total launched thread count. | [Decision 0003](decisions/0003-grid-stride-entity-iteration.md), `test/grid_stride_iterator_test.mojo` |
 | ECS-10 | User-authored ECS kernel code must be executable unchanged on both CPU and GPU; selecting the target must not require a second kernel implementation. | [Decision 0002](decisions/0002-gpu-system-execution.md). Current gaps: CPU-only lexical closure entry points and types or bindings unsupported by GPU transfer; test both targets on compatible hardware. |
+| ECS-11 | A scoped selection can run a kernel after a component mutation and propagate either an ECS usage error or a general kernel error while releasing its lock. | [Decision 0004](decisions/0004-scoped-selection-errors.md), `test/entity_selection_test.mojo` |
 
 Performance and safety apply across these requirements: preserve valid
 component lifetimes and entity locations after structural changes, avoid
