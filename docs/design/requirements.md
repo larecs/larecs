@@ -1,10 +1,11 @@
 # ECS requirements
 
-These are the current cross-cutting requirements for Larecs. They describe the
-existing contract rather than a release backlog. Feature-specific details and
-reasons live in [decision records](README.md); tests and source code are the
-implementation evidence. Update this file when an accepted decision changes a
-requirement, and link the relevant decision.
+These are the accepted cross-cutting requirements for Larecs, rather than a
+release backlog. A requirement can expose a current implementation gap; its
+evidence column must say so. Feature-specific details and reasons live in
+[decision records](README.md); tests and source code are the implementation
+evidence. Update this file when an accepted decision changes a requirement,
+and link the relevant decision.
 
 | ID | Requirement | Evidence or detail |
 | --- | --- | --- |
@@ -17,6 +18,7 @@ requirement, and link the relevant decision.
 | ECS-07 | Selection `add`, `remove`, and `replace` update the same selection in place. Selection execution intersects its membership with the kernel filter; empty matches launch no kernel. | [Decision 0001](decisions/0001-locked-entity-selections.md) |
 | ECS-08 | GPU raw-byte component and resource transfer accepts only types safe for that representation; heap-backed GPU resources require a separate transfer design. | [Decision 0002](decisions/0002-gpu-system-execution.md), [1.0.0b3 backlog](../../v1.0.0b3.md) |
 | ECS-09 | Each matching kernel row is visited once: CPU iteration is sequential, while GPU threads partition a prepared row range by global thread index and total launched thread count. | [Decision 0003](decisions/0003-grid-stride-entity-iteration.md), `test/grid_stride_iterator_test.mojo` |
+| ECS-10 | User-authored ECS kernel code must be executable unchanged on both CPU and GPU; selecting the target must not require a second kernel implementation. | [Decision 0002](decisions/0002-gpu-system-execution.md). Current gaps: CPU-only lexical closure entry points and types or bindings unsupported by GPU transfer; test both targets on compatible hardware. |
 
 Performance and safety apply across these requirements: preserve valid
 component lifetimes and entity locations after structural changes, avoid

@@ -11,6 +11,8 @@ different ownership and lifetime rules.
 
 ## Decision
 
+- Preserve one user-authored kernel implementation for CPU and GPU execution.
+  Target selection belongs at the `run` call, not in a separate kernel body.
 - Pack matching archetype rows into device component columns at distinct
   offsets, launch over the packed length, and scatter written rows back to
   their original host locations. Empty matches do not launch a kernel.
@@ -40,6 +42,10 @@ GPU execution is experimental and may cost more than CPU execution for small
 or memory-bound workloads. Host/device transfer and synchronization remain in
 the call path. Adding residency or a different transfer model requires a new
 decision covering invalidation, ownership, and visibility to host callers.
+The portability requirement also applies to future kernel APIs. The current
+CPU-only lexical closure overload and GPU transfer type restrictions are gaps
+to resolve or reject explicitly, not evidence that every CPU callable already
+runs on a GPU.
 
 ## Evidence
 
@@ -48,5 +54,6 @@ The implementation is in `src/larecs/system.mojo`,
 regression coverage includes `test/gpu_component_access_test.mojo`,
 `test/gpu_device_storage_test.mojo`, `test/gpu_entity_selection_test.mojo`,
 and `test/gpu_resource_test.mojo`. The reproducible workload is
-`benchmark/gpu_system_benchmark.mojo`. See [ECS-05 and ECS-08](../requirements.md)
+`benchmark/gpu_system_benchmark.mojo`. See
+[ECS-05, ECS-08, and ECS-10](../requirements.md)
 for cross-cutting requirements.
