@@ -41,9 +41,12 @@ Use the `pr-description` skill to write or revise a description; `.github/pull_r
 - When an accepted choice changes, add a superseding decision and update the
   index and requirements; retain the earlier record for history. Update code,
   tests, and user guides to match the accepted behavior.
-- Keep implementation tasks and release checklists separate from durable design
-  records; link them as evidence. Do not mark a requirement implemented solely
-  because it appears in a plan.
+- Track unfinished work in the single [roadmap](docs/roadmap.md), grouped by
+  **Next release**, **Later**, or **Unscheduled**. Move items between priority
+  buckets as needed; do not add per-version todo files. Put completed release
+  history in the [changelog](changelog.md).
+- Keep tasks separate from durable design records; link decisions and evidence.
+  Do not mark a requirement implemented solely because it appears on the roadmap.
 
 ## Build/Test Commands
 
