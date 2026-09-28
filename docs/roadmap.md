@@ -51,20 +51,35 @@ selected mutation chains, and a selected GPU case.
 
 ### Support heap-backed GPU resources
 
-The current GPU resource path copies raw bytes and does not encode host heap
-ownership for the device. Keep existing type restrictions until a safe transfer
-model is implemented. See [decision 0002](design/decisions/0002-gpu-system-execution.md).
+The current released GPU resource path copies raw bytes and does not encode
+host heap ownership for the device. Keep existing type restrictions until a
+safe transfer model is accepted for release. See
+[decision 0002](design/decisions/0002-gpu-system-execution.md). A dictionary-view
+prototype is recorded as [proposed decision 0004](design/decisions/0004-gpu-dictionary-resource-views.md)
+on `future/gpu-dictionary-resources`; its presence on that branch does not mark
+the work released.
 
 - [ ] Decide and document ownership, encoding, lifetime, synchronization, and
   copy-back for heap-backed GPU resources.
 - [ ] Implement and test `TileTensor` compatibility under that model.
-- [ ] Resolve `Dict` compatibility and any `DevicePassable` conversion needed;
-  ensure unsupported types fail clearly.
+- [ ] Review and accept or revise the proposed dictionary view design. Before
+  release, resolve view alignment and mutable-reference semantics, measure
+  packing and upload costs, verify one kernel body on CPU and actual GPU
+  hardware, and ensure unsupported dictionary types fail clearly.
 - [ ] Update GPU resource guides after API and hardware tests pass. Preserve the
   documented `ResourceStorage.get` `UnsafeAnyOrigin` contract unless Mojo can
   express the ownership relationship.
 
 ## Later — lower priority
+
+### Update existing GPU dictionary values from kernels
+
+The proposed [dictionary view design](design/decisions/0004-gpu-dictionary-resource-views.md)
+supports lookup only. Keep mutation out of its first public release.
+
+- [ ] Design an existing-key update method, copy changed values back to the
+  host dictionary after CPU and GPU runs, and define concurrent GPU write
+  behavior. Treat insertion and removal as separate work.
 
 ### Close remaining CPU/GPU kernel portability gaps
 

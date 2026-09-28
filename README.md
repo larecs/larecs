@@ -224,12 +224,8 @@ constraint: GPU transfer moves component columns between host and device
 buffers via a raw byte copy that never runs a type's copy constructor or
 destructor, so such components must additionally be
 `TrivialRegisterPassable` (bitwise-copyable, with no heap-allocated state
-and no custom copy/move/destroy logic). Ordinary GPU resources must have
-trivial copy, move, and deletion and must not contain host-only pointers. The
-read-only `Int32DictResource` and `StringDictResource` wrappers provide
-device views through the same `context.resources.get[T]()` API as other
-resources. Custom resources can contain these wrappers by implementing
-`GPUResource` with a kernel view. Using a type with heap-allocated memory in
+and no custom copy/move/destroy logic -- the same requirement applies to
+resources read by a GPU kernel). Using a type with heap-allocated memory in
 a component accessed on the GPU will corrupt or leak that memory.
 
 Heap-allocated (non-trivial) components for host-only use are permitted by

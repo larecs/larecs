@@ -15,6 +15,7 @@ decision record before changing an established behavior:
 | [0001](decisions/0001-locked-entity-selections.md) | Accepted | Locked entity selections and exact-range execution |
 | [0002](decisions/0002-gpu-system-execution.md) | Accepted | GPU system execution and transfer boundaries |
 | [0003](decisions/0003-grid-stride-entity-iteration.md) | Accepted | CPU/GPU grid-stride entity iteration |
+| [0004](decisions/0004-gpu-dictionary-resource-views.md) | Proposed | GPU dictionary resource views and transfer ownership |
 
 ## Recording a change
 
