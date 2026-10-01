@@ -1,6 +1,10 @@
-# Decision 0002: GPU system execution and transfer boundaries
+---
+id: "0002"
+title: "GPU system execution and transfer boundaries"
+status: accepted
+---
 
-Status: Accepted for the current experimental GPU API.
+# Decision 0002: GPU system execution and transfer boundaries
 
 ## Context
 
