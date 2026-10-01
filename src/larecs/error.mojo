@@ -1,7 +1,7 @@
 """Typed errors raised by public ECS operations.
 
 Provides `LarecsError` and its variants (`UnknownError`, `WorldError`,
-`EntityError`, `ComponentError`).
+`EntityError`, `ComponentError`, and general kernel `Error`).
 """
 
 from std.builtin.globals import global_constant
@@ -18,10 +18,12 @@ comptime LarecsError = Variant[
     WorldError,
     EntityError,
     ComponentError,
+    Error,
 ]
-"""Typed errors raised by public operations.
+"""Typed ECS errors and general kernel errors raised by public operations.
 
-These indicate an error in the usage of Larecs.
+The specific arms describe ECS usage errors; the `Error` arm carries general
+kernel or resource failures through selection scopes.
 """
 
 

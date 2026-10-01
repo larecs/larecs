@@ -13,7 +13,7 @@ from .component import (
     ComponentManager,
     constrain_components_unique,
 )
-from .entity import Entity, EntityLocation
+from .entity import Entity, EntityLocation, EntityRange
 from .error import (
     LarecsError,
     WorldError,
@@ -36,6 +36,46 @@ from ._utils import concatenate_arrays, assert_unreachable
 from std.sys import size_of
 
 from tracy import Zone
+
+
+def _sort_entity_ranges(mut ranges: List[EntityRange]):
+    """Sort ranges by archetype and first row in O(n log n) time.
+
+    Args:
+        ranges: Ranges to order in place.
+    """
+    var scratch = ranges.copy()
+    var width = 1
+    while width < len(ranges):
+        var start = 0
+        while start < len(ranges):
+            var middle = min(start + width, len(ranges))
+            var end = min(middle + width, len(ranges))
+            var left = start
+            var right = middle
+            for destination in range(start, end):
+                if right == end or (
+                    left < middle
+                    and (
+                        ranges[left].archetype_index
+                        < ranges[right].archetype_index
+                        or (
+                            ranges[left].archetype_index
+                            == ranges[right].archetype_index
+                            and ranges[left].first_row
+                            <= ranges[right].first_row
+                        )
+                    )
+                ):
+                    scratch[destination] = ranges[left]
+                    left += 1
+                else:
+                    scratch[destination] = ranges[right]
+                    right += 1
+            start = end
+        for index in range(len(ranges)):
+            ranges[index] = scratch[index]
+        width *= 2
 
 
 struct HostStorage[*ComponentTypes: ComponentType](Copyable):
@@ -1356,6 +1396,306 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             self._entity_locations[entity.get_id()] = EntityLocation(
                 index_in_new_archetype, new_archetype_idx
             )
+
+    @always_inline
+    def _assert_selection_authorized(
+        self, manager_address: Int, lock: Int
+    ) raises LarecsError:
+        """Validates a selection's narrow structural-mutation authority.
+
+        Args:
+            manager_address: Address of the lock manager owned by the selection.
+            lock: The selection's active lock bit.
+
+        Raises:
+            LarecsError: If the manager identity differs or another lock exists.
+        """
+        if manager_address != Int(
+            Pointer(to=self._locks)
+        ) or not self._locks.owns_only(lock):
+            raise LarecsError(WorldError.world_is_locked)
+
+    def _remove_and_add_authorized[
+        *Ts: ComponentType,
+        rem_size: Int = 0,
+        remove_ids: Array[ComponentId, rem_size] = Array[ComponentId, rem_size](
+            uninitialized=True
+        ),
+    ](
+        mut self,
+        entity: Entity,
+        manager_address: Int,
+        lock: Int,
+        *add_components: *Ts,
+    ) raises LarecsError -> EntityLocation:
+        """Mutates one entity under a selection-owned structural lock.
+
+        Parameters:
+            Ts: Component types to add or replace.
+            rem_size: Number of component types to remove.
+            remove_ids: Component IDs to remove.
+
+        Args:
+            entity: The selected entity to mutate.
+            manager_address: Address of the owning selection's lock manager.
+            lock: The owning selection's active lock bit.
+            add_components: Values to add or replace.
+
+        Raises:
+            LarecsError: If authorization is invalid or the entity mutation is
+                invalid.
+
+        Returns:
+            The entity's exact location after mutation.
+        """
+        comptime assert Self.component_manager.contains_components[
+            *Ts
+        ](), "One or more component types not in component manager"
+        comptime assert constrain_components_unique[
+            *Ts
+        ](), "Duplicate component types in add are not allowed."
+        self._assert_selection_authorized(manager_address, lock)
+        self.assert_alive(entity)
+
+        comptime add_size = len(Ts)
+        comptime add_ids = Self.component_manager.get_id_arr[*Ts]()
+        comptime ComponentIdsType = Array[ComponentId, add_size + rem_size]
+        var runtime_add_ids = materialize[add_ids]()
+        var runtime_remove_ids = materialize[remove_ids]()
+        var entity_loc = self._entity_locations[entity.get_id()]
+        var old_archetype_idx = entity_loc.archetype_index
+        var old_mask = self._archetypes[old_archetype_idx].get_mask().copy()
+
+        comptime if rem_size:
+            var remove_mask = BitMask(runtime_remove_ids)
+            if not old_mask.contains(remove_mask):
+                raise LarecsError(
+                    ComponentError.missing_components_on_remove.with_components(
+                        remove_mask & ~old_mask
+                    )
+                )
+
+        comptime if add_size:
+            var compare_mask = old_mask.copy()
+            comptime if rem_size:
+                compare_mask.set(runtime_remove_ids, False)
+            var add_mask = BitMask(runtime_add_ids)
+            if compare_mask.contains_any(add_mask):
+                raise LarecsError(
+                    ComponentError.existing_components_on_add.with_components(
+                        compare_mask & add_mask
+                    )
+                )
+
+        comptime if add_size + rem_size == 0:
+            return entity_loc
+
+        var component_ids: ComponentIdsType
+        comptime if add_size and rem_size:
+            comptime concatenated = concatenate_arrays(remove_ids, add_ids)
+            component_ids = materialize[concatenated]()
+        elif Bool(add_size):
+            component_ids = rebind_var[ComponentIdsType](runtime_add_ids^)
+        else:
+            component_ids = rebind_var[ComponentIdsType](runtime_remove_ids^)
+
+        var old_node_index = self._archetypes[
+            old_archetype_idx
+        ].get_node_index()
+        var new_archetype_idx = self._get_archetype_index(
+            component_ids, old_node_index
+        )
+
+        if old_archetype_idx == new_archetype_idx:
+            ref archetype = self._archetypes.unsafe_get(old_archetype_idx)
+            comptime for i in range(add_size):
+                comptime T = Ts[i]
+                archetype.set_components[T](
+                    entity_loc.entity_index, add_components[i].copy()
+                )
+            return entity_loc
+
+        ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
+        ref new_archetype = self._archetypes.unsafe_get(new_archetype_idx)
+        var new_row = new_archetype.add_entity(entity)
+        new_archetype._storage.unsafe_move_shared_components_from(
+            new_row,
+            Pointer(to=old_archetype._storage).as_unsafe_any_origin(),
+            1,
+            entity_loc.entity_index,
+        )
+        comptime for i in range(add_size):
+            comptime T = Ts[i]
+            new_archetype.init_components[T](new_row, add_components[i].copy())
+
+        var destination_mask = new_archetype.get_mask().copy()
+        var swapped = (
+            old_archetype.unsafe_remove_after_moving_shared_components(
+                entity_loc.entity_index, destination_mask
+            )
+        )
+        if swapped:
+            var swapped_entity = old_archetype.get_entity(
+                entity_loc.entity_index
+            )
+            self._entity_locations[
+                swapped_entity.get_id()
+            ].entity_index = entity_loc.entity_index
+
+        var result = EntityLocation(new_row, new_archetype_idx)
+        self._entity_locations[entity.get_id()] = result
+        return result
+
+    def _batch_remove_and_add_ranges[
+        *Ts: ComponentType,
+        rem_size: Int = 0,
+        remove_ids: Array[ComponentId, rem_size] = Array[ComponentId, rem_size](
+            uninitialized=True
+        ),
+        has_exclude_mask: Bool = False,
+    ](
+        mut self,
+        ranges: List[EntityRange],
+        filter: BitMaskFilter[is_excluding=has_exclude_mask],
+        manager_address: Int,
+        lock: Int,
+        *add_components: *Ts,
+        out result_ranges: List[EntityRange],
+    ) raises LarecsError:
+        """Mutates the exact selected rows matching an operation filter.
+
+        Predictable authorization, bounds, overlap, and component-validity
+        failures are checked before any row changes. After preflight, component
+        copies are non-raising; allocation failure remains the only practical
+        non-transactional failure.
+
+        Parameters:
+            Ts: Component types to add or replace.
+            rem_size: Number of component types to remove.
+            remove_ids: Component IDs to remove.
+            has_exclude_mask: Whether ``filter`` has an exclusion mask.
+
+        Args:
+            ranges: Exact source ranges owned by the selection.
+            filter: Additional operation filter intersected with ``ranges``.
+            manager_address: Address of the owning selection's lock manager.
+            lock: The owning selection's active lock bit.
+            add_components: Values to add or replace.
+
+        Raises:
+            LarecsError: If authorization, ranges, or component requests are
+                invalid.
+
+        Returns:
+            Coalesced exact post-mutation ranges containing only changed rows.
+        """
+        comptime assert Self.component_manager.contains_components[
+            *Ts
+        ](), "One or more component types not in component manager"
+        comptime assert constrain_components_unique[
+            *Ts
+        ](), "Duplicate component types in add are not allowed."
+        self._assert_selection_authorized(manager_address, lock)
+        result_ranges = List[EntityRange]()
+
+        comptime add_size = len(Ts)
+        comptime if add_size + rem_size == 0:
+            return
+
+        var entities = List[Entity]()
+        var runtime_add_ids = materialize[
+            Self.component_manager.get_id_arr[*Ts]()
+        ]()
+        var runtime_remove_ids = materialize[remove_ids]()
+        var add_mask = BitMask(runtime_add_ids)
+        var remove_mask = BitMask(runtime_remove_ids)
+
+        var ordered_ranges = ranges.copy()
+        _sort_entity_ranges(ordered_ranges)
+        for range_index in range(len(ordered_ranges)):
+            var selected_range = ordered_ranges[range_index]
+            if (
+                selected_range.archetype_index < 0
+                or selected_range.archetype_index >= len(self._archetypes)
+                or selected_range.first_row < 0
+                or selected_range.row_count < 0
+                or selected_range.first_row + selected_range.row_count
+                > len(self._archetypes[selected_range.archetype_index])
+            ):
+                raise LarecsError(UnknownError())
+
+            if range_index > 0:
+                var prior = ordered_ranges[range_index - 1]
+                if (
+                    prior.archetype_index == selected_range.archetype_index
+                    and prior.first_row + prior.row_count
+                    > selected_range.first_row
+                ):
+                    raise LarecsError(UnknownError())
+
+            ref archetype = self._archetypes.unsafe_get(
+                selected_range.archetype_index
+            )
+            if not filter.matches(archetype.get_mask()):
+                continue
+
+            var archetype_mask = archetype.get_mask().copy()
+            comptime if rem_size:
+                if not archetype_mask.contains(remove_mask):
+                    raise LarecsError(
+                        ComponentError.missing_components_on_remove.with_components(
+                            remove_mask & ~archetype_mask
+                        )
+                    )
+            comptime if add_size:
+                var compare_mask = archetype_mask.copy()
+                comptime if rem_size:
+                    compare_mask.set(runtime_remove_ids, False)
+                if compare_mask.contains_any(add_mask):
+                    raise LarecsError(
+                        ComponentError.existing_components_on_add.with_components(
+                            compare_mask & add_mask
+                        )
+                    )
+
+            for row in range(
+                selected_range.first_row,
+                selected_range.first_row + selected_range.row_count,
+            ):
+                entities.append(archetype.get_entity(row))
+
+        self._archetypes.reserve(len(self._archetypes) + len(entities))
+        for entity in entities:
+            _ = self._remove_and_add_authorized[
+                *Ts, rem_size=rem_size, remove_ids=remove_ids
+            ](
+                entity,
+                manager_address,
+                lock,
+                *add_components,
+            )
+
+        var locations = List[EntityRange](capacity=len(entities))
+        for entity in entities:
+            var location = self._entity_locations[entity.get_id()]
+            locations.append(
+                EntityRange(location.archetype_index, location.entity_index, 1)
+            )
+
+        # Stable ordering is not promised, but sorting locations makes exact
+        # adjacent rows cheap to coalesce into a compact range list.
+        _sort_entity_ranges(locations)
+
+        for location in locations:
+            if len(result_ranges) > 0:
+                ref last = result_ranges[len(result_ranges) - 1]
+                if (
+                    last.archetype_index == location.archetype_index
+                    and last.first_row + last.row_count == location.first_row
+                ):
+                    last.row_count += 1
+                    continue
+            result_ranges.append(location)
 
     @always_inline
     def _batch_remove_and_add[

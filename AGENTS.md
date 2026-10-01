@@ -13,6 +13,24 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 - **Archetypes**: Efficient storage for entities with the same component composition
 - **Queries**: Fast iteration over entities matching specific criteria
 
+## Design Records
+
+- Read [the design index](docs/design/README.md) and relevant
+  [requirements](docs/design/requirements.md) and decisions before changing
+  ECS behavior, ownership, storage, query, or execution semantics.
+- Record consequential new choices as numbered files in `docs/design/decisions/`
+  using the status, context, decision, rationale, consequences, and evidence
+  convention in the index. Mark unaccepted ideas `Proposed`.
+- When an accepted choice changes, add a superseding decision and update the
+  index and requirements; retain the earlier record for history. Update code,
+  tests, and user guides to match the accepted behavior.
+- Track unfinished work in the single [roadmap](docs/roadmap.md), grouped by
+  **Next release**, **Later**, or **Unscheduled**. Move items between priority
+  buckets as needed; do not add per-version todo files. Put completed release
+  history in the [changelog](changelog.md).
+- Keep tasks separate from durable design records; link decisions and evidence.
+  Do not mark a requirement implemented solely because it appears on the roadmap.
+
 ## Build/Test Commands
 
 - Run all tests: `pixi run tests test`
@@ -126,3 +144,20 @@ the `# SKIP_DEBUG` marker mogo-tester (>=2.3.0) supports -- see
 the underlying bug lives in Apple's Metal compiler, not in Mojo or larecs,
 and there is nothing to change in this codebase to avoid it beyond not
 compiling GPU kernels with `-g`.
+
+### macOS 27 SDK breaks linking (`libSystem.tbd ... unknown architecture`)
+
+The macOS 27 SDK's `.tbd` stubs list the new `arm64e.x1` architecture, which
+the conda-forge `ld64` used by `mojo build` cannot parse:
+
+```
+ld: warning: ignoring file .../MacOSX.sdk/usr/lib/libSystem.tbd, malformed file
+.../libSystem.tbd:4:20: error: unknown architecture
+Undefined symbols for architecture arm64: "_write", "_strlen", ...
+```
+
+**Fix**: `scripts/activate_macos_sdk.sh` runs as a pixi activation script on
+osx-arm64. If the default SDK is affected and `SDKROOT` is unset, it exports
+`SDKROOT` pointing at the newest installed SDK without `arm64e.x1` (e.g.
+`MacOSX26.sdk`). This needs an older SDK to be installed; it can be removed
+once conda-forge ships an `ld64` that understands the new stubs.
