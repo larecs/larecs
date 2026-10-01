@@ -79,6 +79,40 @@ leave gaps beyond the heap-backed resource work above.
 
 ## Unscheduled — no release target
 
+### Spatial component locality
+
+[Decision 0005](design/decisions/0005-filtered-spatial-row-reordering.md)
+accepts filtered clustering and periodic row reordering within archetypes.
+The design is accepted; implementation and performance evidence are pending.
+The initial strategy scans all eligible entities only when the application
+explicitly requests maintenance. [Dirty-entity classification](design/decisions/0008-dirty-entity-spatial-classification.md)
+is recorded as undecided and unplanned; it is not an implementation task.
+
+- [ ] Define and implement classifier registration with explicit read-only
+  filters, key/ordering types, configuration binding, and grid/encoding helpers.
+  Specify coordinate bounds and collision handling.
+- [ ] Implement explicit maintenance that skips nonmatching archetypes,
+  scans and classifies every eligible row, and permutes all columns and entity
+  IDs while preserving locations, component lifetimes, and structural locks.
+  Specify allocation/movement error guarantees.
+- [ ] Cover filter eligibility, negative coordinates, equal-key grouping,
+  already ordered and empty archetypes, unchanged query membership, valid locations,
+  classification of all eligible rows on each explicit pass, absence of implicit
+  maintenance after writes or kernel/system completion, nontrivial component
+  lifetimes, classifier failures, lock rejection,
+  and CPU/GPU execution and copy-back after maintenance. Add public guides when
+  the API is implemented.
+- [ ] Benchmark complete spatial workloads against the current layout,
+  including classification and bytes moved, ordinary scan overhead, memory
+  overhead, maintenance cadence, and uniform, sparse, dense, and mobile cases.
+- [ ] Define overlapping-filter behavior before supporting multiple registered
+  clustering functions; preserve one physical row order per archetype.
+- [ ] Evaluate [partitioned storage](design/decisions/0006-partitioned-spatial-archetype-storage.md)
+  against measured reordering costs. It remains proposed and undecided; adopting
+  it requires a separate acceptance decision.
+
+### Other features
+
 - [ ] Add built-in event-system support.
 - [ ] Add parallel execution where ownership and mutation rules permit it.
 - [ ] Improve system control APIs, including a way for systems to stop execution.
