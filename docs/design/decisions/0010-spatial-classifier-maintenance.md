@@ -112,3 +112,29 @@ tracking, multiple registrations, or evidence of net spatial workload speedup.
   including classification, sorting, all-column movement, and location repair.
   These microbenchmarks do not establish net spatial-workload benefit.
 - [Remaining measurements and multi-policy design](../../roadmap.md#spatial-component-locality).
+
+A preliminary maintenance-only run of the implementation in `3ff4bdc`, on
+Apple M4 (arm64) with Mojo 1.0.0 (`ed45d567`), measured **0.0939 ms** per
+already ordered pass and **4.0855 ms** per mobile/reverse-group pass. Each case
+used one fixed 20-iteration batch, 100,000 rows, 6,250 groups of 16 equal keys,
+and 72 component bytes per row (`Int` plus `SIMD[float32, 16]`), plus entity IDs.
+The ordered pass classifies all rows and moves no component data; the mobile
+case reverses integer inputs, sorts metadata, and reorders both component
+columns and entity IDs on every pass. Construction and registration are excluded;
+input reversal is included in the mobile timing. Build with
+`pixi run mojo build -I src benchmark/spatial_benchmark.mojo -o /tmp/larecs-spatial-benchmark`,
+then run that binary with no concurrent compilation. There is no pre-change
+classifier baseline because the API did not exist. This is neither a net
+spatial-workload comparison nor a measurement of ordinary query overhead;
+complete workload/cadence and memory comparisons remain on the roadmap.
+
+Local validation includes the spatial regression tests, AddressSanitizer
+lifecycle coverage, five compile-time registration diagnostics, package
+precompilation, API-doc generation, and execution of the same integration
+kernel on CPU and the actual Apple M4 GPU (including post-maintenance copy-back).
+All 10 guide doctests passed after extracting their self-contained `global=true`
+blocks into temporary Mojo files. The local Modo documentation builder could
+not run its Intel executable on this arm64 host (`Bad CPU type in executable`);
+this is a tooling limitation, not skipped guide execution. Installing Xcode's
+missing Metal Toolchain resolved the previous local metallib compilation error;
+GPU tests retain `# SKIP_DEBUG` for the separate debug-info compiler issue.
