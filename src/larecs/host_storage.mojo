@@ -1941,6 +1941,32 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             except _:
                 raise LarecsError(WorldError.out_of_locks)
 
+    def _reorder_archetype_rows(
+        mut self, archetype_index: Int, source_rows: List[Int]
+    ) raises LarecsError:
+        """Reorders one archetype and repairs its entity-to-row mapping.
+
+        Internal foundation for explicit spatial maintenance. Component masks,
+        graph nodes, entity generations, and membership remain unchanged.
+
+        Args:
+            archetype_index: Index of the archetype to reorder.
+            source_rows: Old row index for each destination row.
+
+        Raises:
+            LarecsError: If storage is locked, the archetype index is invalid,
+                or the permutation is invalid. No rows move on these errors.
+        """
+        self._assert_unlocked()
+        if archetype_index < 0 or archetype_index >= len(self._archetypes):
+            raise Error("Row permutation archetype index is out of bounds")
+        ref archetype = self._archetypes[archetype_index]
+        archetype._reorder_rows(source_rows)
+        for row in range(len(archetype)):
+            self._entity_locations[
+                archetype.get_entity(row).get_id()
+            ].entity_index = row
+
     @always_inline
     def _assert_unlocked(self) raises LarecsError:
         """
