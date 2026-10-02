@@ -121,6 +121,10 @@ is recorded as undecided and unplanned; it is not an implementation task.
 
 ### Other features
 
+- [ ] Add CI that executes GPU tests on actual accelerator hardware. Deferred
+  until a suitable free or sponsored runner is available; retain existing GPU
+  tests for local hardware runs. Require accelerator availability so skipped
+  GPU paths cannot report successful hardware coverage.
 - [ ] Add built-in event-system support.
 - [ ] Add parallel execution where ownership and mutation rules permit it.
 - [ ] Improve system control APIs, including a way for systems to stop execution.

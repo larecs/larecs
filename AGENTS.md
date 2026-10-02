@@ -13,6 +13,23 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 - **Archetypes**: Efficient storage for entities with the same component composition
 - **Queries**: Fast iteration over entities matching specific criteria
 
+## Pull Request Descriptions
+
+Use the `pr-description` skill to write or revise a description; `.github/pull_request_template.md` holds the skeleton.
+
+- Title the PR with a concise summary of the work in sentence case, such as "Add opt-in threaded host execution". Do not use Conventional Commits form for PR titles.
+- Open with the problem or motivation in one or two sentences, then the change.
+- Under `## Features`, list each implemented feature as a bullet with a short description of what callers observe: opt-in flags, newly rejected inputs, preserved invariants. Add implementation details only where reviewers need them to understand the behavior.
+- Under `## API changes`, list each changed user-facing API with a short reason.
+- Delete template sections that would be empty. When a PR closes several issues, a table mapping issues to changes may replace the feature list.
+- For breaking changes, add a `## Breaking change` section that states what callers must change and links the design decision records that document it.
+- End with one `Closes #N` line per resolved issue.
+- Never include validation: test runs or counts, hardware, sanitizer or doctest results, CI or review-bot status, or what remains untested.
+- Never include benchmark results unless the developer explicitly asks for them.
+- Never include PR metadata: stack or base relationships, branch names, commit hashes or counts, review ranges or walkthroughs, or narratives about what other PRs supply. Use the hosting platform's metadata fields or stack tooling.
+- Never include commit or process history, follow-up or roadmap work, or AI attribution.
+- The Issue Writing rules on other projects and local filesystem paths apply to PR titles and bodies too.
+
 ## Design Records
 
 - Read [the design index](docs/design/README.md) and relevant
@@ -99,6 +116,12 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 - Memory layout and cache efficiency are crucial
 - Always consider vectorization opportunities
 - Update benchmarks when making performance changes
+
+## Issue Writing
+
+- Keep issue titles, bodies, and comments focused on Larecs. Never mention other projects unless the developer explicitly requests it.
+- Never include local filesystem paths in issues, including pasted logs or command output. Use repository links or symbol names to identify code.
+- Manage prioritization and scheduling through issue metadata, such as milestone assignments and priority fields or labels. Keep priority levels, deferral status, and release scheduling out of issue titles, bodies, and comments.
 
 ## Known issues
 
