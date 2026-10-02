@@ -44,6 +44,10 @@ struct Policy(SpatialClassifier):
         Args:
             entity: Position accessor for one host row.
 
+        Raises:
+            Error: The classifier interface permits errors; this policy does
+                not raise recoverable errors.
+
         Returns:
             The position as an unsigned ordering key.
         """

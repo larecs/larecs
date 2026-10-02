@@ -67,7 +67,11 @@ struct GridPolicy[filter: Filter = spatial_filter](SpatialClassifier):
 
 
 def test_spatial_order_preserves_ids_payload_and_membership() raises:
-    """Classification reorders all columns and repairs entity locations."""
+    """Classification reorders all columns and repairs entity locations.
+
+    Raises:
+        Error: If setup, maintenance, or an assertion fails.
+    """
     var world = World[Position, Payload, Excluded]()
     var entities = List[Entity]()
     for value in [3, -2, 3, 0, -2]:
@@ -102,7 +106,11 @@ def test_spatial_order_preserves_ids_payload_and_membership() raises:
 
 
 def test_spatial_registration_lock_and_duplicate() raises:
-    """Queries and selections reject maintenance; registration is singular."""
+    """Queries and selections reject maintenance; registration is singular.
+
+    Raises:
+        Error: If setup, maintenance, or an assertion fails.
+    """
     var world = World[Position, Excluded]()
     _ = world.storage.add_entity(Position(2))
     var query = world.storage.query[spatial_filter]()
@@ -123,7 +131,11 @@ def test_spatial_registration_lock_and_duplicate() raises:
 
 
 def test_grid_bounds_floor_and_morton_identity() raises:
-    """Negative cells floor correctly; out-of-range keys never wrap."""
+    """Negative cells floor correctly; out-of-range keys never wrap.
+
+    Raises:
+        Error: If coordinate encoding or an assertion fails.
+    """
     assert_equal(grid_cell(-0.01, 1), -1)
     assert_equal(grid_cell(-1, 1), -1)
     assert_equal(grid_cell(-1.01, 1), -2)
@@ -197,7 +209,11 @@ def reverse_positions(context: KernelContext[Filter().include[Position]()]):
 
 
 def test_full_scans_and_no_implicit_maintenance() raises:
-    """Every explicit pass rescans ordered rows; writes and kernels do not."""
+    """Every explicit pass rescans ordered rows; writes and kernels do not.
+
+    Raises:
+        Error: If setup, maintenance, or an assertion fails.
+    """
     var world = World[Position, Excluded]()
     var calls = 0
     world.register_spatial_classifier[spatial_filter](
@@ -226,7 +242,11 @@ def test_full_scans_and_no_implicit_maintenance() raises:
 
 
 def test_classifier_failure_preserves_all_archetypes_and_unlocks() raises:
-    """A later archetype failure leaves earlier unordered archetypes intact."""
+    """A later archetype failure leaves earlier unordered archetypes intact.
+
+    Raises:
+        Error: If setup, maintenance, or an assertion fails.
+    """
     var world = World[Position, Payload, Excluded]()
     var a = world.storage.add_entity(Position(3))
     var b = world.storage.add_entity(Position(0))
@@ -250,6 +270,9 @@ def test_classifier_failure_preserves_all_archetypes_and_unlocks() raises:
 
 def test_exclusive_empty_and_owned_world_copy() raises:
     """Exclusive matching, empty archetypes, and copied policy configuration work.
+
+    Raises:
+        Error: If setup, maintenance, or an assertion fails.
     """
     comptime only_position = Filter().read[Position]().exclusive()
     var world = World[Position, Payload, Excluded]()
@@ -296,6 +319,9 @@ struct OwnedGridPolicy(SpatialClassifier):
 
 def test_heap_policy_copy_and_move_ownership() raises:
     """Policy configuration remains valid after copying and destroying a world.
+
+    Raises:
+        Error: If setup, maintenance, or an assertion fails.
     """
     var world = World[Position, Excluded]()
     _ = world.storage.add_entity(Position(1048576))
@@ -336,6 +362,9 @@ struct ReentrantPolicy(SpatialClassifier):
 
 def test_classifier_callback_rejects_structural_reentrancy() raises:
     """Classification holds and releases its structural lock on callback errors.
+
+    Raises:
+        Error: If setup, maintenance, or an assertion fails.
     """
     var world = World[Position, Excluded]()
     var entity = world.storage.add_entity(Position(3))
@@ -363,6 +392,10 @@ struct UnsignedPolicy(SpatialClassifier):
         Args:
             entity: Read-only key component accessor.
 
+        Raises:
+            Error: The classifier interface permits errors; this policy does
+                not raise recoverable errors.
+
         Returns:
             The full-width unsigned key.
         """
@@ -370,7 +403,11 @@ struct UnsignedPolicy(SpatialClassifier):
 
 
 def test_full_unsigned_key_order() raises:
-    """Keys above the signed range still sort in ascending unsigned order."""
+    """Keys above the signed range still sort in ascending unsigned order.
+
+    Raises:
+        Error: If setup, maintenance, or an assertion fails.
+    """
     var world = World[UInt64]()
     for key in [(UInt64(0) - 1), UInt64(0), UInt64(1) << 63, UInt64(7)]:
         _ = world.storage.add_entity(key)

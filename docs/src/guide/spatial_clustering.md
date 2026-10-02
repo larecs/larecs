@@ -34,6 +34,17 @@ struct Grid(SpatialClassifier):
     var cell_size: Float64
 
     def classify(self, entity: Self.Accessor) raises -> UInt64:
+        """Computes a planar grid key from declared read-only inputs.
+
+        Args:
+            entity: Position accessor valid only during classification.
+
+        Raises:
+            Error: If the coordinates or configured cell size are invalid.
+
+        Returns:
+            The collision-free Morton key for the current cell.
+        """
         ref position = entity.get[Position]()
         return morton_key_3d(
             grid_cell(position.x, self.cell_size),
@@ -42,6 +53,11 @@ struct Grid(SpatialClassifier):
 
 
 def main() raises:
+    """Demonstrates explicit maintenance and stable entity identities.
+
+    Raises:
+        Error: If world setup, maintenance, or validation fails.
+    """
     var world = World[Position]()
     var a = world.storage.add_entity(Position(12, 0))
     var b = world.storage.add_entity(Position(-1, 0))
