@@ -23,6 +23,10 @@ struct Policy(SpatialClassifier):
         Args:
             entity: Current integer classifier input.
 
+        Raises:
+            Error: The classifier interface permits errors; this policy does
+                not raise recoverable errors.
+
         Returns:
             The integer component as the key.
         """

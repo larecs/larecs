@@ -402,7 +402,11 @@ def test_host_storage_remove_entities_non_trivial_component() raises:
 
 
 def test_reorder_rows_preserves_values_and_locations() raises:
-    """Permute cycles across all columns, including owned heap values."""
+    """Permute cycles across all columns, including owned heap values.
+
+    Raises:
+        Error: If storage setup, row reordering, or an assertion fails.
+    """
     var storage = HostStorage[Int, String, Float64]()
     var entities = List[Entity]()
     for row in range(6):
@@ -441,7 +445,11 @@ def test_reorder_rows_preserves_values_and_locations() raises:
 
 
 def test_reorder_rows_invalid_mapping_is_unchanged() raises:
-    """Reject malformed mappings and archetype indices before any movement."""
+    """Reject malformed mappings and archetype indices before any movement.
+
+    Raises:
+        Error: If storage setup, row reordering, or an assertion fails.
+    """
     var storage = HostStorage[Int]()
     var first = storage.add_entity(10)
     var second = storage.add_entity(20)
@@ -468,6 +476,9 @@ def test_reorder_rows_invalid_mapping_is_unchanged() raises:
 
 def test_reorder_rows_lock_and_empty_archetype() raises:
     """A structural lock rejects movement; empty and identity mappings are valid.
+
+    Raises:
+        Error: If storage setup, row reordering, or an assertion fails.
     """
     var storage = HostStorage[Int]()
     storage._reorder_archetype_rows(0, List[Int]())
@@ -491,7 +502,11 @@ def test_reorder_rows_lock_and_empty_archetype() raises:
 
 
 def test_reorder_rows_moves_without_copy_or_destruction() raises:
-    """Typed reordering preserves nontrivial component ownership."""
+    """Typed reordering preserves nontrivial component ownership.
+
+    Raises:
+        Error: If storage setup, row reordering, or an assertion fails.
+    """
     var counters = LifecycleCounters()
     var storage = HostStorage[TrackedComponent, Int]()
     var entities = List[Entity]()
@@ -527,6 +542,10 @@ struct DescendingSpatialPolicy(SpatialClassifier):
         Args:
             entity: Read-only integer classifier input.
 
+        Raises:
+            Error: The classifier interface permits errors; this policy does
+                not raise recoverable errors.
+
         Returns:
             A key reversing the three test rows.
         """
@@ -535,6 +554,9 @@ struct DescendingSpatialPolicy(SpatialClassifier):
 
 def test_spatial_maintenance_preserves_component_lifetimes() raises:
     """Maintenance moves nontrivial columns without copying or destroying them.
+
+    Raises:
+        Error: If setup, maintenance, or an assertion fails.
     """
     var counters = LifecycleCounters()
     var world = World[TrackedComponent, Int]()

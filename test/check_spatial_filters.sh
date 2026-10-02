@@ -17,9 +17,26 @@ from larecs.entity import EntityAccessor
 struct Policy(SpatialClassifier):
     comptime Accessor = EntityAccessor[$accessor_filter]
     def classify(self, entity: Self.Accessor) raises -> UInt64:
+        """Supplies a constant key for compile-time registration checks.
+
+        Args:
+            entity: Unused test accessor.
+
+        Raises:
+            Error: The classifier interface permits errors; this policy does
+                not raise recoverable errors.
+
+        Returns:
+            A constant cluster key.
+        """
         return 0
 
 def main() raises:
+    """Attempts a registration that must fail at compile time.
+
+    Raises:
+        Error: If world setup or registration fails at runtime.
+    """
     var world = World[Int]()
     world.register_spatial_classifier[$filter](Policy())
 MOJO
