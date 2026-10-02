@@ -2,7 +2,7 @@
 id: "0009"
 title: "Typed row permutation foundation"
 status: accepted
-status_notes: Internal storage foundation only; classifier registration and spatial maintenance remain unimplemented.
+status_notes: Internal storage foundation; public classifier registration and maintenance are implemented separately under decision 0010.
 ---
 
 # Decision 0009: Typed row permutation foundation

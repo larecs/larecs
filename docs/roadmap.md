@@ -85,23 +85,25 @@ leave gaps beyond the heap-backed resource work above.
 accepts filtered clustering and periodic row reordering within archetypes.
 The design is accepted; the internal typed permutation foundation is implemented
 under [decision 0009](design/decisions/0009-typed-row-permutation-foundation.md).
-Classifier registration, maintenance, and spatial performance evidence are pending.
+Classifier registration and explicit maintenance are implemented under
+[decision 0010](design/decisions/0010-spatial-classifier-maintenance.md). Spatial
+performance evidence is pending.
 The initial strategy scans all eligible entities only when the application
 explicitly requests maintenance. [Dirty-entity classification](design/decisions/0008-dirty-entity-spatial-classification.md)
 is recorded as undecided and unplanned; it is not an implementation task.
 
-- [ ] Define and implement classifier registration with explicit read-only
+- [x] Define and implement classifier registration with explicit read-only
   filters, key/ordering types, configuration binding, and grid/encoding helpers.
   Specify coordinate bounds and collision handling.
 - [x] Implement the internal typed row-permutation primitive, structural-lock
   rejection, location repair, and pre-movement validation. Cover cycles, fixed
   rows, empty archetypes, heap-owned values, and nontrivial lifetimes in
   `test/host_storage_lifecycle_test.mojo`; add a permutation-only benchmark.
-- [ ] Implement explicit maintenance that skips nonmatching archetypes,
+- [x] Implement explicit maintenance that skips nonmatching archetypes,
   scans and classifies every eligible row, and permutes all columns and entity
   IDs while preserving locations, component lifetimes, and structural locks.
   Specify allocation/movement error guarantees.
-- [ ] Cover filter eligibility, negative coordinates, equal-key grouping,
+- [x] Cover filter eligibility, negative coordinates, equal-key grouping,
   already ordered and empty archetypes, unchanged query membership, valid locations,
   classification of all eligible rows on each explicit pass, absence of implicit
   maintenance after writes or kernel/system completion, nontrivial component

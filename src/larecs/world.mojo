@@ -18,6 +18,10 @@ from .host_storage import HostStorage
 from .device_storage import DeviceComponentStorage
 from .resource import ResourceStorage
 from .filter import Filter, BitMaskFilter
+from .spatial import SpatialClassifier, _maintain_spatial
+from .unsafe_box import UnsafeBox
+from .error import LarecsError
+from .entity import EntityAccessor
 
 
 struct World[*component_types: ComponentType](Copyable, Sized):
@@ -46,12 +50,23 @@ struct World[*component_types: ComponentType](Copyable, Sized):
     var resources: ResourceStorage  # The resources of the world.
     """[..resource.ResourceStorage Resource Storage] associated with the world."""
 
+    var _spatial_classifier: Optional[UnsafeBox]
+    """Owned optional spatial policy; ordinary operations do not consult it."""
+    var _spatial_maintenance: Optional[
+        def(
+            mut storage: Self.HostStorage, classifier: UnsafeBox
+        ) thin raises LarecsError
+    ]
+    """Typed maintenance adapter paired with the policy box."""
+
     def __init__(out self):
         """
         Creates a new [.World].
         """
         with Zone(function_name="World.__init__()"):
             self.storage = Self.HostStorage()
+            self._spatial_classifier = None
+            self._spatial_maintenance = None
 
             comptime if not has_accelerator():
                 # This build's compilation target has no accelerator
@@ -141,3 +156,65 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                 *Self.component_types
             ]()
             return bitmask
+
+    def register_spatial_classifier[
+        C: SpatialClassifier, //, filter: Filter
+    ](mut self, var classifier: C) raises LarecsError:
+        """Registers the world's single spatial policy without reordering rows.
+
+        Configuration lives in the owned classifier value and is copied when
+        the world is copied. Multiple registrations are rejected, including
+        disjoint filters, until overlap semantics are defined.
+
+        Parameters:
+            C: Policy type with an accessor matching the filter.
+            filter: Explicit read-only eligibility and access declaration.
+
+        Args:
+            classifier: Policy and configuration transferred into the world.
+
+        Raises:
+            LarecsError: If storage is locked or a policy is already registered.
+
+        Constraints:
+            The policy filter must declare no writable components; all included
+            and excluded components must belong to this world. The classifier
+            Accessor must equal EntityAccessor specialized for this filter.
+        """
+        comptime assert (
+            len(filter._written) == 0
+        ), "Spatial classifier filters must be read-only; use Filter.read"
+        comptime assert Self.HostStorage.component_manager.contains_components[
+            *filter._include.ComponentTypes
+        ](), "Spatial classifier includes an unknown world component"
+        comptime assert Self.HostStorage.component_manager.contains_components[
+            *filter._exclude.ComponentTypes
+        ](), "Spatial classifier excludes an unknown world component"
+        comptime assert (
+            C.Accessor == EntityAccessor[filter]
+        ), "Classifier Accessor must match its registration filter"
+        self.storage._assert_unlocked()
+        if self._spatial_classifier:
+            raise Error("A spatial classifier is already registered")
+        self._spatial_classifier = UnsafeBox(classifier^)
+        self._spatial_maintenance = _maintain_spatial[
+            filter, C, *Self.component_types
+        ]
+
+    def maintain_spatial(mut self) raises LarecsError:
+        """Explicitly classifies and orders eligible host archetypes by key.
+
+        Every eligible row is classified on every call, even if already ordered.
+        No registered policy is an unlocked no-op. Queries and selections must
+        be released first. Classifier errors leave all archetypes unchanged;
+        movement follows the typed permutation guarantees in decision 0009.
+        Component references must not survive maintenance.
+
+        Raises:
+            LarecsError: If storage is locked or classification fails.
+        """
+        self.storage._assert_unlocked()
+        if self._spatial_classifier:
+            self._spatial_maintenance.value()(
+                self.storage, self._spatial_classifier.value()
+            )

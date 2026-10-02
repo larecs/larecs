@@ -143,5 +143,6 @@ remains an undecided alternative. A special placement component is rejected in
 - Implementation and validation work: [roadmap](../../roadmap.md#spatial-component-locality).
 - [Decision 0009](0009-typed-row-permutation-foundation.md) implements the internal
   typed permutation foundation with lock/location and lifecycle tests and a
-  movement-only benchmark. Classifier registration, spatial maintenance, and
-  complete spatial workload measurements remain unimplemented.
+  movement-only benchmark. [Decision 0010](0010-spatial-classifier-maintenance.md)
+  implements classifier registration and explicit maintenance; complete spatial
+  workload measurements remain pending.

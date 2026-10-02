@@ -46,4 +46,15 @@ for arg in "$@"; do
     esac
 done
 
+# A complete suite run also verifies public compile-time classifier diagnostics.
+# Individual test-file runs retain the existing focused behavior.
+larecs_test_directory="$(cd "$(dirname "$0")" && pwd)"
+for test_path in "${test_args[@]}"; do
+    if [ -d "$test_path" ] && \
+        [ "$(cd "$test_path" && pwd)" = "$larecs_test_directory" ]; then
+        bash "$larecs_test_directory/check_spatial_filters.sh"
+        break
+    fi
+done
+
 mogo-tester "${precompile_args[@]}" --asan --mojo-build-args="${mojo_build_args[*]}" "${test_args[@]}"

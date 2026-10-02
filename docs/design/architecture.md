@@ -23,7 +23,7 @@ filter. CPU and GPU execution share this public model. The GPU path
 columns and copies written spans back. Kernel row iteration follows the
 [grid-stride decision](decisions/0003-grid-stride-entity-iteration.md).
 
-## Accepted spatial-locality extension (not implemented)
+## Spatial-locality extension
 
 [Decision 0005](decisions/0005-filtered-spatial-row-reordering.md) adds opt-in
 clustering functions registered with explicit read-only component filters.
@@ -40,7 +40,10 @@ dirty-entity classification as undecided and unplanned.
 
 The registration model prepares for different classifiers targeting different
 archetypes; multiple registrations and overlap resolution remain future work.
-The current implementation has no clustering registration or reordering path.
+[Decision 0010](decisions/0010-spatial-classifier-maintenance.md) implements one
+owned classifier per world with explicit full-scan maintenance. Registration and
+maintenance live on `World`; `spatial.mojo` builds keys and permutations before
+`HostStorage` applies typed movement and location repair.
 [Decision 0006](decisions/0006-partitioned-spatial-archetype-storage.md) records
 cluster-local partitions as an undecided alternative, and
 [decision 0007](decisions/0007-special-cluster-component.md) records the rejected

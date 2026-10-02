@@ -8,6 +8,8 @@ from std.testing import *
 from std.memory import alloc, dealloc, Layout, Allocation
 
 from larecs.host_storage import HostStorage
+from larecs import World, SpatialClassifier
+from larecs.entity import EntityAccessor
 from larecs.entity import Entity
 from larecs.filter import Filter
 from larecs.error import LarecsError, WorldError, EntityError, ComponentError
@@ -465,7 +467,8 @@ def test_reorder_rows_invalid_mapping_is_unchanged() raises:
 
 
 def test_reorder_rows_lock_and_empty_archetype() raises:
-    """A structural lock rejects movement; empty and identity mappings are valid."""
+    """A structural lock rejects movement; empty and identity mappings are valid.
+    """
     var storage = HostStorage[Int]()
     storage._reorder_archetype_rows(0, List[Int]())
     var first = storage.add_entity(10)
@@ -508,6 +511,52 @@ def test_reorder_rows_moves_without_copy_or_destruction() raises:
     for row in range(3):
         assert_equal(storage.get[Int](entities[row]), row)
     _ = storage^
+    assert_equal(counters.del_counter() - deletes, 3)
+
+
+@fieldwise_init
+struct DescendingSpatialPolicy(SpatialClassifier):
+    """Orders integer inputs in descending order without reading tracked data.
+    """
+
+    comptime Accessor = EntityAccessor[Filter().read[Int]()]
+
+    def classify(self, entity: Self.Accessor) raises -> UInt64:
+        """Computes a descending key for the test's nonnegative rows.
+
+        Args:
+            entity: Read-only integer classifier input.
+
+        Returns:
+            A key reversing the three test rows.
+        """
+        return UInt64(3 - entity.get[Int]())
+
+
+def test_spatial_maintenance_preserves_component_lifetimes() raises:
+    """Maintenance moves nontrivial columns without copying or destroying them.
+    """
+    var counters = LifecycleCounters()
+    var world = World[TrackedComponent, Int]()
+    var entities = List[Entity]()
+    for row in range(3):
+        entities.append(world.storage.add_entity(counters.component(), row))
+    world.register_spatial_classifier[Filter().read[Int]()](
+        DescendingSpatialPolicy()
+    )
+    var copies = counters.copy_counter()
+    var moves = counters.move_counter()
+    var deletes = counters.del_counter()
+    world.maintain_spatial()
+    assert_equal(counters.copy_counter(), copies)
+    assert_equal(counters.del_counter(), deletes)
+    assert_true(counters.move_counter() > moves)
+    moves = counters.move_counter()
+    world.maintain_spatial()
+    assert_equal(counters.move_counter(), moves)
+    for row in range(3):
+        assert_equal(world.storage.get[Int](entities[row]), row)
+    _ = world^
     assert_equal(counters.del_counter() - deletes, 3)
 
 
