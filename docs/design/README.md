@@ -16,10 +16,11 @@ decision record before changing an established behavior:
 | [0002](decisions/0002-gpu-system-execution.md)                  | Accepted                        | GPU system execution and transfer boundaries                             |
 | [0003](decisions/0003-grid-stride-entity-iteration.md)          | Accepted                        | CPU/GPU grid-stride entity iteration                                     |
 | [0004](decisions/0004-scoped-selection-errors.md)               | Accepted                        | Error propagation across scoped selection mutation and execution         |
-| [0005](decisions/0005-filtered-spatial-row-reordering.md)       | Accepted                        | Filtered spatial clustering by periodic row reordering (not implemented) |
+| [0005](decisions/0005-filtered-spatial-row-reordering.md)       | Accepted                        | Filtered spatial clustering by periodic row reordering (storage foundation implemented) |
 | [0006](decisions/0006-partitioned-spatial-archetype-storage.md) | Proposed                       | Cluster-local partitions beneath logical archetypes                      |
 | [0007](decisions/0007-special-cluster-component.md)             | Rejected                        | Proposed special built-in `Cluster` component for placement              |
 | [0008](decisions/0008-dirty-entity-spatial-classification.md)   | Proposed                       | Deferred classification of dirty entities instead of full scans (unplanned) |
+| [0009](decisions/0009-typed-row-permutation-foundation.md) | Accepted | Internal typed row permutation and movement error guarantees |
 
 ## Recording a change
 

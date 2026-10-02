@@ -141,4 +141,7 @@ remains an undecided alternative. A special placement component is rejected in
 - Existing mask matching and access declarations: [filters](../../../src/larecs/filter.mojo).
 - Lock and exact-range contract: [decision 0001](0001-locked-entity-selections.md).
 - Implementation and validation work: [roadmap](../../roadmap.md#spatial-component-locality).
-- No clustering implementation, correctness tests, or benchmark results exist yet.
+- [Decision 0009](0009-typed-row-permutation-foundation.md) implements the internal
+  typed permutation foundation with lock/location and lifecycle tests and a
+  movement-only benchmark. Classifier registration, spatial maintenance, and
+  complete spatial workload measurements remain unimplemented.

@@ -83,7 +83,9 @@ leave gaps beyond the heap-backed resource work above.
 
 [Decision 0005](design/decisions/0005-filtered-spatial-row-reordering.md)
 accepts filtered clustering and periodic row reordering within archetypes.
-The design is accepted; implementation and performance evidence are pending.
+The design is accepted; the internal typed permutation foundation is implemented
+under [decision 0009](design/decisions/0009-typed-row-permutation-foundation.md).
+Classifier registration, maintenance, and spatial performance evidence are pending.
 The initial strategy scans all eligible entities only when the application
 explicitly requests maintenance. [Dirty-entity classification](design/decisions/0008-dirty-entity-spatial-classification.md)
 is recorded as undecided and unplanned; it is not an implementation task.
@@ -91,6 +93,10 @@ is recorded as undecided and unplanned; it is not an implementation task.
 - [ ] Define and implement classifier registration with explicit read-only
   filters, key/ordering types, configuration binding, and grid/encoding helpers.
   Specify coordinate bounds and collision handling.
+- [x] Implement the internal typed row-permutation primitive, structural-lock
+  rejection, location repair, and pre-movement validation. Cover cycles, fixed
+  rows, empty archetypes, heap-owned values, and nontrivial lifetimes in
+  `test/host_storage_lifecycle_test.mojo`; add a permutation-only benchmark.
 - [ ] Implement explicit maintenance that skips nonmatching archetypes,
   scans and classifies every eligible row, and permutes all columns and entity
   IDs while preserving locations, component lifetimes, and structural locks.
