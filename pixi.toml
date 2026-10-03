@@ -16,6 +16,8 @@ version = "1.0.0b1"
 preview = ["pixi-build"]
 
 [tasks]
+spatial-benchmarks = "mojo run -I src benchmark/spatial_smoke.mojo"
+spatial-performance-check = "python scripts/check_spatial_performance.py"
 spatial-filter-checks = "bash test/check_spatial_filters.sh"
 tests = { cmd = "test/run_tests.sh", default-environment = "test" }
 doctest = { cmd = "scripts/run_doctests.sh", default-environment = "test" }
