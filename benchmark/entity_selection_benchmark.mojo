@@ -140,20 +140,18 @@ def _bench_many_archetypes[closure: Bool](mut bencher: Bencher):
 
         bencher.iter(run_once)
         var count = 0
-        var expected_value = Float32(-1)
+        var expected_value = Float32(bencher.num_iters)
         var total = Float32(0)
         for row in world.storage.query[Filter().read[Value]()]():
             count += 1
             var value = row.get[Value]().value
-            if expected_value < 0:
-                expected_value = value
             if value != expected_value:
                 abort("Multi-archetype CPU benchmark skipped or repeated rows")
             total += value
         if count != 3584 or total <= 0:
             abort("Multi-archetype CPU benchmark validation failed")
         comptime if closure:
-            if total != Float32(calls * 512):
+            if calls != bencher.num_iters * 7 or total != Float32(calls * 512):
                 abort("Multi-archetype closure benchmark visit count failed")
         keep(total)
     except e:
