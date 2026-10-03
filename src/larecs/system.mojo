@@ -15,6 +15,7 @@ from max.gpu.host import DevicePointer
 
 from tracy import Zone
 
+from .archetype import Archetype as _Archetype
 from .world import World
 from .entity import EntityRange
 from .error import LarecsError, WorldError
@@ -154,6 +155,93 @@ def _finalize_system[
 
 comptime BLOCK_SIZE = 2**4
 """Number of GPU threads per block used when launching kernels."""
+
+
+@always_inline
+def _bind_cpu_resources[
+    required_resources: Resources
+](
+    mut resources: ResourceStorage,
+) raises -> ResourceAccessor[
+    required_resources
+]:
+    """Validates and binds resources once for a synchronous CPU invocation.
+
+    Parameters:
+        required_resources: Ordered resource types required by the kernel.
+
+    Args:
+        resources: World-owned resources borrowed throughout execution.
+
+    Raises:
+        Error: If a required resource is missing.
+
+    Returns:
+        Resource pointers shared by every matching execution range.
+    """
+    var pointers = ResourceAccessor[required_resources].Pointers(
+        uninitialized=True
+    )
+    comptime for i in range(len(required_resources)):
+        comptime T = required_resources.ResourceTypes[i]
+        pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
+            unsafe_from_address=Int(Pointer(to=resources.get[T]()))
+        )
+    return ResourceAccessor[required_resources](pointers^)
+
+
+@always_inline
+def _cpu_kernel_context[
+    filter: Filter,
+    required_resources: Resources,
+    capture_spec: Captures,
+    *WorldTs: ComponentType,
+](
+    mut archetype: _Archetype[*WorldTs],
+    first_row: Int,
+    row_count: Int,
+    resources: ResourceAccessor[required_resources],
+    captures: CaptureAccessor[capture_spec],
+) raises -> KernelContext[filter, required_resources, capture_spec]:
+    """Prepares one bounded CPU range using invocation-wide bindings.
+
+    Parameters:
+        filter: Component access declarations for this range.
+        required_resources: Resource declarations for the invocation.
+        capture_spec: Explicit capture declarations for the invocation.
+        WorldTs: Component types declared by the world.
+
+    Args:
+        archetype: Matching archetype containing the range.
+        first_row: First row in the caller-validated range.
+        row_count: Exact number of rows to execute.
+        resources: Validated resource pointers shared across ranges.
+        captures: Bound capture pointers shared across ranges.
+
+    Raises:
+        Error: If a declared component column is missing.
+
+    Returns:
+        A context with component pointers offset to the range start and local
+        row numbering. Its untracked references must not escape execution.
+    """
+    var columns = KernelContext[
+        filter, required_resources, capture_spec
+    ].Columns(uninitialized=True)
+    comptime for i in range(len(filter)):
+        comptime T = filter._include.ComponentTypes[i]
+        columns[i] = (
+            archetype._storage.get_component_ptr[T]()
+            .unsafe_offset(first_row)
+            .unsafe_bitcast[UInt8]()
+        )
+    return KernelContext[filter, required_resources, capture_spec](
+        columns^,
+        resources.copy(),
+        capture_columns=captures._pointers.copy(),
+        length=Int32(row_count),
+        thread_count=1,
+    )
 
 
 struct EntitySelection[
@@ -434,59 +522,44 @@ struct EntitySelection[
             Error: If bindings or resources are invalid, or GPU execution fails.
         """
         var host_captures = _bind_captures[capture_spec](*bindings)
-        var matching_ranges = List[EntityRange]()
-        var total_length = 0
-        comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
-        for selected_range in self._ranges:
-            ref archetype = self._world[].storage._archetypes.unsafe_get(
-                selected_range.archetype_index
-            )
-            if selected_range.row_count > 0 and bitmask_filter.matches(
-                archetype.get_mask()
-            ):
-                matching_ranges.append(selected_range)
-                total_length += selected_range.row_count
-
         comptime if not has_accelerator() or not on_gpu:
-            var resource_pointers = ResourceAccessor[
-                required_resources
-            ].Pointers(uninitialized=True)
-            comptime for i in range(len(required_resources)):
-                comptime T = required_resources.ResourceTypes[i]
-                resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
-                    unsafe_from_address=Int(
-                        Pointer(to=self._world[].resources.get[T]())
-                    )
-                )
-            var resource_accessor = ResourceAccessor[required_resources](
-                resource_pointers^
+            var resource_accessor = _bind_cpu_resources[required_resources](
+                self._world[].resources
             )
-
-            for selected_range in matching_ranges:
+            comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
+            for selected_range in self._ranges:
                 ref archetype = self._world[].storage._archetypes.unsafe_get(
                     selected_range.archetype_index
                 )
-                var kernel_columns = KernelContext[
-                    filter, required_resources, capture_spec
-                ].Columns(uninitialized=True)
-                comptime for i in range(len(filter)):
-                    comptime T = filter._include.ComponentTypes[i]
-                    kernel_columns[i] = (
-                        archetype._storage.get_component_ptr[T]()
-                        .unsafe_offset(selected_range.first_row)
-                        .unsafe_bitcast[UInt8]()
+                if selected_range.row_count == 0 or not bitmask_filter.matches(
+                    archetype.get_mask()
+                ):
+                    continue
+                KernelFunc(
+                    _cpu_kernel_context[
+                        filter, required_resources, capture_spec
+                    ](
+                        archetype,
+                        selected_range.first_row,
+                        selected_range.row_count,
+                        resource_accessor,
+                        host_captures,
                     )
-                var kernel_context = KernelContext[
-                    filter, required_resources, capture_spec
-                ](
-                    kernel_columns^,
-                    resource_accessor.copy(),
-                    capture_columns=host_captures._pointers.copy(),
-                    length=Int32(selected_range.row_count),
-                    thread_count=1,
                 )
-                KernelFunc(kernel_context)
         else:
+            var matching_ranges = List[EntityRange]()
+            var total_length = 0
+            comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
+            for selected_range in self._ranges:
+                ref archetype = self._world[].storage._archetypes.unsafe_get(
+                    selected_range.archetype_index
+                )
+                if selected_range.row_count > 0 and bitmask_filter.matches(
+                    archetype.get_mask()
+                ):
+                    matching_ranges.append(selected_range)
+                    total_length += selected_range.row_count
+
             comptime assert constrain_gpu_safe_components[
                 *filter._include.ComponentTypes
             ](), (
@@ -635,18 +708,8 @@ struct EntitySelection[
             Error: If explicit bindings or required resources are invalid.
         """
         var host_captures = _bind_captures[capture_spec](*bindings)
-        var resource_pointers = ResourceAccessor[required_resources].Pointers(
-            uninitialized=True
-        )
-        comptime for i in range(len(required_resources)):
-            comptime T = required_resources.ResourceTypes[i]
-            resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
-                unsafe_from_address=Int(
-                    Pointer(to=self._world[].resources.get[T]())
-                )
-            )
-        var resource_accessor = ResourceAccessor[required_resources](
-            resource_pointers^
+        var resource_accessor = _bind_cpu_resources[required_resources](
+            self._world[].resources
         )
         comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
         for selected_range in self._ranges:
@@ -657,26 +720,15 @@ struct EntitySelection[
                 archetype.get_mask()
             ):
                 continue
-            var kernel_columns = KernelContext[
-                filter, required_resources, capture_spec
-            ].Columns(uninitialized=True)
-            comptime for i in range(len(filter)):
-                comptime T = filter._include.ComponentTypes[i]
-                kernel_columns[i] = (
-                    archetype._storage.get_component_ptr[T]()
-                    .unsafe_offset(selected_range.first_row)
-                    .unsafe_bitcast[UInt8]()
+            kernel_func(
+                _cpu_kernel_context[filter, required_resources, capture_spec](
+                    archetype,
+                    selected_range.first_row,
+                    selected_range.row_count,
+                    resource_accessor,
+                    host_captures,
                 )
-            var kernel_context = KernelContext[
-                filter, required_resources, capture_spec
-            ](
-                kernel_columns^,
-                resource_accessor.copy(),
-                capture_columns=host_captures._pointers.copy(),
-                length=Int32(selected_range.row_count),
-                thread_count=1,
             )
-            kernel_func(kernel_context)
 
 
 @fieldwise_init
@@ -1202,75 +1254,48 @@ struct SystemContext[
             )
         ):
             var host_captures = _bind_captures[capture_spec](*bindings)
-            var length = 0
-            comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
-            comptime exclude_mask = filter.get_exclude_mask[*Self.WorldTs]()
-            var matching_archetypes = (
-                self.world[].storage._get_archetype_iterator(
-                    include_mask,
-                    exclude_mask,
-                )
-            )
-            for ref archetype in matching_archetypes.copy():
-                length += len(archetype)
-
             comptime if not has_accelerator() or not on_gpu:
-                var resource_pointers = ResourceAccessor[
-                    required_resources
-                ].Pointers(uninitialized=True)
-
-                comptime for i in range(len(required_resources)):
-                    comptime T = required_resources.ResourceTypes[i]
-                    resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
-                        unsafe_from_address=Int(
-                            Pointer(to=self.world[].resources.get[T]())
+                var resource_accessor = _bind_cpu_resources[required_resources](
+                    self.world[].resources
+                )
+                comptime bitmask_filter = filter.get_bitmask_filter[
+                    *Self.WorldTs
+                ]()
+                # Fix the invocation boundary and reacquire each archetype by
+                # index instead of retaining the list buffer across callbacks.
+                var archetype_count = len(self.world[].storage._archetypes)
+                for index in range(archetype_count):
+                    ref archetype = self.world[].storage._archetypes.unsafe_get(
+                        index
+                    )
+                    if len(archetype) == 0 or not bitmask_filter.matches(
+                        archetype.get_mask()
+                    ):
+                        continue
+                    KernelFunc(
+                        _cpu_kernel_context[
+                            filter, required_resources, capture_spec
+                        ](
+                            archetype,
+                            0,
+                            len(archetype),
+                            resource_accessor,
+                            host_captures,
                         )
                     )
-
-                var resource_accessor = ResourceAccessor[required_resources](
-                    resource_pointers^
-                )
-
-                # A filter can match multiple archetypes. Run the kernel once
-                # per matching archetype so each component pointer refers to a
-                # homogeneous SoA range and the accessor's row id remains
-                # local to that archetype.
-                for ref archetype in matching_archetypes^:
-                    var kernel_columns = KernelContext[
-                        filter, required_resources, capture_spec
-                    ].Columns(uninitialized=True)
-
-                    comptime for i in range(len(filter)):
-                        comptime T = filter._include.ComponentTypes[i]
-                        kernel_columns[
-                            i
-                        ] = archetype._storage.get_component_ptr[
-                            T
-                        ]().unsafe_bitcast[
-                            UInt8
-                        ]()
-
-                    var kernel_context = KernelContext[
-                        filter, required_resources, capture_spec
-                    ](
-                        kernel_columns^,
-                        resource_accessor.copy(),
-                        capture_columns=host_captures._pointers.copy(),
-                        # Each archetype's columns are separate SoA
-                        # allocations, not offsets into one shared buffer
-                        # (unlike the GPU path below, which flattens every
-                        # matching archetype into one device column). The
-                        # kernel's row loop must therefore stop at this
-                        # archetype's own length, not the total across every
-                        # matching archetype -- using the total here made
-                        # every archetype but the largest walk past the end
-                        # of its columns.
-                        length=Int32(len(archetype)),
-                        thread_count=1,
-                    )
-                    KernelFunc(kernel_context)
-
             else:
+                var length = 0
+                comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
+                comptime exclude_mask = filter.get_exclude_mask[*Self.WorldTs]()
+                var matching_archetypes = (
+                    self.world[].storage._get_archetype_iterator(
+                        include_mask,
+                        exclude_mask,
+                    )
+                )
+                for ref archetype in matching_archetypes.copy():
+                    length += len(archetype)
+
                 # `on_gpu=True` moves every accessed component and resource
                 # across the host/device boundary as raw bytes (see
                 # `DeviceComponentStorage`/`DeviceResourceStorage`): the
@@ -1479,56 +1504,29 @@ struct SystemContext[
             )
         ):
             var host_captures = _bind_captures[capture_spec](*bindings)
-            comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
-            comptime exclude_mask = filter.get_exclude_mask[*Self.WorldTs]()
-            var matching_archetypes = (
-                self.world[].storage._get_archetype_iterator(
-                    include_mask,
-                    exclude_mask,
-                )
+            var resource_accessor = _bind_cpu_resources[required_resources](
+                self.world[].resources
             )
-
-            var resource_pointers = ResourceAccessor[
-                required_resources
-            ].Pointers(uninitialized=True)
-            comptime for i in range(len(required_resources)):
-                comptime T = required_resources.ResourceTypes[i]
-                resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
-                    unsafe_from_address=Int(
-                        Pointer(to=self.world[].resources.get[T]())
+            comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
+            # Fix the invocation boundary and reacquire each archetype by
+            # index instead of retaining the list buffer across callbacks.
+            var archetype_count = len(self.world[].storage._archetypes)
+            for index in range(archetype_count):
+                ref archetype = self.world[].storage._archetypes.unsafe_get(
+                    index
+                )
+                if len(archetype) == 0 or not bitmask_filter.matches(
+                    archetype.get_mask()
+                ):
+                    continue
+                kernel_func(
+                    _cpu_kernel_context[
+                        filter, required_resources, capture_spec
+                    ](
+                        archetype,
+                        0,
+                        len(archetype),
+                        resource_accessor,
+                        host_captures,
                     )
                 )
-
-            var resource_accessor = ResourceAccessor[required_resources](
-                resource_pointers^
-            )
-
-            # A filter can match multiple archetypes. Run the kernel once per
-            # matching archetype so each component pointer refers to a
-            # homogeneous SoA range and the accessor's row id remains local to
-            # that archetype.
-            for ref archetype in matching_archetypes^:
-                var kernel_columns = KernelContext[
-                    filter, required_resources, capture_spec
-                ].Columns(uninitialized=True)
-
-                comptime for i in range(len(filter)):
-                    comptime T = filter._include.ComponentTypes[i]
-                    kernel_columns[i] = archetype._storage.get_component_ptr[
-                        T
-                    ]().unsafe_bitcast[UInt8]()
-
-                var kernel_context = KernelContext[
-                    filter, required_resources, capture_spec
-                ](
-                    kernel_columns^,
-                    resource_accessor.copy(),
-                    capture_columns=host_captures._pointers.copy(),
-                    # See the matching comment in the other `run` overload:
-                    # each archetype's columns are a separate allocation, so
-                    # the row loop must stop at this archetype's own length,
-                    # not the total across every matching archetype.
-                    length=Int32(len(archetype)),
-                    thread_count=1,
-                )
-                kernel_func(kernel_context)
