@@ -330,6 +330,103 @@ def test_cpu_exclusion_and_exclusive_filters() raises:
     _check_filtered[True]()
 
 
+@fieldwise_init
+struct GrowthState(ResourceType):
+    """Internal callback probe with an explicitly untracked world pointer."""
+
+    var world: Pointer[World[Int32, Float32, UInt8], MutUntrackedOrigin]
+    var calls: Int
+    var grown: Bool
+    var failed: Bool
+
+
+def grow_archetypes(
+    rows: KernelContext[Filter().include[Int32](), Resources[GrowthState]()]
+):
+    """Exercises storage growth without retaining an archetype-list reference.
+
+    This deliberately uses an internal untracked callback for compatibility
+    testing; applications must not structurally mutate a captured world.
+
+    Args:
+        rows: Existing matching rows and the internal growth probe.
+    """
+    ref state = rows.resources.get[GrowthState]()
+    state.calls += 1
+    if not state.grown:
+        state.grown = True
+        try:
+            ref storage = state.world[].storage
+            storage._archetypes.reserve(storage._archetypes.capacity() + 1)
+            _ = storage.add_entity(Int32(99), Float32(0))
+        except:
+            state.failed = True
+            return
+    for row in rows:
+        row.get[Int32]() += 1
+
+
+def _check_archetype_growth[closure: Bool]() raises:
+    """Checks a fixed CPU invocation boundary across archetype-list relocation.
+
+    Parameters:
+        closure: Whether to invoke the thin or lexical CPU overload.
+
+    Raises:
+        Error: If setup, traversal, or an assertion fails.
+    """
+    var world = World[Int32, Float32, UInt8]()
+    var first = world.storage.add_entity(Int32(1))
+    var second = world.storage.add_entity(Int32(2), UInt8(0))
+    world.resources.add(
+        GrowthState(
+            Pointer[World[Int32, Float32, UInt8], MutUntrackedOrigin](
+                unsafe_from_address=Int(Pointer(to=world))
+            ),
+            0,
+            False,
+            False,
+        )
+    )
+    var lexical_calls = 0
+
+    def grow_closure(
+        rows: KernelContext[Filter().include[Int32](), Resources[GrowthState]()]
+    ) {mut lexical_calls}:
+        """Exercises the same internal growth callback through a closure.
+
+        Args:
+            rows: One initial matching archetype's rows.
+        """
+        lexical_calls += 1
+        grow_archetypes(rows)
+
+    var context = SystemContext(world)
+    comptime if closure:
+        context.run(grow_closure)
+    else:
+        context.run[grow_archetypes]()
+    assert_false(world.resources.get[GrowthState]().failed)
+    assert_equal(world.resources.get[GrowthState]().calls, 2)
+    assert_equal(world.storage.get[Int32](first), 2)
+    assert_equal(world.storage.get[Int32](second), 3)
+    for row in world.storage.query[Filter().read[Int32, Float32]()]():
+        assert_equal(row.get[Int32](), 99)
+    comptime if closure:
+        assert_equal(lexical_calls, 2)
+    assert_false(world.storage.is_locked())
+
+
+def test_cpu_archetype_boundary_survives_list_relocation() raises:
+    """Neither CPU form retains a stale list pointer or visits appended archetypes.
+
+    Raises:
+        Error: If internal callback growth invalidates ordinary CPU traversal.
+    """
+    _check_archetype_growth[False]()
+    _check_archetype_growth[True]()
+
+
 comptime functions = __functions_in_module()
 
 

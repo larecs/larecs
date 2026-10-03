@@ -1261,8 +1261,13 @@ struct SystemContext[
                 comptime bitmask_filter = filter.get_bitmask_filter[
                     *Self.WorldTs
                 ]()
-                # Discover whole ranges lazily without allocating row metadata.
-                for ref archetype in self.world[].storage._archetypes:
+                # Fix the invocation boundary and reacquire each archetype by
+                # index instead of retaining the list buffer across callbacks.
+                var archetype_count = len(self.world[].storage._archetypes)
+                for index in range(archetype_count):
+                    ref archetype = self.world[].storage._archetypes.unsafe_get(
+                        index
+                    )
                     if len(archetype) == 0 or not bitmask_filter.matches(
                         archetype.get_mask()
                     ):
@@ -1503,8 +1508,13 @@ struct SystemContext[
                 self.world[].resources
             )
             comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
-            # Discover whole ranges lazily without allocating row metadata.
-            for ref archetype in self.world[].storage._archetypes:
+            # Fix the invocation boundary and reacquire each archetype by
+            # index instead of retaining the list buffer across callbacks.
+            var archetype_count = len(self.world[].storage._archetypes)
+            for index in range(archetype_count):
+                ref archetype = self.world[].storage._archetypes.unsafe_get(
+                    index
+                )
                 if len(archetype) == 0 or not bitmask_filter.matches(
                     archetype.get_mask()
                 ):

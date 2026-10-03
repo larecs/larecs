@@ -258,8 +258,10 @@ CPU execution now shares `_bind_cpu_resources` and `_cpu_kernel_context` in
 [`system.mojo`](../../../src/larecs/system.mojo) across ordinary/selected and
 thin/value-taking entry points. Resources and explicit captures bind once per
 invocation; the shared context builder offsets columns by the range start and
-uses the exact range length. Ordinary CPU execution scans archetypes lazily,
-while selected CPU execution reads its existing ranges directly. Matching-range
+uses the exact range length. Ordinary CPU execution fixes the initial archetype
+count, then scans those indices lazily and reacquires each archetype from storage
+so it does not retain the archetype-list buffer across callbacks. Selected CPU
+execution reads its existing ranges directly. Matching-range
 metadata and aggregate row counting are confined to GPU execution.
 [`cpu_execution_test.mojo`](../../../test/cpu_execution_test.mojo) covers both
 range sources, both CPU kernel forms, shared heap-backed resources and explicit
