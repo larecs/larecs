@@ -350,8 +350,14 @@ def markdown(report):
         if not suite["rounds"]:
             lines += ["| No completed samples | | | | | error |"]
         for case, data in (suite["rounds"][0] if suite["rounds"] else {}).items():
-            result = ("REGRESSION" if case in suite["regressions"] else
-                      "transient candidate" if data["candidate"] else "pass")
+            if case in suite["regressions"]:
+                result = "REGRESSION"
+            elif not data["candidate"]:
+                result = "pass"
+            elif len(suite["rounds"]) < 2:
+                result = "unconfirmed candidate"
+            else:
+                result = "transient candidate"
             lines.append(f"| {case} | {data['base_median_ns']:.1f} | {data['head_median_ns']:.1f} | "
                          f"{(data['paired_ratio_median'] - 1) * 100:+.1f}% | {data['slow_pairs']}/5 | {result} |")
         if len(suite["rounds"]) > 1:
