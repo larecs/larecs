@@ -127,6 +127,8 @@ def _bench_many_archetypes[closure: Bool](mut bencher: Bencher):
             increment(rows)
 
         def run_once() {mut context, imm lexical_kernel}:
+            """Runs one filtered CPU invocation, aborting on unexpected failure.
+            """
             try:
                 comptime if closure:
                     context.run(lexical_kernel)

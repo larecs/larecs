@@ -26,8 +26,8 @@ These cases remain manual benchmarks; they are not added to the small PR suite.
 
 On Apple M4, macOS 27.0.1, Mojo 1.0.0 (`ed45d567`), the shared CPU setup refactor
 in `927cbb5` was compared with `688fb670c87ced6b08c920e2c3527a1890218c6f`
-using the **same updated driver** and compiler environment. Build one optimized binary against
-an isolated baseline checkout and one against the current source, without
+using the **same updated driver** and compiler environment. Build one optimized
+binary against an isolated baseline checkout and one against the current source, without
 `-g`, sanitizers, or tracing. Warm each once, then alternate baseline/current
 order across five paired samples with no concurrent builds or benchmark jobs.
 The driver uses fixed iterations: 100 full-world calls, 1,000 multi-archetype
@@ -48,8 +48,8 @@ measured 271.85 → 269.29 µs. These short synthetic batches are local evidence
 not portable timing baselines or application speedup claims. Full-world row
 work dominates discovery at 100k rows; small selections benefit from avoiding
 matching-range allocation. Compilation is excluded from every operation timing.
-The initial baseline driver build took 18.65 seconds; a repeated current build took 1.36 seconds with local compiler
-caches populated. These build times are not comparable cold-compilation
+The initial baseline driver build took 18.65 seconds; a repeated current build
+took 1.36 seconds with local compiler caches populated. These build times are not comparable cold-compilation
 measurements and establish no compilation speedup. Linux operation timings
 remain unmeasured locally.
 
