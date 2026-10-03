@@ -94,3 +94,10 @@ policy/workload change rather than silently lowering thresholds.
 - [CI workflow](../../../.github/workflows/main.yml) and
   [test entry point](../../../test/run_tests.sh).
 - [Remaining coverage](../../roadmap.md#performance-regression-coverage).
+
+The initial [Linux/macOS PR run](https://github.com/larecs/larecs/actions/runs/37112210067)
+passed both full build/test jobs and uploaded both evidence artifacts. With
+Mojo 1.0.0 (`ed45d567`), the unchanged-library gate took 66.1 seconds on virtual
+Apple M2 Pro/macOS 26.6.2 and 75.3 seconds on AMD EPYC 7763/Linux x86_64.
+Driver builds cost 43.1/50.2 seconds and sampling 22.1/24.6 seconds respectively.
+See the guide for commit IDs, timing boundaries, and shared-runner limitations.
