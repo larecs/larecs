@@ -4,6 +4,13 @@
 
 ### Added
 
+- Add small spatial layout/cadence comparisons and same-runner performance
+  regression checks to the complete PR test suite.
+
+- Add owned read-only spatial classifiers, explicit full-scan row maintenance,
+  and checked grid/Morton-key helpers. Maintenance groups equal keys within
+  existing archetypes while preserving entity locations and component lifetimes.
+
 - Support `with` blocks for `EntitySelection`, including in-place mutation
   chains and automatic lock release on normal, early, and exceptional exits.
 

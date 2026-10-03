@@ -1,13 +1,18 @@
+---
+id: "0001"
+title: "Locked entity selections"
+status: accepted
+---
+
 # Decision 0001: Locked entity selections
 
-Status: Accepted. The public behavior is implemented and compiler-validated on
-Mojo 1.0. Shared CPU plumbing, internal iterator/mutation migration, and
-controlled performance evidence remain open in
-[the roadmap](../../roadmap.md).
+## Context
 
-Context: The changed-entity execution work in issue #170.
+The changed-entity execution work in issue #170.
 
-Decision: Use locked, exact-range entity selections with in-place mutations and
+## Decision
+
+Use locked, exact-range entity selections with in-place mutations and
 reusable CPU/GPU execution. The requirements and consequences follow below.
 
 ## Purpose
@@ -22,12 +27,12 @@ identity-tracking proposal.
 
 ## Agreed public behavior
 
-| Operation | Input scope | Resulting membership |
-| --- | --- | --- |
-| Batch creation on `SystemContext` | Newly created entities | Exactly the new rows |
-| Batch add/remove/replace on `SystemContext` | Entities matching the operation filter | Exactly the modified entities |
-| Batch add/remove/replace on a selection | Existing selection intersected with the operation filter | Exactly the modified entities, at their new locations |
-| Kernel execution on a selection | Selection intersected with the kernel filter | Selection remains reusable and unchanged in membership |
+| Operation                                   | Input scope                                              | Resulting membership                                   |
+| ------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------ |
+| Batch creation on `SystemContext`           | Newly created entities                                   | Exactly the new rows                                   |
+| Batch add/remove/replace on `SystemContext` | Entities matching the operation filter                   | Exactly the modified entities                          |
+| Batch add/remove/replace on a selection     | Existing selection intersected with the operation filter | Exactly the modified entities, at their new locations  |
+| Kernel execution on a selection             | Selection intersected with the kernel filter             | Selection remains reusable and unchanged in membership |
 
 - Expose batch operations through `SystemContext`.
 - A selection owns a structural-change lock until released or destroyed.
