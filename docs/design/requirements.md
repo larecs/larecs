@@ -30,3 +30,8 @@ component lifetimes and entity locations after structural changes, avoid
 unnecessary full-world work for small selections, and measure changes to hot
 paths with the relevant benchmarks. See [AGENTS.md](../../AGENTS.md) for the
 project's build, test, and benchmark commands.
+
+PR performance checks must compare bounded workloads against the exact PR base
+on the same runner/compiler, validate complete results, confirm sustained
+regressions, and retain reproducible evidence. See [decision 0011](decisions/0011-pr-performance-regression-checks.md)
+for baseline selection, failure policy, initial coverage, and limitations.
