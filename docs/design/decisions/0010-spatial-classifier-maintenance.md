@@ -2,7 +2,7 @@
 id: "0010"
 title: "Owned spatial classifiers and explicit maintenance"
 status: accepted
-status_notes: One host classifier per world; complete spatial workload benefit remains unmeasured.
+status_notes: One host classifier per world; small synthetic workload comparisons implemented; complete application benefit remains unmeasured.
 ---
 
 # Decision 0010: Owned spatial classifiers and explicit maintenance
@@ -138,3 +138,16 @@ not run its Intel executable on this arm64 host (`Bad CPU type in executable`);
 this is a tooling limitation, not skipped guide execution. Installing Xcode's
 missing Metal Toolchain resolved the previous local metallib compilation error;
 GPU tests retain `# SKIP_DEBUG` for the separate debug-info compiler issue.
+
+The [small PR benchmark](../../../benchmark/spatial_smoke.mojo) compares
+512/2,048-row uniform, dense, sparse, and mobile cell aggregates, plus separate
+ordered/reversing maintenance costs. The [regression checker](../../../scripts/check_spatial_performance.py)
+builds the same driver against the PR base and current library on each full
+Linux/macOS test run. [Benchmark documentation](../../src/guide/benchmarks.md#small-spatial-benchmarks-on-every-pr)
+defines the timing boundary, cadence, bounded sampling, bootstrap baseline,
+and shared-runner regression threshold. Initial Apple M4 checks took about
+31 seconds including both compilations. Static aggregation showed essentially
+no ordering benefit at these sizes; maintaining every frame cost roughly
+3.5 times the unmaintained mobile control, versus roughly 1.6 times when
+maintaining every fourth frame. These cache-resident cases provide regression
+coverage and do not establish full application speedup.

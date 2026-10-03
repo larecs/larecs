@@ -87,7 +87,8 @@ The design is accepted; the internal typed permutation foundation is implemented
 under [decision 0009](design/decisions/0009-typed-row-permutation-foundation.md).
 Classifier registration and explicit maintenance are implemented under
 [decision 0010](design/decisions/0010-spatial-classifier-maintenance.md). Spatial
-performance evidence is pending.
+performance evidence includes small synthetic cell workloads; complete
+application and memory measurements remain pending.
 The initial strategy scans all eligible entities only when the application
 explicitly requests maintenance. [Dirty-entity classification](design/decisions/0008-dirty-entity-spatial-classification.md)
 is recorded as undecided and unplanned; it is not an implementation task.
@@ -110,7 +111,10 @@ is recorded as undecided and unplanned; it is not an implementation task.
   lifetimes, classifier failures, lock rejection,
   and CPU/GPU execution and copy-back after maintenance. Add public guides when
   the API is implemented.
-- [ ] Benchmark complete spatial workloads against the current layout,
+- [x] Compare small uniform, dense, sparse, and mobile cell workloads against
+  scrambled rows, including maintenance cadences; run bounded same-runner
+  base-versus-PR performance checks on every full CI test run.
+- [ ] Benchmark complete application spatial workloads against the current layout,
   including classification and bytes moved, ordinary scan overhead, memory
   overhead, maintenance cadence, and uniform, sparse, dense, and mobile cases.
 - [ ] Define overlapping-filter behavior before supporting multiple registered
