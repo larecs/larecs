@@ -121,6 +121,21 @@ class PerformanceTest(unittest.TestCase):
                 check.compare_suite(self.suite, [], Mock(), evidence)
         self.assertEqual(evidence["rounds"], [first])
 
+    def test_summary_distinguishes_confirmation_outcomes(self):
+        """Incomplete confirmation cannot suggest a candidate was rejected as noise."""
+        first = self.analysis([1.5] * 5)
+        second = self.analysis([1] * 5)
+        suite = {"base_sha": "base", "driver_sha256": "hash", "compile_seconds": {},
+                 "rounds": [first], "regressions": []}
+        report = {"status": "error", "suites": {"fixture": suite}, "elapsed_seconds": 0}
+        incomplete = check.markdown(report)
+        self.assertIn("unconfirmed candidate", incomplete)
+        self.assertNotIn("transient candidate", incomplete)
+        suite["rounds"].append(second)
+        self.assertIn("transient candidate", check.markdown(report))
+        suite["regressions"] = ["a"]
+        self.assertIn("| a | 10000.0 | 15000.0 | +50.0% | 5/5 | REGRESSION |", check.markdown(report))
+
     def test_baseline_precedence(self):
         """Explicit refs override PR bases; push checks use the previous commit."""
         with tempfile.TemporaryDirectory() as directory:
