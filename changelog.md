@@ -20,6 +20,10 @@
 
 ### Changed
 
+- Share CPU resource binding and bounded kernel context setup across ordinary
+  and selected execution, with lazy matching-range discovery and no temporary
+  CPU range metadata.
+
 - Prefer selection kernels over iterating low-level host-storage batch mutation
   results; selections keep structural changes locked until explicit release or
   destruction.

@@ -253,3 +253,18 @@ their internals are consolidated. The accepted requirements are
 [roadmap](../../roadmap.md) tracks unfinished migration and performance work;
 `test/entity_selection_test.mojo`, `test/gpu_entity_selection_test.mojo`, and
 `benchmark/entity_selection_benchmark.mojo` provide implementation evidence.
+
+CPU execution now shares `_bind_cpu_resources` and `_cpu_kernel_context` in
+[`system.mojo`](../../../src/larecs/system.mojo) across ordinary/selected and
+thin/value-taking entry points. Resources and explicit captures bind once per
+invocation; the shared context builder offsets columns by the range start and
+uses the exact range length. Ordinary CPU execution scans archetypes lazily,
+while selected CPU execution reads its existing ranges directly. Matching-range
+metadata and aggregate row counting are confined to GPU execution.
+[`cpu_execution_test.mojo`](../../../test/cpu_execution_test.mojo) covers both
+range sources, both CPU kernel forms, shared heap-backed resources and explicit
+captures, disjoint offsets, empty ranges, and exclusion/exclusive filters.
+The [focused comparison](../../src/guide/benchmarks.md#shared-cpu-execution-comparison)
+records paired baseline/current measurements and their limitations.
+This implements the existing execution contract without changing the API;
+batch mutation consolidation and query iterator migration remain on the roadmap.
