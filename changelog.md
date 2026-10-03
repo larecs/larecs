@@ -4,6 +4,10 @@
 
 ### Added
 
+- Add a shared PR performance gate with twelve CPU ECS cases alongside the
+  spatial suite, paired base/current sampling, confirmed regression failures,
+  and retained JSON, Markdown, and diagnostic evidence on Linux and macOS.
+
 - Add small spatial layout/cadence comparisons and same-runner performance
   regression checks to the complete PR test suite.
 

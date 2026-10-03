@@ -64,9 +64,16 @@ jobs:
         run: |
           pixi run tests test
 
-      # BUG: Skip benchmarks as they need to much time to compile!
-      # - name: Run benchmarks
-      #   run: pixi run benchmarks
+      # The complete test command includes the bounded core/spatial gate.
+      # Retain reports and diagnostics even when it rejects a regression.
+      - name: Upload performance evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: performance-${{ matrix.os }}-${{ github.run_attempt }}
+          path: output/performance/
+          retention-days: 30
+          if-no-files-found: ignore
 
       - name: Run examples
         run: |
