@@ -20,12 +20,13 @@ The focused selection driver also measures thin and lexical CPU kernels over
 seven matching archetypes (512 rows each) alongside six nonmatching archetypes
 (512 rows each). All matching rows perform the same increment; the closure also
 counts range invocations. Construction and result checks are excluded, and
-checks outside the timer verify row count and the closure's accumulated values.
+checks outside the timer verify row count, equal update counts for every row,
+and the closure's accumulated values.
 These cases remain manual benchmarks; they are not added to the small PR suite.
 
 On Apple M4, macOS 27.0.1, Mojo 1.0.0 (`ed45d567`), the shared CPU setup refactor
-was compared with `688fb670c87ced6b08c920e2c3527a1890218c6f` using the **same
-updated driver** and compiler environment. Build one optimized binary against
+in `927cbb5` was compared with `688fb670c87ced6b08c920e2c3527a1890218c6f`
+using the **same updated driver** and compiler environment. Build one optimized binary against
 an isolated baseline checkout and one against the current source, without
 `-g`, sanitizers, or tracing. Warm each once, then alternate baseline/current
 order across five paired samples with no concurrent builds or benchmark jobs.
@@ -34,21 +35,20 @@ calls, 10,000 contiguous selected calls, and 1,000 disjoint selected calls.
 
 | CPU workload | Baseline median | Refactor median |
 | --- | --- | --- |
-| 100,000 rows, full-world thin | 23.05 µs | 22.91 µs |
-| 3,584 rows, seven matching archetypes, thin | 1.265 µs | 1.028 µs |
-| Same rows, lexical closure | 1.090 µs | 0.916 µs |
-| 64 selected contiguous rows in a 100k world | 61.4 ns | 18.8 ns |
-| 64 selected disjoint single-row ranges in a 100k world | 654 ns | 244 ns |
+| 100,000 rows, full-world thin | 24.96 µs | 24.91 µs |
+| 3,584 rows, seven matching archetypes, thin | 1.381 µs | 1.111 µs |
+| Same rows, lexical closure | 1.161 µs | 0.947 µs |
+| 64 selected contiguous rows in a 100k world | 67.9 ns | 19.7 ns |
+| 64 selected disjoint single-row ranges in a 100k world | 709 ns | 267 ns |
 
-The unchanged mutation controls measured 10.05 → 9.75 µs for a 64-row
-add/remove chain and 98 → 98 µs for the first 512-row disjoint mutation pass.
+The unchanged mutation controls measured 10.55 → 10.57 µs for a 64-row
+add/remove chain and 106 → 106 µs for the first 512-row disjoint mutation pass.
 The existing selected GPU case ran on the actual Apple M4 accelerator and
-measured 265.34 → 267.50 µs. These short synthetic batches are local evidence,
+measured 271.85 → 269.29 µs. These short synthetic batches are local evidence,
 not portable timing baselines or application speedup claims. Full-world row
 work dominates discovery at 100k rows; small selections benefit from avoiding
 matching-range allocation. Compilation is excluded from every operation timing.
-The baseline build took
-18.65 seconds; a repeated current build took 1.36 seconds with local compiler
+The initial baseline driver build took 18.65 seconds; a repeated current build took 1.36 seconds with local compiler
 caches populated. These build times are not comparable cold-compilation
 measurements and establish no compilation speedup. Linux operation timings
 remain unmeasured locally.
