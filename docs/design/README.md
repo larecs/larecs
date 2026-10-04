@@ -22,6 +22,7 @@ decision record before changing an established behavior:
 | [0008](decisions/0008-dirty-entity-spatial-classification.md)   | Proposed                       | Deferred classification of dirty entities instead of full scans (unplanned) |
 | [0009](decisions/0009-typed-row-permutation-foundation.md) | Accepted | Internal typed row permutation and movement error guarantees |
 | [0010](decisions/0010-spatial-classifier-maintenance.md) | Accepted | Owned spatial classifiers, checked keys, and explicit full-scan maintenance |
+| [0011](decisions/0011-pr-performance-regression-checks.md) | Accepted | Same-runner PR regression checks, bounded CPU suites, and retained evidence |
 
 ## Recording a change
 
