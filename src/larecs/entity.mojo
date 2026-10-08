@@ -187,27 +187,27 @@ struct Entity(
 struct EntityLocation(ImplicitlyCopyable, TrivialRegisterPassable):
     """Indicates where an entity is currently stored."""
 
-    # Entity's current index in the archetype
+    # Entity's current row in a dense physical store
     var entity_index: Int
-    """Entity's current index in its archetype."""
+    """Entity's current row in its physical store."""
 
     # Entity's current archetype
     var archetype_index: Int
-    """Index of the archetype currently storing the entity."""
+    """Physical store index currently storing the entity."""
 
 
 @fieldwise_init
 struct EntityRange(ImplicitlyCopyable, TrivialRegisterPassable):
-    """A bounded contiguous set of entity rows in one archetype.
+    """A bounded contiguous set of entity rows in one physical store.
 
     Args:
-        archetype_index: The index of the archetype containing the rows.
+        archetype_index: The physical store index containing the rows (a partition block when enabled).
         first_row: The first included row in the archetype.
         row_count: The number of included rows.
     """
 
     var archetype_index: Int
-    """Index of the archetype containing the rows."""
+    """Physical store index containing the rows."""
     var first_row: Int
     """Index of the first included row."""
     var row_count: Int

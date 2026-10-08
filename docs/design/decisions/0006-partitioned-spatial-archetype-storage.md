@@ -1,7 +1,8 @@
 ---
 id: "0006"
 title: "Partitioned spatial storage beneath archetypes"
-status: proposed
+status: accepted
+status_notes: Adopted as an opt-in mode with the concrete layout and limits in decision 0013.
 ---
 
 # Decision 0006: Partitioned spatial storage beneath archetypes
@@ -15,8 +16,10 @@ partitions could instead support incremental movement and direct cluster lookup.
 
 ## Decision
 
-No decision to adopt partitioned storage has been made. Retain the following
-alternative for evaluation after measuring the accepted reordering design.
+Adopt partitioned storage as an opt-in alternative to row reordering.
+[Decision 0013](0013-cluster-local-partition-blocks.md) resolves the layout,
+allocation, reclamation, staging, movement, exact membership, and execution
+contracts. The following describes the original architectural motivation.
 
 Keep logical archetypes keyed by component composition, but store their rows in
 partitions keyed by cluster identity. Each partition owns one or more dense
@@ -53,10 +56,10 @@ selection triples identify an archetype and a contiguous row interval; a block
 model needs a representation preserving exact membership and structural locks.
 It must preserve valid component lifetimes and efficient batch operations.
 
-Evaluate maintenance cost, memory overhead, allocation count, block occupancy,
-ordinary scan throughput, and complete spatial-workload time against periodic
-reordering before accepting this alternative. Do not treat it as an implemented
-feature or a replacement for decision 0005.
+Compare maintenance cost, memory overhead, allocation count, block occupancy,
+ordinary scan throughput, and complete spatial-workload time against deferred
+row reordering. Keep the existing default: workload-specific tradeoffs do not
+justify automatically switching registered worlds to partitions.
 
 ## Evidence
 
@@ -65,4 +68,4 @@ feature or a replacement for decision 0005.
   [archetypes](../../../src/larecs/archetype.mojo).
 - Exact-range constraints: [decision 0001](0001-locked-entity-selections.md).
 - Evaluation work: [roadmap](../../roadmap.md#spatial-component-locality).
-- No partition implementation, tests, or comparative measurements exist yet.
+- Concrete adopted design and implementation evidence: [decision 0013](0013-cluster-local-partition-blocks.md).

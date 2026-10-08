@@ -108,7 +108,9 @@ Deferred dirty-entity classification is implemented under
 [decision 0008](design/decisions/0008-dirty-entity-spatial-classification.md) and
 [decision 0012](design/decisions/0012-deferred-spatial-maintenance.md). Applications
 still choose explicit maintenance boundaries; structural mutations use full
-rebuilds. Synthetic paired comparisons cover clean, sparse, and dense updates;
+rebuilds. Opt-in cluster-local partitions and exact maintained cluster selections
+are implemented under [decision 0013](design/decisions/0013-cluster-local-partition-blocks.md).
+Synthetic paired comparisons cover clean, sparse, and dense updates;
 complete application benefits remain unmeasured.
 
 - [x] Define and implement classifier registration with explicit read-only
@@ -139,14 +141,20 @@ complete application benefits remain unmeasured.
   explicit full scans in `benchmark/dirty_spatial.mojo`.
 - [ ] Evaluate finer structural invalidation and avoid whole-capacity key scratch
   copying on sparse passes if measured application costs justify the complexity.
-- [ ] Benchmark complete application spatial workloads against the current layout,
-  including classification and bytes moved, ordinary scan overhead, memory
-  overhead, maintenance cadence, and uniform, sparse, dense, and mobile cases.
+- [ ] Compare partitioned storage with deferred row reordering using uniform,
+  dense, singleton sparse, and moving synthetic cell workloads; include all
+  maintenance costs, ordinary query/CPU scan throughput, capacity-derived memory,
+  allocation counts, occupancy, and maintenance cadence in the benchmark guide.
+- [ ] Measure complete application spatial workloads, process/peak memory, GPU
+  timing, additional component widths, and structural-heavy maintenance.
+  Synthetic cell-frame results do not establish application benefit.
 - [ ] Define overlapping-filter behavior before supporting multiple registered
   clustering functions; preserve one physical row order per archetype.
-- [ ] Evaluate [partitioned storage](design/decisions/0006-partitioned-spatial-archetype-storage.md)
-  against measured reordering costs. It remains proposed and undecided; adopting
-  it requires a separate acceptance decision.
+- [x] Adopt opt-in [partitioned storage](design/decisions/0006-partitioned-spatial-archetype-storage.md)
+  with bounded blocks, staging, local compaction, reclamation, exact selections,
+  and ordinary/batch/CPU/GPU integration under decision 0013.
+- [ ] Evaluate persistent cluster directories, narrower affected-cluster compaction,
+  and high-water metadata reclamation if measured workload costs justify them.
 
 ### Other features
 

@@ -146,6 +146,88 @@ def test_gpu_execution_after_spatial_maintenance() raises:
         print("Executed spatial maintenance integration on actual GPU")
 
 
+def _check_partition_execution[on_gpu: Bool, selected: Bool]() raises:
+    """Execute across many blocks, then repartition copied-back inputs.
+
+    Parameters:
+        on_gpu: Run on a real accelerator when true.
+        selected: Use an exact multi-block selection when true.
+
+    Raises:
+        Error: If CPU/GPU execution, transfers, or membership checks fail.
+    """
+    var world = World[Position, Payload]()
+    for i in range(73):
+        _ = world.storage.add_entity(Position(Int32(i % 3)), Payload(Int32(i)))
+    _ = world.storage.add_entity(Position(1))
+    world.register_spatial_classifier[spatial_filter](
+        Policy(), partitioned=True, block_capacity=8
+    )
+    world.maintain_spatial()
+    var context = SystemContext(world)
+    for frame in range(2):
+        comptime if selected:
+            var selection = context.select_cluster[Filter().include[Payload]()](
+                UInt64(1 if frame == 0 else 9)
+            )
+            assert_equal(len(selection), 24)
+            selection.run[update, on_gpu=on_gpu]()
+            selection^.release()
+        else:
+            context.run[update, on_gpu=on_gpu]()
+        for row in context.world[].storage.query[
+            Filter().read[Position, Payload]()
+        ]():
+            var i = Int(row.get_entity().get_id()) - 1
+            var affected = i % 3 == 1 if selected else True
+            assert_equal(
+                row.get[Payload]().value,
+                Int32(i + (frame + 1 if affected else 0)),
+            )
+            assert_equal(
+                row.get[Position]().value,
+                Int32(10 - i % 3 if frame == 0 and affected else i % 3),
+            )
+        assert_equal(
+            len(context.world[].storage._spatial_dirty), 24 if selected else 73
+        )
+        context.world[].maintain_spatial()
+        for row in context.world[].storage.query[Filter().read[Position]()]():
+            var location = context.world[].storage._entity_locations[
+                row.get_entity().get_id()
+            ]
+            ref block = context.world[].storage._archetypes[
+                location.archetype_index
+            ]
+            assert_equal(
+                block.get_entity(location.entity_index), row.get_entity()
+            )
+            assert_equal(
+                block._partition_key.value(), UInt64(row.get[Position]().value)
+            )
+    assert_false(context.world[].storage.is_locked())
+
+
+def test_partition_cpu_and_gpu_execution() raises:
+    """Cover ordinary/selected packing and copy-back across cluster blocks.
+
+    Raises:
+        Error: If execution or validation fails.
+    """
+    _check_partition_execution[False, False]()
+    _check_partition_execution[False, True]()
+    comptime if has_accelerator():
+        var probe = World[Position, Payload]()
+        if probe._device_storage:
+            _check_partition_execution[True, False]()
+            _check_partition_execution[True, True]()
+            print("Executed partitioned storage on actual GPU")
+        else:
+            print("SKIP: partitioned GPU execution; no working device")
+    else:
+        print("SKIP: partitioned GPU execution; no accelerator support")
+
+
 def main() raises:
     """Runs spatial execution integration tests.
 

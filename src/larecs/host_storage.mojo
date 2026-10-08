@@ -159,6 +159,13 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     var _locks: LockManager
     """Lock manager guarding mutation during active iteration."""
 
+    var _spatial_partitioned: Bool
+    """Whether maintenance places eligible rows in cluster-local blocks."""
+    var _spatial_block_capacity: Int
+    """Maximum rows per partition block, a power of two."""
+    var _spatial_free_blocks: List[Int]
+    """Reclaimed physical slots; graph-owned staging slots are never recycled."""
+
     var _spatial_enabled: Bool
     """Whether spatial invalidation is active."""
     var _spatial_inputs: BitMask
@@ -184,10 +191,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     """Type alias for the list of archetypes owned by this storage."""
 
     var _archetypes: Self.Archetypes
-    """Archetype list owned by this HostStorage."""
+    """Physical stores: logical staging archetypes, partition blocks, and tombstones."""
 
     var _archetype_map: BitMaskGraph[-1]
-    """Graph mapping component masks to archetype indices."""
+    """Graph mapping component masks to canonical logical staging indices."""
 
     def __init__(out self):
         """
@@ -196,6 +203,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         with Zone(function_name="HostStorage.__init__()"):
             self._entity_locations = [EntityLocation(0, 0)]
             self._entity_pool = EntityPool()
+            self._spatial_partitioned = False
+            self._spatial_block_capacity = 256
+            self._spatial_free_blocks = List[Int]()
             self._spatial_enabled = False
             self._spatial_inputs = BitMask()
             self._spatial_full = False
@@ -431,7 +441,11 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             )
         ):
             for i in range(len(self._archetypes)):
-                if self._archetypes[i].get_mask() == mask:
+                if (
+                    not self._archetypes[i]._partition_key
+                    and self._archetypes[i].get_node_index() >= 0
+                    and self._archetypes[i].get_mask() == mask
+                ):
                     return i
 
             var node_index = self._archetype_map.add_node(mask.copy())
@@ -1470,7 +1484,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             # Removing and re-adding the same component set keeps the entity
             # in its current archetype. These rows are initialized, so replace
             # their values in place rather than appending and moving onto self.
-            if old_archetype_idx == new_archetype_idx:
+            if (
+                old_archetype.get_node_index()
+                == self._archetypes[new_archetype_idx].get_node_index()
+            ):
                 old_archetype.set_components[*Ts](
                     index_in_old_archetype, *add_components^
                 )
@@ -1622,7 +1639,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             component_ids, old_node_index
         )
 
-        if old_archetype_idx == new_archetype_idx:
+        if (
+            old_node_index
+            == self._archetypes[new_archetype_idx].get_node_index()
+        ):
             ref archetype = self._archetypes.unsafe_get(old_archetype_idx)
             comptime for i in range(add_size):
                 comptime T = Ts[i]
@@ -1979,13 +1999,15 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     # 2. If an archetype with the new component combination does not exist yet,
                     #    create new archetype B = A.different_by(component_ids) and move entities and component data from A to B.
                     var old_node_index = old_archetype1.get_node_index()
+                    var old_archetype_idx = self._entity_locations[
+                        old_archetype1.get_entity(0).get_id()
+                    ].archetype_index
                     var new_archetype_idx = self._get_archetype_index[
                         add_size + rem_size
                     ](component_ids, old_node_index)
 
                     # We need to update the pointer to the old archetype, because the `self._archetypes` list may have been
                     # resized during the call to `_get_archetype_index`.
-                    var old_archetype_idx = self._archetype_map[old_node_index]
                     ref old_archetype = self._archetypes.unsafe_get(
                         index(old_archetype_idx)
                     )
@@ -1997,16 +2019,16 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     # TODO: Optimization: If `new_archetype` is empty we can just shallow-copy the _ComponentTable of `old_archetype` to `new_archetype` and reinit `old_archetype`.
 
                     var old_archetype_size = len(old_archetype)
-                    if old_archetype_idx == new_archetype_idx:
+                    if old_node_index == new_archetype.get_node_index():
                         arch_start_idcs.append(0)
-                        changed_archetype_idcs.append(new_archetype_idx)
+                        changed_archetype_idcs.append(old_archetype_idx)
 
                         # The archetype did not change, so these rows
                         # already hold valid values that must be destroyed
                         # before assigning the new ones.
                         comptime for i in range(add_size):
                             comptime T = Ts[i]
-                            new_archetype.set_component_range[T](
+                            old_archetype.set_component_range[T](
                                 0,
                                 old_archetype_size,
                                 add_components[i].copy(),
@@ -2021,8 +2043,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                             old_archetype_unsafe
                         )
                     )
-                    arch_start_idcs.append(arch_start_idx)
-                    changed_archetype_idcs.append(new_archetype_idx)
+                    if new_archetype_idx not in changed_archetype_idcs:
+                        arch_start_idcs.append(arch_start_idx)
+                        changed_archetype_idcs.append(new_archetype_idx)
 
                     # These rows were just appended by
                     # `unsafe_move_all_from_archetype` and hold uninitialized
