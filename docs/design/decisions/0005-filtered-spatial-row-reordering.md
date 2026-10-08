@@ -1,10 +1,14 @@
 ---
 id: "0005"
 title: "Filtered spatial clustering by periodic row reordering"
-status: accepted
+status: superseded by 0012
 ---
 
 # Decision 0005: Filtered spatial clustering by periodic row reordering
+
+The full-scan-only maintenance contract below is historical. [Decision 0012](0012-deferred-spatial-maintenance.md)
+retains the classifier, filter, ownership, key ordering, lock, and typed movement
+rules and replaces unconditional classification with deferred invalidation.
 
 ## Context
 
