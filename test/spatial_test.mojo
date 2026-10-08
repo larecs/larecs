@@ -512,24 +512,49 @@ def test_dirty_failure_retry_and_copied_pending_state() raises:
     var calls = 0
     var a = world.storage.add_entity(Position(0))
     var b = world.storage.add_entity(Position(1), Payload([1]))
+    var untouched = world.storage.add_entity(Position(2))
     world.register_spatial_classifier[spatial_filter](
         RecordingPolicy(
             Pointer(to=calls).unsafe_origin_cast[MutUntrackedOrigin]()
         )
     )
     world.maintain_spatial()
+    assert_equal(calls, 3)
+    var unchanged_key = world.storage._spatial_keys[untouched.get_id()]
+    var index = world.storage._entity_locations[a.get_id()].archetype_index
     world.storage.set(a, Position(3))
     world.storage.set(b, Position(1048576))
     with assert_raises():
         world.maintain_spatial()
     assert_false(world.storage.is_locked())
+    assert_false(world.storage._spatial_full)
+    assert_equal(calls, 5)
+    assert_equal(world.storage._spatial_keys[a.get_id()], morton_key_3d(0, 0))
+    assert_equal(world.storage._spatial_keys[b.get_id()], morton_key_3d(1, 0))
+    assert_equal(world.storage._spatial_keys[untouched.get_id()], unchanged_key)
+    assert_equal(world.storage._archetypes[index].get_entity(0), a)
     assert_equal(len(world.storage._spatial_dirty), 2)
     world.storage.set(b, Position(2))
     var copied = world.copy()
     copied.maintain_spatial()
+    assert_equal(calls, 7)  # Only two dirty identities, not the untouched one.
+    assert_equal(
+        copied.storage._spatial_keys[untouched.get_id()], unchanged_key
+    )
+    assert_false(copied.storage._spatial_marked[a.get_id()])
+    assert_false(copied.storage._spatial_marked[b.get_id()])
+    assert_equal(copied.storage._archetypes[index].get_entity(0), untouched)
+    assert_equal(world.storage._archetypes[index].get_entity(0), a)
+    assert_true(world.storage._spatial_marked[a.get_id()])
+    assert_true(world.storage._spatial_marked[b.get_id()])
     assert_equal(len(copied.storage._spatial_dirty), 0)
     assert_equal(len(world.storage._spatial_dirty), 2)
     world.maintain_spatial()
+    assert_equal(calls, 9)
+    assert_equal(world.storage._spatial_keys[untouched.get_id()], unchanged_key)
+    assert_false(world.storage._spatial_marked[a.get_id()])
+    assert_false(world.storage._spatial_marked[b.get_id()])
+    assert_equal(world.storage._archetypes[index].get_entity(0), untouched)
     assert_equal(len(world.storage._spatial_dirty), 0)
     var before = calls
     world.maintain_spatial()
