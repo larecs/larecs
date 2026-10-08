@@ -89,9 +89,31 @@ without collisions in that range; its default z=0 supports planar grids.
 Out-of-range coordinates raise rather than wrapping or merging cells. Use a
 custom UInt64 encoding if your application's bounds differ.
 
-Each explicit maintenance pass reads **every eligible row**, including already
-ordered archetypes. It prepares all keys and permutations before moving rows,
-so a classifier error leaves row order unchanged and preserves the original
+Each explicit maintenance pass classifies **distinct dirty eligible entities**
+once using their final component values. Repeated writes deduplicate, and a clean
+pass returns without scanning rows. Registration and structural mutations (creation,
+deletion, add/remove/replace, and batch/selection changes) request a full rebuild.
+When every allocated ID is dirty, maintenance uses contiguous full classification.
+Only affected eligible archetypes have their cached keys checked and reordered;
+unchanged entities can still move to restore contiguous groups.
+
+Mutable `storage.get[T](entity)` access marks classifier inputs even when used
+only to read. Prefer read-only queries for observation. Setters mark overlapping
+inputs; CPU kernels conservatively mark their matching declared writable ranges,
+including exact selected ranges. Read-only declarations and unrelated component
+writes do not invalidate classifier inputs. GPU writable copy-back marks the same
+host identities; classification remains on the host.
+
+Raw pointers and low-level archetype access bypass tracking. After such writes,
+call `world.storage.mark_spatial_dirty(entity)` for each affected live identity,
+or `world.invalidate_spatial()` (also available on storage) for a full rebuild.
+External changes to otherwise owned policy configuration require full invalidation.
+These calls only invalidate; they do not require an unlocked world or move rows.
+Do not retain component references across maintenance, including clean passes.
+
+Maintenance prepares all keys and permutations before moving rows,
+so a classifier error leaves row order and committed keys unchanged, retains
+pending invalidations for retry, and preserves the original
 error message. Movement uses typed component lifecycle operations, including for
 heap-backed columns the classifier does not read. Fatal allocation or lifecycle
 failures do not provide rollback.
@@ -101,10 +123,11 @@ first, and do not keep component references across the call. In a system, use
 `context.world[].maintain_spatial()` after releasing its selections. Writes,
 entity changes, kernel completion, and system completion never invoke maintenance
 automatically. GPU copy-back updates current host values; the next explicit pass
-classifies those values, and subsequent CPU/GPU kernels see the new row order.
+classifies invalidated identities from those values, and subsequent CPU/GPU kernels see the new row order.
 
 Choose a cadence by measuring your workload. Wide archetypes move more bytes,
 and mobile entities may require frequent refreshes. Nearby entities in different
 archetypes remain in separate storage. Neighbor search still needs cell
-enumeration or an index and distance checks. The maintenance benchmark measures
-the cost of scans and movement; it does not establish a spatial workload speedup.
+enumeration or an index and distance checks. The dirty-maintenance benchmark compares
+updates, tracking, classification, sorting, movement, and location repair against
+explicit full rebuilds; it does not establish a spatial workload speedup.
