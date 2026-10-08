@@ -2,7 +2,7 @@
 id: "0013"
 title: "Cluster-local partition blocks and staging storage"
 status: accepted
-status_notes: Opt-in alongside deferred row reordering; functional tests and a paired CPU comparison driver are linked below.
+status_notes: Opt-in alongside deferred row reordering; measured maintenance/scan/memory tradeoffs and actual GPU functional validation are recorded in the benchmark guide.
 ---
 
 # Decision 0013: Cluster-local partition blocks and staging storage

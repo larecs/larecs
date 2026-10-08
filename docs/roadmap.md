@@ -141,7 +141,7 @@ complete application benefits remain unmeasured.
   explicit full scans in `benchmark/dirty_spatial.mojo`.
 - [ ] Evaluate finer structural invalidation and avoid whole-capacity key scratch
   copying on sparse passes if measured application costs justify the complexity.
-- [ ] Compare partitioned storage with deferred row reordering using uniform,
+- [x] Compare partitioned storage with deferred row reordering using uniform,
   dense, singleton sparse, and moving synthetic cell workloads; include all
   maintenance costs, ordinary query/CPU scan throughput, capacity-derived memory,
   allocation counts, occupancy, and maintenance cadence in the benchmark guide.
