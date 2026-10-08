@@ -102,3 +102,14 @@ Performance claims below cover synthetic host workloads, not application speedup
 - [Paired complete-frame comparison](../../../benchmark/dirty_spatial.mojo) and
   [methods and measured limitations](../../src/guide/benchmarks.md#deferred-dirty-classification).
 - [Public marking and boundary guide](../../src/guide/spatial_clustering.md).
+
+The Apple M4/Mojo 1.0.0 paired complete-frame comparison found sparse dirty
+updates taking 19.5–67.9% of explicit full-rebuild time, with fully dirty frames
+at 99.1–104.6% after the all-ID-dirty contiguous-classification fallback. The
+previous per-identity dense path took 131–141%, motivating that optimization.
+The same-driver 44-case base-versus-worktree gate passed, but retained 15–19%
+reversing-maintenance overhead and smaller access/mobile overhead. These are
+accepted measured costs of invalidation checks and opt-in bookkeeping; the gate
+thresholds are unchanged.
+See the benchmark guide for hardware/compiler, setup exclusions, paired method,
+absolute times, compilation cost, and application/memory limitations.
