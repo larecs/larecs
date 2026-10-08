@@ -1005,7 +1005,8 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             T: The type of the component.
 
         Returns:
-            The span over the component.
+            The span over the component, empty when the store has no rows.
+            Empty stores do not require a column allocation.
 
         Raises:
             LarecsError: If the component is not contained in the storage.
@@ -1021,6 +1022,9 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             comptime id = Self.component_manager.get_id[T]()
 
             self.assert_has_components[T]()
+
+            if self._length == 0:
+                return Span[T, UntrackedOrigin[mut=origin_of(self).mut]]()
 
             return Span(
                 unsafe_ptr=self._columns[id].get_ptr[T](), length=len(self)
