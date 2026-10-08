@@ -558,7 +558,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             column._clear_values = Self._clear_values_t[T]
             column._swap_rows = Self._swap_rows_t[T]
             var empty: Self.Data = None
-            if preallocate:
+            if preallocate and capacity > 0:
                 column._data^.deinit_assert_empty()
                 column._data = Self._resize_t[T](empty, 0, 0, capacity)
             empty^.deinit_assert_empty()
@@ -1360,6 +1360,9 @@ struct Archetype[
     var _entities: List[Entity]
     """The entities stored in this archetype."""
 
+    var _partition_key: Optional[UInt64]
+    """Cluster identity for a physical block; None denotes staging storage."""
+
     var _node_index: Int
     """Index of this archetype's node in the archetype graph."""
 
@@ -1419,6 +1422,7 @@ struct Archetype[
 
             self._entities = List[Entity](capacity=capacity)
             self._node_index = node_index
+            self._partition_key = None
 
     @always_inline
     def __init__(out self, *, copy: Self):
@@ -1432,6 +1436,7 @@ struct Archetype[
             # copied via a simple assignment
             self._entities = copy._entities.copy()
             self._node_index = copy._node_index
+            self._partition_key = copy._partition_key
             self._mask = copy._mask
 
             # Copy the data

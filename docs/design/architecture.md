@@ -49,3 +49,14 @@ cluster-local partitions as an undecided alternative, and
 [decision 0007](decisions/0007-special-cluster-component.md) records the rejected
 special built-in placement component proposal. Track implementation in the
 [roadmap](../roadmap.md#spatial-component-locality).
+
+## Opt-in partition placement
+
+A component-defined logical archetype remains one transition-graph node. Its
+canonical dense store stages creation and structural transitions. With partition
+mode registered, explicit maintenance places eligible rows in cluster-local
+blocks sharing that node and mask. `HostStorage._archetypes` is the internal
+physical-store directory; entity locations and exact selection triples name its
+slots and rows. Queries and CPU/GPU execution traverse those dense stores through
+the existing mask/range machinery. See [decision 0013](decisions/0013-cluster-local-partition-blocks.md)
+for capacity, ownership, compaction, reclamation, and maintained membership.

@@ -293,3 +293,53 @@ maintenance, **10–14%** for maintained mobile frames, and **3–8%** for ordin
 stable-ID access. Those costs remain visible tradeoffs, not claims of zero
 regression. Linux evidence comes from the PR checks; actual GPU execution is
 validated separately and is not included in these CPU performance numbers.
+
+## Partitioned storage comparison
+
+Build the optimized standalone driver once:
+`pixi run mojo build -I src benchmark/partitioned_spatial.mojo -o /tmp/larecs-partition-benchmark`.
+Run that binary without concurrent compilation or benchmark jobs. Partitioning
+is explicitly selected at registration; the control is the **same current
+library's deferred row reordering**, not forced full classification or a
+historical library with different invalidation costs. The existing core/spatial
+PR gate separately measures changes to the default paths against the exact base.
+
+The driver constructs identical deterministic scrambled 2,048/32,768-row worlds
+with two component-defined archetypes, 64-byte SIMD payloads, an integer input,
+and an additional eight-byte column on half the rows. It compares 256-row-capped
+blocks with row reordering for uniform (16 identities per cell), dense
+(1,024 per cell), and singleton sparse (one identity per cell, key spacing 128)
+distributions. Each configuration warms both layouts with one sixteen-frame
+batch, then alternates their order for five paired sixteen-frame samples.
+
+The 48 scenarios cover maintenance with 1, 1/64, or all identities updated;
+ordinary read-only query scans and CPU execution with unchanged layouts;
+and complete cell frames with the same updates, maintenance every frame (or
+every fourth frame for 1/64 updates), all-lane per-cell aggregation, and cyclic
+adjacent-cell aggregate products. Both layouts use identical entities, input
+updates, and semantic work. The scan controls still call the clean boundary.
+All measured update frames include marking, pending key allocation/copy,
+classification, directory construction or sorting, column growth/movement,
+local compaction, location repair, and allocation reclamation as applicable.
+Cell frames also include query setup, cell scratch allocation, aggregation,
+and neighbor arithmetic. Construction, initial placement, policy/device setup,
+and validation are excluded. There are no device transfers in these CPU timings.
+
+Every sample checks all identities once, final inputs, all payload lanes,
+entity locations, default key order or homogeneous bounded blocks, and equal
+complete spatial checksums outside timing. Query/CPU scan reductions are also
+checked against their complete expected sums. Results are consumed inside the
+timer. This is a synthetic spatial workload, not a game/simulation speedup,
+collision detection, or a persistent neighbor index.
+
+`MEMORY` records report initial maintained **capacity-derived owned bytes**;
+`MEMORY_AFTER_MOVEMENT` reports retained buffers after 96 fully moving frames:
+physical-directory slots, component/ID buffers, entity locations, key/dirty
+caches, queued identities, and recycled-slot capacity. Counted allocations are
+physical-directory plus row-column/ID allocations. Graph/pool allocations,
+allocator overhead, device state, classifier configuration, and all temporary
+maintenance/query/cell scratch are excluded; these records are not RSS or peak
+memory measurements. The components are trivial and have no hidden payload heap.
+Columns in a block share capacity, but each column and the IDs allocate
+separately. `PAIR` records give rows, distribution, mode, update count, cadence,
+pair index, reordering ns/frame, and partition ns/frame.

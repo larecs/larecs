@@ -17,13 +17,14 @@ decision record before changing an established behavior:
 | [0003](decisions/0003-grid-stride-entity-iteration.md)          | Accepted                        | CPU/GPU grid-stride entity iteration                                     |
 | [0004](decisions/0004-scoped-selection-errors.md)               | Accepted                        | Error propagation across scoped selection mutation and execution         |
 | [0005](decisions/0005-filtered-spatial-row-reordering.md)       | Superseded by 0012              | Filtered spatial clustering by periodic row reordering (classifier and maintenance implemented) |
-| [0006](decisions/0006-partitioned-spatial-archetype-storage.md) | Proposed                       | Cluster-local partitions beneath logical archetypes                      |
+| [0006](decisions/0006-partitioned-spatial-archetype-storage.md) | Accepted                       | Cluster-local partitions beneath logical archetypes                      |
 | [0007](decisions/0007-special-cluster-component.md)             | Rejected                        | Proposed special built-in `Cluster` component for placement              |
 | [0008](decisions/0008-dirty-entity-spatial-classification.md)   | Accepted                       | Deferred classification of dirty entities at explicit boundaries |
 | [0009](decisions/0009-typed-row-permutation-foundation.md) | Accepted | Internal typed row permutation and movement error guarantees |
 | [0010](decisions/0010-spatial-classifier-maintenance.md) | Superseded by 0012 | Owned spatial classifiers, checked keys, and explicit full-scan maintenance |
 | [0011](decisions/0011-pr-performance-regression-checks.md) | Accepted | Same-runner PR regression checks, bounded CPU suites, and retained evidence |
 | [0012](decisions/0012-deferred-spatial-maintenance.md) | Accepted | Deferred dirty classification, conservative invalidation, and full-rebuild fallback |
+| [0013](decisions/0013-cluster-local-partition-blocks.md) | Accepted | Opt-in bounded partition blocks, staging, reclamation, and exact cluster selections |
 
 ## Recording a change
 

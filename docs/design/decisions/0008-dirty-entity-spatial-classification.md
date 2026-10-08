@@ -53,9 +53,10 @@ fine-grained transition tracking. Multiple policies remain unsupported.
 
 Reducing classification to D entities does not guarantee moving only D rows:
 restoring contiguous cluster ranges can displace entities whose keys did not
-change. This proposal does not adopt partitioned storage or a persistent
-destination-batched move queue. The implementation retains archetype row reordering rather than adopting either
-alternative.
+change. This decision originally retained archetype row reordering.
+[Decision 0013](0013-cluster-local-partition-blocks.md) subsequently adds opt-in
+partitions while retaining this invalidation and explicit-boundary contract.
+Same-cluster compaction can still move unchanged rows.
 
 ## Evidence
 
