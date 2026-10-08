@@ -392,6 +392,14 @@ def test_mask_lookup_after_recycling_and_new_logical_transition() raises:
     )
     var staging = world.storage._get_archetype_index_by_mask(mask^)
     assert_equal(staging, world.storage._archetype_map[node])
+    assert_equal(
+        len(
+            world.storage._archetypes[staging]._storage.get_component_span[
+                Int
+            ]()
+        ),
+        0,
+    )
     assert_false(Bool(world.storage._archetypes[staging]._partition_key))
     world.storage.add(Entity(1), Heap([1]))
     world.maintain_spatial()
