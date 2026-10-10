@@ -114,6 +114,11 @@ Represent membership as explicit triples:
 `(archetype_index, first_row, row_count)`
 
 Use counts, not ranges implicitly extending to the current archetype length.
+With [opt-in partitions](0013-cluster-local-partition-blocks.md), the internal
+`archetype_index` names a dense physical store, including a partition block;
+logical archetypes remain component-defined. Membership and lock rules are
+unchanged, and a cluster selection can contain several such ranges.
+
 Ranges must be in bounds, nonoverlapping, and free of duplicate entity rows.
 Merge adjacent ranges in the same archetype when useful. Store indices rather
 than persistent archetype pointers: creating a destination archetype can

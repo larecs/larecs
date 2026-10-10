@@ -4,6 +4,14 @@
 
 ### Added
 
+- Add opt-in cluster-local partition blocks beneath logical component-defined
+  archetypes, with staged structural writes, typed transfers, local compaction,
+  allocation reclamation, and exact locked `SystemContext.select_cluster`
+  membership. Ordinary queries, bulk changes, and CPU/GPU execution traverse
+  blocks while preserving entity locations and component lifetimes. Retain
+  deferred row reordering as the default; add paired maintenance/scan/cell-frame
+  benchmarks and capacity-derived memory evidence for both layouts.
+
 - Add a shared PR performance gate with twelve CPU ECS cases alongside the
   spatial suite, paired base/current sampling, confirmed regression failures,
   and retained JSON, Markdown, and diagnostic evidence on Linux and macOS.

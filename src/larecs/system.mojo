@@ -1100,6 +1100,55 @@ struct SystemContext[
                     EntityRange(archetype_index, 0, len(archetype))
                 )
 
+    def select_cluster[
+        filter: Filter = Filter()
+    ](
+        mut self,
+        key: UInt64,
+        out selection: EntitySelection[Self.world_origin, *Self.WorldTs],
+    ) raises LarecsError:
+        """Lock exactly the maintained cluster rows matching a component filter.
+
+        Maintenance must be clean when membership is captured. Later writes
+        do not change this selection's membership; release it before maintenance.
+        Multiple logical archetypes and dense-cluster blocks may contribute.
+
+        Parameters:
+            filter: Component filter intersected with the cluster membership.
+
+        Args:
+            key: Exact registered classifier key.
+
+        Raises:
+            LarecsError: If partition storage is disabled, maintenance is pending,
+                storage is locked, or no structural lock is available.
+
+        Returns:
+            A locked selection, empty when the maintained cluster has no matches.
+        """
+        self.world[].storage._assert_unlocked()
+        if not self.world[].storage._spatial_partitioned:
+            raise Error(
+                "Cluster selection requires partitioned spatial storage"
+            )
+        if (
+            self.world[].storage._spatial_full
+            or len(self.world[].storage._spatial_dirty) > 0
+        ):
+            raise Error("Cluster selection requires clean spatial maintenance")
+        selection = EntitySelection[Self.world_origin, *Self.WorldTs](
+            self.world, List[EntityRange]()
+        )
+        var bitmask_filter = self.world[].storage.filter[filter]()
+        for index in range(len(selection._world[].storage._archetypes)):
+            ref block = selection._world[].storage._archetypes[index]
+            if block._partition_key and len(block) > 0:
+                if (
+                    block._partition_key.value() == key
+                    and bitmask_filter.matches(block.get_mask())
+                ):
+                    selection._ranges.append(EntityRange(index, 0, len(block)))
+
     def add_entities[
         *Ts: ComponentType
     ](

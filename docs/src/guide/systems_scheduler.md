@@ -241,8 +241,9 @@ def main() raises:
 ```
 
 Execution is synchronous: changes to mutable captures are visible after
-`run` returns. The kernel runs once per matching archetype and visits only
-that archetype's rows. Do not structurally modify the world from a captured
+`run` returns. The kernel runs once per matching dense physical store and visits only
+that store's rows. With partitioned spatial storage, each block contributes
+a separate CPU invocation. Do not structurally modify the world from a captured
 alias while those rows are being processed.
 
 ## Passing CPU-local values to a GPU kernel
@@ -326,8 +327,9 @@ appropriate synchronization/atomics, just like writes to shared resources.
 
 The same explicit bindings work with CPU kernels, including the closure
 overload. CPU execution borrows the original values directly and calls the
-kernel once per matching archetype; GPU execution processes the matching rows
-in one launch. In the example, adding `context.length` once per CPU archetype
+kernel once per matching physical store (each spatial partition block when
+enabled); GPU execution processes the matching rows
+in one launch. In the example, adding `context.length` once per CPU store
 or once for the GPU launch gives the same total.
 
 ## GPU execution

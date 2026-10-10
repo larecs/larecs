@@ -159,7 +159,13 @@ struct World[*component_types: ComponentType](Copyable, Sized):
 
     def register_spatial_classifier[
         C: SpatialClassifier, //, filter: Filter
-    ](mut self, var classifier: C) raises LarecsError:
+    ](
+        mut self,
+        var classifier: C,
+        *,
+        partitioned: Bool = False,
+        block_capacity: Int = 256,
+    ) raises LarecsError:
         """Registers the world's single spatial policy without reordering rows.
 
         Configuration lives in the owned classifier value and is copied when
@@ -172,9 +178,12 @@ struct World[*component_types: ComponentType](Copyable, Sized):
 
         Args:
             classifier: Policy and configuration transferred into the world.
+            partitioned: Use cluster-local blocks instead of row reordering.
+            block_capacity: Maximum rows per block, a positive power of two.
 
         Raises:
-            LarecsError: If storage is locked or a policy is already registered.
+            LarecsError: If storage is locked, a policy is already registered,
+                or block_capacity is not a positive power of two.
 
         Constraints:
             The policy filter must declare no writable components; all included
@@ -196,6 +205,12 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         self.storage._assert_unlocked()
         if self._spatial_classifier:
             raise Error("A spatial classifier is already registered")
+        if block_capacity <= 0 or (block_capacity & (block_capacity - 1)) != 0:
+            raise Error(
+                "Spatial block capacity must be a positive power of two"
+            )
+        self.storage._spatial_partitioned = partitioned
+        self.storage._spatial_block_capacity = block_capacity
         self.storage._spatial_enabled = True
         comptime for i in range(len(Self.component_types)):
             comptime T = Self.component_types[i]
@@ -216,13 +231,14 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         self.storage.invalidate_spatial()
 
     def maintain_spatial(mut self) raises LarecsError:
-        """Explicitly classifies and orders eligible host archetypes by key.
+        """Explicitly classifies and groups eligible host rows by key.
 
         Dirty identities are classified once using their final values. Registration
         and structural changes request a full rebuild; clean calls do no work.
         No registered policy is an unlocked no-op. Queries and selections must
         be released first. Classifier errors leave all archetypes unchanged;
-        movement follows the typed permutation guarantees in decision 0009.
+        movement uses typed permutations or partition transfers/compaction
+        according to the registered mode (decisions 0009 and 0013).
         Component references must not survive maintenance.
 
         Raises:
