@@ -352,6 +352,12 @@ def _transfer_partition_row[
     debug_assert(
         len(target) < storage._spatial_block_capacity, "Partition block is full"
     )
+    # Pre-grow both owners so ordinary append cannot apply its eight-row floor.
+    if len(target) == target._storage._capacity:
+        target._storage.reserve(
+            min(target._storage._capacity * 2, storage._spatial_block_capacity)
+        )
+    target._entities.reserve(target._storage._capacity)
     var row = target.add_entity(entity)
     target._storage.unsafe_move_shared_components_from(
         row,

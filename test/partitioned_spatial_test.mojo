@@ -406,6 +406,56 @@ def test_mask_lookup_after_recycling_and_new_logical_transition() raises:
     validate(world)
 
 
+def test_small_block_allocation_caps_through_growth_and_compaction() raises:
+    """Component and ID allocations obey small caps during all placement phases.
+
+    Raises:
+        Error: If allocation bounds, payloads, or membership fail.
+    """
+    for capacity in [1, 2, 4, 8]:
+        var world = World[Int, Heap]()
+        for i in range(13):
+            _ = world.storage.add_entity(0, Heap([i + 1]))
+        world.register_spatial_classifier[Filter().read[Int]()](
+            Policy(), partitioned=True, block_capacity=capacity
+        )
+        for phase in range(3):
+            if phase == 2:
+                var copied = world.copy()
+                world = copied^
+            if phase > 0:
+                for id in range(1, 14):
+                    world.storage.set(Entity(id), (id + phase) % 2)
+            world.maintain_spatial()
+            var partial = Dict[UInt64, Int]()
+            for block in world.storage._archetypes:
+                if block._partition_key:
+                    assert_true(len(block) <= capacity)
+                    assert_true(block._storage._capacity <= capacity)
+                    assert_true(block._entities.capacity() <= capacity)
+                    if len(block) < capacity:
+                        var key = block._partition_key.value()
+                        partial[key] = partial.get(key, 0) + 1
+                        assert_equal(partial[key], 1)
+            var seen = 0
+            for row in world.storage.query[Filter().read[Int, Heap]()]():
+                assert_equal(
+                    row.get[Heap]().values[0], Int(row.get_entity().get_id())
+                )
+                var location = world.storage._entity_locations[
+                    row.get_entity().get_id()
+                ]
+                ref block = world.storage._archetypes[location.archetype_index]
+                assert_equal(
+                    block.get_entity(location.entity_index), row.get_entity()
+                )
+                assert_equal(
+                    block._partition_key.value(), UInt64(row.get[Int]())
+                )
+                seen += 1
+            assert_equal(seen, 13)
+
+
 def main() raises:
     """Run partition invariants and integration tests.
 
