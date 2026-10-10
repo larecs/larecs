@@ -76,15 +76,10 @@ def measure(
         for frame in range(frames):
             if maintenance_only:
                 if not ordered:
-                    var index = world.storage._entity_locations[
-                        1
-                    ].archetype_index
-                    ref archetype = world.storage._archetypes[index]
-                    var cells = archetype._storage.get_component_ptr[Int]()
-                    for i in range(rows):
-                        cells[unsafe_offset=i] = (
+                    for entity in visits:
+                        world.storage.get[Int](entity) = (
                             (rows // group - 1) * stride
-                        ) - cells[unsafe_offset=i]
+                        ) - world.storage.get[Int](entity)
                 world.maintain_spatial()
                 keep(world.storage._entity_locations[1].entity_index)
                 continue

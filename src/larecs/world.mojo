@@ -196,15 +196,30 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         self.storage._assert_unlocked()
         if self._spatial_classifier:
             raise Error("A spatial classifier is already registered")
+        self.storage._spatial_enabled = True
+        comptime for i in range(len(Self.component_types)):
+            comptime T = Self.component_types[i]
+            comptime if filter.includes[T]() != -1:
+                self.storage._spatial_inputs.set[True](i)
+        self.storage.invalidate_spatial()
         self._spatial_classifier = UnsafeBox(classifier^)
         self._spatial_maintenance = _maintain_spatial[
             filter, C, *Self.component_types
         ]
 
+    def invalidate_spatial(mut self):
+        """Requests full classification at the next explicit maintenance boundary.
+
+        Use after external policy configuration changes or untracked raw writes.
+        No classification or physical movement happens in this call.
+        """
+        self.storage.invalidate_spatial()
+
     def maintain_spatial(mut self) raises LarecsError:
         """Explicitly classifies and orders eligible host archetypes by key.
 
-        Every eligible row is classified on every call, even if already ordered.
+        Dirty identities are classified once using their final values. Registration
+        and structural changes request a full rebuild; clean calls do no work.
         No registered policy is an unlocked no-op. Queries and selections must
         be released first. Classifier errors leave all archetypes unchanged;
         movement follows the typed permutation guarantees in decision 0009.

@@ -133,7 +133,7 @@ def _sort_spatial_rows(keys: List[UInt64], mut rows: List[Int]):
 def _maintain_spatial[
     filter: Filter, C: SpatialClassifier, *Ts: ComponentType
 ](mut storage: HostStorage[*Ts], classifier: UnsafeBox) raises LarecsError:
-    """Classifies all eligible rows before applying typed permutations.
+    """Classifies deferred invalidations before applying typed permutations.
 
     Parameters:
         filter: Explicit read-only eligibility and access declaration.
@@ -152,16 +152,29 @@ def _maintain_spatial[
         C.Accessor == EntityAccessor[filter]
     ), "Classifier Accessor must match its registration filter"
     storage._assert_unlocked()
+    if not storage._spatial_full and len(storage._spatial_dirty) == 0:
+        return
+    # When every allocated identity is marked, contiguous classification avoids
+    # per-dirty-location setup. Holes or excluded identities only delay this
+    # conservative optimization; they cannot cause a missed invalidation.
+    if len(storage._spatial_dirty) == len(storage._entity_locations) - 1:
+        storage._spatial_full = True
     var indices = List[Int]()
     var permutations = List[List[Int]]()
+    var pending = List[UInt64]()
+    if not storage._spatial_full:
+        pending = storage._spatial_keys.copy()
+    pending.resize(len(storage._entity_locations), UInt64(0))
+    var affected = Dict[Int, Bool]()
     comptime mask = filter.get_bitmask_filter[*Ts]()
     ref policy = classifier.unsafe_get[C]()
-    # Protect component pointers against reentrant structural operations while
-    # user code is running. Release this lock before applying permutations.
+    # Keep committed keys and invalidations intact until every callback succeeds.
     with storage._locked():
         for index in range(len(storage._archetypes)):
             ref archetype = storage._archetypes[index]
-            if not mask.matches(archetype.get_mask()):
+            if not storage._spatial_full or not mask.matches(
+                archetype.get_mask()
+            ):
                 continue
             var columns = Array[
                 Pointer[UInt8, MutUntrackedOrigin], len(filter)
@@ -171,20 +184,56 @@ def _maintain_spatial[
                 columns[column] = archetype._storage.get_component_ptr[
                     T
                 ]().unsafe_bitcast[UInt8]()
+            if storage._spatial_full:
+                affected[index] = True
+                for row in range(len(archetype)):
+                    try:
+                        pending[
+                            Int(archetype.get_entity(row).get_id())
+                        ] = policy.classify(
+                            rebind[C.Accessor](
+                                EntityAccessor[filter](row, columns.copy())
+                            )
+                        )
+                    except err:
+                        raise LarecsError(err^)
+        if not storage._spatial_full:
+            for entity in storage._spatial_dirty:
+                if not storage.is_alive(entity):
+                    continue
+                var location = storage._entity_locations[entity.get_id()]
+                ref archetype = storage._archetypes[location.archetype_index]
+                if not mask.matches(archetype.get_mask()):
+                    continue
+                var columns = Array[
+                    Pointer[UInt8, MutUntrackedOrigin], len(filter)
+                ](uninitialized=True)
+                comptime for column in range(len(filter)):
+                    comptime T = filter._include.ComponentTypes[column]
+                    columns[column] = archetype._storage.get_component_ptr[
+                        T
+                    ]().unsafe_bitcast[UInt8]()
+                try:
+                    pending[Int(entity.get_id())] = policy.classify(
+                        rebind[C.Accessor](
+                            EntityAccessor[filter](
+                                location.entity_index, columns.copy()
+                            )
+                        )
+                    )
+                except err:
+                    raise LarecsError(err^)
+                affected[location.archetype_index] = True
+        for index in affected:
+            ref archetype = storage._archetypes[index]
             var keys = List[UInt64](capacity=len(archetype))
             var ordered = True
             for row in range(len(archetype)):
-                try:
-                    var key = policy.classify(
-                        rebind[C.Accessor](
-                            EntityAccessor[filter](row, columns.copy())
-                        )
-                    )
-                    if row > 0 and key < keys[row - 1]:
-                        ordered = False
-                    keys.append(key)
-                except err:
-                    raise LarecsError(err^)
+                var entity = archetype.get_entity(row)
+                var key = pending[Int(entity.get_id())]
+                if row > 0 and key < keys[row - 1]:
+                    ordered = False
+                keys.append(key)
             if ordered:
                 continue
             var rows = List[Int](capacity=len(archetype))
@@ -196,3 +245,12 @@ def _maintain_spatial[
     storage._assert_unlocked()
     for plan in range(len(indices)):
         storage._reorder_archetype_rows(indices[plan], permutations[plan])
+    storage._spatial_keys = pending^
+    if storage._spatial_full:
+        storage._spatial_marked = List[Bool]()
+        storage._spatial_marked.resize(len(storage._entity_locations), False)
+    else:
+        for entity in storage._spatial_dirty:
+            storage._spatial_marked[Int(entity.get_id())] = False
+    storage._spatial_dirty.clear()
+    storage._spatial_full = False

@@ -104,9 +104,12 @@ Classifier registration and explicit maintenance are implemented under
 [decision 0010](design/decisions/0010-spatial-classifier-maintenance.md). Spatial
 performance evidence includes small synthetic cell workloads; complete
 application and memory measurements remain pending.
-The initial strategy scans all eligible entities only when the application
-explicitly requests maintenance. [Dirty-entity classification](design/decisions/0008-dirty-entity-spatial-classification.md)
-is recorded as undecided and unplanned; it is not an implementation task.
+Deferred dirty-entity classification is implemented under
+[decision 0008](design/decisions/0008-dirty-entity-spatial-classification.md) and
+[decision 0012](design/decisions/0012-deferred-spatial-maintenance.md). Applications
+still choose explicit maintenance boundaries; structural mutations use full
+rebuilds. Synthetic paired comparisons cover clean, sparse, and dense updates;
+complete application benefits remain unmeasured.
 
 - [x] Define and implement classifier registration with explicit read-only
   filters, key/ordering types, configuration binding, and grid/encoding helpers.
@@ -121,7 +124,8 @@ is recorded as undecided and unplanned; it is not an implementation task.
   Specify allocation/movement error guarantees.
 - [x] Cover filter eligibility, negative coordinates, equal-key grouping,
   already ordered and empty archetypes, unchanged query membership, valid locations,
-  classification of all eligible rows on each explicit pass, absence of implicit
+  classification of all eligible rows on full rebuilds and dirty identities on
+  other boundaries, absence of implicit
   maintenance after writes or kernel/system completion, nontrivial component
   lifetimes, classifier failures, lock rejection,
   and CPU/GPU execution and copy-back after maintenance. Add public guides when
@@ -129,6 +133,12 @@ is recorded as undecided and unplanned; it is not an implementation task.
 - [x] Compare small uniform, dense, sparse, and mobile cell workloads against
   scrambled rows, including maintenance cadences; run bounded same-runner
   base-versus-PR performance checks on every full CI test run.
+- [x] Defer and deduplicate classifier-input invalidations across reference access,
+  CPU/selected execution, structural changes, and GPU copy-back. Preserve locks,
+  identities, eligibility, error retries, and component lifetimes; compare against
+  explicit full scans in `benchmark/dirty_spatial.mojo`.
+- [ ] Evaluate finer structural invalidation and avoid whole-capacity key scratch
+  copying on sparse passes if measured application costs justify the complexity.
 - [ ] Benchmark complete application spatial workloads against the current layout,
   including classification and bytes moved, ordinary scan overhead, memory
   overhead, maintenance cadence, and uniform, sparse, dense, and mobile cases.

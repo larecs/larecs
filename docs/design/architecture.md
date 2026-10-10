@@ -28,20 +28,20 @@ columns and copies written spans back. Kernel row iteration follows the
 [Decision 0005](decisions/0005-filtered-spatial-row-reordering.md) adds opt-in
 clustering functions registered with explicit read-only component filters.
 Filters select eligible archetypes by component mask. Explicit user-triggered
-maintenance scans every row in matching archetypes to compute current spatial
-keys, then permutes entity IDs and all active component columns together inside
-each matching archetype and updates
-entity locations. Archetype identity remains component-based. Maintenance
+maintenance classifies dirty eligible identities using current component values
+and cached keys, then permutes entity IDs and all active component columns
+together inside each matching archetype and updates entity locations. Archetype identity remains component-based. Maintenance
 requires an unlocked world, and applications choose its cadence.
 Component writes and kernel/system completion do not implicitly run maintenance.
-The initial design has no dirty tracking or persistent move-request queue;
-[decision 0008](decisions/0008-dirty-entity-spatial-classification.md) records
-dirty-entity classification as undecided and unplanned.
+[Decision 0008](decisions/0008-dirty-entity-spatial-classification.md) adopts dirty
+classification; [decision 0012](decisions/0012-deferred-spatial-maintenance.md)
+defines storage-owned full-identity queues, sparse membership and cached keys.
+Mutable input exposure and declared CPU/GPU writes invalidate conservatively;
+structural changes request full rebuilds. Clean calls return without row work.
 
 The registration model prepares for different classifiers targeting different
 archetypes; multiple registrations and overlap resolution remain future work.
-[Decision 0010](decisions/0010-spatial-classifier-maintenance.md) implements one
-owned classifier per world with explicit full-scan maintenance. Registration and
+The implementation retains one owned classifier per world with explicit deferred maintenance. Registration and
 maintenance live on `World`; `spatial.mojo` builds keys and permutations before
 `HostStorage` applies typed movement and location repair.
 [Decision 0006](decisions/0006-partitioned-spatial-archetype-storage.md) records
