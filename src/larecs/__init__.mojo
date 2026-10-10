@@ -126,6 +126,9 @@ Exports:
  - system.SystemContext
  - system.KernelContext
  - types.ComponentId
+ - spatial.SpatialClassifier
+ - spatial.grid_cell
+ - spatial.morton_key_3d
  - world.World
 """
 from .world import World
@@ -155,3 +158,5 @@ from .capture import (
     read_capture,
     mut_capture,
 )
+
+from .spatial import SpatialClassifier, grid_cell, morton_key_3d

@@ -37,6 +37,9 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 - Run single test: `pixi run tests test/<filename>.mojo`
 - Format code: `pixi run mojo format src test benchmark`
 - Generate docs: `pixi run mojo doc -o docs/src/larecs.json src/larecs`
+- Run small spatial comparisons: `pixi run spatial-benchmarks`
+- Check spatial regressions against a revision: `pixi run spatial-performance-check --base <revision>`
+- Build a focused benchmark binary: `pixi run mojo build -I src benchmark/<benchmark_filename>.mojo -o /tmp/larecs-benchmark`
 - Run the complete benchmark suite: `pixi run mojo run -I src benchmark/run_benchmarks.mojo`
 - Run focused part of the benchmark suite: `pixi run mojo run -I src benchmark/<benchmark_filename>.mojo`
 
@@ -99,6 +102,56 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 - Memory layout and cache efficiency are crucial
 - Always consider vectorization opportunities
 - Update benchmarks when making performance changes
+
+## Building and Using Benchmarks
+
+- Add or update representative benchmarks when changing storage, queries,
+  classification, row movement, or execution costs. Read the
+  [benchmark guide](docs/src/guide/benchmarks.md) for current cases and methods.
+- Maintain a small CPU benchmark suite suitable for every PR. Keep the combined PR
+  benchmark checks near one minute per runner, including compilation, warmup,
+  and sampling. Measure cold compilation and execution separately on Linux and
+  macOS before expanding the suite. Avoid importing the complete benchmark
+  registry into a PR driver; keep larger worlds and GPU measurements available
+  as focused manual benchmarks.
+- Use deterministic inputs, bounded calibration or fixed iteration counts,
+  and a compact scenario matrix. Cover relevant sizes, distributions, and
+  mutation patterns; spatial cases should include uniform, dense, sparse, and
+  moving entities with different maintenance cadences. The existing small
+  spatial suite uses 512/2,048 rows and 32 cases.
+- Compare implementations or layouts using identical entities and semantic
+  work. Include an unchanged-layout control. Measure isolated operation costs
+  and complete frame costs when useful; include input updates, classification,
+  sorting, movement, location repair, and transfers when they belong to the
+  workload being claimed. State exactly which setup and maintenance costs are
+  excluded. Validate results, entity locations, and payload preservation outside
+  the timed region; consume results to prevent dead-code elimination.
+- Build timing binaries once using the focused build command above, then run
+  the binary repeatedly. Use matching compiler versions and optimization settings
+  for comparisons; measure normal optimized builds without debug info,
+  sanitizers, or tracing overhead. Run measurements without concurrent builds
+  or other benchmark jobs. Report compilation cost separately from operation
+  timing.
+- Compare the same current driver against the PR base and current library on
+  the same runner. Warm both binaries, alternate baseline/current sample order,
+  and use repeated paired measurements. Avoid machine-specific checked-in
+  timing baselines. The spatial checker defaults to the GitHub PR base SHA;
+  local runs default to committed `HEAD`, so use `--base` to assess a branch's
+  changes. A base predating the spatial API uses the documented bootstrap
+  implementation.
+- Keep the small regression checks in the complete `pixi run tests test` path
+  so existing Linux/macOS PR jobs execute them. Focused test-file runs omit
+  them. The spatial guard requires over 30% slowdown and over 500 ns extra time
+  in at least four of five pairs, with medians exceeding both thresholds, and
+  confirms the affected cases in a fresh sample set. Investigate sustained
+  failures; document evidence for changing thresholds rather than loosening
+  them merely to pass CI. Smaller regressions need dedicated measurements.
+- Keep the driver's scenario matrix and the checker's expected-case manifest
+  synchronized. Build failures, invalid or incomplete timing reports, and
+  correctness failures must fail the check. Update the guide when changing
+  cases, timing boundaries, sampling, or baseline selection. Record hardware,
+  compiler version, method, and limitations with performance claims; keep
+  unmeasured application benefits and remaining work explicit in the roadmap.
 
 ## Known issues
 
