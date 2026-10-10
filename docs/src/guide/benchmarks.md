@@ -345,8 +345,8 @@ separately. `PAIR` records give rows, distribution, mode, update count, cadence,
 pair index, reordering ns/frame, and partition ns/frame.
 
 A local optimized run on **Apple M4, macOS 27.0.1 arm64, Mojo 1.0.0
-(`ed45d567`)**, implementation `bb750a1` (base `6037850`), built in
-**7.56 seconds** and completed
+(`ed45d567`)**, implementation `f3d99cd` (base `6037850`), built in
+**7.59 seconds** and completed
 execution/validation in **8.88 seconds**.
 Driver SHA-256: `da005387b10958c875771cdfb16cebbe455aa7e883631ef36f021734f355a787`.
 No concurrent builds or benchmark jobs ran. Representative medians across five
@@ -354,21 +354,21 @@ warmed pairs for 32,768 rows were:
 
 | Distribution | Timed work | Updates / cadence | Reordering | Partitions | Partition / reorder |
 | --- | --- | --- | ---: | ---: | ---: |
-| Uniform | Maintenance | 1 / every frame | 0.620 ms | 0.338 ms | 0.55 |
-| Uniform | Maintenance | 512 / every frame | 1.320 ms | 0.379 ms | 0.29 |
-| Dense | Maintenance | 1 / every frame | 0.616 ms | 0.018 ms | 0.03 |
-| Dense | Maintenance | 512 / every frame | 1.376 ms | 0.088 ms | 0.06 |
-| Uniform | Complete cell frame | 512 / every fourth frame | 0.627 ms | 0.402 ms | 0.64 |
-| Dense | Complete cell frame | 512 / every fourth frame | 0.627 ms | 0.282 ms | 0.45 |
-| Uniform | Complete cell frame | All / every frame | 1.939 ms | 2.780 ms | 1.43 |
-| Dense | Complete cell frame | All / every frame | 1.881 ms | 3.097 ms | 1.65 |
-| Singleton sparse | Complete cell frame | All / every frame | 1.400 ms | 17.033 ms | 12.17 |
-| Uniform | Ordinary query scan | Clean | 0.146 ms | 0.172 ms | 1.18 |
-| Dense | Ordinary query scan | Clean | 0.146 ms | 0.149 ms | 1.02 |
-| Singleton sparse | Ordinary query scan | Clean | 0.148 ms | 0.233 ms | 1.57 |
-| Uniform | Ordinary CPU scan | Clean | 0.019 ms | 0.044 ms | 2.35 |
-| Dense | Ordinary CPU scan | Clean | 0.019 ms | 0.021 ms | 1.13 |
-| Singleton sparse | Ordinary CPU scan | Clean | 0.019 ms | 0.153 ms | 7.87 |
+| Uniform | Maintenance | 1 / every frame | 0.626 ms | 0.336 ms | 0.54 |
+| Uniform | Maintenance | 512 / every frame | 1.334 ms | 0.381 ms | 0.29 |
+| Dense | Maintenance | 1 / every frame | 0.600 ms | 0.017 ms | 0.03 |
+| Dense | Maintenance | 512 / every frame | 1.348 ms | 0.096 ms | 0.07 |
+| Uniform | Complete cell frame | 512 / every fourth frame | 0.627 ms | 0.393 ms | 0.63 |
+| Dense | Complete cell frame | 512 / every fourth frame | 0.651 ms | 0.293 ms | 0.45 |
+| Uniform | Complete cell frame | All / every frame | 1.956 ms | 2.785 ms | 1.42 |
+| Dense | Complete cell frame | All / every frame | 1.881 ms | 3.125 ms | 1.66 |
+| Singleton sparse | Complete cell frame | All / every frame | 1.357 ms | 17.011 ms | 12.54 |
+| Uniform | Ordinary query scan | Clean | 0.149 ms | 0.175 ms | 1.17 |
+| Dense | Ordinary query scan | Clean | 0.149 ms | 0.148 ms | 0.99 |
+| Singleton sparse | Ordinary query scan | Clean | 0.149 ms | 0.237 ms | 1.59 |
+| Uniform | Ordinary CPU scan | Clean | 0.019 ms | 0.045 ms | 2.36 |
+| Dense | Ordinary CPU scan | Clean | 0.019 ms | 0.022 ms | 1.16 |
+| Singleton sparse | Ordinary CPU scan | Clean | 0.020 ms | 0.155 ms | 7.92 |
 
 Initial maintained capacity and allocation evidence for those worlds:
 
