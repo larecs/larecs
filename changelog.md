@@ -38,8 +38,9 @@
 
 - Launch device kernels with 256-thread blocks instead of 16, so blocks fill
   whole warps/wavefronts and occupancy is no longer limited by the
-  per-multiprocessor block count. Cap the grid at one wave of resident blocks;
-  larger row counts are covered by the grid-stride loop.
+  per-multiprocessor block count. Cap the grid at the thread-based upper bound
+  of one resident wave, where the device reports it; larger row counts are
+  covered by the grid-stride loop.
 
 - Rename the beta execution option `on_gpu` to `on_device`,
   `GPUComponentType`/`GPUResourceType` to

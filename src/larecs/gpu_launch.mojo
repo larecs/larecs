@@ -21,8 +21,8 @@ def gpu_grid_dim(length: Int, max_grid_dim: Int) -> Int:
     Launches one thread per row, but never more blocks than
     ``max_grid_dim``. Above that cap, the threads of the launch cover the
     remaining rows through the grid-stride loop of `EntityAccessorIterator`,
-    so the grid stays at roughly one wave of resident blocks instead of
-    scheduling a block per `BLOCK_SIZE` rows.
+    so the grid stays at roughly one wave of blocks instead of scheduling a
+    block per `BLOCK_SIZE` rows.
 
     Args:
         length: The number of rows the kernel processes.
@@ -39,17 +39,18 @@ def gpu_grid_dim(length: Int, max_grid_dim: Int) -> Int:
 
 
 def max_resident_blocks(device_context: DeviceContext) -> Int:
-    """Returns how many `BLOCK_SIZE` blocks the device can keep resident.
+    """Returns a thread-based upper bound on resident `BLOCK_SIZE` blocks.
 
     This is the number of multiprocessors times the number of blocks of
-    `BLOCK_SIZE` threads each one can host, i.e. one full wave. Launching
-    more blocks than this only queues them behind the first wave.
+    `BLOCK_SIZE` threads each one's thread limit allows, i.e. at most one
+    full wave. A kernel's register and shared-memory use can make fewer
+    blocks resident at once; this bound does not account for them.
 
     Args:
         device_context: The device to query.
 
     Returns:
-        The number of resident blocks, or ``0`` if the device does not
+        The upper bound on resident blocks, or ``0`` if the device does not
         report the required attributes.
     """
     try:
