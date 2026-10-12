@@ -57,7 +57,7 @@ addresses, but references to logical entities cannot survive reordering.
 
 This is an internal primitive, not a public spatial API. It does not classify,
 choose a key ordering, register policies, or trigger maintenance. Full spatial
-workload and CPU/GPU compatibility validation remain on the roadmap. The
+workload and host/device compatibility validation remain on the roadmap. The
 permutation benchmark measures movement and metadata costs, not spatial benefit.
 
 ## Evidence

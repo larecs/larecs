@@ -10,7 +10,7 @@ status: accepted
 
 Decision 0008 proposes observing final values once per dirty entity. Decisions
 0005 and 0010 unconditionally classify all eligible rows. Mutable references,
-exact selected execution, component transitions, and GPU scatter writes prevent
+exact selected execution, component transitions, and device scatter writes prevent
 setter-only tracking from being correct.
 
 ## Decision
@@ -32,9 +32,9 @@ A rebuild replaces all keys and membership state; queue entries never store rows
 
 For ordinary mutations, mutable `HostStorage.get` exposure and both setter forms
 mark overlapping classifier inputs. A read through a mutable reference also
-marks; read-only queries do not. CPU thin and lexical kernels mark bounded
+marks; read-only queries do not. Host thin and lexical kernels mark bounded
 matching declared writable ranges before execution; selected execution preserves
-exact ranges and kernel-filter intersection. GPU scatter invalidates potential
+exact ranges and kernel-filter intersection. Device scatter invalidates potential
 host writes before copy-back. Read-only/unrelated component declarations do not
 mark. These are potential-write declarations, not value-change detection.
 
@@ -61,7 +61,7 @@ original error. Allocation/lifecycle fatal failures retain decision 0009's limit
 
 Copied/moved worlds own independent keys, sparse membership, and pending queues
 alongside their copied/moved policies. There is no automatic policy replacement,
-multiple-policy resolution, background maintenance, or GPU classification.
+multiple-policy resolution, background maintenance, or device classification.
 
 [Decision 0013](0013-cluster-local-partition-blocks.md) adds opt-in partition
 placement after the same classification phase. Ordering/permutation statements

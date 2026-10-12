@@ -36,6 +36,15 @@
   contiguous growable store. Classifier configuration controls cluster granularity;
   keep staging, typed transfers, exact selections, and empty-store reclamation.
 
+- Rename the beta execution option `on_gpu` to `on_device`,
+  `GPUComponentType`/`GPUResourceType` to
+  `DeviceComponentType`/`DeviceResourceType`, and the
+  `constrain_gpu_safe_components`/`constrain_gpu_safe_resources` helpers to
+  `constrain_device_safe_components`/`constrain_device_safe_resources`.
+  Use host/device terminology for execution and transfers while retaining
+  CPU/GPU for hardware. Existing callers must update these names; execution
+  behavior and supported hardware are unchanged.
+
 - Defer spatial classification until explicit maintenance, deduplicating dirty
   entity identities across mutable input references, setters, CPU kernels,
   selected execution, and GPU copy-back. Clean boundaries skip work; structural

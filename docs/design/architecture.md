@@ -10,15 +10,15 @@ the API in application code.
 | `World`                                         | Owns the ECS state and declares its possible component types.                                      | `src/larecs/world.mojo`                                                               |
 | `HostStorage`, archetypes, and entity locations | Store component columns by archetype and maintain entity-to-row lookup through structural changes. | `src/larecs/host_storage.mojo`, `src/larecs/archetype.mojo`, `src/larecs/entity.mojo` |
 | Queries and filters                             | Select matching archetypes/rows for read-only iteration and kernel access declarations.            | `src/larecs/iteration.mojo`, `src/larecs/filter.mojo`                                 |
-| `SystemContext`, `KernelContext`, scheduler     | Run ordered application logic and filtered CPU/GPU kernels.                                        | `src/larecs/system.mojo`, `src/larecs/scheduler.mojo`                                 |
-| Resources and device storage                    | Bind declared resource data and transfer supported component/resource values for GPU execution.    | `src/larecs/resource.mojo`, `src/larecs/device_storage.mojo`                          |
+| `SystemContext`, `KernelContext`, scheduler     | Run ordered application logic and filtered host/device kernels.                                        | `src/larecs/system.mojo`, `src/larecs/scheduler.mojo`                                 |
+| Resources and device storage                    | Bind declared resource data and transfer supported component/resource values for device execution.    | `src/larecs/resource.mojo`, `src/larecs/device_storage.mojo`                          |
 
 Queries borrow matching rows under a structural lock. A system can also obtain
 an exact-row [`EntitySelection`](decisions/0001-locked-entity-selections.md)
 after a batch mutation; that selection owns one lock and can perform further
 in-place changes or execute kernels on its current rows. The lock protects
 structural validity, while component read/write access is declared by the
-filter. CPU and GPU execution share this public model. The GPU path
+filter. Host and device execution share this public model. The device path
 [packs selected spans](decisions/0002-gpu-system-execution.md) into device
 columns and copies written spans back. Kernel row iteration follows the
 [grid-stride decision](decisions/0003-grid-stride-entity-iteration.md).
@@ -36,7 +36,7 @@ Component writes and kernel/system completion do not implicitly run maintenance.
 [Decision 0008](decisions/0008-dirty-entity-spatial-classification.md) adopts dirty
 classification; [decision 0012](decisions/0012-deferred-spatial-maintenance.md)
 defines storage-owned full-identity queues, sparse membership and cached keys.
-Mutable input exposure and declared CPU/GPU writes invalidate conservatively;
+Mutable input exposure and declared host/device writes invalidate conservatively;
 structural changes request full rebuilds. Clean calls return without row work.
 
 The registration model prepares for different classifiers targeting different
@@ -57,6 +57,6 @@ canonical dense store stages creation and structural transitions. With partition
 mode registered, explicit maintenance places eligible rows in cluster-local
 stores sharing that node and mask, one per cluster key.
 `HostStorage._archetypes` is the internal physical-store directory; entity locations and exact selection triples name its
-slots and rows. Queries and CPU/GPU execution traverse those dense stores through
+slots and rows. Queries and host/device execution traverse those dense stores through
 the existing mask/range machinery. See [decision 0014](decisions/0014-growable-cluster-stores.md)
 for growth, ownership, swap-removal, reclamation, and maintained membership.

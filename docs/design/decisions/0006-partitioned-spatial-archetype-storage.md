@@ -50,7 +50,7 @@ and full-archetype scans gain traversal overhead.
 ## Consequences
 
 Adoption would affect entity locations, row accessors, mutation destinations,
-query traversal, exact-range selections, and CPU/GPU range preparation. Current
+query traversal, exact-range selections, and host/device range preparation. Current
 selection triples identify an archetype and a contiguous row interval; a block
 model needs a representation preserving exact membership and structural locks.
 It must preserve valid component lifetimes and efficient batch operations.

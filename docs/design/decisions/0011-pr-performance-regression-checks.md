@@ -47,7 +47,7 @@ shared-runner limits catch substantial regressions; they do not guarantee
 detection of smaller regressions or cumulative small slowdowns.
 
 The initial core matrix covers 512/2,048 rows: stable-ID component access,
-filtered query iteration across multiple archetypes, ordinary CPU execution,
+filtered query iteration across multiple archetypes, ordinary host execution,
 64-row selected execution amid unselected rows, selected add/remove chains,
 and whole-archetype batch creation/removal. Keep the spatial matrix unchanged.
 Use bounded calibration and validate locations, payloads, membership, and

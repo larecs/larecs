@@ -105,7 +105,7 @@ maintenance costs.
 
 An explicit maintenance boundary fits the existing structural-lock model and
 avoids intercepting writes through component references. Full scans observe
-current values even when writes occurred through references or GPU copy-back,
+current values even when writes occurred through references or device copy-back,
 without adding bookkeeping to ordinary mutation paths. Keeping identity and
 ordering conceptually distinct avoids promising spatial locality from arbitrary
 integer IDs.
@@ -123,9 +123,9 @@ No stable row order or tie order is introduced. Existing references cannot
 survive maintenance, and selections must be released before maintenance begins,
 as required by [decision 0001](0001-locked-entity-selections.md).
 
-The existing GPU path packs host spans into device columns under
+The existing device path packs host spans into device columns under
 [decision 0002](0002-gpu-system-execution.md). Reordering must remain compatible
-with CPU/GPU execution and copy-back; it does not introduce GPU classifier
+with host/device execution and copy-back; it does not introduce device classifier
 execution, a cluster-aware kernel API, device residency, or device-side neighbor
 lookup.
 
