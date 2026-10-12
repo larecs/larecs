@@ -1,7 +1,7 @@
 # SKIP_ASAN
 # SKIP_DEBUG
 
-# `DeviceComponentStorage` is not itself a GPU kernel, but every method it
+# `DeviceComponentStorage` is not itself a device kernel, but every method it
 # exposes talks to a `DeviceContext`, so these tests need real device
 # hardware behind `has_accelerator()` just like a kernel-launching test.
 #
@@ -28,7 +28,7 @@ from larecs.device_storage import DeviceComponentStorage
 
 
 # `DeviceComponentStorage` itself is only constrained to `ComponentType`
-# (it doesn't route through `SystemContext.run`'s `GPUComponentType`
+# (it doesn't route through `SystemContext.run`'s `DeviceComponentType`
 # compile-time check), but everything it does is a raw byte copy, so
 # `Vec3` conforms to `TrivialRegisterPassable` anyway to stay honest about
 # what these tests exercise.

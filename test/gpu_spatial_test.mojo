@@ -1,7 +1,7 @@
 # SKIP_ASAN
 # SKIP_DEBUG
 
-"""CPU/GPU execution and host copy-back after spatial maintenance."""
+"""Host/device execution and host copy-back after spatial maintenance."""
 
 from std.sys import has_accelerator
 from std.testing import assert_equal, assert_false, TestSuite
@@ -17,7 +17,7 @@ from larecs.entity import EntityAccessor
 
 @fieldwise_init
 struct Position(Copyable, TrivialRegisterPassable):
-    """GPU-safe classifier input and writable kernel column."""
+    """Device-safe classifier input and writable kernel column."""
 
     var value: Int32
 
@@ -65,11 +65,11 @@ def update(context: KernelContext[Filter().include[Position, Payload]()]):
         entity.get[Payload]().value += 1
 
 
-def _check_execution[on_gpu: Bool, selected: Bool = False]() raises:
+def _check_execution[on_device: Bool, selected: Bool = False]() raises:
     """Maintains rows before and after execution and checks copied-back values.
 
     Parameters:
-        on_gpu: Whether to run on the actual accelerator.
+        on_device: Whether to run on the actual accelerator.
         selected: Whether to execute through an exact selection.
 
     Raises:
@@ -86,10 +86,10 @@ def _check_execution[on_gpu: Bool, selected: Bool = False]() raises:
     var context = SystemContext(world)
     comptime if selected:
         var selection = context._select[Filter().include[Payload]()]()
-        selection.run[update, on_gpu=on_gpu]()
+        selection.run[update, on_device=on_device]()
         selection^.release()
     else:
-        context.run[update, on_gpu=on_gpu]()
+        context.run[update, on_device=on_device]()
     # Read through queries so the test cannot mask missing copy-back invalidation.
     for row in context.world[].storage.query[
         Filter().read[Position, Payload]()
@@ -101,10 +101,10 @@ def _check_execution[on_gpu: Bool, selected: Bool = False]() raises:
     assert_equal(context.world[].storage._archetypes[index].get_entity(0), a)
     comptime if selected:
         var selection = context._select[Filter().include[Payload]()]()
-        selection.run[update, on_gpu=on_gpu]()
+        selection.run[update, on_device=on_device]()
         selection^.release()
     else:
-        context.run[update, on_gpu=on_gpu]()
+        context.run[update, on_device=on_device]()
     assert_equal(context.world[].storage.get[Position](a).value, 3)
     assert_equal(context.world[].storage.get[Payload](a).value, 32)
     assert_equal(context.world[].storage.get[Position](b).value, 1)
@@ -118,7 +118,7 @@ def _check_execution[on_gpu: Bool, selected: Bool = False]() raises:
 
 
 def test_cpu_execution_after_spatial_maintenance() raises:
-    """Runs the same kernel on CPU before and after reordering.
+    """Runs the same kernel on host before and after reordering.
 
     Raises:
         Error: If validation fails.
@@ -128,7 +128,7 @@ def test_cpu_execution_after_spatial_maintenance() raises:
 
 
 def test_gpu_execution_after_spatial_maintenance() raises:
-    """Exercises real GPU upload and copy-back when an accelerator is available.
+    """Exercises real device upload and copy-back when an accelerator is available.
 
     Raises:
         Error: If validation fails.
@@ -146,15 +146,15 @@ def test_gpu_execution_after_spatial_maintenance() raises:
         print("Executed spatial maintenance integration on actual GPU")
 
 
-def _check_partition_execution[on_gpu: Bool, selected: Bool]() raises:
+def _check_partition_execution[on_device: Bool, selected: Bool]() raises:
     """Execute across growable cluster stores, then repartition copied-back inputs.
 
     Parameters:
-        on_gpu: Run on a real accelerator when true.
+        on_device: Run on a real accelerator when true.
         selected: Use an exact cluster selection when true.
 
     Raises:
-        Error: If CPU/GPU execution, transfers, or membership checks fail.
+        Error: If host/device execution, transfers, or membership checks fail.
     """
     var world = World[Position, Payload]()
     for i in range(901):
@@ -171,10 +171,10 @@ def _check_partition_execution[on_gpu: Bool, selected: Bool]() raises:
                 UInt64(1 if frame == 0 else 9)
             )
             assert_equal(len(selection), 300)
-            selection.run[update, on_gpu=on_gpu]()
+            selection.run[update, on_device=on_device]()
             selection^.release()
         else:
-            context.run[update, on_gpu=on_gpu]()
+            context.run[update, on_device=on_device]()
         for row in context.world[].storage.query[
             Filter().read[Position, Payload]()
         ]():

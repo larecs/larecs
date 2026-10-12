@@ -1,4 +1,4 @@
-"""Device-side (GPU) storage for components and resources.
+"""Device-side storage for components and resources.
 
 Provides `DeviceComponentStorage`, which mirrors a set of component columns
 on the device, and `DeviceResourceStorage`, which uploads individual

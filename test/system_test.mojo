@@ -45,7 +45,7 @@ def test_system_context_run_thin_overload_visits_each_archetype_once() raises:
     """A filter matching multiple archetypes must visit each row exactly once.
 
     `Filter().include[Counter]()` matches two differently-composed
-    archetypes here. Before this fix, `SystemContext.run`'s CPU path gave
+    archetypes here. Before this fix, `SystemContext.run`'s host path gave
     every per-archetype `KernelContext` the *summed* row count across every
     matching archetype (instead of that archetype's own row count), so a
     kernel run against N matching archetypes visited N times too many rows
@@ -223,7 +223,7 @@ def test_cpu_closure_missing_resource_raises() raises:
 
 
 def test_cpu_closure_with_explicit_capture_bindings() raises:
-    """Combines lexical captures with explicitly bound CPU-local values.
+    """Combines lexical captures with explicitly bound host-local values.
 
     Raises:
         Error: If setup, execution, or an assertion fails.
