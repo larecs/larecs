@@ -99,9 +99,9 @@ unchanged entities can still move to restore contiguous groups.
 
 Mutable `storage.get[T](entity)` access marks classifier inputs even when used
 only to read. Prefer read-only queries for observation. Setters mark overlapping
-inputs; CPU kernels conservatively mark their matching declared writable ranges,
+inputs; host kernels conservatively mark their matching declared writable ranges,
 including exact selected ranges. Read-only declarations and unrelated component
-writes do not invalidate classifier inputs. GPU writable copy-back marks the same
+writes do not invalidate classifier inputs. Device writable copy-back marks the same
 host identities; classification remains on the host.
 
 Raw pointers and low-level archetype access bypass tracking. After such writes,
@@ -122,8 +122,8 @@ Maintenance requires an unlocked world. Release live queries and selections
 first, and do not keep component references across the call. In a system, use
 `context.world[].maintain_spatial()` after releasing its selections. Writes,
 entity changes, kernel completion, and system completion never invoke maintenance
-automatically. GPU copy-back updates current host values; the next explicit pass
-classifies invalidated identities from those values, and subsequent CPU/GPU kernels see the new row order.
+automatically. Device copy-back updates current host values; the next explicit pass
+classifies invalidated identities from those values, and subsequent host/device kernels see the new row order.
 
 Choose a cadence by measuring your workload. Wide archetypes move more bytes,
 and mobile entities may require frequent refreshes. Nearby entities in different
@@ -194,8 +194,8 @@ rows into their clusters. Same-composition replacement stays in its physical
 store until placement is refreshed. Source swap-removal repairs locations.
 Growing a destination moves its existing column values into larger contiguous allocations. The boundary releases empty
 cluster/staging row allocations; nonempty stores retain their grown capacity.
-Queries and ordinary CPU/GPU execution traverse every matching physical store,
-including staged rows. GPU calls pack those ranges and scatter writable spans
+Queries and ordinary host/device execution traverse every matching physical store,
+including staged rows. Device calls pack those ranges and scatter writable spans
 back under the existing transfer and synchronization rules.
 
 `context.select_cluster[filter](key)` snapshots **exact maintained cluster

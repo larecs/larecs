@@ -62,7 +62,7 @@ struct Velocity(Copyable, Movable):
 
 A resource must conform to `ResourceType` (`Copyable & Deinitable`). The
 example also conforms to `TrivialRegisterPassable` so it can be used by the
-GPU kernel path described below; host-only resources do not need that trait.
+device kernel path described below; host-only resources do not need that trait.
 
 ## Adding and accessing resources
 
@@ -212,31 +212,31 @@ be synchronized or otherwise made race-free; in particular, do not update a
 shared resource once per entity without an atomic or reduction strategy.
 Writing per-entity results to components and reducing them in a separate step
 is often simpler. Also avoid target-dependent side effects outside the entity
-loop: the CPU calls the kernel once per matching archetype, while the GPU
+loop: the host calls the kernel once per matching archetype, while the device
 processes all matching rows in one launch.
 
-CPU kernels may also capture surrounding values and access resources through
-`context.run(kernel)`. See [Capturing CPU kernels](../systems_scheduler#capturing-cpu-kernels)
-for an example. GPU entry points use the non-capturing `context.run[kernel]()` form.
+Host kernels may also capture surrounding values and access resources through
+`context.run(kernel)`. See [Capturing host kernels](../systems_scheduler#capturing-host-kernels)
+for an example. Device entry points use the non-capturing `context.run[kernel]()` form.
 
-To run this same kernel on a GPU, replace its CPU `run` call with:
+To run this same kernel on a device, replace its host `run` call with:
 
 ```mojo
-    context.run[move_with_time, on_gpu=True]()
+    context.run[move_with_time, on_device=True]()
 ```
 
-For GPU execution, accessed components must conform to
+For device execution, accessed components must conform to
 `TrivialRegisterPassable`; required resources must satisfy
 `is_trivially_movable`. Resources do not need to declare
 `TrivialRegisterPassable` themselves. Larecs copies each resource's bytes to
 the device before execution and back afterward, including kernel changes.
 
 Trivial movability does **not** make host heap allocations accessible to the
-GPU. The transfer does not follow pointers, copy `List` or `Dict` contents,
+device. The transfer does not follow pointers, copy `List` or `Dict` contents,
 or invoke `DevicePassable` encoding. Do not pass host-backed collections or
 host-side `TileTensor` descriptors as resources through this path. They need
 an explicit device representation and transfer support, which this API does
-not yet provide. Heap-backed resources remain supported in CPU kernels.
+not yet provide. Heap-backed resources remain supported in host kernels.
 
 ## Removing resources
 
