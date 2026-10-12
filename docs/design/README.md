@@ -13,8 +13,8 @@ decision record before changing an established behavior:
 | Decision                                                        | Status                          | Subject                                                                  |
 | --------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------ |
 | [0001](decisions/0001-locked-entity-selections.md)              | Accepted                        | Locked entity selections and exact-range execution                       |
-| [0002](decisions/0002-gpu-system-execution.md)                  | Accepted                        | GPU system execution and transfer boundaries                             |
-| [0003](decisions/0003-grid-stride-entity-iteration.md)          | Accepted                        | CPU/GPU grid-stride entity iteration                                     |
+| [0002](decisions/0002-gpu-system-execution.md)                  | Accepted                        | Device system execution and transfer boundaries                             |
+| [0003](decisions/0003-grid-stride-entity-iteration.md)          | Accepted                        | Host/device grid-stride entity iteration                                     |
 | [0004](decisions/0004-scoped-selection-errors.md)               | Accepted                        | Error propagation across scoped selection mutation and execution         |
 | [0005](decisions/0005-filtered-spatial-row-reordering.md)       | Superseded by 0012              | Filtered spatial clustering by periodic row reordering (classifier and maintenance implemented) |
 | [0006](decisions/0006-partitioned-spatial-archetype-storage.md) | Accepted                       | Cluster-local partitions beneath logical archetypes                      |
@@ -26,6 +26,24 @@ decision record before changing an established behavior:
 | [0012](decisions/0012-deferred-spatial-maintenance.md) | Accepted | Deferred dirty classification, conservative invalidation, and full-rebuild fallback |
 | [0013](decisions/0013-cluster-local-partition-blocks.md) | Superseded by 0014 | Opt-in bounded partition blocks, staging, reclamation, and exact cluster selections |
 | [0014](decisions/0014-growable-cluster-stores.md) | Accepted | One growable store per logical cluster without a chunk-size limit |
+| [0015](decisions/0015-host-device-execution-terminology.md) | Accepted | Host/device execution terminology and beta API renames |
+
+## Execution terminology
+
+Use **host** and **device** for execution roles, memory ownership, capture
+bindings, packing, transfers, and copy-back. In the current Larecs backend,
+the host is the CPU and the device is a supported GPU accelerator. This follows
+the [Mojo GPU package terminology](https://docs.modular.com/mojo/std/gpu/).
+
+Keep **CPU** and **GPU** when identifying hardware, GPU thread/grid facilities,
+toolchain requirements, hardware validation, or processor-specific performance
+evidence. Larecs APIs use `on_device`, `DeviceComponentType`,
+`DeviceResourceType`, `constrain_device_safe_components`, and
+`constrain_device_safe_resources`; see [decision 0015](decisions/0015-host-device-execution-terminology.md)
+for the beta migration. Preserve exact diagnostics, upstream names (`is_gpu()`,
+`std.gpu`, and `max.gpu.host`), hardware test filenames, and benchmark result
+identifiers. Terminology clarifications do not change execution behavior or
+imply support for additional accelerator backends.
 
 ## Recording a change
 
