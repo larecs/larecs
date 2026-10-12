@@ -15,20 +15,6 @@ from .debug_utils import debug_warn
 from .resource import ResourceType, Resources
 
 
-@fieldwise_init
-struct DeviceComponentType:
-    """Describes the on-device layout of a component type."""
-
-    var dtype: DType
-    """The scalar data type used to represent the component's bytes."""
-    var dtype_size: Int
-    """The size of `dtype`, in bytes."""
-    var size: Int
-    """The size of the component type, in bytes."""
-    var padding: Int
-    """Extra bytes appended to `size` to satisfy alignment requirements."""
-
-
 struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
     """Owns one byte-addressed device column per configured component type.
 
