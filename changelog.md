@@ -36,6 +36,11 @@
   contiguous growable store. Classifier configuration controls cluster granularity;
   keep staging, typed transfers, exact selections, and empty-store reclamation.
 
+- Launch device kernels with 256-thread blocks instead of 16, so blocks fill
+  whole warps/wavefronts and occupancy is no longer limited by the
+  per-multiprocessor block count. Cap the grid at one wave of resident blocks;
+  larger row counts are covered by the grid-stride loop.
+
 - Rename the beta execution option `on_gpu` to `on_device`,
   `GPUComponentType`/`GPUResourceType` to
   `DeviceComponentType`/`DeviceResourceType`, and the
