@@ -44,7 +44,7 @@ struct Policy(SpatialClassifier):
 
 @fieldwise_init
 struct ScanSum(ResourceType):
-    """Consumed reduction shared across CPU block invocations."""
+    """Consumed reduction shared across host block invocations."""
 
     var value: Int64
 
@@ -52,7 +52,7 @@ struct ScanSum(ResourceType):
 def scan(
     context: KernelContext[Filter().read[Payload](), Resources[ScanSum]()]
 ):
-    """Read every payload lane once through ordinary CPU execution.
+    """Read every payload lane once through ordinary host execution.
 
     Args:
         context: Prepared block or archetype range with the shared reduction.
@@ -187,11 +187,11 @@ def sample(
         group: Initial identities per cell.
         stride: Cell key spacing.
         updates: Distinct identities moved per frame.
-        mode: 0 maintenance, 1 ordinary query scan, 2 CPU scan, 3 complete cell frame.
+        mode: 0 maintenance, 1 ordinary query scan, 2 host scan, 3 complete cell frame.
         cadence: Maintenance every this many frames; final frame is maintained.
 
     Raises:
-        Error: If mutation, maintenance, queries, or CPU execution fail.
+        Error: If mutation, maintenance, queries, or host execution fail.
 
     Returns:
         Nanoseconds per frame in a fixed batch of sixteen frames.

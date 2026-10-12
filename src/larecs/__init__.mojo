@@ -5,7 +5,7 @@ It is based on the ECS [Arche](https://github.com/mlange-42/arche), implemented 
 
 Larecs 1.0 is currently in beta, so public APIs may still change before the
 stable 1.0.0 release. After that release, public APIs follow semantic
-versioning unless they are explicitly marked experimental. GPU execution is
+versioning unless they are explicitly marked experimental. Device execution is
 currently such an experimental API.
 
 Example:

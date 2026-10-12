@@ -6,7 +6,7 @@
 # `-g`. See "Known issues" in AGENTS.md for the full writeup.
 
 # Covers `Filter.read`/`Filter.write`, the per-component access modes that
-# let `SystemContext.run`'s GPU path skip an upload or download direction
+# let `SystemContext.run`'s device path skip an upload or download direction
 # it doesn't need (see `Filter.include`'s docstring and `SystemContext.run`
 # in src/larecs/system.mojo). `EntityAccessor.get`/`set` reject the wrong
 # direction at compile time, so the behavior worth testing at runtime is
@@ -21,8 +21,8 @@ from std.testing import *
 from larecs import World, SystemContext, KernelContext, Filter
 
 
-# `TrivialRegisterPassable` satisfies `GPUComponentType` (see
-# component.mojo): `SystemContext.run(..., on_gpu=True)` moves component
+# `TrivialRegisterPassable` satisfies `DeviceComponentType` (see
+# component.mojo): `SystemContext.run(..., on_device=True)` moves component
 # columns as raw bytes, which is only compile-time-permitted for a type
 # with no non-trivial state.
 @fieldwise_init
@@ -74,7 +74,7 @@ def test_gpu_write_only_component_downloads_without_a_prior_upload() raises:
     var c = world.storage.add_entity(Value(999), Doubled(0))
 
     var context = SystemContext(world)
-    context.run[fill_value, on_gpu=True]()
+    context.run[fill_value, on_device=True]()
 
     assert_equal(world.storage.get[Value](a).v, 10)
     assert_equal(world.storage.get[Value](b).v, 10)
@@ -85,7 +85,7 @@ def test_gpu_read_only_component_uploads_latest_host_state() raises:
     """A read-only filter re-uploads `Value` from the host on every run.
 
     `Value` already has a device column holding `10` in every row, left
-    behind by an earlier write-only kernel run against this same world (GPU
+    behind by an earlier write-only kernel run against this same world (device
     columns are reused across calls). This test then overwrites one
     entity's `Value` directly on the host, bypassing any kernel, before
     running a kernel that only reads `Value`. If the read-only upload were
@@ -106,13 +106,13 @@ def test_gpu_read_only_component_uploads_latest_host_state() raises:
 
     # Give `Value` a device column with stale data, mimicking a world whose
     # device storage was already used by an earlier system this frame.
-    context.run[fill_value, on_gpu=True]()
+    context.run[fill_value, on_device=True]()
     assert_equal(world.storage.get[Value](a).v, 10)
 
     # Bypass the kernel entirely -- host and device now disagree about `a`.
     world.storage.get[Value](a) = Value(21)
 
-    context.run[double_value, on_gpu=True]()
+    context.run[double_value, on_device=True]()
 
     assert_equal(world.storage.get[Doubled](a).v, 42)
     assert_equal(world.storage.get[Doubled](b).v, 20)
@@ -139,7 +139,7 @@ def test_gpu_include_still_reads_and_writes_both_directions() raises:
     var b = world.storage.add_entity(Value(5), Doubled(5))
 
     var context = SystemContext(world)
-    context.run[bump_both, on_gpu=True]()
+    context.run[bump_both, on_device=True]()
 
     assert_equal(world.storage.get[Value](a).v, 2)
     assert_equal(world.storage.get[Doubled](a).v, 3)

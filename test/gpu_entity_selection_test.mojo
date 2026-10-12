@@ -1,7 +1,7 @@
 # SKIP_ASAN
 # SKIP_DEBUG
 
-"""Hardware tests for packed GPU execution on entity selections."""
+"""Hardware tests for packed device execution on entity selections."""
 
 from std.sys import has_accelerator
 from std.testing import assert_equal, TestSuite
@@ -28,21 +28,21 @@ from larecs import (
 
 @fieldwise_init
 struct Position(Copyable, TrivialRegisterPassable):
-    """GPU-safe scalar position."""
+    """Device-safe scalar position."""
 
     var value: Float32
 
 
 @fieldwise_init
 struct Tag(Copyable, TrivialRegisterPassable):
-    """GPU-safe marker component."""
+    """Device-safe marker component."""
 
     var value: Int32
 
 
 @fieldwise_init
 struct VisitTotal(ResourceType, TrivialRegisterPassable):
-    """GPU-safe selected-row visit total."""
+    """Device-safe selected-row visit total."""
 
     var value: Int32
 
@@ -85,7 +85,7 @@ def update_with_bindings(
 
 
 def test_gpu_selection_packs_nonzero_ranges_and_reuses_storage() raises:
-    """GPU upload and scatter touch only selected rows across changing sizes.
+    """Device upload and scatter touch only selected rows across changing sizes.
 
     Raises:
         Error: If device execution or an assertion fails.
@@ -96,12 +96,12 @@ def test_gpu_selection_packs_nonzero_ranges_and_reuses_storage() raises:
         var context = SystemContext(world)
 
         var first = context.add_entities(Position(1.0), count=4)
-        first.run[add_one, on_gpu=True]()
-        first.run[add_one, on_gpu=True]()
+        first.run[add_one, on_device=True]()
+        first.run[add_one, on_device=True]()
         first^.release()
 
         var second = context.add_entities(Position(10.0), Tag(1), count=2)
-        second.run[add_one, on_gpu=True]()
+        second.run[add_one, on_device=True]()
         second^.release()
 
         assert_equal(world.storage.get[Position](untouched).value, 100.0)
@@ -118,7 +118,7 @@ def test_gpu_selection_packs_nonzero_ranges_and_reuses_storage() raises:
 
 
 def test_gpu_selection_preserves_resources_captures_and_write_only() raises:
-    """Selected GPU execution copies resources, captures, and writes back.
+    """Selected device execution copies resources, captures, and writes back.
 
     Raises:
         Error: If device execution or an assertion fails.
@@ -130,7 +130,7 @@ def test_gpu_selection_preserves_resources_captures_and_write_only() raises:
         var selection = context.add_entities(Position(2.0), Tag(0), count=3)
         var amount: Float32 = 4.0
         var processed: Int32 = 0
-        selection.run[update_with_bindings, on_gpu=True](
+        selection.run[update_with_bindings, on_device=True](
             read_capture(amount), mut_capture(processed)
         )
         selection^.release()
@@ -160,7 +160,7 @@ def test_gpu_selection_packs_disjoint_ranges_across_archetypes() raises:
         selection._ranges.append(EntityRange(1, 1, 1))
         selection._ranges.append(EntityRange(1, 3, 1))
         selection._ranges.append(EntityRange(2, 0, 1))
-        selection.run[add_one, on_gpu=True]()
+        selection.run[add_one, on_device=True]()
         selection^.release()
 
         for i in range(5):
@@ -172,7 +172,7 @@ def test_gpu_selection_packs_disjoint_ranges_across_archetypes() raises:
 
 
 def main() raises:
-    """Runs GPU entity-selection tests.
+    """Runs device entity-selection tests.
 
     Raises:
         Error: If any discovered test fails.
