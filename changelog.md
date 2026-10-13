@@ -4,6 +4,12 @@
 
 ### Added
 
+- Add target-local `AtomicValue` and `Synchronized` owners with shared views,
+  32-bit atomic operations, nonblocking read/write guards, and compiler-enforced
+  guard borrows. CPU tests cover actual concurrent workers; device paths are
+  experimental, with relaxed scalar operations initially supported on Apple.
+  Dedicated ECS bindings, collection domains, and deferred waiting remain planned.
+
 - Add opt-in growable cluster-local partitions beneath logical component-defined
   archetypes, with staged structural writes, typed transfers, source swap-removal,
   allocation reclamation, and exact locked `SystemContext.select_cluster`
