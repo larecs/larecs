@@ -36,6 +36,7 @@ def guarded_update(
     state: Pointer[UInt32, MutUntrackedOrigin],
     completed: Pointer[UInt32, MutUntrackedOrigin],
     errors: Pointer[UInt32, MutUntrackedOrigin],
+    reads: Pointer[UInt32, MutUntrackedOrigin],
 ):
     """Attempts bounded compound writes with device-wide protection.
 
@@ -44,6 +45,7 @@ def guarded_update(
         state: Canonical domain state, initialized before launch.
         completed: Atomic count of successful writes.
         errors: Atomic count of inconsistent compound reads.
+        reads: Atomic count of successful worker reads.
     """
     var view = SyncView[True, Pair, MutUntrackedOrigin](
         unsafe_payload=payload.unsafe_bitcast[Pair](), unsafe_state=state
@@ -53,6 +55,9 @@ def guarded_update(
     )
     var failures = AtomicView[True, UInt32, MutUntrackedOrigin](
         unsafe_pointer=errors
+    )
+    var read_count = AtomicView[True, UInt32, MutUntrackedOrigin](
+        unsafe_pointer=reads
     )
     var index = 0
     comptime if is_gpu():
@@ -72,6 +77,58 @@ def guarded_update(
                 var guard = result^.take()
                 if guard.value().first != guard.value().second:
                     _ = failures.fetch_add(1)
+                _ = read_count.fetch_add(1)
+
+
+def coordinated_access(
+    payload: Pointer[UInt32, MutUntrackedOrigin],
+    state: Pointer[UInt32, MutUntrackedOrigin],
+    outcomes: Pointer[UInt32, MutUntrackedOrigin],
+):
+    """Requires one worker read while every other lane attempts a blocked write.
+
+    Args:
+        payload: Two equal fields seeded before launch.
+        state: Protocol fixture representing one existing reader, initialized to 1.
+        outcomes: Successful reads, blocked writes, and errors, in that order.
+
+    Notes:
+        The fixture excludes writers without barriers or spinning. Only lane
+        zero adds a reader, so its single CAS must succeed. Ending at state 1
+        verifies it released exactly that additional reader.
+    """
+    var view = SyncView[True, Pair, MutUntrackedOrigin](
+        unsafe_payload=payload.unsafe_bitcast[Pair](), unsafe_state=state
+    )
+    var reads = AtomicView[True, UInt32, MutUntrackedOrigin](
+        unsafe_pointer=outcomes
+    )
+    var blocked = AtomicView[True, UInt32, MutUntrackedOrigin](
+        unsafe_pointer=outcomes.unsafe_offset(1)
+    )
+    var errors = AtomicView[True, UInt32, MutUntrackedOrigin](
+        unsafe_pointer=outcomes.unsafe_offset(2)
+    )
+    var index = 0
+    comptime if is_gpu():
+        index = global_idx.x
+    if index == 0:
+        var result = view.try_read()
+        if result.is_acquired():
+            var guard = result^.take()
+            if guard.value().first != UInt32(
+                123
+            ) or guard.value().second != UInt32(123):
+                _ = errors.fetch_add(1)
+            _ = reads.fetch_add(1)
+        else:
+            _ = errors.fetch_add(1)
+    else:
+        var result = view.try_write()
+        if result.is_acquired():
+            _ = errors.fetch_add(1)
+        else:
+            _ = blocked.fetch_add(1)
 
 
 def scalar_contract(results: Pointer[UInt32, MutUntrackedOrigin]):
@@ -145,11 +202,14 @@ def test_device_guarded_updates() raises:
         completed.enqueue_fill(0)
         var errors = device.enqueue_create_buffer[DType.uint32](1)
         errors.enqueue_fill(0)
+        var reads = device.enqueue_create_buffer[DType.uint32](1)
+        reads.enqueue_fill(0)
         device.enqueue_function[guarded_update](
             payload.device_ptr(),
             state.device_ptr(),
             completed.device_ptr(),
             errors.device_ptr(),
+            reads.device_ptr(),
             grid_dim=4,
             block_dim=64,
         )
@@ -165,6 +225,30 @@ def test_device_guarded_updates() raises:
             assert_equal(host[0], UInt32(0))
         with state.map_to_host() as host:
             assert_equal(host[0], UInt32(0))
+        with reads.map_to_host() as host:
+            assert_true(host[0] <= UInt32(128 * 16))
+        # A controlled existing-reader fixture guarantees worker read coverage
+        # without assuming fairness in the mixed stress launch above.
+        payload.enqueue_fill(123)
+        state.enqueue_fill(1)
+        var outcomes = device.enqueue_create_buffer[DType.uint32](3)
+        outcomes.enqueue_fill(0)
+        device.enqueue_function[coordinated_access](
+            payload.device_ptr(),
+            state.device_ptr(),
+            outcomes.device_ptr(),
+            grid_dim=4,
+            block_dim=64,
+        )
+        device.synchronize()
+        with outcomes.map_to_host() as host:
+            assert_equal(host[0], UInt32(1))
+            assert_equal(host[1], UInt32(255))
+            assert_equal(host[2], UInt32(0))
+        with state.map_to_host() as host:
+            assert_equal(host[0], UInt32(1))
+        state.enqueue_fill(0)
+        device.synchronize()
     else:
         print("SKIPPED GPU guards: no supported accelerator available")
 
