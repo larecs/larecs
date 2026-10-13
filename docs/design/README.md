@@ -34,6 +34,9 @@ decision record before changing an established behavior:
 
 - [GPU synchronization research](research/gpu-synchronization.md) surveys Mojo,
   MAX, and NVIDIA primitives and their implications for decision 0016.
+- [Apple GPU publication ordering](research/apple-gpu-publication-ordering.md)
+  explains the Apple restrictions and records M4 correctness and performance
+  measurements for acquire loads and release stores.
   Research notes do not establish accepted requirements.
 
 ## Execution terminology

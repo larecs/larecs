@@ -360,7 +360,8 @@ Report sidecar setup and transfer costs separately and in complete execution.
   produced stale payload in about 99.9% of observations and relaxed/acquire in
   about 57%. Replacing the test's orderings with relaxed ones makes it fail.
   This is evidence for one device and toolchain, not a proof of Apple's memory
-  model or of other Apple GPUs.
+  model or of other Apple GPUs. The [Apple publication research](../research/apple-gpu-publication-ordering.md)
+  records the method, compiler limits, and performance measurements.
 - The focused `benchmark/synchronization_benchmark.mojo` compares ordinary
   increments, direct upstream atomics, Larecs atomic views, and uncontended write
   guards. It validates totals and excludes setup from timing; no application
