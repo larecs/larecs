@@ -6,8 +6,9 @@ status_notes: |
   Accepted design; standalone scalar and single-value primitives are partially
   implemented in src/larecs/sync.mojo. Dedicated kernel bindings, collection
   domains, and hardware GPU validation remain pending. The initial Apple GPU
-  API is limited to relaxed scalar operations. Names below describe the full
-  intended API; compile-tested usage is in the synchronization guide.
+  API is limited to relaxed scalar operations plus acquire loads and release
+  stores. Names below describe the full intended API; compile-tested usage is
+  in the synchronization guide.
 ---
 
 # Decision 0016: Kernel memory synchronization
@@ -343,9 +344,23 @@ Report sidecar setup and transfer costs separately and in complete execution.
   uses `device` scope, while AMD `gfx942` requires `agent` scope. LLVM documents
   [AMD synchronization scopes](https://llvm.org/docs/AMDGPUUsage.html#memory-scopes).
   Apple `apple-m4` permits compilation of the relaxed scalar slice; the locked
-  compiler rejects strong CAS. Guards, strong CAS, and non-relaxed public scalar
-  orderings are explicitly rejected there. GPU hardware was unavailable on the
-  local runner; compilation is not evidence of runtime correctness.
+  compiler rejects strong CAS ("AIR exposes no strong compare-exchange
+  primitive") and acquire-release read-modify-write ordering. Guards, strong
+  CAS, and non-relaxed add/subtract are explicitly rejected there. GPU hardware
+  was unavailable on the local runner; compilation is not evidence of runtime
+  correctness.
+- On an Apple M4 (10-core GPU, macOS 27.0.1, Mojo 1.0.0 `ed45d567`), acquire
+  loads and release stores lower to LLVM `load atomic ... acquire` and
+  `store atomic ... release` in the AIR module passed to Apple's compiler.
+  `test_device_publication` in `test/gpu_synchronization_test.mojo` writes 16
+  ordinary payload words per slot in even blocks, publishes with a release
+  store, and checks them after an acquire load in the paired odd block. In a
+  separate 128-block, 200-launch probe (3,276,800 observed publications per
+  configuration), release/acquire produced no stale payload; relaxed/relaxed
+  produced stale payload in about 99.9% of observations and relaxed/acquire in
+  about 57%. Replacing the test's orderings with relaxed ones makes it fail.
+  This is evidence for one device and toolchain, not a proof of Apple's memory
+  model or of other Apple GPUs.
 - The focused `benchmark/synchronization_benchmark.mojo` compares ordinary
   increments, direct upstream atomics, Larecs atomic views, and uncontended write
   guards. It validates totals and excludes setup from timing; no application

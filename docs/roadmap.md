@@ -123,8 +123,11 @@ no safety guarantee.
   coordinate device collections with heap-backed resource transfer work.
 - [ ] Validate concurrent correctness on actual workers/hardware and measure
   contention, metadata, setup, transfer, and complete execution costs.
-- [ ] Extend Apple GPU support beyond relaxed scalar operations while preserving
-  the strong-CAS and publication contracts; the locked compiler lacks strong CAS.
+- [x] Allow acquire loads and release stores on Apple GPU, validated by
+  cross-block payload publication on an M4.
+- [ ] Extend Apple GPU support to ordered add/subtract, strong CAS, and guards
+  while preserving their contracts; the locked compiler lacks strong CAS and
+  acquire-release read-modify-write ordering.
 - [ ] Publish user guides when the API compiles and validation passes; keep
   exchange, wider/floating/bitwise atomics, blocking waits, and collective APIs
   outside the initial scope until their semantics and backend support are designed.

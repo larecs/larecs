@@ -97,10 +97,12 @@ The same view methods select CPU-wide or whole-device atomic scope at compilatio
 CPU tests exercise actual parallel workers; this does not add parallel ECS
 system execution. Owners can be borrowed directly for host work.
 
-Device support is experimental. Apple currently supports relaxed scalar
-load/store/add/subtract only; strong CAS, publication orderings, and guards fail
-with explicit diagnostics. CPU/NVIDIA/AMD use the full initial operation set.
-GPU compilation probes do not establish actual hardware correctness.
+Device support is experimental. Apple supports relaxed or acquire loads,
+relaxed or release stores, and relaxed add/subtract. Release stores followed by
+acquire loads publish ordinary payload writes across thread blocks. Strong CAS,
+ordered add/subtract, and guards fail with explicit diagnostics. CPU/NVIDIA/AMD
+use the full initial operation set. GPU compilation probes do not establish
+actual hardware correctness.
 
 Device payloads, counters, and lock state must
 already reside in aligned device-accessible memory. The keyword-only

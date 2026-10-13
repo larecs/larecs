@@ -104,7 +104,6 @@ struct AtomicView[
             Ordering must be relaxed or acquire.
         """
         _validate_type[Self.T]()
-        _validate_target_order[ordering]()
         comptime assert (
             ordering == Ordering.RELAXED or ordering == Ordering.ACQUIRE
         ), "Invalid atomic load ordering"
@@ -129,7 +128,6 @@ struct AtomicView[
             The view must allow updates; ordering is relaxed or release.
         """
         _validate_type[Self.T]()
-        _validate_target_order[ordering]()
         comptime assert (
             Self.writable and Self.origin.mut
         ), "Atomic view is read-only"
@@ -250,17 +248,17 @@ struct AtomicView[
 
 @always_inline
 def _validate_target_order[ordering: Ordering]():
-    """Rejects unvalidated Apple GPU publication orderings.
+    """Rejects unvalidated Apple GPU read-modify-write orderings.
 
     Parameters:
         ordering: Requested memory ordering.
 
     Constraints:
-        Apple GPU is restricted to the initial relaxed scalar API in this slice.
+        Apple GPU read-modify-write operations must use relaxed ordering.
     """
     comptime assert (
         not is_apple_gpu() or ordering == Ordering.RELAXED
-    ), "Apple GPU publication ordering is not supported by Larecs yet"
+    ), "Apple GPU read-modify-write ordering must be relaxed"
 
 
 @always_inline
