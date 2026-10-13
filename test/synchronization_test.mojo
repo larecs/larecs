@@ -229,8 +229,10 @@ def test_parallel_guard_exclusion_and_publication() raises:
     var counts = counts_owner.write_view()
     var errors_owner = AtomicValue[UInt32](0)
     var errors = errors_owner.write_view()
+    var reads_owner = AtomicValue[UInt32](0)
+    var reads = reads_owner.write_view()
 
-    def worker(index: Int) {imm view, imm counts, imm errors}:
+    def worker(index: Int) {imm view, imm counts, imm errors, imm reads}:
         """Attempts finite reads and writes against one shared domain.
 
         Args:
@@ -250,10 +252,48 @@ def test_parallel_guard_exclusion_and_publication() raises:
                     var guard = result^.take()
                     if guard.value().first != guard.value().second:
                         _ = errors.fetch_add(1)
+                    _ = reads.fetch_add(1)
 
     parallelize(worker, 8, 4)
     assert_equal(errors.load(), UInt32(0))
     assert_true(counts.load() > 0)
+    assert_true(reads.load() <= UInt32(8000))
+    # One held reader excludes every writer while a designated worker reads.
+    # The designated reader's single CAS cannot contend with another reader.
+    var before_reads = reads.load()
+    var held_result = view.try_read()
+    assert_true(held_result.is_acquired())
+    var held = held_result^.take()
+    var blocked_owner = AtomicValue[UInt32](0)
+    var blocked = blocked_owner.write_view()
+
+    def coordinated(index: Int) {imm view, imm reads, imm errors, imm blocked}:
+        """Requires a real worker read while other workers attempt exclusive access.
+
+        Args:
+            index: Zero reads; the other three workers must report Busy.
+        """
+        if index == 0:
+            var result = view.try_read()
+            if result.is_acquired():
+                var guard = result^.take()
+                if guard.value().first != guard.value().second:
+                    _ = errors.fetch_add(1)
+                _ = reads.fetch_add(1)
+            else:
+                _ = errors.fetch_add(1)
+        else:
+            var result = view.try_write()
+            if result.is_acquired():
+                _ = errors.fetch_add(1)
+            else:
+                _ = blocked.fetch_add(1)
+
+    parallelize(coordinated, 4, 4)
+    held^.release()
+    assert_equal(reads.load(), before_reads + UInt32(1))
+    assert_equal(blocked.load(), UInt32(3))
+    assert_equal(errors.load(), UInt32(0))
     var result = view.try_read()
     assert_true(result.is_acquired())
     var guard = result^.take()
