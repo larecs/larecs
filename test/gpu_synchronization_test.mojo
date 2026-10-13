@@ -3,11 +3,18 @@
 """Device-wide synchronization validation on actual available accelerators."""
 
 from max.gpu.host import DeviceContext
-from std.gpu import global_idx
+from std.atomic import Ordering
+from std.gpu import block_idx, global_idx, thread_idx
 from std.sys import has_accelerator
 from std.sys.info import has_apple_gpu_accelerator, is_apple_gpu, is_gpu
 from std.testing import assert_equal, assert_true, TestSuite
 from larecs.sync import AtomicView, SyncView
+
+
+comptime publication_words = 16
+comptime publication_block = 256
+comptime publication_blocks = 64
+comptime publication_slots = publication_blocks // 2 * publication_block
 
 
 @fieldwise_init
@@ -131,6 +138,58 @@ def coordinated_access(
             _ = blocked.fetch_add(1)
 
 
+def publish_payload(
+    data: Pointer[UInt32, MutUntrackedOrigin],
+    flags: Pointer[UInt32, MutUntrackedOrigin],
+    outcomes: Pointer[UInt32, MutUntrackedOrigin],
+    round: UInt32,
+):
+    """Publishes ordinary payload words to a consumer in another block.
+
+    Even blocks write every payload word of their slots with ordinary stores,
+    then publish the round with a release store. The matching odd block polls
+    the flag with bounded acquire loads and checks all words once it observes
+    the round. On an Apple M4, relaxed ordering made stale words observable.
+
+    Args:
+        data: Word-major payload, `publication_words` words per slot.
+        flags: One publication flag per slot, below `round` before launch.
+        outcomes: Observed publications and stale payload reads, in that order.
+        round: Value written to the payload and flag in this launch.
+    """
+    var block = 0
+    var slot = 0
+    comptime if is_gpu():
+        block = block_idx.x
+        slot = (block // 2) * publication_block + thread_idx.x
+    var flag = AtomicView[True, UInt32, MutUntrackedOrigin](
+        unsafe_pointer=flags.unsafe_offset(slot)
+    )
+    var observed = AtomicView[True, UInt32, MutUntrackedOrigin](
+        unsafe_pointer=outcomes
+    )
+    var stale = AtomicView[True, UInt32, MutUntrackedOrigin](
+        unsafe_pointer=outcomes.unsafe_offset(1)
+    )
+    if block % 2 == 0:
+        for word in range(publication_words):
+            data.unsafe_offset(word * publication_slots + slot)[] = round
+        flag.store[Ordering.RELEASE](round)
+    else:
+        # Bounded polling avoids assuming the producer block is co-resident.
+        for _ in range(1 << 14):
+            if flag.load[Ordering.ACQUIRE]() == round:
+                for word in range(publication_words):
+                    if (
+                        data.unsafe_offset(word * publication_slots + slot)[]
+                        != round
+                    ):
+                        _ = stale.fetch_add(1)
+                        break
+                _ = observed.fetch_add(1)
+                break
+
+
 def scalar_contract(results: Pointer[UInt32, MutUntrackedOrigin]):
     """Checks the common scalar API independently in each device lane.
 
@@ -147,6 +206,8 @@ def scalar_contract(results: Pointer[UInt32, MutUntrackedOrigin]):
     var correct = view.fetch_add(2) == UInt32(7)
     correct = correct and view.fetch_sub(1) == UInt32(9)
     correct = correct and view.load() == UInt32(8)
+    view.store[Ordering.RELEASE](8)
+    correct = correct and view.load[Ordering.ACQUIRE]() == UInt32(8)
     comptime if not is_apple_gpu():
         var outcome = view.compare_exchange(8, 10)
         correct = (
@@ -184,6 +245,43 @@ def test_device_atomic_updates() raises:
                 assert_equal(host[i], UInt32(1))
     else:
         print("SKIPPED GPU atomics: no accelerator available")
+
+
+def test_device_publication() raises:
+    """Checks that release stores publish ordinary payload writes across blocks.
+
+    Raises:
+        Error: If device execution or result verification fails.
+    """
+    comptime if has_accelerator():
+        var device = DeviceContext()
+        var data = device.enqueue_create_buffer[DType.uint32](
+            publication_words * publication_slots
+        )
+        var flags = device.enqueue_create_buffer[DType.uint32](
+            publication_slots
+        )
+        var outcomes = device.enqueue_create_buffer[DType.uint32](2)
+        data.enqueue_fill(0)
+        flags.enqueue_fill(0)
+        outcomes.enqueue_fill(0)
+        comptime rounds = 20
+        for round in range(1, rounds + 1):
+            device.enqueue_function[publish_payload](
+                data.device_ptr(),
+                flags.device_ptr(),
+                outcomes.device_ptr(),
+                UInt32(round),
+                grid_dim=publication_blocks,
+                block_dim=publication_block,
+            )
+        device.synchronize()
+        with outcomes.map_to_host() as host:
+            assert_true(host[0] > 0)
+            assert_true(host[0] <= UInt32(rounds * publication_slots))
+            assert_equal(host[1], UInt32(0))
+    else:
+        print("SKIPPED GPU publication: no accelerator available")
 
 
 def test_device_guarded_updates() raises:
