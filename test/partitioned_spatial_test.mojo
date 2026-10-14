@@ -62,7 +62,7 @@ comptime TestWorld = World[Int, Heap, Tag]
 
 
 def prepare() raises -> TestWorld:
-    """Build two logical archetypes with several blocks per cluster.
+    """Build two logical archetypes with one growable store per cluster.
 
     Raises:
         Error: If setup or maintenance fails.
@@ -77,14 +77,14 @@ def prepare() raises -> TestWorld:
         else:
             _ = world.storage.add_entity(i % 3, Heap([i + 1]))
     world.register_spatial_classifier[Filter().read[Int]()](
-        Policy(), partitioned=True, block_capacity=8
+        Policy(), partitioned=True
     )
     world.maintain_spatial()
     return world^
 
 
 def validate(mut world: TestWorld) raises:
-    """Check unique query membership, bounded homogeneous blocks, and locations.
+    """Check unique query membership, unique homogeneous cluster stores, and locations.
 
     Args:
         world: Maintained world with identity-valued payloads.
@@ -103,9 +103,6 @@ def validate(mut world: TestWorld) raises:
         assert_equal(block.get_entity(location.entity_index), entity)
         assert_true(Bool(block._partition_key))
         assert_equal(block._partition_key.value(), UInt64(row.get[Int]()))
-        assert_true(len(block) <= 8)
-        assert_true(block._storage._capacity <= 8)
-        assert_true(block._entities.capacity() <= 8)
         assert_true(block.get_node_index() >= 0)
         var staging = world.storage._archetype_map[block.get_node_index()]
         assert_equal(
@@ -121,9 +118,8 @@ def validate(mut world: TestWorld) raises:
             )
             if key not in counts:
                 counts[key] = 0
-            if len(block) < 8:
-                counts[key] += 1
-            assert_true(counts[key] <= 1)
+            counts[key] += 1
+            assert_equal(counts[key], 1)
             assert_true(len(block) > 0)
 
 
@@ -137,7 +133,7 @@ def bump(context: KernelContext[Filter().include[Tag]()]):
         row.get[Tag]().value += 1
 
 
-def test_blocks_reclassification_compaction_reuse_and_copy() raises:
+def test_clusters_reclassification_reuse_and_copy() raises:
     """Dirty transfers preserve heap payloads, and empty slots are reclaimed.
 
     Raises:
@@ -172,7 +168,7 @@ def test_blocks_reclassification_compaction_reuse_and_copy() raises:
 
 
 def test_cluster_selection_exact_chains_locks_and_existing_destination() raises:
-    """Cluster selections span blocks and never include preexisting destination rows.
+    """Cluster selections span logical archetypes and never include preexisting destination rows.
 
     Raises:
         Error: If selection semantics or locks fail.
@@ -265,22 +261,21 @@ def test_classification_failure_preserves_placement_and_retry() raises:
 
 
 def test_registration_validation_and_unclassified_rows() raises:
-    """Invalid capacities leave registration usable and unmatched rows unpartitioned.
+    """Repeated registration is rejected and unmatched rows remain unpartitioned.
 
     Raises:
         Error: If registration or eligibility invariants fail.
     """
     var world = TestWorld()
-    for capacity in [0, -1, 3]:
-        with assert_raises(contains="power of two"):
-            world.register_spatial_classifier[Filter().read[Int]()](
-                Policy(), partitioned=True, block_capacity=capacity
-            )
     var unrelated = world.storage.add_entity(Heap([1]))
     _ = world.storage.add_entity(1, Heap([2]))
     world.register_spatial_classifier[Filter().read[Int]()](
-        Policy(), partitioned=True, block_capacity=1
+        Policy(), partitioned=True
     )
+    with assert_raises(contains="already registered"):
+        world.register_spatial_classifier[Filter().read[Int]()](
+            Policy(), partitioned=True
+        )
     world.maintain_spatial()
     var location = world.storage._entity_locations[unrelated.get_id()]
     assert_false(
@@ -307,7 +302,7 @@ def test_partition_lifetimes_without_copy_or_early_destruction() raises:
     for i in range(25):
         _ = world.storage.add_entity(i % 3, counters.component())
     world.register_spatial_classifier[Filter().read[Int]()](
-        Policy(), partitioned=True, block_capacity=8
+        Policy(), partitioned=True
     )
     var copies = counters.copy_counter()
     var deletes = counters.del_counter()
@@ -406,54 +401,45 @@ def test_mask_lookup_after_recycling_and_new_logical_transition() raises:
     validate(world)
 
 
-def test_small_block_allocation_caps_through_growth_and_compaction() raises:
-    """Component and ID allocations obey small caps during all placement phases.
+def test_single_cluster_growth_through_staging_movement_and_copy() raises:
+    """Large clusters grow one store while preserving payloads and locations.
 
     Raises:
-        Error: If allocation bounds, payloads, or membership fail.
+        Error: If cluster uniqueness, payloads, or membership fail.
     """
-    for capacity in [1, 2, 4, 8]:
-        var world = World[Int, Heap]()
-        for i in range(13):
-            _ = world.storage.add_entity(0, Heap([i + 1]))
-        world.register_spatial_classifier[Filter().read[Int]()](
-            Policy(), partitioned=True, block_capacity=capacity
+    var world = TestWorld()
+    world.register_spatial_classifier[Filter().read[Int]()](
+        Policy(), partitioned=True
+    )
+    var original_store = -1
+    for phase in range(4):
+        for _ in range(300):
+            var id = len(world) + 1
+            _ = world.storage.add_entity(0, Heap([id]))
+        world.maintain_spatial()
+        validate(world)
+        var location = world.storage._entity_locations[1]
+        if phase == 0:
+            original_store = location.archetype_index
+        assert_equal(location.archetype_index, original_store)
+        assert_equal(
+            len(world.storage._archetypes[original_store]), (phase + 1) * 300
         )
-        for phase in range(3):
-            if phase == 2:
-                var copied = world.copy()
-                world = copied^
-            if phase > 0:
-                for id in range(1, 14):
-                    world.storage.set(Entity(id), (id + phase) % 2)
-            world.maintain_spatial()
-            var partial = Dict[UInt64, Int]()
-            for block in world.storage._archetypes:
-                if block._partition_key:
-                    assert_true(len(block) <= capacity)
-                    assert_true(block._storage._capacity <= capacity)
-                    assert_true(block._entities.capacity() <= capacity)
-                    if len(block) < capacity:
-                        var key = block._partition_key.value()
-                        partial[key] = partial.get(key, 0) + 1
-                        assert_equal(partial[key], 1)
-            var seen = 0
-            for row in world.storage.query[Filter().read[Int, Heap]()]():
-                assert_equal(
-                    row.get[Heap]().values[0], Int(row.get_entity().get_id())
-                )
-                var location = world.storage._entity_locations[
-                    row.get_entity().get_id()
-                ]
-                ref block = world.storage._archetypes[location.archetype_index]
-                assert_equal(
-                    block.get_entity(location.entity_index), row.get_entity()
-                )
-                assert_equal(
-                    block._partition_key.value(), UInt64(row.get[Int]())
-                )
-                seen += 1
-            assert_equal(seen, 13)
+    var copied = world.copy()
+    validate(copied)
+    for id in range(1, 1201):
+        copied.storage.set(Entity(id), id % 2)
+    copied.maintain_spatial()
+    validate(copied)
+    for id in range(1, 1201):
+        copied.storage.set(Entity(id), 0)
+    copied.maintain_spatial()
+    validate(copied)
+    var selection_context = SystemContext(copied)
+    var selected = selection_context.select_cluster(UInt64(0))
+    assert_equal(len(selected), 1200)
+    selected^.release()
+    validate(world)
 
 
 def main() raises:

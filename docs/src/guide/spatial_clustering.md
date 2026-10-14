@@ -133,7 +133,7 @@ updates, tracking, classification, sorting, movement, and location repair agains
 explicit full rebuilds; it does not establish a spatial workload speedup.
 
 
-## Cluster-local partition blocks
+## Growable cluster-local partitions
 
 Choose partitions at registration when your workload benefits from moving rows
 between persistent clusters rather than reordering entire archetypes:
@@ -164,7 +164,7 @@ struct Cells(SpatialClassifier):
 
 
 def main() raises:
-    """Maintain blocks and acquire exact cluster membership.
+    """Maintain clusters and acquire exact cluster membership.
 
     Raises:
         Error: If registration, maintenance, or selection fails.
@@ -173,7 +173,7 @@ def main() raises:
     _ = world.storage.add_entity(7)
     _ = world.storage.add_entity(9)
     world.register_spatial_classifier[Filter().read[Int]()](
-        Cells(), partitioned=True, block_capacity=256
+        Cells(), partitioned=True
     )
     world.maintain_spatial()
     var context = SystemContext(world)
@@ -183,25 +183,25 @@ def main() raises:
 ```
 
 Component composition still defines the logical archetype. Each cluster beneath
-it owns one or more dense SoA blocks. Capacity starts at one row, grows in powers
-of two, and is bounded by `block_capacity` (a positive power of two). Dense
-clusters have no maximum population. Separate clusters need not occupy nearby
-allocations, and partition traversal is not sorted by key.
+it owns exactly one dense SoA store. Capacity starts at one row and doubles
+on demand without a fixed row limit. Classifier configuration (for example,
+cell width) controls cluster population; there is no separate chunk-size option.
+Separate clusters need not occupy nearby allocations, and partition traversal is not sorted by key.
 
 Creation and component transitions stage rows without calling the classifier.
 The next explicit maintenance boundary classifies pending inputs and transfers
 rows into their clusters. Same-composition replacement stays in its physical
-store until placement is refreshed. Source swap-removal and same-cluster
-compaction repair locations. The boundary leaves at most one partially filled
-block per logical cluster and releases empty block/staging row allocations.
+store until placement is refreshed. Source swap-removal repairs locations.
+Growing a destination moves its existing column values into larger contiguous allocations. The boundary releases empty
+cluster/staging row allocations; nonempty stores retain their grown capacity.
 Queries and ordinary CPU/GPU execution traverse every matching physical store,
 including staged rows. GPU calls pack those ranges and scatter writable spans
 back under the existing transfer and synchronization rules.
 
 `context.select_cluster[filter](key)` snapshots **exact maintained cluster
 membership**, intersected with the component filter across logical archetypes
-and blocks. Pending maintenance is an error: finish maintenance before capturing
-membership. The result has the same lock, in-place mutation, scoped lifetime,
+and their cluster stores. Pending maintenance is an error: finish maintenance
+before capturing membership. The result has the same lock, in-place mutation, scoped lifetime,
 and reusable kernel calls as other selections. Writes during its lifetime do
 not change its membership. Release it before maintenance. Empty cluster results
 still own a lock. This is a key lookup, not a distance or neighbor query.
@@ -210,9 +210,9 @@ Partition mode is opt-in and row reordering remains the default. Measure the
 [paired partition benchmark](benchmarks.md#partitioned-storage-comparison)
 against your entity counts, cell occupancy, component widths, and maintenance
 cadence. Many sparse cells can cost much more metadata and allocations, and
-ordinary scans pay traversal/binding cost per block. Active maintenance still
-copies identity-capacity keys and rebuilds a temporary block directory; cluster
-selection currently scans block metadata. Empty interior slots and directory
+ordinary scans pay traversal/binding cost per cluster store. Active maintenance
+still copies identity-capacity keys and rebuilds a temporary cluster directory; cluster
+selection currently scans store metadata. Empty interior slots and directory
 capacity retain high-water metadata. Structural-heavy frames still perform full
-classification. See [decision 0013](../../design/decisions/0013-cluster-local-partition-blocks.md)
+classification. See [decision 0014](../../design/decisions/0014-growable-cluster-stores.md)
 for guarantees and limits.

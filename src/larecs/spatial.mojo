@@ -48,7 +48,7 @@ trait SpatialClassifier(Copyable, Deinitable):
     Implementations must be deterministic for unchanged declared components
     and configuration, must not mutate the world, and must not retain accessors
     or component references. Equal UInt64 keys identify one cluster. The default
-    reordering mode traverses ascending keys; partition blocks have no global
+    reordering mode traverses ascending keys; partition stores have no global
     key-order or allocation-adjacency guarantee.
     """
 
@@ -336,7 +336,7 @@ def _transfer_partition_row[
     Args:
         storage: Unlocked storage; source and destination have identical masks.
         entity: Live identity to transfer.
-        destination: Distinct physical block with available capacity.
+        destination: Distinct physical cluster store, grown on demand.
     """
     var location = storage._entity_locations[entity.get_id()]
     ref target = storage._archetypes[destination]
@@ -349,14 +349,9 @@ def _transfer_partition_row[
         source.get_mask() == target.get_mask(),
         "Partition transfer must preserve component composition",
     )
-    debug_assert(
-        len(target) < storage._spatial_block_capacity, "Partition block is full"
-    )
-    # Pre-grow both owners so ordinary append cannot apply its eight-row floor.
+    # Grow both owners together from one row, preserving small-cluster storage.
     if len(target) == target._storage._capacity:
-        target._storage.reserve(
-            min(target._storage._capacity * 2, storage._spatial_block_capacity)
-        )
+        target._storage.reserve(max(1, target._storage._capacity * 2))
     target._entities.reserve(target._storage._capacity)
     var row = target.add_entity(entity)
     target._storage.unsafe_move_shared_components_from(
@@ -381,10 +376,10 @@ def _transfer_partition_row[
 def _partition_spatial_rows[
     *Ts: ComponentType
 ](mut storage: HostStorage[*Ts], keys: List[UInt64], mask: BitMaskFilter,):
-    """Place changed identities, compact within clusters, and reclaim empty blocks.
+    """Place changed identities in one growable store per cluster and reclaim empties.
 
     Partition directories are rebuilt at active boundaries. Graph values name
-    staging stores; physical blocks share their node but never enter the graph.
+    staging stores; cluster stores share their node but never enter the graph.
     Allocation failure is fatal, as for ordinary storage. All classifier calls
     and recoverable validation finish before this non-raising movement phase.
 
@@ -396,8 +391,7 @@ def _partition_spatial_rows[
         keys: Final keys indexed by entity identity.
         mask: Classifier eligibility filter.
     """
-    var blocks = Dict[_PartitionId, Int]()
-    var groups = List[List[Int]]()
+    var stores = Dict[_PartitionId, Int]()
     var candidates = List[Entity]()
     for index in range(len(storage._archetypes)):
         ref block = storage._archetypes[index]
@@ -405,10 +399,7 @@ def _partition_spatial_rows[
             var cluster = _PartitionId(
                 block.get_node_index(), block._partition_key.value()
             )
-            if cluster not in blocks:
-                blocks[cluster] = len(groups)
-                groups.append(List[Int]())
-            groups[blocks.get(cluster).value()].append(index)
+            stores[cluster] = index
         if storage._spatial_full and mask.matches(block.get_mask()):
             for entity in block.get_entities():
                 candidates.append(entity)
@@ -420,7 +411,6 @@ def _partition_spatial_rows[
                     storage._archetypes[location.archetype_index].get_mask()
                 ):
                     candidates.append(entity)
-    var limit = storage._spatial_block_capacity
     for entity in candidates:
         var location = storage._entity_locations[entity.get_id()]
         var source_index = location.archetype_index
@@ -430,15 +420,7 @@ def _partition_spatial_rows[
                 continue
         var node = storage._archetypes[source_index].get_node_index()
         var cluster = _PartitionId(node, key)
-        if cluster not in blocks:
-            blocks[cluster] = len(groups)
-            groups.append(List[Int]())
-        var group_index = blocks.get(cluster).value()
-        var destination = -1
-        if len(groups[group_index]) > 0:
-            var last = groups[group_index][len(groups[group_index]) - 1]
-            if len(storage._archetypes[last]) < limit:
-                destination = last
+        var destination = stores.get(cluster, -1)
         if destination == -1:
             var component_mask = (
                 storage._archetypes[source_index].get_mask().copy()
@@ -451,25 +433,8 @@ def _partition_spatial_rows[
             else:
                 destination = len(storage._archetypes)
                 storage._archetypes.append(fresh^)
-            groups[group_index].append(destination)
+            stores[cluster] = destination
         _transfer_partition_row(storage, entity, destination)
-    # Fill earlier blocks from the final block of the SAME logical cluster.
-    # No locations or pending row indices survive a transfer.
-    for ref indices in groups:
-        var left = 0
-        var right = len(indices) - 1
-        while left < right:
-            var destination = indices[left]
-            var source = indices[right]
-            if len(storage._archetypes[destination]) == limit:
-                left += 1
-            elif len(storage._archetypes[source]) == 0:
-                right -= 1
-            else:
-                var entity = storage._archetypes[source].get_entity(
-                    len(storage._archetypes[source]) - 1
-                )
-                _transfer_partition_row(storage, entity, destination)
     # Replacing empty storage destroys its allocations, never live values.
     for index in range(len(storage._archetypes)):
         if len(storage._archetypes[index]) != 0:
