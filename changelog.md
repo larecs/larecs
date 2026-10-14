@@ -4,11 +4,11 @@
 
 ### Added
 
-- Add opt-in cluster-local partition blocks beneath logical component-defined
-  archetypes, with staged structural writes, typed transfers, local compaction,
+- Add opt-in growable cluster-local partitions beneath logical component-defined
+  archetypes, with staged structural writes, typed transfers, source swap-removal,
   allocation reclamation, and exact locked `SystemContext.select_cluster`
   membership. Ordinary queries, bulk changes, and CPU/GPU execution traverse
-  blocks while preserving entity locations and component lifetimes. Retain
+  cluster stores while preserving entity locations and component lifetimes. Retain
   deferred row reordering as the default; add paired maintenance/scan/cell-frame
   benchmarks and capacity-derived memory evidence for both layouts.
 
@@ -31,6 +31,10 @@
   reusable CPU/GPU kernel execution over exact selected rows.
 
 ### Changed
+
+- Remove spatial `block_capacity`: each logical archetype/cluster now owns one
+  contiguous growable store. Classifier configuration controls cluster granularity;
+  keep staging, typed transfers, exact selections, and empty-store reclamation.
 
 - Defer spatial classification until explicit maintenance, deduplicating dirty
   entity identities across mutable input references, setters, CPU kernels,

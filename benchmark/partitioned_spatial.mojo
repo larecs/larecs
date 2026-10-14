@@ -72,7 +72,7 @@ def prepare(
         rows: Power-of-two row count.
         group: Identities per cluster across both logical archetypes.
         stride: Key gaps for sparse cells.
-        partitioned: Choose cluster blocks or the current reordering control.
+        partitioned: Choose growable cluster stores or the current reordering control.
 
     Raises:
         Error: If setup or initial maintenance fails.
@@ -134,7 +134,6 @@ def validate(
         assert_equal(block.get_entity(location.entity_index), entity)
         if world.storage._spatial_partitioned:
             assert_equal(block._partition_key.value(), UInt64(expected))
-            assert_true(len(block) <= 256)
         count += 1
     assert_equal(count, rows)
     if not world.storage._spatial_partitioned:
