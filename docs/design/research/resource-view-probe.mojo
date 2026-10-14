@@ -1,45 +1,129 @@
-"""Probe portable resource descriptors using manual storage and transfer binding.
+"""Integrated scientific-grid probe for decision 0018.
 
 Run with `pixi run mojo run -I src docs/design/research/resource-view-probe.mojo`.
-This is research evidence, not a resource adapter API. Requires a working GPU;
-build without debug info because of the documented Apple compiler issue.
+Requires a working GPU; build without debug info on Apple Metal.
 """
 
 from std.sys import has_accelerator
-from std.testing import assert_equal, assert_true
-from larecs import World, SystemContext, KernelContext, Filter, Resources
+from std.testing import assert_equal, assert_false
+from larecs import (
+    World,
+    SystemContext,
+    KernelContext,
+    Filter,
+    Resources,
+    DevicePassableResource,
+    ResourceAdapter,
+    ResourceDeviceCache,
+)
 from larecs.resource import constrain_device_safe_resources
 
 
 @fieldwise_init
-struct Samples(Copyable, Movable):
+struct Samples(DevicePassableResource):
+    """Owns current host samples and grid metadata."""
+
+    comptime KernelView = SamplesView
+    comptime Adapter = SamplesAdapter
     var values: List[Int32]
+    var width: Int
+    var height: Int
 
 
 @fieldwise_init
-struct SamplesView(Copyable, TrivialRegisterPassable):
+struct SamplesView(TrivialRegisterPassable):
+    """Portable read-only descriptor over current target-local samples."""
+
     var values: Pointer[Int32, ImmUntrackedOrigin]
     var width: Int
     var height: Int
 
     def last(self) -> Int32:
-        """Reads the last sample in a nonempty rectangular grid.
+        """Reads the last sample of this validated nonempty grid.
 
         Returns:
-            The sample at `width * height - 1`.
+            Last grid sample.
         """
         return self.values[unsafe_offset=self.width * self.height - 1]
 
 
-def sample_kernel(
-    context: KernelContext[Filter().include[Int32](), Resources[SamplesView]()]
-):
-    """Adds the last sample to each selected component on either target.
+struct SamplesAdapter(ResourceAdapter):
+    """Stateless adapter using current dimensions and cached sample capacity."""
+
+    comptime Source = Samples
+    comptime View = SamplesView
+
+    @staticmethod
+    def validate(source: Self.Source) raises:
+        """Checks a nonempty rectangular grid before preparing either target.
+
+        Args:
+            source: Current host owner.
+
+        Raises:
+            Error: If dimensions overflow or do not match sample storage.
+        """
+        if source.width <= 0 or source.height <= 0:
+            raise Error("This grid requires positive dimensions")
+        if source.width > 9223372036854775807 // source.height:
+            raise Error("Grid dimensions overflow")
+        if source.width * source.height != len(source.values):
+            raise Error("Grid dimensions must match sample count")
+
+    @staticmethod
+    def bind_host(source: Self.Source) raises -> Self.View:
+        """Borrows immutable samples from the validated host owner.
+
+        Args:
+            source: Current validated source.
+
+        Raises:
+            Error: If descriptor preparation fails.
+
+        Returns:
+            Descriptor over host samples.
+        """
+        return {
+            Pointer[Int32, ImmUntrackedOrigin](
+                unsafe_from_address=Int(source.values.unsafe_ptr())
+            ),
+            source.width,
+            source.height,
+        }
+
+    @staticmethod
+    def prepare_device(
+        source: Self.Source, mut cache: ResourceDeviceCache
+    ) raises -> Self.View:
+        """Uploads current samples and returns the same descriptor type.
+
+        Args:
+            source: Current validated source.
+            cache: Source-type, context-local allocation cache.
+
+        Raises:
+            Error: If sample allocation or upload fails.
+
+        Returns:
+            Descriptor over device samples.
+        """
+        return {
+            cache.upload[Int32](0, Span(source.values)),
+            source.width,
+            source.height,
+        }
+
+
+comptime required = Resources().read[Samples]()
+
+
+def sample_kernel(context: KernelContext[Filter().include[Int32](), required]):
+    """Adds the last sample through the source-oriented getter on either target.
 
     Args:
-        context: Matching components and a manually bound sample descriptor.
+        context: Matching component rows and the portable grid view.
     """
-    var sample = context.resources.get[SamplesView]().last()
+    var sample = context.resources.get[Samples]().last()
     for entity in context:
         entity.get[Int32]() += sample
 
@@ -48,11 +132,11 @@ def check_components(mut world: World[Int32], expected: Int32) raises:
     """Checks every component after synchronous execution.
 
     Args:
-        world: World whose components should all match.
+        world: Authoritative host world.
         expected: Required component value.
 
     Raises:
-        Error: If any component differs.
+        Error: If a component differs or row count is incorrect.
     """
     var count = 0
     for entity in world.storage.query[Filter().include[Int32]()]():
@@ -62,75 +146,23 @@ def check_components(mut world: World[Int32], expected: Int32) raises:
 
 
 def main() raises:
-    """Checks one descriptor and kernel on host, GPU, then host again.
+    """Checks automatic registration and one kernel on host, GPU, then host.
 
     Raises:
         Error: If GPU execution is unavailable or a result differs.
     """
     comptime assert has_accelerator(), "This probe requires GPU support"
-    # Trivial movability does not establish deep-transfer safety: the locked
-    # compiler accepts this List-owning resource too. Never upload Samples.
-    assert_true(constrain_device_safe_resources[Samples]())
-    assert_true(constrain_device_safe_resources[SamplesView]())
+    assert_false(constrain_device_safe_resources[Samples]())
+    assert_false(constrain_device_safe_resources[SamplesView]())
     var world = World[Int32]()
-    if world._device_storage is None:
-        raise Error("This probe requires a working GPU device context")
-    var values: List[Int32] = [1, 2, 3, 9]
-    world.resources.add(Samples(values^))
-    var host_address = Int(world.resources.get[Samples]().values.unsafe_ptr())
-    world.resources.add(
-        SamplesView(
-            Pointer[Int32, ImmUntrackedOrigin](
-                unsafe_from_address=host_address
-            ),
-            2,
-            2,
-        )
-    )
+    world.resources.add(Samples([Int32(1), Int32(2), Int32(3), Int32(9)], 2, 2))
     _ = world.storage.add_entities(Int32(1), count=37)
     var context = SystemContext(world)
     context.run[sample_kernel]()
     check_components(world, 10)
-
-    # Manual relocation proves the representation only. A production binding
-    # must own this buffer and keep the source/descriptor alive even on failure.
-    var device_context = world._device_storage[]._device_context
-    var buffer = device_context.enqueue_create_buffer[DType.int32](4)
-    try:
-        buffer.enqueue_copy_from(
-            Pointer[Int32, ImmUntrackedOrigin](unsafe_from_address=host_address)
-        )
-        var device_address = Int(buffer.device_ptr().buffer().unsafe_ptr())
-        world.resources.set(
-            SamplesView(
-                Pointer[Int32, ImmUntrackedOrigin](
-                    unsafe_from_address=device_address
-                ),
-                2,
-                2,
-            )
-        )
-        context.run[sample_kernel, on_device=True]()
-        check_components(world, 19)
-    finally:
-        device_context.synchronize()
-        # The current executor downloads even a read-only descriptor. Restore
-        # its host pointer before allowing any subsequent host execution.
-        world.resources.set(
-            SamplesView(
-                Pointer[Int32, ImmUntrackedOrigin](
-                    unsafe_from_address=host_address
-                ),
-                2,
-                2,
-            )
-        )
+    context.run[sample_kernel, on_device=True]()
+    check_components(world, 19)
     context.run[sample_kernel]()
     check_components(world, 28)
     assert_equal(world.resources.get[Samples]().values[3], 9)
-    # Keep the device allocation visibly live through completion.
-    assert_equal(len(buffer), 4)
-    print(
-        "PASS: identical resource view and KernelContext kernel on"
-        " host/GPU/host"
-    )
+    print("PASS: source-oriented grid view and identical host/GPU/host kernel")

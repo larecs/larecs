@@ -51,65 +51,25 @@ selected mutation chains, and a selected device case.
   from tests or benchmarks skipped because hardware is unavailable.
 - [ ] Investigate material regressions before closing the selection migration.
 
-### Repair ECS-08 resource-transfer validation
+### Scientific resource integration
 
-The current validator accepts a resource owning a `List` because it checks
-trivial movability rather than safe raw-byte representation. This is a bug
-against accepted [ECS-08](design/requirements.md#implementation-status), independent
-of proposed decision 0018 or any future eligibility policy. The
-[descriptor probe](design/research/resource-view-probe.mojo) reproduces acceptance
-without attempting to transfer or dereference the owning container on the device.
-
-- [ ] Repair raw-byte resource validation before the next release, independently
-  of adapter implementation. Reject unsupported owning/host-pointer resources
-  and add positive/negative regressions for nested ownership and supported plain
-  values. Document any necessary beta migration; keeping today's validator is
-  not an acceptable way to satisfy ECS-08.
-
-### Support heap-backed device resources
-
-Follow [proposed decision 0018](design/decisions/0018-portable-resource-adapters.md)
-and [decision 0002](design/decisions/0002-gpu-system-execution.md). Implement the
-following gates in order. The proposal remains unaccepted and unimplemented.
-
-1. [ ] Add `read` access for ordinary resources and skip its device download in
-   both ordinary and selected execution. Preserve `Resources[T]()` as
-   `read_write[T]` and existing ordinary-resource transfer behavior. Define host
-   write-only set access; reject new device `write` declarations before work
-   until shared initialization/publication semantics are designed.
-2. [ ] Validate full automatic registration and source-oriented getter resolution
-   with the locked compiler: broad-bound trait checks, associated adapter/view
-   types, add/insert-on-set, copied metadata, and adapted `get[T]()` returning only
-   `T.KernelView` on both targets. Reject adapted mutable/legacy declarations.
-   If compiler integration fails, revise the API to explicit typed registration
-   before accepting the design. The isolated
-   [CPU probe](design/research/resource-trait-dispatch-probe.mojo) passed; this
-   integration gate has not.
-3. [ ] Integrate stateless adapter operations with one context-local buffer cache
-   per source type. Validate/prepare from the current source every invocation;
-   test sample edits, growth/shrinkage, whole-instance assignment through mutable
-   `get[T]()`, and `set` without rebinding. Keep source-keyed conflicts, view-only
-   kernel access, wrappers for third-party sources, and empty-match validation.
-4. [ ] Prove source/allocation leases, reentrant mutation rejection, copied-world
-   empty caches, and drain/unknown-completion failure handling. Validate ordinary
-   and selected host/device execution on actual hardware, then publish guides
-   and measure unchanged plain-resource calls and complete adapter invocations,
-   including compilation, transfers, growth, and synchronization. Validate
-   Tree-D's actual representation before claiming application compatibility.
-
-Preserve the documented `ResourceStorage.get` `UnsafeAnyOrigin` contract until
-Mojo can express its separately allocated ownership. The gates above do not
-claim that a roadmap entry or an isolated probe establishes implementation.
+- [ ] Validate Tree-D's actual sample representation, indexing, and empty-grid
+  semantics against [decision 0018](design/decisions/0018-portable-resource-adapters.md).
+  The read-only contiguous-buffer API is implemented; application compatibility
+  and shading performance need application source and measurements.
 
 ## Later — lower priority
 
 ### Broader resource adaptation
 
+- [ ] Design writable adapted resources and complete-initialization semantics for
+  write-only shared device values before exposing either access path.
+
 - [ ] Evaluate shared immutable preprocessing/configuration, construction-input
   caching, and explicit adapter overrides only when measured application costs
   justify a separate ownership/API design. These are outside 0018's first increment.
-- [ ] Evaluate `TileTensor` compatibility and `Dict` serialization after the
-  read-only contiguous-buffer model is implemented; reject unsupported
+- [ ] Evaluate `TileTensor` compatibility and `Dict` serialization beyond the
+  implemented read-only contiguous-buffer model; reject unsupported
   representations clearly and document validated host/device limits.
 
 ### Performance regression coverage

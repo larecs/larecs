@@ -225,20 +225,108 @@ To run this same kernel on a device, replace its host `run` call with:
     context.run[move_with_time, on_device=True]()
 ```
 
-For device execution, accessed components must conform to
-`TrivialRegisterPassable`; required resources must satisfy
-`is_trivially_movable`. Resources do not need to declare
-`TrivialRegisterPassable` themselves. Larecs copies each resource's bytes to
-the device before execution and back afterward, including kernel changes.
+For device execution, components must conform to `TrivialRegisterPassable`.
+Ordinary resources need a supported pointer-free representation with trivial
+copy, move, and destruction. Numeric values, `Bool`, and aggregates of those
+values are accepted without declaring `TrivialRegisterPassable`. Owning
+collections, host pointers, and opaque representations (including fixed `Array`
+fields in this increment) are rejected. Host kernels still support owning resources.
 
-Trivial movability does **not** make host heap allocations accessible to the
-device. The transfer does not follow pointers, copy `List` or `Dict` contents,
-or invoke `DevicePassable` encoding. Do not pass host-backed collections or
-host-side `TileTensor` descriptors as resources through this path. They need
-an explicit device representation and transfer support, which this API does
-not yet provide. The current validator can accept a List-owning resource as
-trivially movable; passing validation is not proof that its storage is usable
-on the device. Heap-backed resources remain supported in host kernels.
+## Resource permissions
+
+`Resources[T]()` preserves `read_write` access. Prefer explicit declarations:
+
+```mojo
+comptime required = Resources().read[Time]().read_write[Statistics]()
+```
+
+A `read` getter is immutable and its device buffer is never downloaded.
+`read_write` permits mutable `get[T]()` and copies device changes back after
+successful completion. Host `write[T]()` offers `set[T](value)` only; it rejects
+`get[T]()`. Device write-only resources are unsupported because conditional
+shared writes could publish uninitialized data. Applications must synchronize
+concurrent writes to ordinary shared resources themselves.
+
+## Portable owning resources
+
+Use `BufferResource` for a contiguous scalar collection. The same kernel requests
+the original source type and receives its read-only `ReadBuffer` view on both
+backends:
+
+```mojo
+from larecs import BufferResource, Filter, KernelContext, Resources, SystemContext, World
+
+comptime Samples = BufferResource[DType.int32]
+comptime required = Resources().read[Samples]()
+
+def add_sample(context: KernelContext[Filter().include[Int32](), required]):
+    ref samples = context.resources.get[Samples]()
+    for entity in context:
+        entity.get[Int32]() += samples[0]
+
+def main() raises:
+    var world = World[Int32]()
+    world.resources.add(Samples([Int32(7), Int32(8)]))
+    _ = world.storage.add_entities(Int32(1), count=37)
+    var context = SystemContext(world)
+    context.run[add_sample]()
+    context.run[add_sample, on_device=True]()
+    world.resources.get[Samples]().samples[0] = 9
+    context.run[add_sample]()
+```
+
+Device execution requires a working accelerator. Samples are uploaded every
+invocation; device allocation capacity is reused. The host source remains
+unchanged by device view access. `ReadBuffer` has `len` and bounds-checked
+indexing; empty buffers have length zero and must not be indexed.
+
+For a scientific owner, implement `DevicePassableResource` and declare
+`KernelView` and `Adapter`. Its stateless `ResourceAdapter` declares matching
+`Source` and `View` types and implements:
+
+| Method | Responsibility |
+| --- | --- |
+| `validate(source)` | Check dimensions, overflow, sample counts, and scientific invariants before any queue work. |
+| `bind_host(source)` | Return the view borrowing immutable current host samples. |
+| `prepare_device(source, cache)` | Upload current samples with `cache.upload[T](slot, Span(...))` and return a device-local view. |
+
+Use nonnegative cache slots for sample allocations. Slot `-1` is reserved for
+Larecs's view descriptor. The cache accepts supported pointer-free trivial sample
+values, snapshots them in native owned staging, and returns an immutable device
+pointer. Adapters must use cache-owned allocations and this upload helper;
+queued copies from external host pointers or pointers to temporary allocations
+violate the lifetime contract. Views may contain immutable pointers and trivial
+metadata; mutable pointer fields are rejected. Adapters remain responsible for
+valid device addresses and pointee interpretation.
+
+There is no adapter factory or instance. Registration happens automatically on
+`add` and insert-on-`set`; source types identify bindings, so two resources may
+share the same view type. A wrapper can adapt a third-party owner. See the
+[compiled grid example](../../design/research/resource-view-probe.mojo).
+
+Only `read` is supported for adapted sources, including host execution.
+`Resources[AdaptedSource]()` and mutable declarations fail compilation.
+`get[Source]()` always returns the associated view; kernels cannot access the
+owner. Edit the world-side owner between runs, including whole-instance
+assignment through `world.resources.get[T]() = T(...)`; the next run validates
+and uploads the new source without rebinding. Copied worlds have independent host
+owners and empty resource caches.
+
+## Invocation lifetime and failures
+
+`run` completes synchronously. Larecs retains sources and descriptors throughout
+execution, rejects reentrant lookup/replacement/removal of bound sources, and
+rejects duplicate source declarations. Previously escaped `UnsafeAnyOrigin`
+references must not mutate or resize the source while a kernel uses its view;
+views and references must not escape the invocation. Copying or destroying leased
+storage through an escaped alias aborts because lifecycle operations cannot raise.
+
+Device component, capture, and resource downloads use owned staging and publish
+only after synchronization succeeds. On failure Larecs drains the queue and
+propagates the error; if completion remains unknown, further execution on the
+world raises. Failed calls discard staged outputs, without promising rollback of
+other host effects. Empty device matches still validate resources and adapters
+but perform no device allocation, upload, or launch.
 
 ## Removing resources
 
