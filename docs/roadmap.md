@@ -79,12 +79,16 @@ portability, not an integrated adapter API.
 - [ ] Define explicit default-adapter eligibility and compatibility policy;
   reject unsupported ownership/pointers clearly rather than treating trivial
   movability as sufficient evidence of device safety.
-- [ ] Add source-oriented compile-time resource declarations and getter result
-  resolution: adapted `read[T]`/`get[T]()` expose immutable `T.KernelView` on both
-  targets, while host storage and mutable host declarations retain `T`. Validate
-  and transfer resolved descriptor types, preserving source-based binding and
-  lease identity. Reject unsupported device write modes, duplicate source
-  bindings, and conflicting read/mutable declarations before preparation.
+- [ ] Add `Resources().read[T]()`, `.write[T]()`, and `.read_write[T]()`
+  declarations, keeping `Resources[T]()` equivalent to `read_write`. For ordinary
+  resources, skip the device download for `read`, skip the upload and reject
+  `get` for `write`, and otherwise keep existing behavior.
+- [ ] Add source-oriented getter resolution: for a `DevicePassableResource`,
+  `read[T]`/`get[T]()` exposes immutable `T.KernelView` on both targets, and
+  `write`, `read_write`, and legacy `Resources[T]()` are compile errors with a
+  diagnostic. Host storage access retains `T`. Validate and transfer resolved
+  descriptor types, preserving source-based binding and lease identity. Reject
+  duplicate declarations of one source in any combination of modes.
 - [ ] Validate getter return types with the locked compiler and negative access
   checks. Cover nontrivially movable sources with valid views, source types sharing
   a view type, host/device parity, undeclared view-type getters, and explicit

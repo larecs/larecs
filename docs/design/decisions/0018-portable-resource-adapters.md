@@ -188,23 +188,51 @@ the kernel selects a binding by source, not by view. An ordinary stored resource
 whose type happens to equal a view type does not collide with an associated
 view, which is never inserted into the public resource table.
 
+### Access vocabulary
+
+Resource declarations use three access modes, named consistently on host and
+device:
+
+| Declaration | Kernel access | Device transfer for a bytewise resource |
+| --- | --- | --- |
+| `Resources().read[T]()` | Immutable `get[T]()` | Upload; no download. |
+| `Resources().write[T]()` | `set[T](value)` only; `get[T]()` is a compile error | No upload; download after the kernel. |
+| `Resources().read_write[T]()` | Mutable `get[T]()` | Upload and download. |
+
+`write` is write-only, matching `Filter.write`: the kernel never observes the
+prior value. None of these modes makes concurrent GPU writes to one shared
+value safe. The existing `Resources[T]()` form remains valid and is equivalent
+to `read_write[T]`.
+
 ### Kernel access resolution
 
 Kernel declarations and getters name the **original resource type**. Resolve the
 representation at compile time from that type's capability and declared access:
 
-| Access site/declaration | Getter result | Execution support |
+| Resource type and declaration | Getter result | Execution support |
 | --- | --- | --- |
-| Kernel `read[T]`, with `T: DevicePassableResource` | Immutable reference to `T.KernelView` | Same descriptor type and API on host and device; the adapter supplies target-local storage. |
-| Kernel `read[T]`, ordinary resource | Immutable reference to `T` | Direct host borrowing; device use requires an audited bytewise representation. |
-| Kernel mutable declaration of a `DevicePassableResource` | Mutable reference to the original `T` on host | Device execution rejects this mode in the initial read-only adapter implementation. |
-| Kernel mutable declaration of an ordinary resource | Mutable reference to `T` | Existing host behavior; device use requires supported bytewise transfer. |
+| `DevicePassableResource`, `read[T]` | Immutable reference to `T.KernelView` | Same descriptor type and API on host and device; the adapter supplies target-local storage. |
+| `DevicePassableResource`, `write[T]`, `read_write[T]`, or `Resources[T]()` | Compile error | Reserved for future writable views on both targets. |
+| Ordinary resource, any mode | `T`, with the declared mutability | Unchanged host behavior; device use keeps today's bytewise transfer, with `read` skipping its download. |
 | `world.resources.get[T]()` | Reference to the original authoritative host `T`, with storage-access mutability | Host editing API, outside the kernel adapter mapping. |
 
-The getter's return type is a function of the compile-time resource declaration,
-not the selected backend or the state of a runtime registry. For a read-only
-adapted resource, host execution must also bind `T.KernelView`, even if directly
-borrowing `T` would be possible there. This preserves one kernel implementation.
+**Resources that do not implement `DevicePassableResource` are unaffected.**
+They keep their existing storage, getter, and device transfer behavior; the
+access modes only add read-only download skipping and write-only access.
+
+**Resources that implement `DevicePassableResource` must use the new
+convention.** A kernel can access them only through a view. In the initial
+implementation, only `read[T]` is accepted. The legacy `Resources[T]()` form
+is equivalent to `read_write[T]`, so it is rejected for these types too. The
+diagnostic names the resource and the supported mode. No mode falls back to
+borrowing the owning source in a host kernel. Host code edits the source
+outside kernels through `world.resources.get[T]()`.
+
+As a result, the getter's return type depends only on the resource type and the
+compile-time declaration, never on the selected backend or the state of a
+runtime registry. An adapted resource always yields `T.KernelView`, so changing
+the target or access mode never changes the kernel-facing type. Host execution
+also binds `T.KernelView`, even where borrowing `T` directly would be possible.
 `get[T]()` checks membership against the original declared `T`. When its
 associated view is a distinct type, `read[T]` does not also authorize
 `get[T.KernelView]()`. An adapted read exposes the view rather than the owning
@@ -237,17 +265,13 @@ must also expose immutable pointees; immutable access to a descriptor containing
 a mutable pointer is insufficient. View implementers must not provide a safe
 mutation escape hatch. Unsafe pointer casts retain the usual unsafe contract.
 
-Preserve existing `Resources[T]()` as a legacy read/write declaration; it does
-not implicitly request a read-only view. Read-only adaptation is selected only
-by an explicit `read[T]` declaration. Preserve direct mutable host access for
-that legacy mode, including adapted source types, but reject device write or
-read_write requests for adapted sources before any transfer or launch. Do not
-fall back to raw-byte source transfer for unsupported mutable adapter modes.
-Resolve access by **source identity**, not view type: read-only and mutable
-declarations for the same source conflict and cannot produce an ambiguous
-getter result. Reject duplicate declarations rather than silently creating two
-independently mutable replicas. Future writable views need an explicit access
-and migration design before changing this return-type table.
+Reject unsupported modes for adapted sources at compile time, before any
+transfer or launch. Do not fall back to raw-byte source transfer. Resolve access
+by **source identity**, not view type: two declarations of the same source,
+in the same or different modes, are rejected. They cannot produce an ambiguous
+getter result or two independently mutable replicas. Future writable views
+need an explicit access and migration design before `write` or `read_write`
+become valid for adapted resources.
 
 The initial binding operates within one world and synchronous invocation.
 Cross-world shared sources, arbitrary aliases through captures, and externally
@@ -416,12 +440,13 @@ and negative-test evidence before adoption as an accepted requirement.
   capacity. Neither a speedup nor Tree-D integration has been measured.
 - Registration and preparation add work to the invocation boundary. Keep the
   no-adapter path cheap and measure both setup and complete execution.
-- Resource mutation/copy rules and compile-time access declarations are new
-  contracts. Preserve legacy behavior or document an intentional beta migration.
-- Explicit read declarations of adapted resources return their associated view;
-  mutable host declarations and host storage access still return the source.
-  Changing a declaration's access mode may therefore change its static result
-  type. Backend selection does not change it.
+- Resource mutation/copy rules and the `read`/`write`/`read_write` access
+  declarations are new contracts. Existing `Resources[T]()` declarations of
+  ordinary resources keep their behavior as `read_write`.
+- Implementing `DevicePassableResource` opts a type into the new convention.
+  Kernels see only its view, initially read-only. Existing kernels that declare
+  such a type as `Resources[T]()` or need write access must migrate or stop
+  using the trait. Host storage access still returns the source.
 - `DevicePassableResource`, associated types, and automatic binding registration
   are proposed APIs, not implemented features. Host-only resources keep their
   existing storage contract; unsupported device requests need a clear diagnostic.
