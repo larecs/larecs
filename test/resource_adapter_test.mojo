@@ -509,6 +509,7 @@ def test_unknown_completion_poisoning() raises:
                 world.resources,
                 device_context,
                 Error("Injected operation failure"),
+                world._execution_unusable,
             )
         except error:
             assert_true(String(error).find("Injected operation failure") >= 0)
@@ -527,6 +528,17 @@ def test_unknown_completion_poisoning() raises:
             context.run[empty]()
         with assert_raises():
             context.run[empty, on_device=True]()
+        # Replacing a public container cannot repair an unknown device queue.
+        world.resources = ResourceStorage()
+        assert_false(world.resources._poisoned)
+        with assert_raises():
+            context.run[empty]()
+        with assert_raises():
+            context.run[empty, on_device=True]()
+        var selection = context._empty_selection()
+        with assert_raises():
+            selection.run[empty]()
+        selection^.release()
 
 
 def test_context_mismatch_preflight() raises:

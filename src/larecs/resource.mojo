@@ -793,7 +793,10 @@ def _synchronize_queue(context: DeviceContext) raises:
 def _drain_failed_device[
     Sync: def(DeviceContext) raises thin -> None = _synchronize_queue
 ](
-    mut resources: ResourceStorage, context: DeviceContext, var error: Error
+    mut resources: ResourceStorage,
+    context: DeviceContext,
+    var error: Error,
+    mut world_unusable: Bool,
 ) raises:
     """Drains failed work, poisoning execution if completion remains unknown.
 
@@ -801,9 +804,10 @@ def _drain_failed_device[
         Sync: Queue completion operation; substitutable for deterministic tests.
 
     Args:
-        resources: Storage containing the world's execution health flag.
+        resources: Source storage disabled after unconfirmed completion.
         context: Queue used by the failed invocation.
         error: Original failure, preserved when draining succeeds.
+        world_unusable: World-level flag retained across resource-table replacement.
 
     Raises:
         Error: Original failure or combined operation/completion failures.
@@ -811,6 +815,7 @@ def _drain_failed_device[
     try:
         Sync(context)
     except drain_error:
+        world_unusable = True
         resources._poisoned = True
         raise Error(
             t"Device failure: {String(error)}; completion unconfirmed:"

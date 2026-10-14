@@ -47,6 +47,9 @@ struct World[*component_types: ComponentType](Copyable, Sized):
     var _device_storage: Optional[Self.DeviceComponentStorage]
     """[..device_storage.DeviceComponentStorage Component Storage] associated with the world."""
 
+    var _execution_unusable: Bool
+    """Completion health retained even if the public resource table is replaced."""
+
     var resources: ResourceStorage  # The resources of the world.
     """[..resource.ResourceStorage Resource Storage] associated with the world."""
 
@@ -59,12 +62,22 @@ struct World[*component_types: ComponentType](Copyable, Sized):
     ]
     """Typed maintenance adapter paired with the policy box."""
 
+    def _check_execution(self) raises:
+        """Rejects execution after device completion could not be confirmed.
+
+        Raises:
+            Error: If a previous queue failure made this world unusable.
+        """
+        if self._execution_unusable:
+            raise Error("World is unusable after unconfirmed device completion")
+
     def __init__(out self):
         """
         Creates a new [.World].
         """
         with Zone(function_name="World.__init__()"):
             self.storage = Self.HostStorage()
+            self._execution_unusable = False
             self._spatial_classifier = None
             self._spatial_maintenance = None
 

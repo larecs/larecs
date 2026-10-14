@@ -513,6 +513,7 @@ struct EntitySelection[
         Raises:
             Error: If bindings or resources are invalid, or device execution fails.
         """
+        self._world[]._check_execution()
         _validate_resource_spec[required_resources, on_device]()
         var host_captures = _bind_captures[capture_spec](*bindings)
         comptime if not has_accelerator() or not on_device:
@@ -681,6 +682,7 @@ struct EntitySelection[
                     self._world[].resources,
                     device_storage._device_context,
                     error^,
+                    self._world[]._execution_unusable,
                 )
             finally:
                 resource_binding.release()
@@ -715,6 +717,7 @@ struct EntitySelection[
         Raises:
             Error: If explicit bindings or required resources are invalid.
         """
+        self._world[]._check_execution()
         _validate_resource_spec[required_resources, on_device]()
         var host_captures = _bind_captures[capture_spec](*bindings)
         var resource_binding = _bind_host_resources[required_resources](
@@ -1384,6 +1387,7 @@ struct SystemContext[
                 t" Bool]()"
             )
         ):
+            self.world[]._check_execution()
             _validate_resource_spec[required_resources, on_device]()
             var host_captures = _bind_captures[capture_spec](*bindings)
             comptime if not has_accelerator() or not on_device:
@@ -1610,6 +1614,7 @@ struct SystemContext[
                         self.world[].resources,
                         device_storage._device_context,
                         error^,
+                        self.world[]._execution_unusable,
                     )
                 finally:
                     resource_binding.release()
@@ -1660,6 +1665,7 @@ struct SystemContext[
                 " Bool](kernel_func: KernelFunc)"
             )
         ):
+            self.world[]._check_execution()
             _validate_resource_spec[required_resources, on_device]()
             var host_captures = _bind_captures[capture_spec](*bindings)
             var resource_binding = _bind_host_resources[required_resources](
