@@ -18,7 +18,7 @@ struct _TransferFrame(Movable):
     """Stages queue IO in native owned buffers; publishes only after completion.
 
     Native buffer release is ordered after queued uses on its context stream.
-    No enqueued operation accesses caller-owned host memory.
+    Managed queued copies never reference caller-owned host memory.
     """
 
     var context: DeviceContext
