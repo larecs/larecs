@@ -30,9 +30,11 @@ from .resource import (
     Resources,
     ResourceType,
     ResourceStorage,
-    constrain_device_safe_resources,
+    _drain_failed_device,
+    _ResourceInvocation,
+    _validate_resource_spec,
 )
-from .device_storage import DeviceResourceStorage
+from .resource_adapter import DevicePassableResource, _TransferFrame
 from .gpu_launch import BLOCK_SIZE, gpu_grid_dim
 from .capture import (
     Captures,
@@ -155,35 +157,29 @@ def _finalize_system[
 
 @always_inline
 def _bind_host_resources[
-    required_resources: Resources
-](
-    mut resources: ResourceStorage,
-) raises -> ResourceAccessor[
-    required_resources
+    required_resources: Resources, origin: MutOrigin
+](ref[origin] resources: ResourceStorage) raises -> _ResourceInvocation[
+    required_resources, origin
 ]:
-    """Validates and binds resources once for a synchronous host invocation.
+    """Validates, leases, and prepares one synchronous host invocation.
 
     Parameters:
-        required_resources: Ordered resource types required by the kernel.
+        required_resources: Ordered source and access declarations.
+        origin: Borrow keeping resource storage alive through the invocation.
 
     Args:
-        resources: World-owned resources borrowed throughout execution.
+        resources: World-owned source storage.
 
     Raises:
-        Error: If a required resource is missing.
+        Error: If validation or host preparation fails.
 
     Returns:
-        Resource pointers shared by every matching execution range.
+        Descriptor owners and source leases retained until explicit release.
     """
-    var pointers = ResourceAccessor[required_resources].Pointers(
-        uninitialized=True
-    )
-    comptime for i in range(len(required_resources)):
-        comptime T = required_resources.ResourceTypes[i]
-        pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
-            unsafe_from_address=Int(Pointer(to=resources.get[T]()))
-        )
-    return ResourceAccessor[required_resources](pointers^)
+    _validate_resource_spec[required_resources, False]()
+    var binding = _ResourceInvocation[required_resources, origin](resources)
+    binding.bind_host()
+    return binding^
 
 
 @always_inline
@@ -517,10 +513,14 @@ struct EntitySelection[
         Raises:
             Error: If bindings or resources are invalid, or device execution fails.
         """
+        _validate_resource_spec[required_resources, on_device]()
         var host_captures = _bind_captures[capture_spec](*bindings)
         comptime if not has_accelerator() or not on_device:
-            var resource_accessor = _bind_host_resources[required_resources](
+            var resource_binding = _bind_host_resources[required_resources](
                 self._world[].resources
+            )
+            var resource_accessor = ResourceAccessor[required_resources](
+                resource_binding.pointers.copy()
             )
             comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
             for selected_range in self._ranges:
@@ -547,6 +547,7 @@ struct EntitySelection[
                         host_captures,
                     )
                 )
+            resource_binding.release()
         else:
             var matching_ranges = List[EntityRange]()
             var total_length = 0
@@ -567,12 +568,6 @@ struct EntitySelection[
                 "EntitySelection.run(..., on_device=True) requires every"
                 " accessed component type to be device-safe."
             )
-            comptime assert constrain_device_safe_resources[
-                *required_resources.ResourceTypes
-            ](), (
-                "EntitySelection.run(..., on_device=True) requires every"
-                " required resource type to be trivially movable."
-            )
             if not self._world[]._device_storage:
                 raise Error(
                     "EntitySelection.run(..., on_device=True) requires a"
@@ -581,109 +576,114 @@ struct EntitySelection[
 
             # Required resources and explicit bindings remain validated even
             # when the range/filter intersection is empty.
+            var resource_binding = _ResourceInvocation[
+                required_resources, origin_of(self._world[].resources)
+            ](self._world[].resources)
+            resource_binding.validate_device(
+                self._world[]._device_storage[]._device_context
+            )
             if total_length == 0:
-                comptime for i in range(len(required_resources)):
-                    comptime T = required_resources.ResourceTypes[i]
-                    _ = Pointer(to=self._world[].resources.get[T]())
+                resource_binding.release()
                 return
 
             ref device_storage = self._world[]._device_storage[]
-            var device_captures = DeviceCaptureStorage[capture_spec](
-                device_storage._device_context, host_captures
-            )
-            var capture_pointers = HostKernelContext[
-                filter, required_resources, capture_spec
-            ].CaptureBuffers(uninitialized=True)
-            comptime for i in range(len(capture_spec)):
-                capture_pointers[i] = rebind[
-                    DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
-                ](device_captures._buffers[i].unsafe_value().device_ptr())
-
-            var device_resources = DeviceResourceStorage[required_resources](
-                device_storage._device_context
-            )
-            var resource_pointers = HostKernelContext[
-                filter, required_resources, capture_spec
-            ].ResourceBuffers(uninitialized=True)
-            comptime for i in range(len(required_resources)):
-                comptime T = required_resources.ResourceTypes[i]
-                device_resources.upload[T](self._world[].resources.get[T]())
-                resource_pointers[i] = device_resources.get_device_ptr[T]()
-
-            var kernel_columns = HostKernelContext[
-                filter, required_resources, capture_spec
-            ].Columns(uninitialized=True)
-            comptime for i in range(len(filter)):
-                comptime T = filter._include.ComponentTypes[i]
-                comptime if filter.reads[T]:
-                    var packed_offset = 0
-                    for selected_range in matching_ranges:
-                        ref archetype = (
-                            self._world[].storage._archetypes.unsafe_get(
-                                selected_range.archetype_index
+            var frame = _TransferFrame(device_storage._device_context)
+            var device_captures = DeviceCaptureStorage[capture_spec]()
+            try:
+                device_captures.prepare(
+                    device_storage._device_context, host_captures, frame
+                )
+                var capture_pointers = HostKernelContext[
+                    filter, required_resources, capture_spec
+                ].CaptureBuffers(uninitialized=True)
+                comptime for i in range(len(capture_spec)):
+                    capture_pointers[i] = rebind[
+                        DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
+                    ](device_captures._buffers[i].unsafe_value().device_ptr())
+                var resource_pointers = resource_binding.bind_device(
+                    device_storage._device_context, frame
+                )
+                var kernel_columns = HostKernelContext[
+                    filter, required_resources, capture_spec
+                ].Columns(uninitialized=True)
+                comptime for i in range(len(filter)):
+                    comptime T = filter._include.ComponentTypes[i]
+                    comptime if filter.reads[T]:
+                        var packed_offset = 0
+                        for selected_range in matching_ranges:
+                            ref archetype = (
+                                self._world[].storage._archetypes.unsafe_get(
+                                    selected_range.archetype_index
+                                )
                             )
-                        )
-                        var source = Span(
-                            unsafe_ptr=archetype._storage.get_component_ptr[
-                                T
-                            ]().unsafe_offset(selected_range.first_row),
-                            length=selected_range.row_count,
-                        )
-                        device_storage.copy_from_host[T](
-                            source, offset=packed_offset
-                        )
-                        packed_offset += selected_range.row_count
-                else:
-                    device_storage.ensure_column[T](total_length)
-                kernel_columns[i] = device_storage.get_device_ptr[T]()
-
-            var grid_dim = gpu_grid_dim(
-                total_length, device_storage._max_grid_dim
-            )
-            var kernel_context = HostKernelContext[
-                filter, required_resources, capture_spec
-            ](
-                kernel_columns^,
-                resource_pointers^,
-                capture_pointers=capture_pointers^,
-                length=Int32(total_length),
-                thread_count=Int32(grid_dim * BLOCK_SIZE),
-            )
-            device_storage._device_context.enqueue_function[KernelFunc](
-                kernel_context,
-                grid_dim=grid_dim,
-                block_dim=BLOCK_SIZE,
-            )
-
-            comptime for i in range(len(filter)):
-                comptime T = filter._include.ComponentTypes[i]
-                comptime if filter.writes[T]:
-                    var packed_offset = 0
-                    for selected_range in matching_ranges:
-                        self._world[].storage._mark_spatial_range[filter](
-                            selected_range.archetype_index,
-                            selected_range.first_row,
-                            selected_range.row_count,
-                        )
-                        ref archetype = (
-                            self._world[].storage._archetypes.unsafe_get(
-                                selected_range.archetype_index
+                            var source = Span(
+                                unsafe_ptr=archetype._storage.get_component_ptr[
+                                    T
+                                ]().unsafe_offset(selected_range.first_row),
+                                length=selected_range.row_count,
                             )
-                        )
-                        device_storage.copy_to_host[T](
-                            archetype._storage.get_component_ptr[
-                                T
-                            ]().unsafe_offset(selected_range.first_row),
-                            offset=packed_offset,
-                            length=selected_range.row_count,
-                        )
-                        packed_offset += selected_range.row_count
+                            device_storage.stage_from_host[T](
+                                frame, source, offset=packed_offset
+                            )
+                            packed_offset += selected_range.row_count
+                    else:
+                        device_storage.ensure_column[T](total_length)
+                    kernel_columns[i] = device_storage.get_device_ptr[T]()
 
-            comptime for i in range(len(required_resources)):
-                comptime T = required_resources.ResourceTypes[i]
-                device_resources.download[T](self._world[].resources.get[T]())
-            device_captures.copy_back(host_captures)
-            device_storage.synchronize()
+                var grid_dim = gpu_grid_dim(
+                    total_length, device_storage._max_grid_dim
+                )
+                var kernel_context = HostKernelContext[
+                    filter, required_resources, capture_spec
+                ](
+                    kernel_columns^,
+                    resource_pointers^,
+                    capture_pointers=capture_pointers^,
+                    length=Int32(total_length),
+                    thread_count=Int32(grid_dim * BLOCK_SIZE),
+                )
+                device_storage._device_context.enqueue_function[KernelFunc](
+                    kernel_context,
+                    grid_dim=grid_dim,
+                    block_dim=BLOCK_SIZE,
+                )
+
+                comptime for i in range(len(filter)):
+                    comptime T = filter._include.ComponentTypes[i]
+                    comptime if filter.writes[T]:
+                        var packed_offset = 0
+                        for selected_range in matching_ranges:
+                            self._world[].storage._mark_spatial_range[filter](
+                                selected_range.archetype_index,
+                                selected_range.first_row,
+                                selected_range.row_count,
+                            )
+                            ref archetype = (
+                                self._world[].storage._archetypes.unsafe_get(
+                                    selected_range.archetype_index
+                                )
+                            )
+                            device_storage.stage_to_host[T](
+                                frame,
+                                archetype._storage.get_component_ptr[
+                                    T
+                                ]().unsafe_offset(selected_range.first_row),
+                                offset=packed_offset,
+                                length=selected_range.row_count,
+                            )
+                            packed_offset += selected_range.row_count
+                resource_binding.download(frame)
+                device_captures.copy_back(host_captures, frame)
+                device_storage.synchronize()
+                frame.publish()
+            except error:
+                _drain_failed_device(
+                    self._world[].resources,
+                    device_storage._device_context,
+                    error^,
+                )
+            finally:
+                resource_binding.release()
 
     def run[
         filter: Filter,
@@ -715,9 +715,13 @@ struct EntitySelection[
         Raises:
             Error: If explicit bindings or required resources are invalid.
         """
+        _validate_resource_spec[required_resources, on_device]()
         var host_captures = _bind_captures[capture_spec](*bindings)
-        var resource_accessor = _bind_host_resources[required_resources](
+        var resource_binding = _bind_host_resources[required_resources](
             self._world[].resources
+        )
+        var resource_accessor = ResourceAccessor[required_resources](
+            resource_binding.pointers.copy()
         )
         comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
         for selected_range in self._ranges:
@@ -742,6 +746,8 @@ struct EntitySelection[
                     host_captures,
                 )
             )
+
+        resource_binding.release()
 
 
 @fieldwise_init
@@ -773,29 +779,91 @@ struct ResourceAccessor[resources: Resources](Copyable):
     var _pointers: Self.Pointers
     """Byte pointers to each resource's buffer, indexed by position in ``resources``."""
 
-    def get[T: ResourceType](self) -> ref[MutUntrackedOrigin] T:
-        """Returns the resource of type T.
+    comptime _writable[
+        T: ResourceType
+    ] = not Self.resources._readonly.Types.contains[
+        T
+    ]() and not Self.resources._writeonly.Types.contains[
+        T
+    ]()
 
-        Always returns a mutable reference, mirroring how
-        `EntityAccessor.get` exposes component columns: the backing
-        pointer is already untracked-mutable (it addresses either host
-        resource storage or an uploaded device buffer), regardless of
-        whether this accessor itself was reached through a mutable or
-        immutable `KernelContext` -- so a kernel can write a resource back
-        even though `KernelFunc`'s non-capturing overload takes its
-        `KernelContext` immutably.
+    def get[
+        T: ResourceType
+    ](self) -> ref[
+        UntrackedOrigin[mut=Self._writable[T]]
+    ] T where not conforms_to(T, DevicePassableResource):
+        """Gets an ordinary source using its declared access mode.
 
         Parameters:
-            T: The type of the resource to retrieve.
+            T: The original source type, never the associated view type.
 
         Returns:
-            The resource of type T.
+            An immutable read reference or mutable read_write reference.
+            References and descriptors must not escape the invocation.
+
+        Constraints:
+            T must be declared with read or read_write access.
         """
         comptime id = Self.resources.index_of[T]()
         comptime assert (
             id != -1
         ), "T must be part of the kernel's required_resources"
-        return self._pointers[id].unsafe_bitcast[T]()[]
+        comptime assert (
+            Self.resources._mode[T] != 2
+        ), "Write-only resources provide set, not get"
+        return (
+            self._pointers[id]
+            .unsafe_bitcast[T]()
+            .unsafe_mut_cast[Self._writable[T]]()[]
+        )
+
+    def get[
+        T: DevicePassableResource
+    ](self) -> ref[ImmUntrackedOrigin] T.KernelView:
+        """Gets a read-only portable view by its original source type.
+
+        Parameters:
+            T: The original adapted source type.
+
+        Returns:
+            Immutable host-local or device-local KernelView for this invocation.
+
+        Constraints:
+            Adapted sources must be declared with read access.
+        """
+        comptime id = Self.resources.index_of[T]()
+        comptime assert (
+            id != -1
+        ), "T must be part of the kernel's required_resources"
+        comptime assert (
+            Self.resources._mode[T] == 1
+        ), "DevicePassableResource requires read access on both targets"
+        return (
+            self._pointers[id]
+            .unsafe_bitcast[T.KernelView]()
+            .unsafe_mut_cast[False]()[]
+        )
+
+    def set[T: ResourceType](self, var value: T):
+        """Replaces an ordinary source through host write or read_write access.
+
+        Parameters:
+            T: Declared ordinary source type.
+
+        Args:
+            value: New source value to move into the bound resource.
+
+        Constraints:
+            The declaration must permit writing; adapted resources are read only.
+        """
+        comptime id = Self.resources.index_of[T]()
+        comptime assert (
+            id != -1
+        ), "T must be part of the kernel's required_resources"
+        comptime assert (
+            Self.resources._mode[T] != 1
+        ), "Read resources cannot be set"
+        self._pointers[id].unsafe_bitcast[T]()[] = value^
 
 
 @fieldwise_init
@@ -1316,11 +1384,15 @@ struct SystemContext[
                 t" Bool]()"
             )
         ):
+            _validate_resource_spec[required_resources, on_device]()
             var host_captures = _bind_captures[capture_spec](*bindings)
             comptime if not has_accelerator() or not on_device:
-                var resource_accessor = _bind_host_resources[
-                    required_resources
-                ](self.world[].resources)
+                var resource_binding = _bind_host_resources[required_resources](
+                    self.world[].resources
+                )
+                var resource_accessor = ResourceAccessor[required_resources](
+                    resource_binding.pointers.copy()
+                )
                 comptime bitmask_filter = filter.get_bitmask_filter[
                     *Self.WorldTs
                 ]()
@@ -1357,6 +1429,7 @@ struct SystemContext[
                             host_captures,
                         )
                     )
+                resource_binding.release()
             else:
                 var length = 0
                 comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
@@ -1389,13 +1462,6 @@ struct SystemContext[
                     " DeviceComponentType, i.e. TrivialRegisterPassable) for"
                     " raw byte transfer between host and device."
                 )
-                comptime assert constrain_device_safe_resources[
-                    *required_resources.ResourceTypes
-                ](), (
-                    "SystemContext.run(..., on_device=True) requires every"
-                    " required resource type to be trivially movable for raw"
-                    " byte transfer between host and device."
-                )
 
                 if not self.world[]._device_storage:
                     raise Error(
@@ -1410,10 +1476,14 @@ struct SystemContext[
 
                 # No component columns exist for an unmatched filter. Validate
                 # resources without allocating or launching any device work.
+                var resource_binding = _ResourceInvocation[
+                    required_resources, origin_of(self.world[].resources)
+                ](self.world[].resources)
+                resource_binding.validate_device(
+                    self.world[]._device_storage[]._device_context
+                )
                 if length == 0:
-                    comptime for i in range(len(required_resources)):
-                        comptime T = required_resources.ResourceTypes[i]
-                        _ = Pointer(to=self.world[].resources.get[T]())
+                    resource_binding.release()
                     return
 
                 # Reuse the world's device storage across calls instead of
@@ -1428,123 +1498,121 @@ struct SystemContext[
                 # follow it.
                 ref device_storage = self.world[]._device_storage[]
 
-                var device_captures = DeviceCaptureStorage[capture_spec](
-                    device_storage._device_context, host_captures
-                )
-                var capture_pointers = HostKernelContext[
-                    filter, required_resources, capture_spec
-                ].CaptureBuffers(uninitialized=True)
-                comptime for i in range(len(capture_spec)):
-                    capture_pointers[i] = rebind[
-                        DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
-                    ](device_captures._buffers[i].unsafe_value().device_ptr())
-
-                var device_resources = DeviceResourceStorage[
-                    required_resources
-                ](device_storage._device_context)
-                var resource_pointers = HostKernelContext[
-                    filter, required_resources, capture_spec
-                ].ResourceBuffers(uninitialized=True)
-
-                comptime for i in range(len(required_resources)):
-                    comptime T = required_resources.ResourceTypes[i]
-                    device_resources.upload[T](self.world[].resources.get[T]())
-                    resource_pointers[i] = device_resources.get_device_ptr[T]()
-
-                var kernel_columns = HostKernelContext[
-                    filter, required_resources, capture_spec
-                ].Columns(uninitialized=True)
-
-                comptime for i in range(len(filter)):
-                    comptime T = filter._include.ComponentTypes[i]
-
-                    comptime if filter.reads[T]:
-                        # A filter can match multiple archetypes; each is a
-                        # separate homogeneous host range that must land at
-                        # its own offset in the flat device column,
-                        # matching how the download loop below reads them
-                        # back. Uploading every archetype at the default
-                        # `offset=0` would overwrite each archetype with
-                        # the next, corrupting every column but the last.
-                        var offset = 0
-                        for ref archetype in matching_archetypes.copy():
-                            device_storage.copy_from_host[T](
-                                archetype._storage.get_component_span[T](),
-                                offset=offset,
-                            )
-                            offset += len(archetype)
-                    else:
-                        # `T` is write-only for this kernel: its prior
-                        # value is never read, so there is nothing to
-                        # upload. The column still needs to exist and be
-                        # sized for `length`, since the kernel writes
-                        # through it and the download loop below reads the
-                        # result back.
-                        device_storage.ensure_column[T](length)
-
-                    kernel_columns[i] = device_storage.get_device_ptr[T]()
-
-                var grid_dim = gpu_grid_dim(
-                    length, device_storage._max_grid_dim
-                )
-                if length > 0:
-                    var kernel_context = HostKernelContext[
+                var frame = _TransferFrame(device_storage._device_context)
+                var device_captures = DeviceCaptureStorage[capture_spec]()
+                try:
+                    device_captures.prepare(
+                        device_storage._device_context, host_captures, frame
+                    )
+                    var capture_pointers = HostKernelContext[
                         filter, required_resources, capture_spec
-                    ](
-                        kernel_columns^,
-                        resource_pointers^,
-                        capture_pointers=capture_pointers^,
-                        length=Int32(length),
-                        thread_count=Int32(grid_dim * BLOCK_SIZE),
+                    ].CaptureBuffers(uninitialized=True)
+                    comptime for i in range(len(capture_spec)):
+                        capture_pointers[i] = rebind[
+                            DevicePointer[
+                                mut=True, DType.uint8, MutUntrackedOrigin
+                            ]
+                        ](
+                            device_captures._buffers[i]
+                            .unsafe_value()
+                            .device_ptr()
+                        )
+                    var resource_pointers = resource_binding.bind_device(
+                        device_storage._device_context, frame
                     )
-                    device_storage._device_context.enqueue_function[KernelFunc](
-                        kernel_context,
-                        grid_dim=grid_dim,
-                        block_dim=BLOCK_SIZE,
-                    )
-
+                    var kernel_columns = HostKernelContext[
+                        filter, required_resources, capture_spec
+                    ].Columns(uninitialized=True)
                     comptime for i in range(len(filter)):
                         comptime T = filter._include.ComponentTypes[i]
-
-                        comptime if filter.writes[T]:
+                        comptime if filter.reads[T]:
+                            # A filter can match multiple archetypes; each is a
+                            # separate homogeneous host range that must land at
+                            # its own offset in the flat device column,
+                            # matching how the download loop below reads them
+                            # back. Uploading every archetype at the default
+                            # `offset=0` would overwrite each archetype with
+                            # the next, corrupting every column but the last.
                             var offset = 0
                             for ref archetype in matching_archetypes.copy():
-                                if (
-                                    self.world[].storage._spatial_enabled
-                                    and not self.world[].storage._spatial_full
-                                    and self.world[].storage._spatial_inputs.get(
-                                        Self.World.HostStorage.component_manager.get_id[
-                                            T
-                                        ]()
-                                    )
-                                ):
-                                    for row in range(len(archetype)):
-                                        self.world[].storage._enqueue_spatial_dirty(
-                                            archetype.get_entity(row)
-                                        )
-                                device_storage.copy_to_host[T](
-                                    archetype._storage.get_component_ptr[T](),
+                                device_storage.stage_from_host[T](
+                                    frame,
+                                    archetype._storage.get_component_span[T](),
                                     offset=offset,
-                                    length=len(archetype),
                                 )
                                 offset += len(archetype)
-                        # `T` is read-only for this kernel: nothing on the
-                        # device could have changed it, so there is
-                        # nothing to download.
-
-                    comptime for i in range(len(required_resources)):
-                        comptime T = required_resources.ResourceTypes[i]
-                        device_resources.download[T](
-                            self.world[].resources.get[T]()
+                        else:
+                            # `T` is write-only for this kernel: its prior
+                            # value is never read, so there is nothing to
+                            # upload. The column still needs to exist and be
+                            # sized for `length`, since the kernel writes
+                            # through it and the download loop below reads the
+                            # result back.
+                            device_storage.ensure_column[T](length)
+                        kernel_columns[i] = device_storage.get_device_ptr[T]()
+                    var grid_dim = gpu_grid_dim(
+                        length, device_storage._max_grid_dim
+                    )
+                    if length > 0:
+                        var kernel_context = HostKernelContext[
+                            filter, required_resources, capture_spec
+                        ](
+                            kernel_columns^,
+                            resource_pointers^,
+                            capture_pointers=capture_pointers^,
+                            length=Int32(length),
+                            thread_count=Int32(grid_dim * BLOCK_SIZE),
                         )
-
-                    # `device_resources` was constructed from
-                    # `device_storage._device_context`, so both storages
-                    # share the same underlying device context and a single
-                    # synchronize flushes every operation enqueued above by
-                    # either one.
-                    device_captures.copy_back(host_captures)
-                device_storage.synchronize()
+                        device_storage._device_context.enqueue_function[
+                            KernelFunc
+                        ](
+                            kernel_context,
+                            grid_dim=grid_dim,
+                            block_dim=BLOCK_SIZE,
+                        )
+                        comptime for i in range(len(filter)):
+                            comptime T = filter._include.ComponentTypes[i]
+                            comptime if filter.writes[T]:
+                                var offset = 0
+                                for ref archetype in matching_archetypes.copy():
+                                    if (
+                                        self.world[].storage._spatial_enabled
+                                        and not self.world[].storage._spatial_full
+                                        and self.world[].storage._spatial_inputs.get(
+                                            Self.World.HostStorage.component_manager.get_id[
+                                                T
+                                            ]()
+                                        )
+                                    ):
+                                        for row in range(len(archetype)):
+                                            self.world[].storage._enqueue_spatial_dirty(
+                                                archetype.get_entity(row)
+                                            )
+                                    device_storage.stage_to_host[T](
+                                        frame,
+                                        archetype._storage.get_component_ptr[
+                                            T
+                                        ](),
+                                        offset=offset,
+                                        length=len(archetype),
+                                    )
+                                    offset += len(archetype)
+                            # `T` is read-only for this kernel: nothing on the
+                            # device could have changed it, so there is
+                            # nothing to download.
+                        # Stage resource outputs on the same invocation queue.
+                        resource_binding.download(frame)
+                    device_captures.copy_back(host_captures, frame)
+                    device_storage.synchronize()
+                    frame.publish()
+                except error:
+                    _drain_failed_device(
+                        self.world[].resources,
+                        device_storage._device_context,
+                        error^,
+                    )
+                finally:
+                    resource_binding.release()
 
     def run[
         filter: Filter,
@@ -1592,9 +1660,13 @@ struct SystemContext[
                 " Bool](kernel_func: KernelFunc)"
             )
         ):
+            _validate_resource_spec[required_resources, on_device]()
             var host_captures = _bind_captures[capture_spec](*bindings)
-            var resource_accessor = _bind_host_resources[required_resources](
+            var resource_binding = _bind_host_resources[required_resources](
                 self.world[].resources
+            )
+            var resource_accessor = ResourceAccessor[required_resources](
+                resource_binding.pointers.copy()
             )
             comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
             # Fix the invocation boundary and reacquire each archetype by
@@ -1628,3 +1700,4 @@ struct SystemContext[
                         host_captures,
                     )
                 )
+            resource_binding.release()

@@ -50,14 +50,19 @@ done
 # Individual test-file runs retain the existing focused behavior.
 run_performance=false
 run_synchronization_contracts=false
+run_resource_contracts=false
 larecs_test_directory="$(cd "$(dirname "$0")" && pwd)"
 for test_path in "${test_args[@]}"; do
+    if [ "${test_path##*/}" = "resource_adapter_test.mojo" ]; then
+        run_resource_contracts=true
+    fi
     if [ "${test_path##*/}" = "synchronization_test.mojo" ]; then
         run_synchronization_contracts=true
     fi
     if [ -d "$test_path" ] && \
         [ "$(cd "$test_path" && pwd)" = "$larecs_test_directory" ]; then
         run_performance=true
+        run_resource_contracts=true
         run_synchronization_contracts=true
         bash "$larecs_test_directory/check_spatial_filters.sh"
         break
@@ -66,6 +71,10 @@ done
 
 if "$run_synchronization_contracts"; then
     python "$larecs_test_directory/check_synchronization_contracts.py"
+fi
+
+if "$run_resource_contracts"; then
+    python "$larecs_test_directory/check_resource_contracts.py"
 fi
 
 mogo-tester "${precompile_args[@]}" --asan --mojo-build-args="${mojo_build_args[*]}" "${test_args[@]}"
