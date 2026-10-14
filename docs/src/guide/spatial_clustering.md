@@ -78,8 +78,8 @@ raises and leaves the existing policy in place.
 
 The classifier must be deterministic for unchanged component inputs and policy
 configuration. It must not mutate the world or retain the accessor or component
-references. Equal UInt64 keys identify a cluster, and ascending numeric key order
-determines group order. Tie order is not guaranteed. Avoid arbitrary hashes when
+references. Equal UInt64 keys identify a cluster. In the default reordering mode,
+ascending numeric key order determines group order. Tie order is not guaranteed. Avoid arbitrary hashes when
 you need locality between clusters.
 
 `grid_cell` uses floor, so -0.1 with cell size 1 maps to cell -1. Inputs must be
@@ -111,7 +111,7 @@ External changes to otherwise owned policy configuration require full invalidati
 These calls only invalidate; they do not require an unlocked world or move rows.
 Do not retain component references across maintenance, including clean passes.
 
-Maintenance prepares all keys and permutations before moving rows,
+Maintenance prepares all keys (and reordering permutations in the default mode) before moving rows,
 so a classifier error leaves row order and committed keys unchanged, retains
 pending invalidations for retry, and preserves the original
 error message. Movement uses typed component lifecycle operations, including for
@@ -131,3 +131,88 @@ archetypes remain in separate storage. Neighbor search still needs cell
 enumeration or an index and distance checks. The dirty-maintenance benchmark compares
 updates, tracking, classification, sorting, movement, and location repair against
 explicit full rebuilds; it does not establish a spatial workload speedup.
+
+
+## Growable cluster-local partitions
+
+Choose partitions at registration when your workload benefits from moving rows
+between persistent clusters rather than reordering entire archetypes:
+
+```mojo {doctest="partitions" global=true}
+from larecs import World, Filter, SpatialClassifier, SystemContext
+from larecs.entity import EntityAccessor
+from std.testing import assert_equal
+
+
+@fieldwise_init
+struct Cells(SpatialClassifier):
+    comptime Accessor = EntityAccessor[Filter().read[Int]()]
+
+    def classify(self, entity: Self.Accessor) raises -> UInt64:
+        """Use the nonnegative integer input as the exact cluster key.
+
+        Args:
+            entity: Borrowed read-only classifier input.
+
+        Raises:
+            Error: The classifier interface permits errors.
+
+        Returns:
+            The application cluster identity.
+        """
+        return UInt64(entity.get[Int]())
+
+
+def main() raises:
+    """Maintain clusters and acquire exact cluster membership.
+
+    Raises:
+        Error: If registration, maintenance, or selection fails.
+    """
+    var world = World[Int]()
+    _ = world.storage.add_entity(7)
+    _ = world.storage.add_entity(9)
+    world.register_spatial_classifier[Filter().read[Int]()](
+        Cells(), partitioned=True
+    )
+    world.maintain_spatial()
+    var context = SystemContext(world)
+    var selected = context.select_cluster[Filter().read[Int]()](UInt64(7))
+    assert_equal(len(selected), 1)
+    selected^.release()
+```
+
+Component composition still defines the logical archetype. Each cluster beneath
+it owns exactly one dense SoA store. Capacity starts at one row and doubles
+on demand without a fixed row limit. Classifier configuration (for example,
+cell width) controls cluster population; there is no separate chunk-size option.
+Separate clusters need not occupy nearby allocations, and partition traversal is not sorted by key.
+
+Creation and component transitions stage rows without calling the classifier.
+The next explicit maintenance boundary classifies pending inputs and transfers
+rows into their clusters. Same-composition replacement stays in its physical
+store until placement is refreshed. Source swap-removal repairs locations.
+Growing a destination moves its existing column values into larger contiguous allocations. The boundary releases empty
+cluster/staging row allocations; nonempty stores retain their grown capacity.
+Queries and ordinary CPU/GPU execution traverse every matching physical store,
+including staged rows. GPU calls pack those ranges and scatter writable spans
+back under the existing transfer and synchronization rules.
+
+`context.select_cluster[filter](key)` snapshots **exact maintained cluster
+membership**, intersected with the component filter across logical archetypes
+and their cluster stores. Pending maintenance is an error: finish maintenance
+before capturing membership. The result has the same lock, in-place mutation, scoped lifetime,
+and reusable kernel calls as other selections. Writes during its lifetime do
+not change its membership. Release it before maintenance. Empty cluster results
+still own a lock. This is a key lookup, not a distance or neighbor query.
+
+Partition mode is opt-in and row reordering remains the default. Measure the
+[paired partition benchmark](benchmarks.md#partitioned-storage-comparison)
+against your entity counts, cell occupancy, component widths, and maintenance
+cadence. Many sparse cells can cost much more metadata and allocations, and
+ordinary scans pay traversal/binding cost per cluster store. Active maintenance
+still copies identity-capacity keys and rebuilds a temporary cluster directory; cluster
+selection currently scans store metadata. Empty interior slots and directory
+capacity retain high-water metadata. Structural-heavy frames still perform full
+classification. See [decision 0014](../../design/decisions/0014-growable-cluster-stores.md)
+for guarantees and limits.

@@ -63,6 +63,13 @@ Copied/moved worlds own independent keys, sparse membership, and pending queues
 alongside their copied/moved policies. There is no automatic policy replacement,
 multiple-policy resolution, background maintenance, or GPU classification.
 
+[Decision 0013](0013-cluster-local-partition-blocks.md) adds opt-in partition
+placement after the same classification phase. Ordering/permutation statements
+here describe the retained default mode; partition mode uses typed transfers
+and same-cluster compaction with the same locks, invalidation, callback-failure,
+and key-commit contract. Its directory, allocation, and memory limits are
+recorded separately.
+
 ## Rationale
 
 Sparse membership makes marking amortized O(1) with no hashing in hot component
