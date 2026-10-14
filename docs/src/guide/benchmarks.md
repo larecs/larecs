@@ -306,8 +306,8 @@ PR gate separately measures changes to the default paths against the exact base.
 
 The driver constructs identical deterministic scrambled 2,048/32,768-row worlds
 with two component-defined archetypes, 64-byte SIMD payloads, an integer input,
-and an additional eight-byte column on half the rows. It compares 256-row-capped
-blocks with row reordering for uniform (16 identities per cell), dense
+and an additional eight-byte column on half the rows. It compares one growable
+store per logical cluster with row reordering for uniform (16 identities per cell), dense
 (1,024 per cell), and singleton sparse (one identity per cell, key spacing 128)
 distributions. Each configuration warms both layouts with one sixteen-frame
 batch, then alternates their order for five paired sixteen-frame samples.
@@ -320,13 +320,13 @@ adjacent-cell aggregate products. Both layouts use identical entities, input
 updates, and semantic work. The scan controls still call the clean boundary.
 All measured update frames include marking, pending key allocation/copy,
 classification, directory construction or sorting, column growth/movement,
-local compaction, location repair, and allocation reclamation as applicable.
+source swap-removal, location repair, and allocation reclamation as applicable.
 Cell frames also include query setup, cell scratch allocation, aggregation,
 and neighbor arithmetic. Construction, initial placement, policy/device setup,
 and validation are excluded. There are no device transfers in these CPU timings.
 
 Every sample checks all identities once, final inputs, all payload lanes,
-entity locations, default key order or homogeneous bounded blocks, and equal
+entity locations, default key order or homogeneous cluster stores, and equal
 complete spatial checksums outside timing. Query/CPU scan reductions are also
 checked against their complete expected sums. Results are consumed inside the
 timer. This is a synthetic spatial workload, not a game/simulation speedup,
@@ -340,9 +340,61 @@ physical-directory plus row-column/ID allocations. Graph/pool allocations,
 allocator overhead, device state, classifier configuration, and all temporary
 maintenance/query/cell scratch are excluded; these records are not RSS or peak
 memory measurements. The components are trivial and have no hidden payload heap.
-Columns in a block share capacity, but each column and the IDs allocate
+Columns in a store share capacity, but each column and the IDs allocate
 separately. `PAIR` records give rows, distribution, mode, update count, cadence,
 pair index, reordering ns/frame, and partition ns/frame.
+
+### Growable-store comparison on Linux
+
+The same current driver was built against committed base `df0e6c5638beaab2bf3784a2b4784044a7c2707e`
+(256-row-capped blocks) and the growable-store implementation from decision 0014.
+This local run used **AMD Ryzen 7 PRO 5850U, Linux 7.2.5-3-omarchy x86_64,
+Mojo 1.0.0 (`ed45d567`)**, normal optimized builds without tracing, sanitizers,
+or debug information. Cold builds ran sequentially and took **11.13 s / 11.11 s**
+(base/current). No other builds or benchmark jobs ran during timing; background
+desktop services remained active. Five pairs of fresh binary invocations alternated
+base/current order. Each invocation used the warmup, five paired sixteen-frame
+samples per case, timing boundaries, and complete validation described above.
+Values below are medians of the five per-invocation medians, in milliseconds.
+All 48 cases validated in all ten invocations. Median complete driver execution
+including validation was **13.10 s / 11.33 s** (base/current).
+
+Driver SHA-256: `37795c49baa95f1b911d43327d413097b85a5f60f92f3137accf7abfa9a90ad9`.
+
+| Distribution | Timed work, 32,768 rows | Capped blocks | Growable stores | Growable / capped |
+| --- | --- | ---: | ---: | ---: |
+| Uniform | Maintenance, 512 updates/frame | 0.416 | 0.256 | 0.61 |
+| Dense | Maintenance, 512 updates/frame | 0.111 | 0.072 | 0.65 |
+| Dense | Complete frame, all moving | 6.032 | 4.295 | 0.71 |
+| Singleton sparse | Complete frame, all moving | 20.400 | 17.231 | 0.84 |
+| Dense | Ordinary query scan, clean | 0.430 | 0.427 | 0.99 |
+| Dense | Ordinary CPU scan, clean | 0.030 | 0.031 | 1.03 |
+| Uniform | Ordinary CPU scan, clean | 0.068 | 0.070 | 1.03 |
+| Singleton sparse | Ordinary CPU scan, clean | 0.337 | 0.344 | 1.02 |
+
+Dense initial placement used **64 stores and 225 counted allocations**, versus
+128 blocks and 449 allocations in the base. Initial counted owned bytes fell
+from 4,448,265 to 4,403,209. After 96 fully moving frames, growable dense stores
+retained **7,847,945 bytes and 64,512 row slots**, versus 5,062,665 bytes and
+32,768 slots for capped blocks. Destination stores can grow while their old rows
+are still awaiting transfer, and nonempty stores retain that spare capacity.
+Fewer stores therefore do not guarantee less retained memory. These remain
+capacity-derived buffer measurements, with the exclusions described above.
+
+Full scans changed by -0.8% to +4.3% across these distributions; small timing
+differences on this desktop runner do not establish a scan improvement.
+Maintenance and fully moving frame results favor growable stores here, but
+singleton clusters still have separate allocations and substantial traversal
+overhead. This is CPU-only synthetic evidence; macOS, GPU, application, peak
+memory, and additional component-width comparisons remain on the roadmap.
+Local raw reports are retained under `output/performance/growable_clusters/`.
+
+### Historical bounded-block comparison on macOS
+
+The measurements below are historical evidence for decision 0013’s
+256-row-capped blocks, not timings for the current growable-store layout.
+Dense clusters now use fewer stores; sparse clusters still require separate
+allocations. Rerun the driver before making performance claims about the new layout.
 
 A local optimized run on **Apple M4, macOS 27.0.1 arm64, Mojo 1.0.0
 (`ed45d567`)**, implementation `f3d99cd` (base `6037850`), built in
@@ -395,9 +447,12 @@ Small dense/uniform updates took less elapsed maintenance time with partitions,
 while directory rebuilding and per-block scans dominated singleton cases. The
 benchmark measures total elapsed costs, not byte-movement counters.
 Fully moving workloads were slower despite local transfer. Keep partitions
-opt-in, and retain the reordering default. Active partition maintenance still
-copies identity-capacity keys, inspects blocks, and may move unchanged rows during
-same-cluster compaction. Cluster selection scans metadata. Application workloads,
+opt-in, and retain the reordering default. The measured bounded-block
+implementation copied identity-capacity keys,
+inspected blocks, and could move unchanged rows during same-cluster compaction.
+The current layout retains key copying and directory scans but removes
+cross-block compaction; destination growth can still relocate existing columns.
+Cluster selection scans metadata. Application workloads,
 other component widths, structural-heavy frames, Linux comparative timings,
 process/peak memory, and GPU timings remain on the roadmap. GPU functional
 integration ran on the actual local accelerator; it is separate evidence from
