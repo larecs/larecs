@@ -4,8 +4,9 @@ title: "Portable resource adapters"
 status: proposed
 status_notes: |
   Representation validated with a manual host/Apple GPU/host probe on Mojo
-  1.0.0. Registration, access enforcement, invocation leases, cache isolation,
-  and failure handling are not implemented. Does not replace decision 0002.
+  1.0.0. Source-oriented getter resolution, registration, access enforcement,
+  invocation leases, cache isolation, and failure handling are not implemented.
+  Does not replace decision 0002.
 ---
 
 # Decision 0018: Portable resource adapters
@@ -133,10 +134,11 @@ LeafDistribution implements ResourceType, DevicePassableResource:
 world.resources.add(LeafDistribution(...))
 # add registers the source-declared binding; no GPU work occurs here.
 
-required_resources = Resources().read[LeafDistribution.KernelView]()
+required_resources = Resources().read[LeafDistribution]()
 
 shade(context: KernelContext[filter, required_resources]):
-    distribution = context.resources.get[LeafDistribution.KernelView]()
+    distribution = context.resources.get[LeafDistribution]()
+    # distribution is an immutable LeafDistribution.KernelView on both targets.
     ... distribution.sample(x, y) ...
 
 context.run[shade]()                 # host
@@ -149,10 +151,10 @@ upload descriptors, or request synchronization themselves. Views are invocation
 values, not additional authoritative resources stored in the public resource
 table. `ResourceStorage.get[LeafDistribution]()` remains the host editing API.
 
-For a conforming source, adding it automatically registers its associated view
-and calls the instance factory to create binding-owned adapter state without
-creating a device cache. Removing the source removes its binding after leases
-have ended. Replacing a source instance retains its type association but calls
+For a conforming source, adding it automatically registers its source-keyed
+binding and calls the instance factory to create binding-owned adapter state
+without creating a device cache. Removing the source removes its binding after
+leases have ended. Replacing a source instance retains its type association but calls
 the replacement's factory, replaces adapter state, and discards the old prepared
 views and device cache. Validate the replacement and create its new adapter
 before publishing either; failure leaves the existing source and binding intact.
@@ -167,50 +169,85 @@ or switching to the resource's factory. Validate binding collisions before
 committing an add so failed registration cannot leave an inserted source with
 a missing binding.
 
-Retain `world.bind_resource[Source, View](adapter)` as an advanced alternative
-for third-party types, additional representations, or per-world configuration.
+Retain an explicit source-keyed binding operation for per-world adapter
+configuration. A supplied adapter must match `Source.Adapter` and
+`Source.KernelView`; it cannot select a different getter return type at runtime.
 Do not silently overwrite an automatically registered binding: require an
-explicit replacement operation, available only with no active lease. The initial
-implementation may limit each source to one view, while preserving this escape
-hatch for sources whose definitions the application cannot modify.
+explicit replacement operation, available only with no active lease. Third-party
+types that need a different portable representation require a resource wrapper
+implementing `DevicePassableResource`; its factory may delegate to application
+adapter code. Arbitrary source/view pairs would need a separate compile-time
+binding declaration and are outside this initial API.
 
-Kernel declarations remain view-oriented. `LeafDistribution.KernelView` is just
-an alias for `LeafDistributionView`, so existing `get[LeafDistributionView]()`
-kernel code has the same meaning. Do not make `get[LeafDistribution]()` sometimes
-return a source and sometimes a view; direct source access remains distinct.
+Registration establishes a checked source-type/view-type/adapter-type triple
+keyed by source type. Use one binding per source; reject duplicate registration
+and validate that the source exists. Store source identity, not a permanent
+source pointer: replacing the source between invocations must be observed by
+the next preparation. Different source types may use the same view type because
+the kernel selects a binding by source, not by view. An ordinary stored resource
+whose type happens to equal a view type does not collide with an associated
+view, which is never inserted into the public resource table.
 
-Registration establishes a checked source-type/view-type/adapter-type triple.
-Use one binding per view type; reject duplicate registration and collisions
-with an ordinary stored resource of that view type. Validate that the source
-exists. Store source identity, not a permanent source pointer: replacing the
-source between invocations must be observed by the next preparation.
-Multiple read-only views of one source may later be supported with shared leases;
-the first implementation can reject a second view for the same source.
+### Kernel access resolution
 
-There are two distinct checks. Registration can statically check a concrete
-source's trait and associated adapter/view types. Before device execution, the
-executor must also validate the **actual world binding** for every requested
-view: it exists, its source still exists, its adapter supports the requested
-access, and it belongs to the correct context. This check applies even to empty
-entity matches and occurs before any queued work. Resources are registered
-dynamically and kernels declare only view types, so missing registration or an
-unavailable runtime binding cannot always be diagnosed at compile time. Where
-the source type is statically known, fail unsupported device adaptation at
-compile time; otherwise raise a descriptive preflight error naming the resource
-or view. Checking for method names at launch is not the capability mechanism.
+Kernel declarations and getters name the **original resource type**. Resolve the
+representation at compile time from that type's capability and declared access:
 
-Kernel declarations must distinguish access at compile time. `get[View]()` for
-a read declaration exposes an immutable descriptor. Its sample operations
+| Access site/declaration | Getter result | Execution support |
+| --- | --- | --- |
+| Kernel `read[T]`, with `T: DevicePassableResource` | Immutable reference to `T.KernelView` | Same descriptor type and API on host and device; the adapter supplies target-local storage. |
+| Kernel `read[T]`, ordinary resource | Immutable reference to `T` | Direct host borrowing; device use requires an audited bytewise representation. |
+| Kernel mutable declaration of a `DevicePassableResource` | Mutable reference to the original `T` on host | Device execution rejects this mode in the initial read-only adapter implementation. |
+| Kernel mutable declaration of an ordinary resource | Mutable reference to `T` | Existing host behavior; device use requires supported bytewise transfer. |
+| `world.resources.get[T]()` | Reference to the original authoritative host `T`, with storage-access mutability | Host editing API, outside the kernel adapter mapping. |
+
+The getter's return type is a function of the compile-time resource declaration,
+not the selected backend or the state of a runtime registry. For a read-only
+adapted resource, host execution must also bind `T.KernelView`, even if directly
+borrowing `T` would be possible there. This preserves one kernel implementation.
+`get[T]()` checks membership against the original declared `T`. When its
+associated view is a distinct type, `read[T]` does not also authorize
+`get[T.KernelView]()`. An adapted read exposes the view rather than the owning
+source allocation.
+
+Keep original source identity separate from prepared representation internally.
+Each accessor slot for an adapted read points to its invocation-owned view;
+`get[T]()` casts that slot to the resolved view type, never to the owning `T`.
+Device validation, descriptor sizes, and transfers use the resolved kernel type
+`T.KernelView`, so the source itself need not be trivially movable or GPU-safe.
+Resolve source existence, adapter configuration, leases, and access conflicts
+using the original source type. Never upload the owning source merely because it
+appears in the kernel's resource declaration.
+
+There are two distinct checks. Source types, associated representations, and
+declared access modes are known at compile time. Check adapter/view conformance
+when registering a concrete source and reject unsupported representation or
+access modes when specializing device execution. Before execution, also validate
+the **actual world binding** for every requested source: the binding and source
+instance exist, the adapter configuration is valid, and its cache belongs to the
+correct context. This applies even to empty entity matches and occurs before any
+queued work. Dynamic resource insertion/removal and context availability still
+require descriptive runtime preflight errors naming the resource; a statically
+valid kernel does not prove that its world is populated correctly. Checking for
+method names at launch is not the capability mechanism.
+
+Kernel declarations must distinguish access at compile time. `get[Source]()` for
+an adapted read declaration exposes an immutable descriptor. Its sample operations
 must also expose immutable pointees; immutable access to a descriptor containing
 a mutable pointer is insufficient. View implementers must not provide a safe
 mutation escape hatch. Unsafe pointer casts retain the usual unsafe contract.
 
-Preserve existing `Resources[T]()` behavior for ordinary resources as legacy
-read/write declarations. A read-only adapter rejects a write/read_write request
-before any transfer or launch. Resolve access by **source identity**, not only
-view type: requesting a direct mutable source and its read-only view in one run
-is a conflict even though their types differ. Reject duplicate declarations
-rather than silently creating two independently mutable replicas.
+Preserve existing `Resources[T]()` as a legacy read/write declaration; it does
+not implicitly request a read-only view. Read-only adaptation is selected only
+by an explicit `read[T]` declaration. Preserve direct mutable host access for
+that legacy mode, including adapted source types, but reject device write or
+read_write requests for adapted sources before any transfer or launch. Do not
+fall back to raw-byte source transfer for unsupported mutable adapter modes.
+Resolve access by **source identity**, not view type: read-only and mutable
+declarations for the same source conflict and cannot produce an ambiguous
+getter result. Reject duplicate declarations rather than silently creating two
+independently mutable replicas. Future writable views need an explicit access
+and migration design before changing this return-type table.
 
 The initial binding operates within one world and synchronous invocation.
 Cross-world shared sources, arbitrary aliases through captures, and externally
@@ -361,8 +398,10 @@ or attempting to serialize arbitrary `Dict` ownership.
 Resource-declared associated types remove repetitive registration from the
 common application path. Making device adaptation optional preserves ordinary
 host resources, while explicit capability checks avoid ambiguous no-op defaults.
-Keeping an explicit binding alternative accommodates third-party scientific
-types without imposing inheritance or backend methods on their definitions.
+Source-oriented declarations let kernels keep `get[Source]()` while receiving a
+portable read-only view on either target. Associated types make that return type
+statically known. Explicit adapter configuration and resource wrappers accommodate
+third-party scientific types without requiring changes to their definitions.
 
 The proposal is suitable as an architectural direction, but the successful
 descriptor probe does **not** establish that an integrated adapter is safe.
@@ -379,6 +418,10 @@ and negative-test evidence before adoption as an accepted requirement.
   no-adapter path cheap and measure both setup and complete execution.
 - Resource mutation/copy rules and compile-time access declarations are new
   contracts. Preserve legacy behavior or document an intentional beta migration.
+- Explicit read declarations of adapted resources return their associated view;
+  mutable host declarations and host storage access still return the source.
+  Changing a declaration's access mode may therefore change its static result
+  type. Backend selection does not change it.
 - `DevicePassableResource`, associated types, and automatic binding registration
   are proposed APIs, not implemented features. Host-only resources keep their
   existing storage contract; unsupported device requests need a clear diagnostic.
@@ -394,6 +437,8 @@ and negative-test evidence before adoption as an accepted requirement.
   A temporary variant assigning through `SamplesView.values` failed compilation
   with `expression must be mutable in assignment`; the existing mutable
   descriptor accessor itself remains unchanged.
+  This probe uses the current manually registered view-type declaration/getter;
+  it does not validate proposed `read[Source]` or automatic `get[Source]` resolution.
 - [Resource storage and validator](../../../src/larecs/resource.mojo),
   [accessor and both execution paths](../../../src/larecs/system.mojo),
   [device uploads/downloads](../../../src/larecs/device_storage.mojo), and
