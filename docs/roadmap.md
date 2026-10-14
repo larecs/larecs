@@ -109,7 +109,8 @@ Deferred dirty-entity classification is implemented under
 [decision 0012](design/decisions/0012-deferred-spatial-maintenance.md). Applications
 still choose explicit maintenance boundaries; structural mutations use full
 rebuilds. Opt-in cluster-local partitions and exact maintained cluster selections
-are implemented under [decision 0013](design/decisions/0013-cluster-local-partition-blocks.md).
+use one growable store per logical cluster under
+[decision 0014](design/decisions/0014-growable-cluster-stores.md).
 Synthetic paired comparisons cover clean, sparse, and dense updates;
 complete application benefits remain unmeasured.
 
@@ -145,15 +146,16 @@ complete application benefits remain unmeasured.
   dense, singleton sparse, and moving synthetic cell workloads; include all
   maintenance costs, ordinary query/CPU scan throughput, capacity-derived memory,
   allocation counts, occupancy, and maintenance cadence in the benchmark guide.
+- [ ] Repeat the historical macOS bounded-block comparisons with growable stores.
 - [ ] Measure complete application spatial workloads, process/peak memory, GPU
   timing, additional component widths, and structural-heavy maintenance.
   Synthetic cell-frame results do not establish application benefit.
 - [ ] Define overlapping-filter behavior before supporting multiple registered
   clustering functions; preserve one physical row order per archetype.
 - [x] Adopt opt-in [partitioned storage](design/decisions/0006-partitioned-spatial-archetype-storage.md)
-  with bounded blocks, staging, local compaction, reclamation, exact selections,
-  and ordinary/batch/CPU/GPU integration under decision 0013.
-- [ ] Evaluate persistent cluster directories, narrower affected-cluster compaction,
+  with growable cluster stores, staging, swap-removal, reclamation, exact selections,
+  and ordinary/batch/CPU/GPU integration under decision 0014.
+- [ ] Evaluate persistent cluster directories, growth/shrink policies,
   and high-water metadata reclamation if measured workload costs justify them.
 
 ### Other features

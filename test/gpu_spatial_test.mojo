@@ -147,21 +147,21 @@ def test_gpu_execution_after_spatial_maintenance() raises:
 
 
 def _check_partition_execution[on_gpu: Bool, selected: Bool]() raises:
-    """Execute across many blocks, then repartition copied-back inputs.
+    """Execute across growable cluster stores, then repartition copied-back inputs.
 
     Parameters:
         on_gpu: Run on a real accelerator when true.
-        selected: Use an exact multi-block selection when true.
+        selected: Use an exact cluster selection when true.
 
     Raises:
         Error: If CPU/GPU execution, transfers, or membership checks fail.
     """
     var world = World[Position, Payload]()
-    for i in range(73):
+    for i in range(901):
         _ = world.storage.add_entity(Position(Int32(i % 3)), Payload(Int32(i)))
     _ = world.storage.add_entity(Position(1))
     world.register_spatial_classifier[spatial_filter](
-        Policy(), partitioned=True, block_capacity=8
+        Policy(), partitioned=True
     )
     world.maintain_spatial()
     var context = SystemContext(world)
@@ -170,7 +170,7 @@ def _check_partition_execution[on_gpu: Bool, selected: Bool]() raises:
             var selection = context.select_cluster[Filter().include[Payload]()](
                 UInt64(1 if frame == 0 else 9)
             )
-            assert_equal(len(selection), 24)
+            assert_equal(len(selection), 300)
             selection.run[update, on_gpu=on_gpu]()
             selection^.release()
         else:
@@ -189,7 +189,8 @@ def _check_partition_execution[on_gpu: Bool, selected: Bool]() raises:
                 Int32(10 - i % 3 if frame == 0 and affected else i % 3),
             )
         assert_equal(
-            len(context.world[].storage._spatial_dirty), 24 if selected else 73
+            len(context.world[].storage._spatial_dirty),
+            300 if selected else 901,
         )
         context.world[].maintain_spatial()
         for row in context.world[].storage.query[Filter().read[Position]()]():
@@ -209,7 +210,7 @@ def _check_partition_execution[on_gpu: Bool, selected: Bool]() raises:
 
 
 def test_partition_cpu_and_gpu_execution() raises:
-    """Cover ordinary/selected packing and copy-back across cluster blocks.
+    """Cover ordinary/selected packing and copy-back across cluster stores.
 
     Raises:
         Error: If execution or validation fails.

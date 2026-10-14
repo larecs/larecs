@@ -1,11 +1,15 @@
 ---
 id: "0013"
 title: "Cluster-local partition blocks and staging storage"
-status: accepted
+status: superseded by 0014
 status_notes: Opt-in alongside deferred row reordering; measured maintenance/scan/memory tradeoffs and actual GPU functional validation are recorded in the benchmark guide.
 ---
 
 # Decision 0013: Cluster-local partition blocks and staging storage
+
+Superseded by [decision 0014](0014-growable-cluster-stores.md), which removes
+the capacity limit and uses one growable store per logical cluster. The record
+below retains the original bounded-block design and its measurement evidence.
 
 ## Context
 

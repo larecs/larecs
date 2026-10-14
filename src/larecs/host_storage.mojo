@@ -160,9 +160,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     """Lock manager guarding mutation during active iteration."""
 
     var _spatial_partitioned: Bool
-    """Whether maintenance places eligible rows in cluster-local blocks."""
-    var _spatial_block_capacity: Int
-    """Maximum rows per partition block, a power of two."""
+    """Whether maintenance places eligible rows in growable cluster stores."""
     var _spatial_free_blocks: List[Int]
     """Reclaimed physical slots; graph-owned staging slots are never recycled."""
 
@@ -204,7 +202,6 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             self._entity_locations = [EntityLocation(0, 0)]
             self._entity_pool = EntityPool()
             self._spatial_partitioned = False
-            self._spatial_block_capacity = 256
             self._spatial_free_blocks = List[Int]()
             self._spatial_enabled = False
             self._spatial_inputs = BitMask()
