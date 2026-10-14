@@ -74,7 +74,7 @@ struct GridView(TrivialRegisterPassable):
     var samples: Pointer[Int32, ImmUntrackedOrigin]
     var width: Int
     var height: Int
-    var maximum: Int32
+    var maximum: Float32
 
 
 struct Grid(DevicePassableResource):
@@ -86,7 +86,7 @@ struct Grid(DevicePassableResource):
     var samples: List[Int32]
     var width: Int
     var height: Int
-    var maximum: Int32
+    var maximum: Float32
     var fail_prepare: Bool
 
     def __init__(
@@ -94,7 +94,7 @@ struct Grid(DevicePassableResource):
         var samples: List[Int32],
         width: Int,
         height: Int,
-        maximum: Int32,
+        maximum: Float32,
         fail_prepare: Bool = False,
     ):
         """Constructs the current scientific source.
@@ -255,7 +255,7 @@ def grid_kernel(context: KernelContext[Filter().include[Int32](), grids]):
     """
     ref a = context.resources.get[Grid]()
     ref b = context.resources.get[OtherGrid]()
-    var delta = a.maximum + b.maximum + Int32(a.width + a.height)
+    var delta = Int32(a.maximum + b.maximum) + Int32(a.width + a.height)
     if a.width * a.height > 0:
         delta += a.samples[unsafe_offset=a.width * a.height - 1]
     if b.width * b.height > 0:
@@ -592,6 +592,45 @@ def test_plain_read_skips_download() raises:
         frame.publish()
         binding.release()
         assert_equal(world.resources.get[PlainRead]().value, 3)
+
+
+comptime FloatSamples = BufferResource[DType.float32]
+
+
+def float_sample_kernel(
+    context: KernelContext[
+        Filter().include[Float32](), Resources().read[FloatSamples]()
+    ]
+):
+    """Reads contiguous floating-point scientific samples on either target.
+
+    Args:
+        context: Matching floating-point components and immutable samples.
+    """
+    var sample = context.resources.get[FloatSamples]()[0]
+    for entity in context:
+        entity.get[Float32]() += sample
+
+
+def test_floating_point_samples() raises:
+    """Preserves floating-point samples across identical host/device/host kernels.
+
+    Raises:
+        Error: If float transfer, decoding, or outputs differ.
+    """
+    var world = World[Float32]()
+    world.resources.add(FloatSamples([Float32(1.5), Float32(2.25)]))
+    _ = world.storage.add_entities(Float32(0), count=37)
+    var context = SystemContext(world)
+    context.run[float_sample_kernel]()
+    comptime if has_accelerator():
+        context.run[float_sample_kernel, on_device=True]()
+    else:
+        context.run[float_sample_kernel]()
+    context.run[float_sample_kernel]()
+    for entity in world.storage.query[Filter().include[Float32]()]():
+        assert_equal(entity.get[Float32](), 4.5)
+    assert_equal(world.resources.get[FloatSamples]().samples[0], 1.5)
 
 
 def main() raises:
