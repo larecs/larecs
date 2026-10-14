@@ -55,10 +55,33 @@ selected mutation chains, and a selected device case.
 
 The current device resource path copies raw bytes and does not encode host heap
 ownership for the device. Keep existing type restrictions until a safe transfer
-model is implemented. See [decision 0002](design/decisions/0002-gpu-system-execution.md).
+model is implemented. See [decision 0002](design/decisions/0002-gpu-system-execution.md)
+and [proposed portable resource adapters](design/decisions/0018-portable-resource-adapters.md).
+Trivial movability alone does not exclude owning containers or establish pointer
+reachability; the proposal's manual Apple GPU probe validates descriptor
+portability, not an integrated adapter API.
 
 - [ ] Decide and document ownership, encoding, lifetime, synchronization, and
-  copy-back for heap-backed device resources.
+  copy-back for heap-backed device resources. Evaluate the proposed read-only
+  contiguous-buffer binding before general collection serialization.
+- [ ] Define explicit default-adapter eligibility and compatibility policy;
+  reject unsupported ownership/pointers clearly rather than treating trivial
+  movability as sufficient evidence of device safety.
+- [ ] Add compile-time read declarations and immutable descriptor/pointee
+  access. Reject unsupported write modes, duplicate view bindings, and mutable
+  direct-source aliases before preparation.
+- [ ] Prove invocation leases, reentrant mutation rejection, preparation/launch/
+  copy-back failure cleanup, and unknown-completion handling against the locked
+  runtime. World copies must recreate views and start with independent empty
+  device caches; moves may retain an idle cache with its context.
+- [ ] Integrate shared preparation/completion across ordinary and selected host/
+  device execution. Test source edits/replacement/growth, empty grids and matches,
+  repeated target switching, allocation reuse, source preservation, and compiler
+  rejection of read-only mutation on real hardware.
+- [ ] Measure unchanged plain-resource calls and complete read-only adapter
+  invocations, including validation, upload, allocation growth, launch, and
+  synchronization; report compilation separately. Validate Tree-D's actual grid
+  representation before claiming application compatibility or benefit.
 - [ ] Implement and test `TileTensor` compatibility under that model.
 - [ ] Resolve `Dict` compatibility and any `DevicePassable` conversion needed;
   ensure unsupported types fail clearly.

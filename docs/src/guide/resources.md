@@ -236,7 +236,9 @@ device. The transfer does not follow pointers, copy `List` or `Dict` contents,
 or invoke `DevicePassable` encoding. Do not pass host-backed collections or
 host-side `TileTensor` descriptors as resources through this path. They need
 an explicit device representation and transfer support, which this API does
-not yet provide. Heap-backed resources remain supported in host kernels.
+not yet provide. The current validator can accept a List-owning resource as
+trivially movable; passing validation is not proof that its storage is usable
+on the device. Heap-backed resources remain supported in host kernels.
 
 ## Removing resources
 
