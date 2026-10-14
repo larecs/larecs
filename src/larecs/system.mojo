@@ -7,7 +7,6 @@ kernel on host or device.
 """
 
 from std.builtin.device_passable import DevicePassable, DeviceTypeEncoder
-from std.math import ceildiv
 from std.sys import has_accelerator
 from std.reflection import reflect_fn
 
@@ -34,6 +33,7 @@ from .resource import (
     constrain_device_safe_resources,
 )
 from .device_storage import DeviceResourceStorage
+from .gpu_launch import BLOCK_SIZE, gpu_grid_dim
 from .capture import (
     Captures,
     CaptureAccessor,
@@ -151,10 +151,6 @@ def _finalize_system[
     with Zone(function_name=String(t"{reflect[S].name()}.finalize()")):
         ref concrete_system = system.unsafe_get[S]()
         S.finalize(concrete_system, context)
-
-
-comptime BLOCK_SIZE = 2**4
-"""Number of GPU threads per block used when launching kernels."""
 
 
 @always_inline
@@ -641,7 +637,9 @@ struct EntitySelection[
                     device_storage.ensure_column[T](total_length)
                 kernel_columns[i] = device_storage.get_device_ptr[T]()
 
-            var grid_dim = ceildiv(total_length, BLOCK_SIZE)
+            var grid_dim = gpu_grid_dim(
+                total_length, device_storage._max_grid_dim
+            )
             var kernel_context = HostKernelContext[
                 filter, required_resources, capture_spec
             ](
@@ -1486,7 +1484,9 @@ struct SystemContext[
 
                     kernel_columns[i] = device_storage.get_device_ptr[T]()
 
-                var grid_dim = ceildiv(length, BLOCK_SIZE)
+                var grid_dim = gpu_grid_dim(
+                    length, device_storage._max_grid_dim
+                )
                 if length > 0:
                     var kernel_context = HostKernelContext[
                         filter, required_resources, capture_spec
