@@ -1,7 +1,7 @@
 from larecs.resource import (
     ResourceStorage,
     ResourceType,
-    constrain_gpu_safe_resources,
+    constrain_device_safe_resources,
 )
 from std.testing import *
 
@@ -40,15 +40,19 @@ def test_gpu_resource_movability() raises:
     Raises:
         Error: If resource validation accepts or rejects an incorrect list.
     """
-    assert_true(constrain_gpu_safe_resources[]())
-    assert_true(constrain_gpu_safe_resources[Resource1]())
-    assert_true(constrain_gpu_safe_resources[Resource1, Resource2]())
-    assert_false(constrain_gpu_safe_resources[NonTriviallyMovableResource]())
+    assert_true(constrain_device_safe_resources[]())
+    assert_true(constrain_device_safe_resources[Resource1]())
+    assert_true(constrain_device_safe_resources[Resource1, Resource2]())
+    assert_false(constrain_device_safe_resources[NonTriviallyMovableResource]())
     assert_false(
-        constrain_gpu_safe_resources[Resource1, NonTriviallyMovableResource]()
+        constrain_device_safe_resources[
+            Resource1, NonTriviallyMovableResource
+        ]()
     )
     assert_false(
-        constrain_gpu_safe_resources[NonTriviallyMovableResource, Resource1]()
+        constrain_device_safe_resources[
+            NonTriviallyMovableResource, Resource1
+        ]()
     )
 
 

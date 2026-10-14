@@ -36,8 +36,8 @@ def scale_entities(
         entity.get[Int32]() *= scale.value
 
 
-def test_kernel_context_required_resources_on_gpu() raises:
-    """A GPU kernel can declare and read a resource via `KernelContext.resources`.
+def test_kernel_context_required_resources_on_device() raises:
+    """A device kernel can declare and read a resource via `KernelContext.resources`.
     """
     comptime if not has_accelerator():
         return
@@ -47,7 +47,7 @@ def test_kernel_context_required_resources_on_gpu() raises:
     _ = world.storage.add_entities(Int32(1), count=5)
 
     var context = SystemContext(world)
-    context.run[scale_entities, on_gpu=True]()
+    context.run[scale_entities, on_device=True]()
 
     var total: Int32 = 0
     for entity in world.storage.query[Filter().include[Int32]()]():
@@ -73,7 +73,7 @@ def overwrite_scale(
 
 
 def test_kernel_context_resource_mutation_is_copied_back_to_host() raises:
-    """A resource mutated on the GPU is copied back to host after the kernel runs.
+    """A resource mutated on the device is copied back to host after the kernel runs.
     """
     comptime if not has_accelerator():
         return
@@ -83,7 +83,7 @@ def test_kernel_context_resource_mutation_is_copied_back_to_host() raises:
     _ = world.storage.add_entities(Int32(1), count=5)
 
     var context = SystemContext(world)
-    context.run[overwrite_scale, on_gpu=True]()
+    context.run[overwrite_scale, on_device=True]()
 
     assert_equal(world.resources.get[Scale]().value, 42)
 
@@ -128,7 +128,7 @@ def test_gpu_kernel_local_captures() raises:
     # More than one block, with a partially populated final block.
     _ = world.storage.add_entities(Int32(2), count=37)
     var context = SystemContext(world)
-    context.run[update_with_local_captures, on_gpu=True]()
+    context.run[update_with_local_captures, on_device=True]()
     for entity in world.storage.query[Filter().include[Int32]()]():
         assert_equal(entity.get[Int32](), 7)
 

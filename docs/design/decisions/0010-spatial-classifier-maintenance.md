@@ -71,9 +71,9 @@ later archetype. Entity IDs, generations, composition, and membership remain
 unchanged; references and queries cannot survive maintenance.
 
 No ordinary write, entity mutation, kernel completion, system completion, or
-GPU copy-back triggers maintenance. Systems may explicitly call
+device copy-back triggers maintenance. Systems may explicitly call
 `context.world[].maintain_spatial()` after releasing all queries/selections.
-GPU execution continues to pack the current host row order and scatter writes
+Device execution continues to pack the current host row order and scatter writes
 back; classification remains on the host.
 
 ## Rationale
@@ -101,7 +101,7 @@ pending permutations), plus the active archetype's movement-plan scratch from
 inputs. The application chooses the cadence and pays for full scans each time.
 
 The classifier model implements ECS-12 through ECS-15 for one policy. It does
-not provide a neighbor-query index, GPU classifier execution, automatic dirty
+not provide a neighbor-query index, device classifier execution, automatic dirty
 tracking, multiple registrations, or evidence of net spatial workload speedup.
 
 ## Evidence
@@ -110,7 +110,7 @@ tracking, multiple registrations, or evidence of net spatial workload speedup.
   [classification and helpers](../../../src/larecs/spatial.mojo).
 - [Filter, coordinate, scan, failure, copy, and lock tests](../../../test/spatial_test.mojo).
 - [Nontrivial component lifetime tests](../../../test/host_storage_lifecycle_test.mojo).
-- [CPU/GPU execution and copy-back tests](../../../test/gpu_spatial_test.mojo).
+- [host/device execution and copy-back tests](../../../test/gpu_spatial_test.mojo).
 - [User guide](../../src/guide/spatial_clustering.md).
 - [Complete maintenance cost benchmark](../../../benchmark/spatial_benchmark.mojo),
   including classification, sorting, all-column movement, and location repair.
@@ -135,7 +135,7 @@ complete workload/cadence and memory comparisons remain on the roadmap.
 Local validation includes the spatial regression tests, AddressSanitizer
 lifecycle coverage, five compile-time registration diagnostics, package
 precompilation, API-doc generation, and execution of the same integration
-kernel on CPU and the actual Apple M4 GPU (including post-maintenance copy-back).
+kernel on the CPU and the actual Apple M4 GPU (including post-maintenance copy-back).
 All 10 guide doctests passed after extracting their self-contained `global=true`
 blocks into temporary Mojo files. The local Modo documentation builder could
 not run its Intel executable on this arm64 host (`Bad CPU type in executable`);

@@ -1,4 +1,4 @@
-"""GPU and CPU system execution benchmarks over a tunable compute-bound kernel.
+"""Device and host system execution benchmarks over a tunable compute-bound kernel.
 
 The movement kernel used by `system_sketch.mojo` is memory-bound: it reads two
 components, writes one, and does three floating point operations per entity.
@@ -9,7 +9,7 @@ This benchmark instead runs a central-force orbital integration whose
 arithmetic intensity is a compile-time parameter. `steps` controls how many
 integration steps each entity performs per launch while the bytes moved stay
 fixed, so sweeping `steps` walks the same kernel from memory-bound to
-compute-bound and shows where the GPU path starts to pay for itself.
+compute-bound and shows where the device path starts to pay for itself.
 
 Components are `Float32`. Apple GPUs have no double precision, so the
 `Float64` components in `larecs.test_utils` cannot be used on the device.
@@ -103,7 +103,7 @@ def integrate_orbit[
         steps: The number of integration steps to perform per entity.
 
     Args:
-        context: The CPU or GPU execution context for the filtered rows.
+        context: The host or device execution context for the filtered rows.
     """
     for entity in context:
         ref position = entity.get[Position]()
@@ -163,12 +163,12 @@ def _populate(mut world: WorldType) raises -> Entity:
     return first
 
 
-def _run_once[steps: Int, on_gpu: Bool](mut world: WorldType) raises:
+def _run_once[steps: Int, on_device: Bool](mut world: WorldType) raises:
     """Executes one launch of the integration kernel over `world`.
 
     Parameters:
         steps: The number of integration steps per entity.
-        on_gpu: Whether to execute against device storage.
+        on_device: Whether to execute against device storage.
 
     Args:
         world: The world whose entities are integrated.
@@ -176,20 +176,20 @@ def _run_once[steps: Int, on_gpu: Bool](mut world: WorldType) raises:
     var context = ContextType(
         Pointer(to=world).unsafe_origin_cast[MutUntrackedOrigin]()[]
     )
-    context.run[integrate_orbit[steps], on_gpu=on_gpu]()
+    context.run[integrate_orbit[steps], on_device=on_device]()
 
 
-def _benchmark[steps: Int, on_gpu: Bool](mut bencher: Bencher):
+def _benchmark[steps: Int, on_device: Bool](mut bencher: Bencher):
     """Benchmarks one launch of the integration kernel.
 
-    A warm-up launch runs before measurement. On the GPU path the first
+    A warm-up launch runs before measurement. On the device path the first
     launch pays just-in-time kernel compilation, which is a one-time startup
     cost rather than a per-frame one and would otherwise dominate the first
     measured iteration.
 
     Parameters:
         steps: The number of integration steps per entity.
-        on_gpu: Whether to execute against device storage.
+        on_device: Whether to execute against device storage.
 
     Args:
         bencher: The benchmark driver.
@@ -198,14 +198,14 @@ def _benchmark[steps: Int, on_gpu: Bool](mut bencher: Bencher):
     var probe = Entity()
     try:
         probe = _populate(world)
-        _run_once[steps, on_gpu](world)
+        _run_once[steps, on_device](world)
     except e:
         print(e)
 
     @always_inline
     def bench_fn() {mut world, imm probe}:
         try:
-            _run_once[steps, on_gpu](world)
+            _run_once[steps, on_device](world)
             keep(world.storage.get[Position](probe).x)
         except e:
             print(e)
@@ -214,13 +214,13 @@ def _benchmark[steps: Int, on_gpu: Bool](mut bencher: Bencher):
 
 
 def _register[
-    steps: Int, on_gpu: Bool
+    steps: Int, on_device: Bool
 ](mut bench: Bench, label: String, iterations: Optional[Int] = None) raises:
     """Registers one point of the arithmetic intensity sweep.
 
     Parameters:
         steps: The number of integration steps per entity.
-        on_gpu: Whether to execute against device storage.
+        on_device: Whether to execute against device storage.
 
     Args:
         bench: The benchmark driver to register on.
@@ -233,7 +233,7 @@ def _register[
         Error: If the driver rejects the registration.
     """
     bench.bench_function(
-        _benchmark[steps, on_gpu],
+        _benchmark[steps, on_device],
         BenchId(label),
         [
             ThroughputMeasure(
@@ -264,7 +264,7 @@ def run_all_gpu_system_benchmarks(mut bench: Bench) raises:
     The sweep runs the same kernel at four arithmetic intensities on each
     execution target. The first point is memory-bound and measures little
     beyond host/device transfer cost; the last is deeply compute-bound and
-    measures the kernel itself. The GPU entries are registered only when an
+    measures the kernel itself. The device entries are registered only when an
     accelerator is present, so the suite still runs without one.
 
     Args:

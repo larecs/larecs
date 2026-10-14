@@ -201,10 +201,10 @@ in the kernel's `Resources[Time]()` list. See
 [Resources](../resources#using-resources-in-kernels) for the complete kernel
 API, missing-resource behavior, mutation semantics, and runnable examples.
 
-## Capturing CPU kernels
+## Capturing host kernels
 
 Pass a closure as an argument to `context.run(kernel)` to borrow surrounding
-values on the CPU. Use `imm` for read-only captures and `mut` for values the
+values on the host. Use `imm` for read-only captures and `mut` for values the
 kernel updates. Capturing kernels may also declare required resources.
 
 ```mojo {doctest="guide_cpu_captures" global=true}
@@ -243,14 +243,14 @@ def main() raises:
 Execution is synchronous: changes to mutable captures are visible after
 `run` returns. The kernel runs once per matching dense physical store and visits only
 that store's rows. With partitioned spatial storage, each block contributes
-a separate CPU invocation. Do not structurally modify the world from a captured
+a separate host invocation. Do not structurally modify the world from a captured
 alias while those rows are being processed.
 
-## Passing CPU-local values to a GPU kernel
+## Passing host-local values to a device kernel
 
 Declare explicit capture slots with {{< api Captures >}}, using
 {{< api ReadCapture >}} for inputs and {{< api MutCapture >}} for values that
-must be copied back. Bind CPU locals with {{< api read_capture >}} and
+must be copied back. Bind host locals with {{< api read_capture >}} and
 {{< api mut_capture >}} when calling `run`. Inside the kernel,
 `context.captures.get[index]()` returns a reference with the declared access.
 The slot index is compile-time; two slots may have the same value type.
@@ -277,7 +277,7 @@ def scale(
     """Scales components and reports the number of processed entities.
 
     Args:
-        context: Matching rows and the explicitly bound CPU-local values.
+        context: Matching rows and the explicitly bound host-local values.
     """
     for entity in context:
         entity.get[Int32]() *= context.captures.get[0]()
@@ -299,7 +299,7 @@ def main() raises:
     var factor: Int32 = 3
     var processed: Int32 = 0
     var context = SystemContext(world)
-    context.run[scale, on_gpu=True](
+    context.run[scale, on_device=True](
         read_capture(factor), mut_capture(processed)
     )
     assert_equal(world.storage.get[Int32](entity), 12)
@@ -308,7 +308,7 @@ def main() raises:
 
 Each invocation uploads the current bound values. Mutable slots are shared
 device allocations, and their final values are copied back to the original
-CPU locals before `run` returns. Read-only slots are not downloaded and cannot
+host locals before `run` returns. Read-only slots are not downloaded and cannot
 be written through `get`. Empty matches leave captures unchanged. Captures
 need no entry in the world's resource storage and can coexist with required
 resources.
@@ -318,37 +318,42 @@ Bindings borrow their locals, so the borrow checker rejects conflicting
 read-only and mutable bindings to the same value. Neither a capture reference
 nor its pointer may escape the kernel invocation.
 
-GPU captures currently support trivially copyable, trivially deletable values,
+Device captures currently support trivially copyable, trivially deletable values,
 such as numbers and plain structs. They copy bytes, not object graphs:
 `List`, `Dict`, host-backed tensors, and pointers to host-only memory cannot
 be transferred this way. `DevicePassable` conversion is not performed for
 capture values. Writes to a mutable capture must use a single writer or
 appropriate synchronization/atomics, just like writes to shared resources.
 
-The same explicit bindings work with CPU kernels, including the closure
-overload. CPU execution borrows the original values directly and calls the
+The same explicit bindings work with host kernels, including the closure
+overload. Host execution borrows the original values directly and calls the
 kernel once per matching physical store (each spatial partition block when
-enabled); GPU execution processes the matching rows
-in one launch. In the example, adding `context.length` once per CPU store
-or once for the GPU launch gives the same total.
+enabled); device execution processes the matching rows
+in one launch. In the example, adding `context.length` once per host store
+or once for the device launch gives the same total.
 
-## GPU execution
+## Device execution
 
-The `SystemContext.run` call used by `Move` executes its kernel on the CPU by
-default. Pass `on_gpu=True` to run a compatible kernel on an accelerator. The
+The **host** is the CPU running the system and managing ECS storage; the
+**device** is the GPU accelerator running the launched kernel. Host/device
+describes their execution and memory roles. The target option is named
+`on_device` in the current API.
+
+The `SystemContext.run` call used by `Move` executes its kernel on the host by
+default. Pass `on_device=True` to run a compatible kernel on an accelerator. The
 same kernel function works on both targets unchanged; see the
 {{< api SystemContext.run >}} and {{< api KernelContext >}} API docs for
-details. GPU execution requires an available accelerator and the corresponding
-Mojo GPU toolchain. On systems without one, `on_gpu=True` kernels fall back to
-CPU execution.
+details. Device execution requires an available accelerator and the corresponding
+Mojo GPU toolchain. On systems without one, `on_device=True` kernels fall back to
+host execution.
 
-Required resources use the same `context.resources.get[T]()` API on the GPU.
+Required resources use the same `context.resources.get[T]()` API on the device.
 Resource transfer constraints, shared-write safety, and the non-capturing
 kernel requirement are covered in
 [Resources](../resources#using-resources-in-kernels).
 
-Use explicit bindings above to pass CPU-local values to GPU entry points;
-lexical CPU borrows are not transferred automatically. Nested closures **inside**
-a GPU kernel can capture that thread's kernel-local variables with `imm` and
+Use explicit bindings above to pass host-local values to device entry points;
+lexical host borrows are not transferred automatically. Nested closures **inside**
+a device kernel can capture that thread's kernel-local variables with `imm` and
 `mut`. Each thread owns its local values; updating a local capture does not
 update a variable on the host or communicate with other GPU threads.

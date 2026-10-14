@@ -10,14 +10,14 @@ status: accepted
 
 Giving every GPU thread a row-zero iterator would process the same entity
 multiple times. The kernel-facing `KernelContext` and `EntityAccessor` API
-must work on CPU and GPU while assigning each matching row to one GPU thread.
+must work on host and device while assigning each matching row to one GPU thread.
 
 ## Decision
 
 - A kernel context describes a prepared contiguous row range and its logical
   length. Filtering and packing happen before iteration; the iterator does
   not inspect entity component masks on each step.
-- CPU iteration starts at row `0` and advances by `1`.
+- Host iteration starts at row `0` and advances by `1`.
 - GPU thread `global_idx.x` starts at that row and advances by the total
   launched thread count. The iterator stops when its row reaches the context
   length, including in a partial final threadgroup. GPU-specific indices are
@@ -29,13 +29,13 @@ must work on CPU and GPU while assigning each matching row to one GPU thread.
 ## Rationale
 
 For a launch of `N` threads, each row has one remainder modulo `N`, so exactly
-one thread visits it. The same iterator abstraction can traverse CPU rows in
+one thread visits it. The same iterator abstraction can traverse host rows in
 order by using a stride of one. Bounds checks make extra threads in the final
 group harmless.
 
 ## Consequences
 
-Iteration indices are local to the prepared CPU range or packed GPU buffer;
+Iteration indices are local to the prepared host range or packed device buffer;
 they are not stable world entity IDs or guaranteed to match across targets.
 Callers must supply valid component pointers and the correct logical length.
 The iterator itself performs no host/device transfer or synchronization.
