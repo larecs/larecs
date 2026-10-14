@@ -63,7 +63,7 @@ sidecars remain separate extensions.
 
 Keep `ResourceType` as the baseline host-storage contract. Adding a host-only
 resource must not require a view, adapter, GPU allocation, or device context.
-Introduce an optional **`DeviceAdaptableResource`** capability for sources that
+Introduce an optional **`DevicePassableResource`** capability for sources that
 provide a custom portable binding. Prefer this name to `GPUResource` (hardware
 specific), `HostResource` (does not describe the additional capability), or
 `DeviceResource` (could mean that the authoritative data lives on the device).
@@ -113,7 +113,7 @@ trait turns arbitrary owning containers into bytewise-safe resources.
 The following is proposed syntax, not compilable public API:
 
 ```text
-LeafDistribution implements ResourceType, DeviceAdaptableResource:
+LeafDistribution implements ResourceType, DevicePassableResource:
     comptime KernelView = LeafDistributionView
     comptime Adapter = LeafDistributionAdapter
 
@@ -318,7 +318,7 @@ and negative-test evidence before adoption as an accepted requirement.
   no-adapter path cheap and measure both setup and complete execution.
 - Resource mutation/copy rules and compile-time access declarations are new
   contracts. Preserve legacy behavior or document an intentional beta migration.
-- `DeviceAdaptableResource`, associated types, and automatic binding registration
+- `DevicePassableResource`, associated types, and automatic binding registration
   are proposed APIs, not implemented features. Host-only resources keep their
   existing storage contract; unsupported device requests need a clear diagnostic.
 - This record remains Proposed. Accepted requirements and existing raw-byte
