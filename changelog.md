@@ -4,6 +4,12 @@
 
 ### Added
 
+- Add source-declared `DevicePassableResource` adapters, portable read-only
+  views, `BufferResource`, and source-keyed allocation reuse. Kernels keep
+  `get[Source]()` on host and device; current source edits and replacements
+  require no rebinding. Add `Resources().read/write/read_write` declarations.
+
+
 - Add target-local `AtomicValue` and `Synchronized` owners with shared views,
   32-bit atomic operations, nonblocking read/write guards, and compiler-enforced
   guard borrows. CPU tests cover actual concurrent workers; device paths are
@@ -38,6 +44,15 @@
   reusable CPU/GPU kernel execution over exact selected rows.
 
 ### Changed
+
+- Stage high-level device transfers in owned buffers and publish downloads only
+  after successful completion. Drain failures; reject further execution if
+  completion cannot be confirmed. Reject resource changes during active leases.
+- Reject owning, pointer-bearing, nontrivial, and opaque ordinary device
+  resources. Migrate heap-backed device sources to read-only adapters; opaque
+  fixed arrays require an explicit supported representation. Legacy
+  `Resources[T]()` remains `read_write` for ordinary resources.
+
 
 - Remove spatial `block_capacity`: each logical archetype/cluster now owns one
   contiguous growable store. Classifier configuration controls cluster granularity;

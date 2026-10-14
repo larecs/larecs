@@ -16,7 +16,7 @@ and link the relevant decision.
 | ECS-05 | Systems run through a `SystemContext`; kernels process entities selected by component access filters on the host or, experimentally, a device. Declared resource and capture access governs those calls. | [Systems guide](../src/guide/systems_scheduler.md), [Decision 0002](decisions/0002-gpu-system-execution.md) |
 | ECS-06 | Batch creation and component mutations in a system can yield a movable, noncopyable `EntitySelection` containing exactly the affected rows. Its lock lasts until release, destruction, or context-manager exit. | [Decision 0001](decisions/0001-locked-entity-selections.md) |
 | ECS-07 | Selection `add`, `remove`, and `replace` update the same selection in place. Selection execution intersects its membership with the kernel filter; empty matches launch no kernel. | [Decision 0001](decisions/0001-locked-entity-selections.md) |
-| ECS-08 | Device raw-byte component and resource transfer accepts only types safe for that representation; heap-backed device resources require a separate transfer design. | [Decision 0002](decisions/0002-gpu-system-execution.md), `src/larecs/resource.mojo`, `src/larecs/component.mojo`, [resource probe](research/resource-view-probe.mojo) |
+| ECS-08 | Device raw-byte component and resource transfer accepts only types safe for that representation; heap-backed device resources require a separate transfer design. | [Decision 0002](decisions/0002-gpu-system-execution.md), `src/larecs/resource.mojo`, `src/larecs/component.mojo`, [Decision 0018](decisions/0018-portable-resource-adapters.md), [resource tests](../../test/resource_test.mojo) |
 | ECS-09 | Each matching kernel row is visited once: host iteration is sequential, while GPU threads partition a prepared row range by global thread index and total launched thread count. | [Decision 0003](decisions/0003-grid-stride-entity-iteration.md), `test/grid_stride_iterator_test.mojo` |
 | ECS-10 | User-authored ECS kernel code must be executable unchanged on both host and device; selecting the target must not require a second kernel implementation. | [Decision 0002](decisions/0002-gpu-system-execution.md). Current gaps: host-only lexical closure entry points and types or bindings unsupported by device transfer; test both targets on compatible hardware. |
 | ECS-11 | A scoped selection can run a kernel after a component mutation and propagate either an ECS usage error or a general kernel error while releasing its lock. | [Decision 0004](decisions/0004-scoped-selection-errors.md), `test/entity_selection_test.mojo` |
@@ -29,11 +29,12 @@ and link the relevant decision.
 
 ## Implementation status
 
-**ECS-08 is not fully satisfied.** Resource validation checks trivial movability
-and currently accepts a List-owning resource without establishing safe raw-byte
-transfer or pointer reachability. Repair is tracked independently under
-[Next release](../roadmap.md#repair-ecs-08-resource-transfer-validation); it must
-not wait for adoption of proposed resource adapters or a later eligibility policy.
+Decision 0018 repairs ordinary resource eligibility: owning, pointer-bearing,
+nontrivial, and opaque representations are rejected by recursive validation.
+Read-only `DevicePassableResource` sources use explicit target-local views and
+adapter-owned allocations instead of copying owners. See
+[adapter integration](../../test/resource_adapter_test.mojo) and
+[raw representation regressions](../../test/resource_test.mojo).
 
 Execution APIs use `on_device`, `DeviceComponentType`, `DeviceResourceType`,
 and `constrain_device_safe_*` under
