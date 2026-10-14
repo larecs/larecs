@@ -65,9 +65,9 @@ portability, not an integrated adapter API.
   copy-back for heap-backed device resources. Evaluate the proposed read-only
   contiguous-buffer binding before general collection serialization.
 - [ ] Validate the proposed optional `DevicePassableResource` trait, associated
-  `KernelView`/`Adapter` types, and default adapter factory with the locked
-  compiler. Register source-declared bindings without GPU work on add; preserve
-  host-only resources, transactional registration, source replacement/removal,
+  `KernelView`/`Adapter` types, and explicit resource-supplied adapter factory
+  with the locked compiler. Register source-declared bindings without GPU work
+  on add; preserve host-only resources, transactional registration, source replacement/removal,
   explicit third-party bindings, and preflight diagnostics for missing device
   capability. Distinguish static type checks from dynamic world-binding checks.
 - [ ] Define explicit default-adapter eligibility and compatibility policy;
