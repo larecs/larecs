@@ -65,11 +65,16 @@ portability, not an integrated adapter API.
   copy-back for heap-backed device resources. Evaluate the proposed read-only
   contiguous-buffer binding before general collection serialization.
 - [ ] Validate the proposed optional `DevicePassableResource` trait, associated
-  `KernelView`/`Adapter` types, and explicit resource-supplied adapter factory
+  `KernelView`/`Adapter` types, and explicit instance `create_adapter(self)` factory
   with the locked compiler. Register source-declared bindings without GPU work
   on add; preserve host-only resources, transactional registration, source replacement/removal,
   explicit third-party bindings, and preflight diagnostics for missing device
   capability. Distinguish static type checks from dynamic world-binding checks.
+- [ ] Own adapter state per world resource binding, with no retained source
+  borrow. Recreate source-declared adapters and clear caches on source replacement;
+  require rebinding of explicit overrides. Preserve allocations on ordinary sample
+  edits/growth, require rebinding for factory-captured configuration changes,
+  and validate factory failures without publishing a partial replacement.
 - [ ] Define explicit default-adapter eligibility and compatibility policy;
   reject unsupported ownership/pointers clearly rather than treating trivial
   movability as sufficient evidence of device safety.
@@ -78,8 +83,9 @@ portability, not an integrated adapter API.
   direct-source aliases before preparation.
 - [ ] Prove invocation leases, reentrant mutation rejection, preparation/launch/
   copy-back failure cleanup, and unknown-completion handling against the locked
-  runtime. World copies must recreate views and start with independent empty
-  device caches; moves may retain an idle cache with its context.
+  runtime. World copies must recreate adapters/views from copied sources or owned
+  explicit configuration, keep mutable state independent, and start with empty
+  device caches; moves may retain idle adapters/caches with their sources and context.
 - [ ] Integrate shared preparation/completion across ordinary and selected host/
   device execution. Test source edits/replacement/growth, empty grids and matches,
   repeated target switching, allocation reuse, source preservation, and compiler
@@ -96,6 +102,16 @@ portability, not an integrated adapter API.
   express the ownership relationship.
 
 ## Later — lower priority
+
+### Reuse immutable resource adapter configuration
+
+- [ ] Evaluate opt-in caching by explicit owned construction inputs under
+  [proposed decision 0018](design/decisions/0018-portable-resource-adapters.md).
+  Require deterministic construction, adapter-type and value-equality checks,
+  bounded retention, and live binding ownership across eviction. Keep mutable
+  binding state, source identity, and device sample buffers independent; include
+  context identity for device-specific plans. Measure construction savings
+  against key construction and cache overhead before adopting this optimization.
 
 ### Performance regression coverage
 

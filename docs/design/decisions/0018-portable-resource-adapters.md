@@ -83,13 +83,22 @@ type relationship when registering the binding. Trait conformance establishes
 that these operations exist, not that arbitrary pointer-bearing user code is
 automatically safe; adapter authors remain responsible for their implementation.
 
-Require a static `create_adapter() -> Adapter` factory supplied by the resource.
+Require an instance `create_adapter(self) -> Adapter` factory supplied by the
+resource.
 The trait provides no factory implementation and does not require `Adapter()`
-to exist. The factory supplies fixed configuration; per-world overrides can be
-supplied explicitly at registration. Factories create configuration without
-retaining a source borrow or allocating device storage. Source-dependent
-dimensions and sample addresses are derived anew during preparation, not
-captured by a one-time factory.
+to exist. The factory borrows the resource immutably and copies the configuration
+needed by this instance's adapter; per-world overrides can be supplied explicitly
+at registration. Its result must not retain a source borrow or allocate device
+storage. Source-dependent dimensions and sample addresses are derived anew
+during preparation, not captured by a one-time factory.
+
+Declare the adapter **type per datatype**, but create and own mutable adapter
+**state per resource binding in a world**. Two worlds containing the same
+resource type have independent mutable state and device caches. Immutable
+configuration may be shared under the optional caching contract below. Do not
+share mutable adapter state globally by datatype or construct a fresh adapter
+for every invocation. A binding retains its adapter across invocations while
+borrowing the current source only for preparation and execution.
 Exact Mojo associated-type/factory syntax still needs compiler evidence;
 the examples here specify behavior rather than assert a compiled trait API.
 
@@ -118,8 +127,8 @@ LeafDistribution implements ResourceType, DevicePassableResource:
     comptime KernelView = LeafDistributionView
     comptime Adapter = LeafDistributionAdapter
 
-    static create_adapter() -> Adapter:
-        return LeafDistributionAdapter(configuration=...)
+    create_adapter(self) -> Adapter:
+        return LeafDistributionAdapter(configuration=self.adapter_configuration)
 
 world.resources.add(LeafDistribution(...))
 # add registers the source-declared binding; no GPU work occurs here.
@@ -141,13 +150,22 @@ values, not additional authoritative resources stored in the public resource
 table. `ResourceStorage.get[LeafDistribution]()` remains the host editing API.
 
 For a conforming source, adding it automatically registers its associated view
-and factory-created adapter configuration without creating a device cache.
-Removing the source removes its binding after leases have ended. Replacing the
-same source type between invocations retains the type association and adapter configuration,
-invalidates prepared views, and observes the replacement data on the next run.
-Use an explicit rebind to change per-world adapter configuration. Validate
-binding collisions before committing an add so failed registration cannot leave
-an inserted source with a missing binding.
+and calls the instance factory to create binding-owned adapter state without
+creating a device cache. Removing the source removes its binding after leases
+have ended. Replacing a source instance retains its type association but calls
+the replacement's factory, replaces adapter state, and discards the old prepared
+views and device cache. Validate the replacement and create its new adapter
+before publishing either; failure leaves the existing source and binding intact.
+
+Ordinary sample edits or sample-buffer growth keep the adapter and reuse adequate
+device capacity; preparation reads the current dimensions, samples, and metadata.
+Changes to configuration captured by the factory require explicit rebinding or
+source replacement before the next run. An explicitly supplied adapter override
+is tied to the source instance: replacement invalidates that explicit binding
+and requires a new explicit bind, rather than silently reusing stale configuration
+or switching to the resource's factory. Validate binding collisions before
+committing an add so failed registration cannot leave an inserted source with
+a missing binding.
 
 Retain `world.bind_resource[Source, View](adapter)` as an advanced alternative
 for third-party types, additional representations, or per-world configuration.
@@ -202,11 +220,17 @@ alias detection or thread safety.
 
 ### Preparation and storage ownership
 
-Separate reusable adapter configuration from target-local cache state. Each
-world's device context owns the latter, keyed by binding identity. It must not
-be reused on another context, including after a world copy. Copy configuration
-and authoritative data, start with an empty cache, and reconstruct views.
-Moving an idle world may transfer its cache with the associated context.
+Separate binding-owned adapter configuration/state from target-local cache state.
+Each world's device context owns the latter, keyed by that resource binding's
+identity. It must not be reused on another context, including after a world copy.
+Copy authoritative data and rebuild source-declared adapters from the copied
+resource instances; this may occur lazily before their first invocation so
+fallible preparation does not become part of the world's copy constructor.
+Rebuild explicit bindings from owned configuration. Mutable adapter state is
+independent; immutable configuration may be reused under the optional caching
+contract below. Device caches start empty, and views are reconstructed.
+Moving an idle world may transfer its adapters and caches with the associated
+sources and context.
 
 Conceptually provide:
 
@@ -244,6 +268,39 @@ work. Empty entity matches still validate declarations and source metadata,
 but allocate/upload nothing and invoke no kernel. Use one preparation/completion
 implementation for ordinary and selected execution, including host closures,
 so empty ranges and errors obey the same contract.
+
+### Optional reuse by construction inputs
+
+A later opt-in cache may reuse immutable adapter configuration or preprocessing
+plans when their construction inputs are equal. If an adapter instance consists
+entirely of immutable configuration, that instance may itself be shared; all
+mutable binding state and device allocations remain in separate owners. Generic
+adapters with mutable state are not eligible for whole-instance memoization.
+
+Require an explicit, owned key containing the adapter type and every input that
+affects construction. Use value equality as well as hashing; a matching hash
+alone is insufficient. Do not use resource type, source address, or mutable
+references as a substitute for construction inputs. The factory must explicitly
+opt into deterministic construction from that key; arbitrary `create_adapter(self)`
+implementations may depend on ambient state and cannot be memoized automatically.
+Device-dependent plans also require the correct context/backend identity and
+belong in a context-owned cache, not a global configuration cache.
+
+For example, two leaf distributions with identical sampling-policy configuration
+can share an immutable sampling plan while retaining separate sample uploads,
+views, source leases, and device buffers. A configuration-cache hit does not
+establish equality of scientific samples, synchronize them, or change source
+identity for alias checking. Sharing uploaded samples would require a separate
+immutable-data snapshot and residency design and is outside this proposal.
+
+Source replacement still recreates binding state and clears its device cache;
+it may obtain equal immutable configuration from this cache. If construction
+inputs change in place, the existing explicit-rebind rule still applies. Cache
+entries must own their configuration, bindings must retain it while in use, and
+eviction must not invalidate active bindings. Bound cache memory or make its
+lifetime explicit. Measure construction cost before introducing cache-key and
+retention overhead: the initial per-binding adapter is already reused across
+invocations and does not require this optimization.
 
 ### Lifetime and completion
 
