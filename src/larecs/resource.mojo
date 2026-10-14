@@ -277,7 +277,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
             resources: The resources to add.
 
         Raises:
-            Error: If some resource already exists.
+            Error: If a resource already exists, is leased, or storage is unusable.
         """
 
         with Zone(
@@ -337,7 +337,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
             resources: The resources to set.
 
         Raises:
-            Error: If one of the resources does not exist.
+            Error: If a resource is missing, leased, or storage is unusable.
         """
 
         with Zone(
@@ -405,7 +405,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
             Ts: The types of the resources to remove.
 
         Raises:
-            Error: If one of the resources does not exist.
+            Error: If a resource is missing, leased, or storage is unusable.
         """
 
         with Zone(function_name="ResourceStorage.remove[*Ts: ResourceType]()"):
@@ -447,7 +447,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
             T: The type of the resource to get.
 
         Raises:
-            Error: If the resource does not exist.
+            Error: If the resource is missing, leased, or storage is unusable.
 
         Returns:
             A reference with ``UnsafeAnyOrigin``, preserving the mutability

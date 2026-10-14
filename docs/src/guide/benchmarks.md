@@ -512,30 +512,32 @@ pixi run mojo build -I src benchmark/resource_execution_benchmark.mojo -o /tmp/r
 pixi run mojo build -I src benchmark/resource_adapter_benchmark.mojo -o /tmp/resource-adapters
 ```
 
-On Apple M4, macOS 27.0.1, Mojo `1.0.0 (ed45d567)`, compare base `0eab8a9`
+On Apple M4, macOS 27.0.1, Mojo `1.0.0 (ed45d567)`, compare base `6a3841b`
 against this implementation with the same driver. Warm each binary, then run five
 paired samples, alternating base/current order, with no concurrent compilation
 or benchmark jobs. Median per-call means were:
 
 | Complete invocation | Base | Current |
 | --- | --- | --- |
-| Host, no resource | 292.7 ns | 298.6 ns |
-| Host, legacy scalar resource | 302.2 ns | 343.3 ns |
-| GPU, no resource | 223.33 µs | 231.59 µs |
-| GPU, legacy scalar resource | 237.40 µs | 271.81 µs |
-| Host, edited adapter | — | 441.6 ns |
-| Host, edited adapter plus growth | — | 443.4 ns |
-| GPU, edited adapter | — | 295.70 µs |
-| GPU, edited adapter plus growth | — | 301.36 µs |
+| Host, no resource | 294.2 ns | 299.6 ns |
+| Host, legacy scalar resource | 299.8 ns | 350.7 ns |
+| GPU, no resource | 250.50 µs | 251.52 µs |
+| GPU, legacy scalar resource | 243.51 µs | 268.59 µs |
+| Host, edited adapter | — | 449.1 ns |
+| Host, edited adapter plus growth | — | 451.4 ns |
+| GPU, edited adapter | — | 323.76 µs |
+| GPU, edited adapter plus growth | — | 303.54 µs |
 
-The scalar GPU case costs about 14.5% more with staged publication and lifetime
+The scalar GPU case costs about 10.3% more with staged publication and lifetime
 protection. These measurements establish the cost of this synthetic workload,
-not an application speedup or Tree-D shading result. Source/sample allocation
+not an application speedup or Tree-D shading result. Short GPU batches are noisy;
+the growth-case ordering does not establish a growth benefit. Source/sample allocation
 and scientific preprocessing during initial construction are excluded; incremental
 host append and device allocation growth are included in growth cases. Existing
 allocation capacity is reused in nongrowing cases; contents are uploaded every run.
 
-Base/current driver builds took 6.37/5.79 seconds with existing compiler caches.
-These are recorded build costs, not comparable cold-compilation measurements.
+Sequential base/current/adapter driver builds took 1.18/3.00/3.01 seconds with
+existing compiler caches and no competing builds. These are recorded build costs,
+not comparable cold-compilation measurements.
 Linux resource timings and cold compilation remain unmeasured. These focused
 manual cases do not enlarge the normal PR performance matrix.
