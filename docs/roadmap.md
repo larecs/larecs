@@ -51,80 +51,66 @@ selected mutation chains, and a selected device case.
   from tests or benchmarks skipped because hardware is unavailable.
 - [ ] Investigate material regressions before closing the selection migration.
 
+### Repair ECS-08 resource-transfer validation
+
+The current validator accepts a resource owning a `List` because it checks
+trivial movability rather than safe raw-byte representation. This is a bug
+against accepted [ECS-08](design/requirements.md#implementation-status), independent
+of proposed decision 0018 or any future eligibility policy. The
+[descriptor probe](design/research/resource-view-probe.mojo) reproduces acceptance
+without attempting to transfer or dereference the owning container on the device.
+
+- [ ] Repair raw-byte resource validation before the next release, independently
+  of adapter implementation. Reject unsupported owning/host-pointer resources
+  and add positive/negative regressions for nested ownership and supported plain
+  values. Document any necessary beta migration; keeping today's validator is
+  not an acceptable way to satisfy ECS-08.
+
 ### Support heap-backed device resources
 
-The current device resource path copies raw bytes and does not encode host heap
-ownership for the device. Keep existing type restrictions until a safe transfer
-model is implemented. See [decision 0002](design/decisions/0002-gpu-system-execution.md)
-and [proposed portable resource adapters](design/decisions/0018-portable-resource-adapters.md).
-Trivial movability alone does not exclude owning containers or establish pointer
-reachability; the proposal's manual Apple GPU probe validates descriptor
-portability, not an integrated adapter API.
+Follow [proposed decision 0018](design/decisions/0018-portable-resource-adapters.md)
+and [decision 0002](design/decisions/0002-gpu-system-execution.md). Implement the
+following gates in order. The proposal remains unaccepted and unimplemented.
 
-- [ ] Decide and document ownership, encoding, lifetime, synchronization, and
-  copy-back for heap-backed device resources. Evaluate the proposed read-only
-  contiguous-buffer binding before general collection serialization.
-- [ ] Validate the proposed optional `DevicePassableResource` trait, associated
-  `KernelView`/`Adapter` types, and explicit instance `create_adapter(self)` factory
-  with the locked compiler. Register source-declared bindings without GPU work
-  on add; preserve host-only resources, transactional registration, source replacement/removal,
-  explicit adapter configuration, third-party wrappers, and preflight diagnostics
-  for missing device capability. Distinguish static type checks from dynamic
-  world-binding checks.
-- [ ] Own adapter state per world resource binding, with no retained source
-  borrow. Recreate source-declared adapters and clear caches on source replacement;
-  require rebinding of explicit overrides. Preserve allocations on ordinary sample
-  edits/growth, require rebinding for factory-captured configuration changes,
-  and validate factory failures without publishing a partial replacement.
-- [ ] Define explicit default-adapter eligibility and compatibility policy;
-  reject unsupported ownership/pointers clearly rather than treating trivial
-  movability as sufficient evidence of device safety.
-- [ ] Add `Resources().read[T]()`, `.write[T]()`, and `.read_write[T]()`
-  declarations, keeping `Resources[T]()` equivalent to `read_write`. For ordinary
-  resources, skip the device download for `read`, skip the upload and reject
-  `get` for `write`, and otherwise keep existing behavior.
-- [ ] Add source-oriented getter resolution: for a `DevicePassableResource`,
-  `read[T]`/`get[T]()` exposes immutable `T.KernelView` on both targets, and
-  `write`, `read_write`, and legacy `Resources[T]()` are compile errors with a
-  diagnostic. Host storage access retains `T`. Validate and transfer resolved
-  descriptor types, preserving source-based binding and lease identity. Reject
-  duplicate declarations of one source in any combination of modes.
-- [ ] Validate getter return types with the locked compiler and negative access
-  checks. Cover nontrivially movable sources with valid views, source types sharing
-  a view type, host/device parity, undeclared view-type getters, and explicit
-  overrides matching the source's associated adapter/view types. Use resource
-  wrappers for third-party types requiring a different representation.
-- [ ] Prove invocation leases, reentrant mutation rejection, preparation/launch/
-  copy-back failure cleanup, and unknown-completion handling against the locked
-  runtime. World copies must recreate adapters/views from copied sources or owned
-  explicit configuration, keep mutable state independent, and start with empty
-  device caches; moves may retain idle adapters/caches with their sources and context.
-- [ ] Integrate shared preparation/completion across ordinary and selected host/
-  device execution. Test source edits/replacement/growth, empty grids and matches,
-  repeated target switching, allocation reuse, source preservation, and compiler
-  rejection of read-only mutation on real hardware.
-- [ ] Measure unchanged plain-resource calls and complete read-only adapter
-  invocations, including validation, upload, allocation growth, launch, and
-  synchronization; report compilation separately. Validate Tree-D's actual grid
-  representation before claiming application compatibility or benefit.
-- [ ] Implement and test `TileTensor` compatibility under that model.
-- [ ] Resolve `Dict` compatibility and any `DevicePassable` conversion needed;
-  ensure unsupported types fail clearly.
-- [ ] Update device resource guides after API and hardware tests pass. Preserve the
-  documented `ResourceStorage.get` `UnsafeAnyOrigin` contract unless Mojo can
-  express the ownership relationship.
+1. [ ] Add `read` access for ordinary resources and skip its device download in
+   both ordinary and selected execution. Preserve `Resources[T]()` as
+   `read_write[T]` and existing ordinary-resource transfer behavior. Define host
+   write-only set access; reject new device `write` declarations before work
+   until shared initialization/publication semantics are designed.
+2. [ ] Validate full automatic registration and source-oriented getter resolution
+   with the locked compiler: broad-bound trait checks, associated adapter/view
+   types, add/insert-on-set, copied metadata, and adapted `get[T]()` returning only
+   `T.KernelView` on both targets. Reject adapted mutable/legacy declarations.
+   If compiler integration fails, revise the API to explicit typed registration
+   before accepting the design. The isolated
+   [CPU probe](design/research/resource-trait-dispatch-probe.mojo) passed; this
+   integration gate has not.
+3. [ ] Integrate stateless adapter operations with one context-local buffer cache
+   per source type. Validate/prepare from the current source every invocation;
+   test sample edits, growth/shrinkage, whole-instance assignment through mutable
+   `get[T]()`, and `set` without rebinding. Keep source-keyed conflicts, view-only
+   kernel access, wrappers for third-party sources, and empty-match validation.
+4. [ ] Prove source/allocation leases, reentrant mutation rejection, copied-world
+   empty caches, and drain/unknown-completion failure handling. Validate ordinary
+   and selected host/device execution on actual hardware, then publish guides
+   and measure unchanged plain-resource calls and complete adapter invocations,
+   including compilation, transfers, growth, and synchronization. Validate
+   Tree-D's actual representation before claiming application compatibility.
+
+Preserve the documented `ResourceStorage.get` `UnsafeAnyOrigin` contract until
+Mojo can express its separately allocated ownership. The gates above do not
+claim that a roadmap entry or an isolated probe establishes implementation.
 
 ## Later — lower priority
 
-### Reuse immutable resource adapter configuration
+### Broader resource adaptation
 
-- [ ] Evaluate opt-in caching by explicit owned construction inputs under
-  [proposed decision 0018](design/decisions/0018-portable-resource-adapters.md).
-  Require deterministic construction, adapter-type and value-equality checks,
-  bounded retention, and live binding ownership across eviction. Keep mutable
-  binding state, source identity, and device sample buffers independent; include
-  context identity for device-specific plans. Measure construction savings
-  against key construction and cache overhead before adopting this optimization.
+- [ ] Evaluate shared immutable preprocessing/configuration, construction-input
+  caching, and explicit adapter overrides only when measured application costs
+  justify a separate ownership/API design. These are outside 0018's first increment.
+- [ ] Evaluate `TileTensor` compatibility and `Dict` serialization after the
+  read-only contiguous-buffer model is implemented; reject unsupported
+  representations clearly and document validated host/device limits.
 
 ### Performance regression coverage
 

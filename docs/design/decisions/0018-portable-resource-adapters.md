@@ -3,297 +3,194 @@ id: "0018"
 title: "Portable resource adapters"
 status: proposed
 status_notes: |
-  Representation validated with a manual host/Apple GPU/host probe on Mojo
-  1.0.0. Source-oriented getter resolution, registration, access enforcement,
-  invocation leases, cache isolation, and failure handling are not implemented.
-  Does not replace decision 0002.
+  Representation validated by a manual host/Apple GPU/host probe on Mojo 1.0.0.
+  Optional-trait dispatch and associated-type lookup validated by a CPU probe.
+  Resource access declarations, automatic registration in Larecs, getter
+  resolution, device caches, and invocation failure handling are not implemented.
+  The independent ECS-08 validator bug remains open. Does not replace decision 0002.
 ---
 
 # Decision 0018: Portable resource adapters
 
 ## Context
 
-The Tree-D use case needs a leaf-distribution grid available to the same
-`KernelContext` kernel on host and device. The host owns scientific data;
-the kernel needs samples and metadata rather than the owning container.
-Tree-D source is not present in this repository, so its exact sample type,
-layout, indexing, and validation remain application integration questions.
+Tree-D needs a leaf-distribution grid available to the same `KernelContext`
+kernel on host and device. Its scientific container owns host data; the kernel
+needs samples and metadata. Tree-D source is not present here, so its exact
+sample type, layout, indexing, and validation remain integration questions.
 
-Larecs already represents kernel resources as pointers on both targets.
-`_bind_host_resources` points directly into `ResourceStorage`; device execution
-creates a `DeviceResourceStorage` per invocation, uploads each resource's bytes,
-and downloads every descriptor before synchronizing. Ordinary and selected
-device execution have separate preparation/copy-back paths. The world already
-retains its device context and component buffers, but not resource adapters.
+Current host resource binding points into `ResourceStorage`. Device execution
+creates invocation-local `DeviceResourceStorage`, transfers each resource's raw
+bytes in both directions, and synchronizes on successful return. Ordinary and
+selected device execution have separate transfer loops. `Resources[T]()` does
+not declare access modes and `ResourceAccessor.get[T]()` is always mutable.
 
-These are material limits of the existing API:
-
-- `Resources[T]()` declares availability, not read/write access.
-  `ResourceAccessor.get[T]()` always returns an untracked mutable reference.
-- `ResourceStorage.get` deliberately uses `UnsafeAnyOrigin`; its separately
-  allocated ownership cannot currently be expressed by a storage-bound origin.
-  A structural selection lock does not establish a resource borrow.
-- `constrain_device_safe_resources` checks trivial movability, not pointer
-  reachability or ownership. On the locked compiler it even accepts the
-  List-owning `Samples` in the [probe](../research/resource-view-probe.mojo).
-  Copying such a container's bytes does not relocate its sample allocation.
-- Successful device runs synchronize before return. Preparation, launch,
-  download, and synchronization can fail before that successful boundary;
-  adding invocation-local pointer descriptors requires explicit cleanup rules.
-- `World` and `ResourceStorage` are copyable. Copying a cached pointer descriptor
-  or sharing a mutable device buffer between copies is not a valid substitute
-  for copying authoritative data and rebuilding target-local state.
+Trivial movability is not deep-transfer safety: the locked compiler accepts the
+List-owning source in the [descriptor probe](../research/resource-view-probe.mojo).
+This violates accepted ECS-08 and is tracked as an independent **Next release**
+bug in the [roadmap](../../roadmap.md#repair-ecs-08-resource-transfer-validation).
+Adopting an adapter design is not a prerequisite for repairing that validator.
 
 ## Decision
 
-Propose a resource binding with three separate roles:
+Propose an initial **read-only contiguous-buffer** adapter path:
 
-| Role | Ownership and responsibility |
+| Role | Responsibility |
 | --- | --- |
-| Source | World-owned authoritative host data; may own heap allocations. |
-| View | Trivial kernel descriptor with target-local immutable sample pointers and metadata. |
-| Adapter | Validates source data, prepares views, and owns reusable device allocations. |
+| Source | Owns authoritative host data and all current scientific configuration. |
+| View | Trivial descriptor with target-local immutable sample pointers and metadata. |
+| Adapter type | Stateless operations validating the current source and preparing invocation bindings. |
+| Device cache | Per-world, context-local buffers keyed by source type; retains allocation capacity only. |
 
-The initial implementation should support **read-only contiguous scalar
-buffers and trivial descriptors**. Kernels use exactly the same view type and
-operations on both targets. Writable adapters, automatic residency tracking,
-asynchronous public execution, collection serialization, and synchronization
-sidecars remain separate extensions.
+There is no adapter factory, captured instance configuration, mutable adapter
+instance, per-world adapter override, or construction-input cache in this first
+increment. Third-party sources use resource wrappers. Shared immutable plans,
+explicit overrides, residency/revisions, collection serialization, writable
+views, and asynchronous public execution are deferred.
 
-### Resource-declared device capability
+### Resource capability and application API
 
-Keep `ResourceType` as the baseline host-storage contract. Adding a host-only
-resource must not require a view, adapter, GPU allocation, or device context.
-Introduce an optional **`DevicePassableResource`** capability for sources that
-provide a custom portable binding. Prefer this name to `GPUResource` (hardware
-specific), `HostResource` (does not describe the additional capability), or
-`DeviceResource` (could mean that the authoritative data lives on the device).
-The existing `DeviceResourceType` alias denotes trivial register passability;
-do not reuse it for the new ownership/transfer contract.
-
-The source declares two associated compile-time types:
+Keep `ResourceType` as the host-storage contract. An optional
+`DevicePassableResource` capability declares associated compile-time types:
 
 | Member | Contract |
 | --- | --- |
-| `KernelView` | The same kernel-facing descriptor type on host and device. |
-| `Adapter` | A resource adapter whose source type is this resource and whose view type is `KernelView`. |
+| `KernelView` | The same kernel descriptor type on host and device. |
+| `Adapter` | Stateless adapter operations for this source and its `KernelView`. |
 
-The adapter implements validation, host binding, device preparation, and
-completion under the ownership rules below. Check the associated source/view
-type relationship when registering the binding. Trait conformance establishes
-that these operations exist, not that arbitrary pointer-bearing user code is
-automatically safe; adapter authors remain responsible for their implementation.
+The adapter is selected by datatype; no adapter instance is constructed. Every
+operation receives the current source explicitly. All configuration is read
+from it during validation/preparation. No operation retains a source address
+or configuration across invocations. Associated types establish the available
+operations, not the safety of arbitrary application pointer code.
 
-Require an instance `create_adapter(self) -> Adapter` factory supplied by the
-resource.
-The trait provides no factory implementation and does not require `Adapter()`
-to exist. The factory borrows the resource immutably and copies the configuration
-needed by this instance's adapter; per-world overrides can be supplied explicitly
-at registration. Its result must not retain a source borrow or allocate device
-storage. Source-dependent dimensions and sample addresses are derived anew
-during preparation, not captured by a one-time factory.
-
-Declare the adapter **type per datatype**, but create and own mutable adapter
-**state per resource binding in a world**. Two worlds containing the same
-resource type have independent mutable state and device caches. Immutable
-configuration may be shared under the optional caching contract below. Do not
-share mutable adapter state globally by datatype or construct a fresh adapter
-for every invocation. A binding retains its adapter across invocations while
-borrowing the current source only for preparation and execution.
-Exact Mojo associated-type/factory syntax still needs compiler evidence;
-the examples here specify behavior rather than assert a compiled trait API.
-
-Do not require `source.to_view()` and `source.to_adapter()` as the binding API.
-A bare `to_view()` has no target, cache, or lease and cannot describe both host
-borrowing and device allocation ownership. Passing those objects into the
-source would merge the scientific container with backend preparation. Associated
-types and the explicit factory keep the association discoverable while leaving
-the adapter responsible for constructing invocation bindings.
-
-There is no successful no-op device adapter. The default for an ordinary
-host-only resource is **direct host borrowing with no device capability**.
-This default needs no methods on the source. An explicit device request must
-report unsupported resources rather than skip their preparation, manufacture
-an empty view, or copy host pointers. A separately audited bytewise adapter can
-serve supported plain values; its eligibility is independent of merely satisfying
-`ResourceType` or trivial movability. Neither a factory nor a marker
-trait turns arbitrary owning containers into bytewise-safe resources.
-
-### Application API
-
-The following is proposed syntax, not compilable public API:
+The following is proposed syntax, not a compiled Larecs API:
 
 ```text
 LeafDistribution implements ResourceType, DevicePassableResource:
     comptime KernelView = LeafDistributionView
     comptime Adapter = LeafDistributionAdapter
 
-    create_adapter(self) -> Adapter:
-        return LeafDistributionAdapter(configuration=self.adapter_configuration)
-
 world.resources.add(LeafDistribution(...))
-# add registers the source-declared binding; no GPU work occurs here.
+# Registers type-only binding metadata; no GPU work.
 
 required_resources = Resources().read[LeafDistribution]()
 
 shade(context: KernelContext[filter, required_resources]):
     distribution = context.resources.get[LeafDistribution]()
-    # distribution is an immutable LeafDistribution.KernelView on both targets.
+    # Immutable LeafDistribution.KernelView on host and device.
     ... distribution.sample(x, y) ...
 
-context.run[shade]()                 # host
-context.run[shade, on_device=True]()  # device; same kernel
+context.run[shade]()
+context.run[shade, on_device=True]()
 ```
 
-Applications add the source once, mutate the authoritative source between runs,
-and select the execution target at `run`. They do not construct target pointers,
-upload descriptors, or request synchronization themselves. Views are invocation
-values, not additional authoritative resources stored in the public resource
-table. `ResourceStorage.get[LeafDistribution]()` remains the host editing API.
+Bindings are keyed by the original source type, not by view type. There is one
+resource and binding per source type in a world. Different sources may share a
+view type. Views are invocation values and never enter the public resource table.
+Wrappers around third-party scientific types declare the associated view and
+adapter without modifying those third-party definitions.
 
-For a conforming source, adding it automatically registers its source-keyed
-binding and calls the instance factory to create binding-owned adapter state
-without creating a device cache. Removing the source removes its binding after
-leases have ended. Replacing a source instance retains its type association but calls
-the replacement's factory, replaces adapter state, and discards the old prepared
-views and device cache. Validate the replacement and create its new adapter
-before publishing either; failure leaves the existing source and binding intact.
+### Access vocabulary and shared writes
 
-Ordinary sample edits or sample-buffer growth keep the adapter and reuse adequate
-device capacity; preparation reads the current dimensions, samples, and metadata.
-Changes to configuration captured by the factory require explicit rebinding or
-source replacement before the next run. An explicitly supplied adapter override
-is tied to the source instance: replacement invalidates that explicit binding
-and requires a new explicit bind, rather than silently reusing stale configuration
-or switching to the resource's factory. Validate binding collisions before
-committing an add so failed registration cannot leave an inserted source with
-a missing binding.
+Resource access modes have the same meaning as the component `Filter` modes:
 
-Retain an explicit source-keyed binding operation for per-world adapter
-configuration. A supplied adapter must match `Source.Adapter` and
-`Source.KernelView`; it cannot select a different getter return type at runtime.
-Do not silently overwrite an automatically registered binding: require an
-explicit replacement operation, available only with no active lease. Third-party
-types that need a different portable representation require a resource wrapper
-implementing `DevicePassableResource`; its factory may delegate to application
-adapter code. Arbitrary source/view pairs would need a separate compile-time
-binding declaration and are outside this initial API.
-
-Registration establishes a checked source-type/view-type/adapter-type triple
-keyed by source type. Use one binding per source; reject duplicate registration
-and validate that the source exists. Store source identity, not a permanent
-source pointer: replacing the source between invocations must be observed by
-the next preparation. Different source types may use the same view type because
-the kernel selects a binding by source, not by view. An ordinary stored resource
-whose type happens to equal a view type does not collide with an associated
-view, which is never inserted into the public resource table.
-
-### Access vocabulary
-
-Resource declarations use three access modes, named consistently on host and
-device:
-
-| Declaration | Kernel access | Device transfer for a bytewise resource |
+| Declaration | Kernel access | Ordinary-resource device transfer in the initial increment |
 | --- | --- | --- |
 | `Resources().read[T]()` | Immutable `get[T]()` | Upload; no download. |
-| `Resources().write[T]()` | `set[T](value)` only; `get[T]()` is a compile error | No upload; download after the kernel. |
-| `Resources().read_write[T]()` | Mutable `get[T]()` | Upload and download. |
+| `Resources().write[T]()` | `set[T](value)` only; `get[T]()` is rejected | Rejected until write-only shared-resource semantics are designed. |
+| `Resources().read_write[T]()` | Mutable `get[T]()` | Upload and download through the existing bytewise path. |
 
-`write` is write-only, matching `Filter.write`: the kernel never observes the
-prior value. None of these modes makes concurrent GPU writes to one shared
-value safe. The existing `Resources[T]()` form remains valid and is equivalent
-to `read_write[T]`.
+`Resources[T]()` is equivalent to `read_write[T]`. `write` never authorizes
+reading the old value; host write-only access uses the same set-only contract.
+
+A resource is one shared value, not a separate component row per GPU thread.
+Skipping upload for `write` and downloading afterward could publish uninitialized
+bytes if no thread writes the resource. Multiple writers can also race. Therefore
+new device `write` declarations are rejected before preparation, including empty
+entity matches. Revisit them with decision 0016's protected access integration
+and an explicit complete-initialization/publication contract. Guards alone do
+not guarantee that a write actually occurs.
+
+Existing ordinary-resource `read_write` device execution is unchanged: uploading
+the prior value avoids the uninitialized-buffer issue, but applications remain
+responsible for race-free writes. Access declarations do not add synchronization.
 
 ### Kernel access resolution
 
-Kernel declarations and getters name the **original resource type**. Resolve the
-representation at compile time from that type's capability and declared access:
+Declarations and getters name the **original resource type**:
 
-| Resource type and declaration | Getter result | Execution support |
-| --- | --- | --- |
-| `DevicePassableResource`, `read[T]` | Immutable reference to `T.KernelView` | Same descriptor type and API on host and device; the adapter supplies target-local storage. |
-| `DevicePassableResource`, `write[T]`, `read_write[T]`, or `Resources[T]()` | Compile error | Reserved for future writable views on both targets. |
-| Ordinary resource, any mode | `T`, with the declared mutability | Unchanged host behavior; device use keeps today's bytewise transfer, with `read` skipping its download. |
-| `world.resources.get[T]()` | Reference to the original authoritative host `T`, with storage-access mutability | Host editing API, outside the kernel adapter mapping. |
+| Resource and declaration | Kernel-facing type/support |
+| --- | --- |
+| `DevicePassableResource`, `read[T]` | Immutable reference to `T.KernelView` on both targets. |
+| `DevicePassableResource`, `write[T]`, `read_write[T]`, or `Resources[T]()` | Compile error on both targets; reserved for future writable views. |
+| Ordinary resource, `read[T]` | Immutable reference to `T`; device execution skips download. |
+| Ordinary resource, `read_write[T]` or `Resources[T]()` | Existing mutable reference to `T` and existing transfer behavior. |
+| Ordinary resource, `write[T]` | Host set-only access; device execution rejected initially. |
+| `world.resources.get[T]()` | Original authoritative host `T`, with storage-access mutability. |
 
-**Resources that do not implement `DevicePassableResource` are unaffected.**
-They keep their existing storage, getter, and device transfer behavior; the
-access modes only add read-only download skipping and write-only access.
+Adapted resources are reachable in kernels only through their views. No access
+mode falls back to the owning source, so changing access modes cannot change an
+adapted getter's kernel-facing type. Backend selection also cannot change it.
+Host code edits the owning source outside kernels through `ResourceStorage`.
 
-**Resources that implement `DevicePassableResource` must use the new
-convention.** A kernel can access them only through a view. In the initial
-implementation, only `read[T]` is accepted. The legacy `Resources[T]()` form
-is equivalent to `read_write[T]`, so it is rejected for these types too. The
-diagnostic names the resource and the supported mode. No mode falls back to
-borrowing the owning source in a host kernel. Host code edits the source
-outside kernels through `world.resources.get[T]()`.
+`get[T]()` checks membership against the original declared `T`. A distinct
+associated view type is not implicitly declared. For an adapted read, its slot
+points to invocation-owned `T.KernelView`; getter casts, descriptor sizing, device
+validation, and transfers use that resolved type, never the owning source.
+The source itself need not be trivially movable. Descriptor references and
+pointees are immutable; a descriptor containing an exposed mutable pointer is
+not a read-only view. Unsafe casts retain the ordinary unsafe contract.
 
-As a result, the getter's return type depends only on the resource type and the
-compile-time declaration, never on the selected backend or the state of a
-runtime registry. An adapted resource always yields `T.KernelView`, so changing
-the target or access mode never changes the kernel-facing type. Host execution
-also binds `T.KernelView`, even where borrowing `T` directly would be possible.
-`get[T]()` checks membership against the original declared `T`. When its
-associated view is a distinct type, `read[T]` does not also authorize
-`get[T.KernelView]()`. An adapted read exposes the view rather than the owning
-source allocation.
+Reject duplicate source declarations in any combination of modes. Binding
+lookup, leases, and conflicts use source identity, not view identity. Cross-world
+shared sources, arbitrary capture aliases, and externally retained raw pointers
+are outside the initial guarantees.
 
-Keep original source identity separate from prepared representation internally.
-Each accessor slot for an adapted read points to its invocation-owned view;
-`get[T]()` casts that slot to the resolved view type, never to the owning `T`.
-Device validation, descriptor sizes, and transfers use the resolved kernel type
-`T.KernelView`, so the source itself need not be trivially movable or GPU-safe.
-Resolve source existence, adapter configuration, leases, and access conflicts
-using the original source type. Never upload the owning source merely because it
-appears in the kernel's resource declaration.
+For ordinary resources, eligibility behavior remains unchanged until its policy
+is decided; the independently required ECS-08 safety repair is not deferred by
+that policy discussion. This proposal introduces no automatic no-op device
+adapter or new eligibility claim for plain values.
 
-There are two distinct checks. Source types, associated representations, and
-declared access modes are known at compile time. Check adapter/view conformance
-when registering a concrete source and reject unsupported representation or
-access modes when specializing device execution. Before execution, also validate
-the **actual world binding** for every requested source: the binding and source
-instance exist, the adapter configuration is valid, and its cache belongs to the
-correct context. This applies even to empty entity matches and occurs before any
-queued work. Dynamic resource insertion/removal and context availability still
-require descriptive runtime preflight errors naming the resource; a statically
-valid kernel does not prove that its world is populated correctly. Checking for
-method names at launch is not the capability mechanism.
+### Registration feasibility gate
 
-Kernel declarations must distinguish access at compile time. `get[Source]()` for
-an adapted read declaration exposes an immutable descriptor. Its sample operations
-must also expose immutable pointees; immutable access to a descriptor containing
-a mutable pointer is insufficient. View implementers must not provide a safe
-mutation escape hatch. Unsafe pointer casts retain the usual unsafe contract.
+Before relying on automatic registration, validate the locked compiler's ability
+to detect optional trait conformance under a broad `ResourceType` bound, resolve
+associated types, and select typed adapter operations in the variadic registration
+path. Cover `add`, `set[add_if_not_found=True]`, copied type-only registration
+metadata, and the resulting getter/transfer specializations.
 
-Reject unsupported modes for adapted sources at compile time, before any
-transfer or launch. Do not fall back to raw-byte source transfer. Resolve access
-by **source identity**, not view type: two declarations of the same source,
-in the same or different modes, are rejected. They cannot produce an ambiguous
-getter result or two independently mutable replicas. Future writable views
-need an explicit access and migration design before `write` or `read_write`
-become valid for adapted resources.
+The [CPU dispatch probe](../research/resource-trait-dispatch-probe.mojo) validates
+`conforms_to` plus a guarded `comptime assert`, associated view/adapter types,
+stateless adapter calls, the variadic consume pattern, insert-on-set, and copied
+metadata around real `ResourceStorage`. It does not implement automatic Larecs
+registration, getter resolution, actual world-copy cache reset, or GPU dispatch.
+The full integration gate remains open. If it fails, automatic registration must
+be replaced by an explicit, statically typed registration API and this proposal's
+application API revised before acceptance.
 
-The initial binding operates within one world and synchronous invocation.
-Cross-world shared sources, arbitrary aliases through captures, and externally
-retained raw pointers are outside its guarantees; type identity cannot prove
-their independence. Document this explicitly instead of claiming universal
-alias detection or thread safety.
+Registration records only a checked source/view/adapter type association, not a
+source pointer or scientific configuration. Add and insert-on-set must publish
+source and metadata consistently; removal removes the binding and idle cache.
+Runtime preflight still checks source presence and the correct device context,
+even for a statically valid kernel and empty matches.
 
-### Preparation and storage ownership
+### Invocation preparation and cache ownership
 
-Separate binding-owned adapter configuration/state from target-local cache state.
-Each world's device context owns the latter, keyed by that resource binding's
-identity. It must not be reused on another context, including after a world copy.
-Copy authoritative data and rebuild source-declared adapters from the copied
-resource instances; this may occur lazily before their first invocation so
-fallible preparation does not become part of the world's copy constructor.
-Rebuild explicit bindings from owned configuration. Mutable adapter state is
-independent; immutable configuration may be reused under the optional caching
-contract below. Device caches start empty, and views are reconstructed.
-Moving an idle world may transfer its adapters and caches with the associated
-sources and context.
+The only persistent device state is a per-world cache keyed by source type and
+owned with that world's device context. It holds reusable sample/descriptor
+allocations, not authoritative data or source-derived configuration. World copies
+copy sources and type-only metadata but start with empty device caches; moves may
+transfer idle caches together with their sources and context.
 
-Conceptually provide:
+**Edits and replacement use the same rule.** `set[T](...)`, changes to fields,
+and `world.resources.get[T]() = T(...)` all become visible because each invocation
+validates and prepares from the current stored source. No replacement detector,
+factory snapshot, revision number, or explicit rebind is needed. Retained capacity
+may be reused for any compatible current source; removing it releases idle cache
+storage. Capacity reuse does not mean reuse of scientific contents.
+
+Conceptually, the stateless adapter provides:
 
 ```text
 validate(source, access) -> checked metadata
@@ -302,179 +199,98 @@ prepare_device(source, context, cache, checked metadata) -> invocation binding
 complete(binding, outcome) -> release after completion is established
 ```
 
-The adapter's source access is immutable in this first implementation. An
-invocation binding retains the source lease, descriptor storage, allocation
-leases, and any upload staging. Neither a returned view nor its pointers own
-these objects. Never store a prepared view into the authoritative source table.
+Validate every requested resource and conflict before enqueueing any work. This
+includes checked dimension/element/byte arithmetic, sample count, scientific
+metadata, and explicit empty-grid/out-of-domain sampling semantics. Empty entity
+matches still validate but allocate/upload nothing and launch no kernel.
 
-The Tree-D adapter validates dimensions, checked element-count/byte-count
-arithmetic, sample count, and required scientific metadata before enqueueing
-work. Define the application's empty-grid and out-of-domain sampling behavior;
-do not infer it from a dangling pointer or permit division/indexing by zero.
-Borrow the contiguous host allocation for host execution. For device execution:
+Host preparation borrows current host samples and constructs the portable view.
+Device preparation reuses sufficient capacity or grows the sample buffer, uploads
+all current samples, constructs a descriptor with the device address, and uploads
+that descriptor. Copy exactly the current logical sample count, not unused cache
+capacity. Neither samples nor descriptors are downloaded for adapted reads.
+Preparation reads configuration anew on every invocation; it never compares source
+addresses to infer that configuration is unchanged.
 
-1. Reuse sufficient capacity, or allocate a larger sample buffer after the
-   previous invocation has completed. Empty buffers require a defined sentinel
-   representation and no zero-length dereference.
-2. Upload all current samples on every preparation. Updating existing values,
-   resizing the source, and replacing it must all be observed without revision
-   tracking.
-3. Construct the view using that allocation's **device address**, not the host
-   address. Retain host descriptor storage until its upload finishes.
-4. Upload the descriptor and bind its pointer in `ResourceAccessor`. No sample
-   or descriptor download occurs for the read-only binding.
+An invocation binding retains source leases, descriptor storage, upload staging,
+and device allocation leases. Owners remain live until all queued uses complete.
+The ordinary/selected host/device paths share preparation and completion rules.
 
-Validate all requested bindings and access conflicts before enqueueing any
-work. Empty entity matches still validate declarations and source metadata,
-but allocate/upload nothing and invoke no kernel. Use one preparation/completion
-implementation for ordinary and selected execution, including host closures,
-so empty ranges and errors obey the same contract.
+### Lifetime and failures
 
-### Optional reuse by construction inputs
+Keep synchronous `run`: successful return means all queued work is complete and
+component/capture outputs are available. No public futures or background uploads.
 
-A later opt-in cache may reuse immutable adapter configuration or preprocessing
-plans when their construction inputs are equal. If an adapter instance consists
-entirely of immutable configuration, that instance may itself be shared; all
-mutable binding state and device allocations remain in separate owners. Generic
-adapters with mutable state are not eligible for whole-instance memoization.
+While a source lease is active, reject source replacement/removal, binding changes,
+cache replacement, copying the world, and nested execution reusing that binding.
+Host execution also needs protection against reentrant mutation. Resource access
+still uses untracked origins; existing references/raw pointers must not mutate,
+resize, or escape across the invocation boundary. A runtime lease cannot repair
+already-escaped aliases. This preserves the current `ResourceStorage.get`
+`UnsafeAnyOrigin` contract without inventing a compiler-enforced borrow guarantee.
 
-Require an explicit, owned key containing the adapter type and every input that
-affects construction. Use value equality as well as hashing; a matching hash
-alone is insufficient. Do not use resource type, source address, or mutable
-references as a substitute for construction inputs. The factory must explicitly
-opt into deterministic construction from that key; arbitrary `create_adapter(self)`
-implementations may depend on ambient state and cannot be memoized automatically.
-Device-dependent plans also require the correct context/backend identity and
-belong in a context-owned cache, not a global configuration cache.
+After an enqueue error, keep every owner alive while draining the same stream.
+Propagate the original error with cleanup failures as additional context. If
+completion cannot be confirmed, make the world unusable for further execution
+and preserve owners until safe retention/destruction is established. A second
+synchronization failure does not prove a drained queue. Validate that path against
+the locked runtime before implementation; destructors swallowing errors are not
+proof of safe cleanup. Earlier component/capture/host effects may remain visible;
+no whole-run rollback is promised.
 
-For example, two leaf distributions with identical sampling-policy configuration
-can share an immutable sampling plan while retaining separate sample uploads,
-views, source leases, and device buffers. A configuration-cache hit does not
-establish equality of scientific samples, synchronize them, or change source
-identity for alias checking. Sharing uploaded samples would require a separate
-immutable-data snapshot and residency design and is outside this proposal.
+### Deferred scope
 
-Source replacement still recreates binding state and clears its device cache;
-it may obtain equal immutable configuration from this cache. If construction
-inputs change in place, the existing explicit-rebind rule still applies. Cache
-entries must own their configuration, bindings must retain it while in use, and
-eviction must not invalidate active bindings. Bound cache memory or make its
-lifetime explicit. Measure construction cost before introducing cache-key and
-retention overhead: the initial per-binding adapter is already reused across
-invocations and does not require this optimization.
-
-### Lifetime and completion
-
-Preserve synchronous `run`: all queued reads of source/staging data and device
-views complete before successful return and lease release. No public future,
-background upload, or implicit persistent data residency is introduced.
-
-While a lease is active, reject resource replacement/removal, binding changes,
-cache replacement, world copying, and nested execution that would reuse the
-same binding. Host execution also needs this protection against reentrant
-mutation. Borrow conflicts must be detected before side effects. Existing
-untracked references acquired earlier remain subject to the documented rule
-that they cannot mutate, resize, or escape across execution boundaries.
-Do not claim that a runtime lease repairs already-escaped raw pointers.
-
-On an error after enqueueing, retain all owners while attempting to drain the
-same device stream, then propagate the original error with any cleanup failure
-as additional context. `complete` must not publish data after unsuccessful work.
-A second synchronization failure does not prove the queue is drained:
-establish the locked runtime's safe destruction/retention behavior before
-implementing that path, and make the world unusable for further execution if
-completion is unknown. A destructor that discards synchronization errors is
-not adequate evidence of safe lifetime handling.
-
-### Default resources and later writes
-
-Do not infer default-adapter eligibility from trivial movability. Plain
-pointer-free scalars and explicitly audited trivial values can retain direct
-host borrowing and bytewise device transfer; owning or pointer-bearing values
-need an explicit adapter or an explicit unsafe device-validity contract.
-The probe demonstrates why the existing validator cannot certify this.
-Finalizing the eligibility API and compatibility policy is an implementation
-gate; this proposal does not silently tighten today's accepted public API.
-
-Later writable adapters need separate mutable-view capabilities, source-based
-conflict checks, explicit GPU concurrency rules, and validated staging before
-publication. A `write` declaration does not make simultaneous GPU writes safe.
-Specify whether publication is atomic per binding or across all bindings and
-what happens when one adapter's decode fails. Resource staging alone cannot
-promise whole-run rollback: component/capture writes and host kernel effects
-may already be visible. Synchronization-backed views must follow decision 0016
-and must not retain an unguarded path to protected storage.
+Writable adapted resources need mutable-view capabilities, source-based conflict
+checks, concurrency guards, and validated staging before publication. Specify
+publication granularity and decode failures before exposing them. Eventual
+write-only device resources additionally need a complete-initialization contract.
+Neither a write declaration nor a guard alone makes conditional initialization
+safe. Residency, shared plans, adapter overrides, arbitrary collections, and
+performance benefits remain unimplemented and unmeasured.
 
 ## Rationale
 
-The portable-view split is viable: the checked-in probe executes one
-`KernelContext` kernel over one descriptor type on host, actual Apple GPU, and
-host again, with identical expected component results. Manual relocation proves
-the representation, while also exposing the current unconditional descriptor
-copy-back and lack of adapter-owned lifecycle handling.
+The descriptor probe demonstrates one kernel and one view type on host, actual
+Apple GPU, and host again. Keeping adapters stateless and uploading every run
+makes source edits and whole-instance assignment equally correct without trying
+to observe mutations through existing mutable references. One buffer cache avoids
+repeated allocation while keeping scientific ownership on the host.
 
-Keeping execution synchronous avoids introducing events and public lease
-management merely to support a read-only grid. Uploading every time avoids
-revision bugs and gives source replacement straightforward semantics. Explicit
-bindings avoid requiring application scientific containers to be device types
-or attempting to serialize arbitrary `Dict` ownership.
-
-Resource-declared associated types remove repetitive registration from the
-common application path. Making device adaptation optional preserves ordinary
-host resources, while explicit capability checks avoid ambiguous no-op defaults.
-Source-oriented declarations let kernels keep `get[Source]()` while receiving a
-portable read-only view on either target. Associated types make that return type
-statically known. Explicit adapter configuration and resource wrappers accommodate
-third-party scientific types without requiring changes to their definitions.
-
-The proposal is suitable as an architectural direction, but the successful
-descriptor probe does **not** establish that an integrated adapter is safe.
-Access enforcement, world copies, aliases, and drain failures need implementation
-and negative-test evidence before adoption as an accepted requirement.
+Source-declared types make `get[Source]()` resolve statically. Read declarations
+are the cheapest standalone increment: they eliminate unnecessary ordinary-resource
+downloads before introducing adapter caches. Rejecting new shared device `write`
+semantics avoids undefined initialization and concurrency behavior.
 
 ## Consequences
 
-- End users gain one kernel and one view API; host ownership remains ordinary
-  scientific application code. Adapter authors handle transfer details once.
-- Read-only adapters avoid unnecessary downloads and reuse device allocation
-  capacity. Neither a speedup nor Tree-D integration has been measured.
-- Registration and preparation add work to the invocation boundary. Keep the
-  no-adapter path cheap and measure both setup and complete execution.
-- Resource mutation/copy rules and the `read`/`write`/`read_write` access
-  declarations are new contracts. Existing `Resources[T]()` declarations of
-  ordinary resources keep their behavior as `read_write`.
-- Implementing `DevicePassableResource` opts a type into the new convention.
-  Kernels see only its view, initially read-only. Existing kernels that declare
-  such a type as `Resources[T]()` or need write access must migrate or stop
-  using the trait. Host storage access still returns the source.
-- `DevicePassableResource`, associated types, and automatic binding registration
-  are proposed APIs, not implemented features. Host-only resources keep their
-  existing storage contract; unsupported device requests need a clear diagnostic.
-- This record remains Proposed. Accepted requirements and existing raw-byte
-  execution semantics are unchanged. Implementation gates live in the roadmap.
+- Host storage remains authoritative; adapted kernel access uses only views.
+- The initial path has stateless adapter operations, one context-local buffer cache,
+  and invocation leases. Factory configuration and overrides are deferred.
+- Ordinary resources retain their transfer path while ECS-08's existing validator
+  bug is tracked independently. No claim of current safety compliance is made.
+- Correctness depends on compiler integration and failure-path validation beyond
+  the descriptor and trait probes; this record remains **Proposed**.
 
 ## Evidence
 
-- [Manual descriptor probe](../research/resource-view-probe.mojo), run on Apple
-  M4 with Mojo `1.0.0 (ed45d567)`, using a normal build without `-g`, ASAN, or
-  tracing. Four Int32 samples, 37 rows; host/GPU/host component values were
-  10/19/28, and authoritative samples remained unchanged. No timing claim.
-  A temporary variant assigning through `SamplesView.values` failed compilation
-  with `expression must be mutable in assignment`; the existing mutable
-  descriptor accessor itself remains unchanged.
-  This probe uses the current manually registered view-type declaration/getter;
-  it does not validate proposed `read[Source]` or automatic `get[Source]` resolution.
+- [Descriptor probe](../research/resource-view-probe.mojo), run on Apple M4 with
+  Mojo `1.0.0 (ed45d567)`, without `-g`, ASAN, or tracing. Four Int32 samples and
+  37 rows yielded component values 10/19/28 on host/GPU/host with unchanged samples.
+  A temporary mutation-through-immutable-pointer variant was rejected. This uses
+  today's manually registered view getter, not the proposed source-oriented API.
+- [CPU trait dispatch probe](../research/resource-trait-dispatch-probe.mojo), run
+  with the same compiler. It requires no accelerator and covers the isolated
+  registration/type-dispatch mechanisms listed in the feasibility gate.
 - [Resource storage and validator](../../../src/larecs/resource.mojo),
-  [accessor and both execution paths](../../../src/larecs/system.mojo),
-  [device uploads/downloads](../../../src/larecs/device_storage.mojo), and
+  [accessor and execution paths](../../../src/larecs/system.mojo),
+  [device transfers](../../../src/larecs/device_storage.mojo), and
   [world ownership](../../../src/larecs/world.mojo).
-- [Upstream GPU lifetime and synchronization contract](https://docs.modular.com/mojo/manual/gpu/fundamentals/):
-  operations are queued and owners must survive until their use completes.
-- Existing regressions: `test/resource_test.mojo`,
-  `test/gpu_resource_test.mojo`, `test/cpu_execution_test.mojo`, and
-  `test/gpu_entity_selection_test.mojo`. They cover current APIs, not adapter
-  access enforcement, leases, or failure recovery.
-- [Requirements ECS-08 and ECS-10](../requirements.md),
-  [decision 0002](0002-gpu-system-execution.md),
+- [Upstream generic conformance checks](https://docs.modular.com/mojo/manual/generics/)
+  describe guarded trait dispatch; local compiler evidence determines feasibility.
+- [GPU queue and synchronization contract](https://docs.modular.com/mojo/manual/gpu/fundamentals/)
+  explains why owners must survive queued uses.
+- Existing resource and host/device execution regressions cover current APIs,
+  not the proposed registration, access, cache, or failure contracts.
+- [ECS-08 and ECS-10](../requirements.md), [decision 0002](0002-gpu-system-execution.md),
   [decision 0016](0016-kernel-memory-synchronization.md), and
-  [implementation roadmap](../../roadmap.md).
+  [ordered implementation gates](../../roadmap.md#support-heap-backed-device-resources).
