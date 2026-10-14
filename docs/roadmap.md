@@ -94,6 +94,44 @@ leave gaps beyond the heap-backed resource work above.
 
 ## Unscheduled — no release target
 
+### Kernel memory synchronization
+
+[Decision 0016](design/decisions/0016-kernel-memory-synchronization.md)
+accepts a common CPU/GPU API backed by Mojo 32-bit atomics, a nonblocking
+reader/writer state protocol, and stable collection domains. Standalone scalar
+and single-value primitives are implemented; dedicated bindings, collection
+domains, and hardware GPU validation remain pending. Existing access APIs gain
+no safety guarantee.
+
+- [x] Validate standalone guard/reference confinement, consuming release, and
+  noncopyable results with CPU runtime and negative compiler checks.
+- [ ] Finalize dedicated kernel resource/capture synchronization declarations,
+  alias rejection, ownership, and guard-bound origins through those adapters.
+- [ ] Probe UInt32/Int32 load/store, strong CAS, add/subtract, explicit ordering,
+  and CPU/whole-device scopes on the locked release. Record actual CPU/NVIDIA/
+  AMD/Apple evidence and reject unsupported combinations clearly.
+- [ ] Prove and test the one-word reader/writer state protocol, including reader
+  release sequences, writer publication, saturation, and one-CAS contention.
+- [x] Implement standalone atomic scalar views and single-value read/write guard
+  owners with shared view identity and explicit contention results.
+- [ ] Integrate invocation-wide binding identity and target-local transfer
+  sidecars without permitting raw resource/capture access to protected bytes.
+- [ ] Evaluate [proposed deferred access](design/decisions/0017-deferred-kernel-access.md):
+  scoped read/write operations, owned argument/output binding, bounded queues,
+  retry passes, exhaustion, and partial-error/copy-back behavior on both targets.
+- [ ] Add fixed-size array domains and frozen dictionary-value protection;
+  coordinate device collections with heap-backed resource transfer work.
+- [ ] Validate concurrent correctness on actual workers/hardware and measure
+  contention, metadata, setup, transfer, and complete execution costs.
+- [x] Allow acquire loads and release stores on Apple GPU, validated by
+  cross-block payload publication on an M4.
+- [ ] Extend Apple GPU support to ordered add/subtract, strong CAS, and guards
+  while preserving their contracts; the locked compiler lacks strong CAS and
+  acquire-release read-modify-write ordering.
+- [ ] Publish user guides when the API compiles and validation passes; keep
+  exchange, wider/floating/bitwise atomics, blocking waits, and collective APIs
+  outside the initial scope until their semantics and backend support are designed.
+
 ### Spatial component locality
 
 [Decision 0005](design/decisions/0005-filtered-spatial-row-reordering.md)

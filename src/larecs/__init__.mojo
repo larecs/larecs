@@ -93,6 +93,12 @@ main()
 ```
 
 Exports:
+ - sync.AtomicValue
+ - sync.AtomicView
+ - sync.CompareExchangeResult
+ - sync.Synchronized
+ - sync.SyncView
+ - sync.TryAccess
  - capture.Captures
  - capture.ReadCapture
  - capture.MutCapture
@@ -160,3 +166,12 @@ from .capture import (
 )
 
 from .spatial import SpatialClassifier, grid_cell, morton_key_3d
+
+from .sync import (
+    AtomicValue,
+    AtomicView,
+    CompareExchangeResult,
+    Synchronized,
+    SyncView,
+    TryAccess,
+)
