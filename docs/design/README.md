@@ -25,7 +25,6 @@ decision record before changing an established behavior:
 | [0011](decisions/0011-pr-performance-regression-checks.md) | Accepted | Same-runner PR regression checks, bounded CPU suites, and retained evidence |
 | [0012](decisions/0012-deferred-spatial-maintenance.md) | Accepted | Deferred dirty classification, conservative invalidation, and full-rebuild fallback |
 | [0013](decisions/0013-cluster-local-partition-blocks.md) | Superseded by 0014 | Opt-in bounded partition blocks, staging, reclamation, and exact cluster selections |
-
 | [0014](decisions/0014-growable-cluster-stores.md) | Accepted | One growable store per logical cluster without a chunk-size limit |
 
 ## Recording a change
