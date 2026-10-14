@@ -68,8 +68,9 @@ portability, not an integrated adapter API.
   `KernelView`/`Adapter` types, and explicit instance `create_adapter(self)` factory
   with the locked compiler. Register source-declared bindings without GPU work
   on add; preserve host-only resources, transactional registration, source replacement/removal,
-  explicit third-party bindings, and preflight diagnostics for missing device
-  capability. Distinguish static type checks from dynamic world-binding checks.
+  explicit adapter configuration, third-party wrappers, and preflight diagnostics
+  for missing device capability. Distinguish static type checks from dynamic
+  world-binding checks.
 - [ ] Own adapter state per world resource binding, with no retained source
   borrow. Recreate source-declared adapters and clear caches on source replacement;
   require rebinding of explicit overrides. Preserve allocations on ordinary sample
@@ -78,9 +79,17 @@ portability, not an integrated adapter API.
 - [ ] Define explicit default-adapter eligibility and compatibility policy;
   reject unsupported ownership/pointers clearly rather than treating trivial
   movability as sufficient evidence of device safety.
-- [ ] Add compile-time read declarations and immutable descriptor/pointee
-  access. Reject unsupported write modes, duplicate view bindings, and mutable
-  direct-source aliases before preparation.
+- [ ] Add source-oriented compile-time resource declarations and getter result
+  resolution: adapted `read[T]`/`get[T]()` expose immutable `T.KernelView` on both
+  targets, while host storage and mutable host declarations retain `T`. Validate
+  and transfer resolved descriptor types, preserving source-based binding and
+  lease identity. Reject unsupported device write modes, duplicate source
+  bindings, and conflicting read/mutable declarations before preparation.
+- [ ] Validate getter return types with the locked compiler and negative access
+  checks. Cover nontrivially movable sources with valid views, source types sharing
+  a view type, host/device parity, undeclared view-type getters, and explicit
+  overrides matching the source's associated adapter/view types. Use resource
+  wrappers for third-party types requiring a different representation.
 - [ ] Prove invocation leases, reentrant mutation rejection, preparation/launch/
   copy-back failure cleanup, and unknown-completion handling against the locked
   runtime. World copies must recreate adapters/views from copied sources or owned
