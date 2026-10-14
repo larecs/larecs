@@ -28,9 +28,9 @@ requirements:
     - mojo-tracy >=1.1.0, <1.2.0
     - max >=26.5.0, <26.6.0
   host:
-    - ${{ pin_compatible('mojo-compiler') }}
-    - ${{ pin_compatible('mojo-tracy') }}
-    - ${{ pin_compatible('max') }}
+    - mojo-compiler >=1.0.0, <1.1.0
+    - mojo-tracy >=1.1.0, <1.2.0
+    - max >=26.5.0, <26.6.0
   run:
     - ${{ pin_compatible('mojo-compiler') }}
     - ${{ pin_compatible('mojo-tracy') }}
