@@ -83,20 +83,21 @@ type relationship when registering the binding. Trait conformance establishes
 that these operations exist, not that arbitrary pointer-bearing user code is
 automatically safe; adapter authors remain responsible for their implementation.
 
-Optionally provide a static `create_adapter() -> Adapter` factory with a default
-that constructs `Adapter()` when it is default-constructible. An override can
-provide fixed configuration; per-world overrides can be supplied explicitly at
-registration. Factories create configuration without retaining a source borrow
-or allocating device storage. Source-dependent dimensions and sample addresses
-are derived anew during preparation, not captured by a one-time factory.
-Exact Mojo associated-type/default-factory syntax still needs compiler evidence;
+Require a static `create_adapter() -> Adapter` factory supplied by the resource.
+The trait provides no factory implementation and does not require `Adapter()`
+to exist. The factory supplies fixed configuration; per-world overrides can be
+supplied explicitly at registration. Factories create configuration without
+retaining a source borrow or allocating device storage. Source-dependent
+dimensions and sample addresses are derived anew during preparation, not
+captured by a one-time factory.
+Exact Mojo associated-type/factory syntax still needs compiler evidence;
 the examples here specify behavior rather than assert a compiled trait API.
 
 Do not require `source.to_view()` and `source.to_adapter()` as the binding API.
 A bare `to_view()` has no target, cache, or lease and cannot describe both host
 borrowing and device allocation ownership. Passing those objects into the
 source would merge the scientific container with backend preparation. Associated
-types and an optional factory keep the association discoverable while leaving
+types and the explicit factory keep the association discoverable while leaving
 the adapter responsible for constructing invocation bindings.
 
 There is no successful no-op device adapter. The default for an ordinary
@@ -105,7 +106,7 @@ This default needs no methods on the source. An explicit device request must
 report unsupported resources rather than skip their preparation, manufacture
 an empty view, or copy host pointers. A separately audited bytewise adapter can
 serve supported plain values; its eligibility is independent of merely satisfying
-`ResourceType` or trivial movability. Neither a default factory nor a marker
+`ResourceType` or trivial movability. Neither a factory nor a marker
 trait turns arbitrary owning containers into bytewise-safe resources.
 
 ### Application API
@@ -116,6 +117,9 @@ The following is proposed syntax, not compilable public API:
 LeafDistribution implements ResourceType, DevicePassableResource:
     comptime KernelView = LeafDistributionView
     comptime Adapter = LeafDistributionAdapter
+
+    static create_adapter() -> Adapter:
+        return LeafDistributionAdapter(configuration=...)
 
 world.resources.add(LeafDistribution(...))
 # add registers the source-declared binding; no GPU work occurs here.
@@ -137,9 +141,9 @@ values, not additional authoritative resources stored in the public resource
 table. `ResourceStorage.get[LeafDistribution]()` remains the host editing API.
 
 For a conforming source, adding it automatically registers its associated view
-and default adapter configuration without creating a device cache. Removing the
-source removes its binding after leases have ended. Replacing the same source
-type between invocations retains the type association and adapter configuration,
+and factory-created adapter configuration without creating a device cache.
+Removing the source removes its binding after leases have ended. Replacing the
+same source type between invocations retains the type association and adapter configuration,
 invalidates prepared views, and observes the replacement data on the next run.
 Use an explicit rebind to change per-world adapter configuration. Validate
 binding collisions before committing an add so failed registration cannot leave
