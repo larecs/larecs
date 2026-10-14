@@ -130,7 +130,8 @@ invocation discards its staged outputs; it does not promise whole-world rollback
 
 After an enqueue or completion failure, drain the same queue and preserve the
 original error. If draining also fails, include both errors and reject future
-execution on that world, including empty and resource-free calls. No queued copy
+execution on that world, including empty and resource-free calls. The world-level
+health flag survives replacement of its public resource table. No queued copy
 accesses caller-owned host memory. Native buffer release schedules destruction
 after queued uses, retaining allocation lifetime even when completion cannot
 be confirmed; source leases are released at the invocation boundary. Cleanup
