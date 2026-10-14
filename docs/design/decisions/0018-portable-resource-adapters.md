@@ -59,39 +59,123 @@ operations on both targets. Writable adapters, automatic residency tracking,
 asynchronous public execution, collection serialization, and synchronization
 sidecars remain separate extensions.
 
+### Resource-declared device capability
+
+Keep `ResourceType` as the baseline host-storage contract. Adding a host-only
+resource must not require a view, adapter, GPU allocation, or device context.
+Introduce an optional **`DeviceAdaptableResource`** capability for sources that
+provide a custom portable binding. Prefer this name to `GPUResource` (hardware
+specific), `HostResource` (does not describe the additional capability), or
+`DeviceResource` (could mean that the authoritative data lives on the device).
+The existing `DeviceResourceType` alias denotes trivial register passability;
+do not reuse it for the new ownership/transfer contract.
+
+The source declares two associated compile-time types:
+
+| Member | Contract |
+| --- | --- |
+| `KernelView` | The same kernel-facing descriptor type on host and device. |
+| `Adapter` | A resource adapter whose source type is this resource and whose view type is `KernelView`. |
+
+The adapter implements validation, host binding, device preparation, and
+completion under the ownership rules below. Check the associated source/view
+type relationship when registering the binding. Trait conformance establishes
+that these operations exist, not that arbitrary pointer-bearing user code is
+automatically safe; adapter authors remain responsible for their implementation.
+
+Optionally provide a static `create_adapter() -> Adapter` factory with a default
+that constructs `Adapter()` when it is default-constructible. An override can
+provide fixed configuration; per-world overrides can be supplied explicitly at
+registration. Factories create configuration without retaining a source borrow
+or allocating device storage. Source-dependent dimensions and sample addresses
+are derived anew during preparation, not captured by a one-time factory.
+Exact Mojo associated-type/default-factory syntax still needs compiler evidence;
+the examples here specify behavior rather than assert a compiled trait API.
+
+Do not require `source.to_view()` and `source.to_adapter()` as the binding API.
+A bare `to_view()` has no target, cache, or lease and cannot describe both host
+borrowing and device allocation ownership. Passing those objects into the
+source would merge the scientific container with backend preparation. Associated
+types and an optional factory keep the association discoverable while leaving
+the adapter responsible for constructing invocation bindings.
+
+There is no successful no-op device adapter. The default for an ordinary
+host-only resource is **direct host borrowing with no device capability**.
+This default needs no methods on the source. An explicit device request must
+report unsupported resources rather than skip their preparation, manufacture
+an empty view, or copy host pointers. A separately audited bytewise adapter can
+serve supported plain values; its eligibility is independent of merely satisfying
+`ResourceType` or trivial movability. Neither a default factory nor a marker
+trait turns arbitrary owning containers into bytewise-safe resources.
+
 ### Application API
 
 The following is proposed syntax, not compilable public API:
 
 ```text
-world.resources.add(LeafDistribution(...))
-world.bind_resource[LeafDistribution, LeafDistributionView](
-    LeafDistributionAdapter(...)
-)
+LeafDistribution implements ResourceType, DeviceAdaptableResource:
+    comptime KernelView = LeafDistributionView
+    comptime Adapter = LeafDistributionAdapter
 
-required_resources = Resources().read[LeafDistributionView]()
+world.resources.add(LeafDistribution(...))
+# add registers the source-declared binding; no GPU work occurs here.
+
+required_resources = Resources().read[LeafDistribution.KernelView]()
 
 shade(context: KernelContext[filter, required_resources]):
-    distribution = context.resources.get[LeafDistributionView]()
+    distribution = context.resources.get[LeafDistribution.KernelView]()
     ... distribution.sample(x, y) ...
 
 context.run[shade]()                 # host
 context.run[shade, on_device=True]()  # device; same kernel
 ```
 
-Applications register once, mutate the authoritative source between runs,
+Applications add the source once, mutate the authoritative source between runs,
 and select the execution target at `run`. They do not construct target pointers,
 upload descriptors, or request synchronization themselves. Views are invocation
 values, not additional authoritative resources stored in the public resource
 table. `ResourceStorage.get[LeafDistribution]()` remains the host editing API.
+
+For a conforming source, adding it automatically registers its associated view
+and default adapter configuration without creating a device cache. Removing the
+source removes its binding after leases have ended. Replacing the same source
+type between invocations retains the type association and adapter configuration,
+invalidates prepared views, and observes the replacement data on the next run.
+Use an explicit rebind to change per-world adapter configuration. Validate
+binding collisions before committing an add so failed registration cannot leave
+an inserted source with a missing binding.
+
+Retain `world.bind_resource[Source, View](adapter)` as an advanced alternative
+for third-party types, additional representations, or per-world configuration.
+Do not silently overwrite an automatically registered binding: require an
+explicit replacement operation, available only with no active lease. The initial
+implementation may limit each source to one view, while preserving this escape
+hatch for sources whose definitions the application cannot modify.
+
+Kernel declarations remain view-oriented. `LeafDistribution.KernelView` is just
+an alias for `LeafDistributionView`, so existing `get[LeafDistributionView]()`
+kernel code has the same meaning. Do not make `get[LeafDistribution]()` sometimes
+return a source and sometimes a view; direct source access remains distinct.
 
 Registration establishes a checked source-type/view-type/adapter-type triple.
 Use one binding per view type; reject duplicate registration and collisions
 with an ordinary stored resource of that view type. Validate that the source
 exists. Store source identity, not a permanent source pointer: replacing the
 source between invocations must be observed by the next preparation.
-Multiple read-only views of one source may be supported if leases are shared.
-Initially rejecting such registrations is acceptable if documented explicitly.
+Multiple read-only views of one source may later be supported with shared leases;
+the first implementation can reject a second view for the same source.
+
+There are two distinct checks. Registration can statically check a concrete
+source's trait and associated adapter/view types. Before device execution, the
+executor must also validate the **actual world binding** for every requested
+view: it exists, its source still exists, its adapter supports the requested
+access, and it belongs to the correct context. This check applies even to empty
+entity matches and occurs before any queued work. Resources are registered
+dynamically and kernels declare only view types, so missing registration or an
+unavailable runtime binding cannot always be diagnosed at compile time. Where
+the source type is statically known, fail unsupported device adaptation at
+compile time; otherwise raise a descriptive preflight error naming the resource
+or view. Checking for method names at launch is not the capability mechanism.
 
 Kernel declarations must distinguish access at compile time. `get[View]()` for
 a read declaration exposes an immutable descriptor. Its sample operations
@@ -213,6 +297,12 @@ revision bugs and gives source replacement straightforward semantics. Explicit
 bindings avoid requiring application scientific containers to be device types
 or attempting to serialize arbitrary `Dict` ownership.
 
+Resource-declared associated types remove repetitive registration from the
+common application path. Making device adaptation optional preserves ordinary
+host resources, while explicit capability checks avoid ambiguous no-op defaults.
+Keeping an explicit binding alternative accommodates third-party scientific
+types without imposing inheritance or backend methods on their definitions.
+
 The proposal is suitable as an architectural direction, but the successful
 descriptor probe does **not** establish that an integrated adapter is safe.
 Access enforcement, world copies, aliases, and drain failures need implementation
@@ -228,6 +318,9 @@ and negative-test evidence before adoption as an accepted requirement.
   no-adapter path cheap and measure both setup and complete execution.
 - Resource mutation/copy rules and compile-time access declarations are new
   contracts. Preserve legacy behavior or document an intentional beta migration.
+- `DeviceAdaptableResource`, associated types, and automatic binding registration
+  are proposed APIs, not implemented features. Host-only resources keep their
+  existing storage contract; unsupported device requests need a clear diagnostic.
 - This record remains Proposed. Accepted requirements and existing raw-byte
   execution semantics are unchanged. Implementation gates live in the roadmap.
 
