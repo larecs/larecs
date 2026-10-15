@@ -207,7 +207,10 @@ complete application benefits remain unmeasured.
   tests for local hardware runs. Require accelerator availability so skipped
   device paths cannot report successful hardware coverage.
 - [ ] Add built-in event-system support.
-- [ ] Add parallel execution where ownership and mutation rules permit it.
+- [ ] Design and implement opt-in threaded host kernel execution with configurable
+  fixed worker counts and dynamically claimed physical-store/range jobs; resolve
+  binding safety, pool ownership, and completion semantics first. See the
+  [investigation and dispatch probe](design/research/host-thread-execution.md).
 - [ ] Improve system control APIs, including a way for systems to stop execution.
 - [ ] Revisit value unpacking in queries when Mojo supports the needed form.
 - [ ] Add a tabular overview of typical ECS operation costs to the
