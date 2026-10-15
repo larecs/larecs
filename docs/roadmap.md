@@ -208,8 +208,9 @@ complete application benefits remain unmeasured.
   device paths cannot report successful hardware coverage.
 - [ ] Add built-in event-system support.
 - [ ] Design and implement opt-in threaded host kernel execution with configurable
-  fixed worker counts and dynamically claimed physical-store/range jobs; resolve
-  binding safety, pool ownership, and completion semantics first. See the
+  fixed worker-task budgets and dynamically claimed contiguous chunk jobs. Finish
+  [proposed decision 0019](design/decisions/0019-threaded-host-execution.md),
+  including configuration, eligibility, chunk policy, and failure semantics. See the
   [investigation and dispatch probe](design/research/host-thread-execution.md).
 - [ ] Improve system control APIs, including a way for systems to stop execution.
 - [ ] Revisit value unpacking in queries when Mojo supports the needed form.
