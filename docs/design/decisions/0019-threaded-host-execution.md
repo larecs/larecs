@@ -7,8 +7,9 @@ status_notes: |
   runtime budget, initial safety scope, explicit activation, chunk semantics,
   fallback, eligibility errors, world confinement, configuration ownership,
   selector compatibility, hidden-state obligations, and initial failure handling
-  are agreed. Exact component eligibility and remaining choices below are
-  unresolved. No production engine is implemented or authorized by this record.
+  are agreed. Value-only component eligibility is agreed; resource support must
+  integrate KernelView. Its shared-access contract and remaining choices below
+  are unresolved. No production engine is implemented or authorized by this record.
 ---
 
 # Decision 0019: Threaded host execution
@@ -32,10 +33,18 @@ The following choices are settled in the design interview:
 - Use MAX's shared CPU runtime with a configurable worker-task concurrency
   budget fixed for the engine's lifetime. The budget does not promise ownership
   of that many persistent OS threads or simultaneous execution on all workers.
-- Initially support thin, component-only kernels over validated value components.
-  Reject unsupported shared state. Shared resources and captures require later
-  explicit immutable or synchronized bindings; existing mutable bindings do not
-  become thread-safe. Dedicated bindings under decision 0016 remain unfinished.
+- Initially support thin kernels over validated value components and include
+  resource compatibility with the existing `KernelView` adapter design. This
+  expands the earlier component-only scope; the resource sharing contract is
+  still being resolved. Explicit captures remain outside the initial scope.
+  Existing mutable bindings do not become thread-safe; dedicated synchronization
+  bindings under decision 0016 remain unfinished.
+- Validate only component types accessed by the kernel. Accept scalar/SIMD values
+  and recursively validated plain-value structs; reject accessed pointer-bearing,
+  owning-container, and opaque component types until a supported ownership or
+  synchronization contract exists. An unrelated unaccessed component does not
+  prohibit threading. This component rule does not prohibit adapter-managed
+  immutable pointers in resource `KernelView` descriptors.
 - Require explicit threaded selection for each `run`; existing calls remain
   sequential. Worker configuration alone does not activate threaded execution.
 - Row indices are local to a chunk; chunk order is unspecified. Code outside
@@ -69,15 +78,17 @@ scope in interview answers Q1–Q3, and affirmed explicit activation, chunk
 semantics, validated fallback, pre-write eligibility errors, and world
 confinement in Q4–Q8. Q9, Q10, Q12, and Q13 settled configuration ownership,
 selector compatibility, hidden-state obligations, and initial failure handling.
-Q11's exact component eligibility remains open. Contiguous chunks and iterator
-reuse were agreed before those rounds. The complete decision remains proposed until the
+The Q11 clarification settled component eligibility; the user additionally
+requires resource sharing compatible with `KernelView`. Contiguous chunks and
+iterator reuse were agreed before those rounds. The complete decision remains proposed until the
 remaining branches are resolved and the user confirms shared understanding.
 
 Unresolved choices:
 
 - Configuration type/constructor spelling, defaults, and validation.
 - Chunk sizing and fallback cutoff.
-- Exact component eligibility and rejection diagnostics.
+- Shared resource access, adapter lifetimes, and alias restrictions.
+- Eligibility diagnostics and the neutral component-validator API.
 - Active-world copy/move rules, lifecycle details, and confinement enforcement.
 - Dispatch completion guarantees beyond the agreed initial failure boundary.
 - Production validation coverage and promotion of the proposal to requirements.
@@ -105,6 +116,7 @@ about sequential iteration within concurrent host jobs before adoption.
 - [Host context preparation](../../../src/larecs/system.mojo) and
   [entity iteration](../../../src/larecs/iteration.mojo).
 - [Kernel synchronization](0016-kernel-memory-synchronization.md),
+  [portable resource adapters](0018-portable-resource-adapters.md),
   [grid-stride iteration](0003-grid-stride-entity-iteration.md), and
   [current requirements](../requirements.md).
 - [Roadmap](../../roadmap.md) tracks implementation separately from this proposal.
