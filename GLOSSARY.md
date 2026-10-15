@@ -19,3 +19,8 @@ _Avoid_: Archetype, when referring to only part of a store.
 Host kernel execution whose independent chunks may run concurrently, with the
 enclosing run completing only after all its chunks finish.
 _Avoid_: Parallel systems, when only chunks within one run are concurrent.
+
+**Kernel view**:
+A resource's kernel-facing representation, distinct from its owning source.
+It describes the data available to the kernel on its execution target.
+_Avoid_: Resource owner, when referring to the view.
