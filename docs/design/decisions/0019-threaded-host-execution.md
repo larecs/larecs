@@ -7,9 +7,9 @@ status_notes: |
   runtime budget, initial safety scope, explicit activation, chunk semantics,
   fallback, eligibility errors, world confinement, configuration ownership,
   selector compatibility, hidden-state obligations, and initial failure handling
-  are agreed. Value-only component eligibility is agreed; resource support must
-  integrate KernelView. Its shared-access contract and remaining choices below
-  are unresolved. No production engine is implemented or authorized by this record.
+  are agreed. Value-only components and shared read-only KernelView resources
+  are in scope. Remaining choices below are unresolved. No production engine
+  is implemented or authorized by this record.
 ---
 
 # Decision 0019: Threaded host execution
@@ -34,11 +34,21 @@ The following choices are settled in the design interview:
   budget fixed for the engine's lifetime. The budget does not promise ownership
   of that many persistent OS threads or simultaneous execution on all workers.
 - Initially support thin kernels over validated value components and include
-  resource compatibility with the existing `KernelView` adapter design. This
-  expands the earlier component-only scope; the resource sharing contract is
-  still being resolved. Explicit captures remain outside the initial scope.
-  Existing mutable bindings do not become thread-safe; dedicated synchronization
+  shared read-only resources through the existing `KernelView` adapter design.
+  This expands the earlier component-only scope. Explicit captures and writable
+  shared resources remain outside the initial scope; dedicated synchronization
   bindings under decision 0016 remain unfinished.
+- On the coordinating caller, validate and bind each adapted source once before
+  dispatch. All chunk accessors reference the same host view and backing data;
+  do not copy resource owners or sample buffers per worker. Retain source leases
+  and invocation-owned view descriptors until all workers join, including when
+  an eligible invocation uses sequential performance fallback.
+- All data reachable through a shared view must remain valid and safe for
+  concurrent reads throughout the invocation. No alias may mutate, resize,
+  relocate, or free that data, including writable component aliases. Immutable
+  pointer fields and source leases do not prove this contract for arbitrary
+  adapters or escaped references. Writable sharing requires a later explicit
+  synchronization design.
 - Validate only component types accessed by the kernel. Accept scalar/SIMD values
   and recursively validated plain-value structs; reject accessed pointer-bearing,
   owning-container, and opaque component types until a supported ownership or
@@ -79,7 +89,9 @@ semantics, validated fallback, pre-write eligibility errors, and world
 confinement in Q4–Q8. Q9, Q10, Q12, and Q13 settled configuration ownership,
 selector compatibility, hidden-state obligations, and initial failure handling.
 The Q11 clarification settled component eligibility; the user additionally
-requires resource sharing compatible with `KernelView`. Contiguous chunks and
+requires resource sharing compatible with `KernelView`. Q14 settled shared
+read-only views with frozen reachable data and invocation-wide bindings.
+Contiguous chunks and
 iterator reuse were agreed before those rounds. The complete decision remains proposed until the
 remaining branches are resolved and the user confirms shared understanding.
 
@@ -87,7 +99,7 @@ Unresolved choices:
 
 - Configuration type/constructor spelling, defaults, and validation.
 - Chunk sizing and fallback cutoff.
-- Shared resource access, adapter lifetimes, and alias restrictions.
+- Admission of ordinary read resources and explicit adapter concurrency opt-in.
 - Eligibility diagnostics and the neutral component-validator API.
 - Active-world copy/move rules, lifecycle details, and confinement enforcement.
 - Dispatch completion guarantees beyond the agreed initial failure boundary.
