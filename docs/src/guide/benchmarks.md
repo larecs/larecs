@@ -14,6 +14,15 @@ single-row ranges, 0.00727 ms for the add/remove chain, and 0.379 ms for the dev
 selection. These are development measurements, not a cross-version historical
 baseline; use the benchmark on target hardware for regression decisions.
 
+The manual [host thread dispatch experiment](../../design/research/host-thread-execution.md#measured-sequential-versus-threaded-calls)
+compares complete sequential kernel calls with dynamically claimed whole-store
+and contiguous chunk jobs at 1/2/4 worker tasks, including small and large
+increment/compute workloads and single-store cases. Its driver, timing
+boundaries, reproduction commands, and
+Linux measurements are recorded there. It is a restricted feasibility benchmark;
+Larecs does not yet expose a production threaded execution engine, and the driver
+is outside the normal PR performance gate.
+
 ## Synchronization primitives
 
 `benchmark/synchronization_benchmark.mojo` is a focused manual comparison of
