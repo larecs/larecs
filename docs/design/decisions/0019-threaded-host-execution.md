@@ -5,9 +5,10 @@ status: proposed
 status_notes: |
   Design interview in progress. Contiguous chunking and the execution boundary,
   runtime budget, initial safety scope, explicit activation, chunk semantics,
-  fallback, eligibility errors, and world confinement are agreed; remaining
-  choices below are unresolved. No production engine is implemented or
-  authorized by this record.
+  fallback, eligibility errors, world confinement, configuration ownership,
+  selector compatibility, hidden-state obligations, and initial failure handling
+  are agreed. Exact component eligibility and remaining choices below are
+  unresolved. No production engine is implemented or authorized by this record.
 ---
 
 # Decision 0019: Threaded host execution
@@ -50,21 +51,35 @@ The following choices are settled in the design interview:
 - Require one coordinating caller per world. Initially prohibit reentrant
   execution and world mutation from workers; workers receive prepared chunk
   contexts. Structural locks alone do not arbitrate concurrent external callers.
+- Store threaded configuration on `World`, supplied at construction and immutable
+  thereafter. Copying an idle world preserves the configuration; MAX retains
+  ownership of its shared runtime rather than duplicating a pool per copy.
+- Add a compile-time `threaded=True` option to `run`, retaining `on_device`.
+  Reject selecting both before hardware fallback or row processing.
+- Require threaded kernel implementations to avoid mutable globals and
+  non-thread-safe callees. Thin function signatures and validated component
+  representations cannot establish this obligation for arbitrary kernel code.
+- Complete all fallible context preparation before dispatch. Preparation errors
+  are recoverable without row writes; the initial engine retains nonraising
+  kernels and offers no recovery or rollback guarantee for fatal MAX worker or
+  runtime failures.
 
 The user affirmed the execution boundary, runtime budget, and initial safety
 scope in interview answers Q1–Q3, and affirmed explicit activation, chunk
 semantics, validated fallback, pre-write eligibility errors, and world
-confinement in Q4–Q8. Contiguous chunks and iterator reuse were agreed before
-those rounds. The complete decision remains proposed until the
+confinement in Q4–Q8. Q9, Q10, Q12, and Q13 settled configuration ownership,
+selector compatibility, hidden-state obligations, and initial failure handling.
+Q11's exact component eligibility remains open. Contiguous chunks and iterator
+reuse were agreed before those rounds. The complete decision remains proposed until the
 remaining branches are resolved and the user confirms shared understanding.
 
 Unresolved choices:
 
-- Engine ownership/configuration, opt-in syntax, and interaction with `on_device`.
-- Chunk sizing, fallback cutoff, and configuration validation.
+- Configuration type/constructor spelling, defaults, and validation.
+- Chunk sizing and fallback cutoff.
 - Exact component eligibility and rejection diagnostics.
-- Configuration copying and lifecycle behavior, and confinement enforcement.
-- Preparation/dispatch failures, partial effects, and completion guarantees.
+- Active-world copy/move rules, lifecycle details, and confinement enforcement.
+- Dispatch completion guarantees beyond the agreed initial failure boundary.
 - Production validation coverage and promotion of the proposal to requirements.
 
 ## Rationale
