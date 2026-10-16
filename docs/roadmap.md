@@ -61,7 +61,7 @@ selected mutation chains, and a selected device case.
 ### Skip unchanged device uploads
 
 [Decision 0021](design/decisions/0021-skip-unchanged-device-uploads.md) is
-proposed. Accept it before implementing.
+accepted. Implement resources first, then component columns.
 
 - [ ] Add per-world revisions, the `reuse_device_copies` switch, `read`
   accessors, and explicit invalidation; skip unchanged resource preparation.

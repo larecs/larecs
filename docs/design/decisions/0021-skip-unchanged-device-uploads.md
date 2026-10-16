@@ -1,9 +1,10 @@
 ---
 id: "0021"
 title: "Revision-tracked device copies that skip unchanged uploads"
-status: proposed
+status: accepted
 status_notes: |
-  Proposed and not implemented. Amends the unconditional-upload rule of
+  Accepted; experimental and not yet implemented. Resources are implemented
+  first, then component columns. Amends the unconditional-upload rule of
   decisions 0002 and 0018 for worlds that opt in; eager write-back is unchanged.
 ---
 
@@ -79,7 +80,7 @@ The following conservatively advance revisions:
 
 | Item | Advancing operations |
 | --- | --- |
-| Resource | `add`, `set` and insert-on-`set`, whole-instance replacement, any `get` through mutable storage, and host or threaded runs declaring `write` or `read_write`. `remove` drops the device copy. |
+| Resource | `add`, `set` and insert-on-`set`, whole-instance replacement, any `get` through mutable storage, and host or threaded runs declaring `write` or `read_write`. `remove` drops the device copy. Any later resource write access for host runs, such as the partitioned write proposed in decision 0020, advances it too. |
 | Component column of a store | Host, threaded, and selection runs writing `T`, for the stores they matched; mutable entity access (`get`, mutable query items) for the accessed types of that store. |
 | All columns of a store | Structural changes, spatial reordering, and partition moves that change row positions; creation of a store, including reuse of a reclaimed index. |
 
