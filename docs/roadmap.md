@@ -207,10 +207,11 @@ complete application benefits remain unmeasured.
   tests for local hardware runs. Require accelerator availability so skipped
   device paths cannot report successful hardware coverage.
 - [ ] Add built-in event-system support.
-- [ ] Design and implement opt-in threaded host kernel execution with configurable
-  fixed worker-task budgets and dynamically claimed contiguous chunk jobs. Finish
-  [proposed decision 0019](design/decisions/0019-threaded-host-execution.md),
-  including configuration, eligibility, chunk policy, and failure semantics. See the
+- [ ] Adopt and implement opt-in threaded host kernel execution with configurable
+  fixed worker-task budgets and dynamically claimed contiguous chunk jobs. The
+  [completed proposal 0019](design/decisions/0019-threaded-host-execution.md)
+  records the agreed contract; adoption, implementation, adapter documentation,
+  and Linux/macOS validation remain pending. See the
   [investigation and dispatch probe](design/research/host-thread-execution.md).
 - [ ] Improve system control APIs, including a way for systems to stop execution.
 - [ ] Revisit value unpacking in queries when Mojo supports the needed form.
