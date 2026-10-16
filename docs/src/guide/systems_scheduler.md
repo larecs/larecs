@@ -446,8 +446,8 @@ kernel requirement are covered in
 
 Each device run uploads the components and resources it reads. Worlds that opt
 into `world.reuse_device_copies(True)` (experimental) skip uploading unchanged
-resources; this requires re-obtaining resource references after runs or
-invalidating device copies explicitly. See
+resources and component column ranges; this requires re-obtaining references
+after runs or invalidating device copies explicitly. See
 [Reusing unchanged device copies](../resources#reusing-unchanged-device-copies-experimental).
 
 Use explicit bindings above to pass host-local values to device entry points;

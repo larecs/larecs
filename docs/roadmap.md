@@ -68,10 +68,11 @@ accepted. Implement resources first, then component columns.
   preparation.
 - [x] Add the transfer counter and the resource stale-copy, escape-hatch,
   failure, world-copy, and disabled-transfer tests.
-- [ ] Run the device resource tests on a supported GPU (Linux and macOS).
-- [ ] Add per-store column revisions and `world.read[T](entity)`; record
-  component column segments and skip matching segment uploads.
-- [ ] Add the component stale-copy, store-identity, and alternating-filter tests.
+- [ ] Run the device resource and column tests on a supported GPU (Linux and
+  macOS).
+- [x] Add per-store column revisions and `world.storage.read[T](entity)`;
+  record component column segments and skip matching segment uploads.
+- [x] Add the component stale-copy, store-identity, and alternating-filter tests.
 - [x] Add 13 repeated unchanged runs to the adapter benchmark.
 - [ ] Measure the adapter benchmark on a GPU and Tree-D's `light_benchmark`
   before and after.
