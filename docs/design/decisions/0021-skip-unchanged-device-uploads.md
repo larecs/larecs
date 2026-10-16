@@ -3,8 +3,10 @@ id: "0021"
 title: "Revision-tracked device copies that skip unchanged uploads"
 status: accepted
 status_notes: |
-  Accepted; experimental and not yet implemented. Resources are implemented
-  first, then component columns. Amends the unconditional-upload rule of
+  Accepted; experimental. The resource half is implemented: revisions are
+  drawn from a counter owned by the resource storage, which travels with its
+  device copy records. Device resource tests compile for GPU targets but have
+  not yet run on GPU hardware. Component columns are not implemented. Amends the unconditional-upload rule of
   decisions 0002 and 0018 for worlds that opt in; eager write-back is unchanged.
 ---
 
