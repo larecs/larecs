@@ -58,9 +58,27 @@ selected mutation chains, and a selected device case.
   The read-only contiguous-buffer API is implemented; application compatibility
   and shading performance need application source and measurements.
 
+### Skip unchanged device uploads
+
+[Decision 0021](design/decisions/0021-skip-unchanged-device-uploads.md) is
+proposed. Accept it before implementing.
+
+- [ ] Add per-world revisions, the `reuse_device_copies` switch, `read`
+  accessors, and explicit invalidation; skip unchanged resource preparation.
+- [ ] Record component column segments and skip matching segment uploads.
+- [ ] Add the transfer counter, stale-copy, escape-hatch, store-identity, and
+  failure tests listed in the decision.
+- [ ] Measure 13 repeated unchanged runs in the adapter benchmark and Tree-D's
+  `light_benchmark` before and after.
+- [ ] Document the re-obtain-or-invalidate rule in the resource and device guides.
+
 ## Later — lower priority
 
 ### Broader resource adaptation
+
+- [ ] Probe guard handles for `get` (destructor-released borrow counts under
+  ASAP destruction, inner-reference lifetimes) as the path to automatic device
+  copy reuse under decision 0021.
 
 - [ ] Design writable adapted resources and complete-initialization semantics for
   write-only shared device values before exposing either access path.
