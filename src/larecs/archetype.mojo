@@ -711,6 +711,19 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
     var _active_component_mask: BitMask
     """Ids of the active components in the archetype."""
 
+    var _incarnation: UInt64
+    """Identity of this store object assigned by its host storage; 0 is unknown.
+
+    Device copy records (decision 0021) only match stamped stores, so a
+    reclaimed index reused by a new store never matches an old record.
+    """
+    var _clock: UInt64
+    """Last store-local revision issued."""
+    var _row_revision: UInt64
+    """Revision of the last change to row positions or all columns."""
+    var _column_revisions: Array[UInt64, len(Self.ComponentTypes)]
+    """Revision of the last possible write to each column."""
+
     def __init__(
         out self,
         active_component_mask: BitMask,
@@ -735,6 +748,10 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             self._capacity = capacity
             self._length = length
             self._active_component_mask = active_component_mask
+            self._incarnation = 0
+            self._clock = 0
+            self._row_revision = 0
+            self._column_revisions = {fill = 0}
 
             comptime for id in range(len(Self.ComponentTypes)):
                 comptime T = Self.ComponentTypes[id]
@@ -754,6 +771,10 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             self._capacity = copy._capacity
             self._length = copy._length
             self._active_component_mask = copy._active_component_mask
+            self._incarnation = copy._incarnation
+            self._clock = copy._clock
+            self._row_revision = copy._row_revision
+            self._column_revisions = copy._column_revisions.copy()
 
             comptime for id in range(len(Self.ComponentTypes)):
                 comptime T = Self.ComponentTypes[id]
@@ -765,6 +786,34 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
                     self._length,
                     self._capacity,
                 )
+
+    @always_inline
+    def _touch_rows(mut self):
+        """Advances every column's revision after a row or layout change."""
+        self._clock += 1
+        self._row_revision = self._clock
+
+    @always_inline
+    def _touch_column(mut self, id: Int):
+        """Advances one column's revision after a possible write.
+
+        Args:
+            id: Component ID of the column.
+        """
+        self._clock += 1
+        self._column_revisions[id] = self._clock
+
+    @always_inline
+    def _column_revision(self, id: Int) -> UInt64:
+        """Returns the revision of one column.
+
+        Args:
+            id: Component ID of the column.
+
+        Returns:
+            The later of the last row change and the last column write.
+        """
+        return max(self._row_revision, self._column_revisions[id])
 
     @always_inline
     def __len__(self) -> Int:
@@ -807,6 +856,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Returns:
             The index of the newly added entity.
         """
+        self._touch_rows()
         with Zone(function_name="_ComponentTable.add_entity()"):
             if self._length == self._capacity:
                 self.reserve(max(self._capacity * 2, 8))
@@ -821,6 +871,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Destroys all currently initialized values of active components.
         Does not free any memory: the allocation is retained for reuse.
         """
+        self._touch_rows()
         with Zone(function_name="_ComponentTable.clear()"):
             comptime for id in range(len(Self.ComponentTypes)):
                 if self._active_component_mask.get(id):
@@ -896,6 +947,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Returns:
             Whether a swap was performed (i.e. idx was not the last entity).
         """
+        self._touch_rows()
         with Zone(
             function_name="_ComponentTable.swap_remove_entity(remove_idx: Int)"
         ):
@@ -931,6 +983,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             Every component active in both this table and `destination_mask`
             must already have been moved out of `remove_idx`.
         """
+        self._touch_rows()
         with Zone(
             function_name=(
                 "_ComponentTable.unsafe_swap_remove_entity_after_moving_shared_components(remove_idx:"
@@ -1083,6 +1136,8 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Raises:
             LarecsError: If at least one of the components is not present.
         """
+        comptime for i in range(len(Ts)):
+            self._touch_column(Self.component_manager.get_id[Ts[i]]())
         with Zone(
             function_name=(
                 "_ComponentTable.set_components[*Ts:"
@@ -1132,6 +1187,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Raises:
             LarecsError: If at least one component is not present.
         """
+        self._touch_rows()
         with Zone(
             function_name=(
                 "_ComponentTable.init_components[*Ts:"
@@ -1191,6 +1247,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             uninitialized, and callers must subsequently remove the moved-out
             source rows without destroying their shared component values.
         """
+        self._touch_rows()
         with Zone(
             function_name=(
                 "_ComponentTable.unsafe_move_shared_components_from(to_idx:"
@@ -1248,6 +1305,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Raises:
             LarecsError: If the component is not present in the storage.
         """
+        self._touch_rows()
         with Zone(
             function_name=(
                 "_ComponentTable.copy_component_from[T:"
@@ -1297,6 +1355,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             The source and destination storages must be distinct and their
             shared component columns must have identical layouts.
         """
+        self._touch_rows()
         with Zone(
             function_name=(
                 "_ComponentTable.unsafe_copy_shared_components_from(to_idx:"
@@ -1684,6 +1743,7 @@ struct Archetype[
         Raises:
             LarecsError: If the component is not present.
         """
+        self._storage._touch_column(self._storage.component_manager.get_id[T]())
         with Zone(
             function_name=(
                 "Archetype.set_component_range[T:"
@@ -1727,6 +1787,7 @@ struct Archetype[
         Raises:
             LarecsError: If the component is not present.
         """
+        self._storage._touch_rows()
         with Zone(
             function_name=(
                 "Archetype.init_component_range[T:"
@@ -1770,6 +1831,7 @@ struct Archetype[
         Raises:
             LarecsError: If the component is not present.
         """
+        self._storage._touch_rows()
 
         with Zone(
             function_name=(
@@ -1838,6 +1900,7 @@ struct Archetype[
             LarecsError: If the length, bounds, or uniqueness are invalid;
                 the archetype is unchanged in that case.
         """
+        self._storage._touch_rows()
         var length = len(self)
         if len(source_rows) != length:
             raise Error("Row permutation length must match archetype length")
@@ -1889,6 +1952,7 @@ struct Archetype[
         Returns:
             Whether a swap was necessary.
         """
+        self._storage._touch_rows()
         with Zone(function_name="Archetype.remove(idx: Int)"):
             var swapped = self._storage.swap_remove_entity(idx)
 
@@ -1917,6 +1981,7 @@ struct Archetype[
             Every component shared with `destination_mask` must already have
             been moved out of row `idx`.
         """
+        self._storage._touch_rows()
         with Zone(
             function_name=(
                 "Archetype.unsafe_remove_after_moving_shared_components(idx:"
@@ -1941,6 +2006,7 @@ struct Archetype[
 
         Note: does not free any memory.
         """
+        self._storage._touch_rows()
         with Zone(function_name="Archetype.clear()"):
             self._entities.clear()
             self._storage.clear()
@@ -1955,6 +2021,7 @@ struct Archetype[
         Returns:
             The index of the entity in the archetype.
         """
+        self._storage._touch_rows()
         with Zone(function_name="Archetype.add(entity: Entity)"):
             debug_assert(
                 len(self._entities) == len(self._storage),
@@ -1991,12 +2058,14 @@ struct Archetype[
         Constraints:
             The source and destination archetypes must be distinct.
         """
+        self._storage._touch_rows()
         with Zone(
             function_name=(
                 "Archetype.unsafe_move_all_from_archetype(source: Pointer)"
             )
         ):
             ref source_archetype = source.unsafe_mut_cast[True]()[]
+            source_archetype._storage._touch_rows()
             debug_assert(
                 Pointer(to=self) != Pointer(to=source_archetype),
                 "Source and destination archetypes must be distinct.",
@@ -2056,6 +2125,7 @@ struct Archetype[
             archetype. The other new entities are at consecutive
             `count` indices.
         """
+        self._storage._touch_rows()
         with Zone(
             function_name=(
                 "Archetype.extend(count: Int, mut entity_pool: EntityPool)"

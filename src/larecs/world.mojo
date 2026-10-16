@@ -208,15 +208,23 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         return self._threaded_config.copy()
 
     def reuse_device_copies(mut self, enabled: Bool):
-        """Lets device runs skip uploading unchanged resources (experimental).
+        """Lets device runs skip uploading unchanged data (experimental).
 
-        Off by default. Larecs tracks a revision for every resource that
-        advances on each Larecs access that may mutate it: ``add``, ``set``,
-        ``get`` through mutable storage, and host runs declaring ``write`` or
-        ``read_write``. With reuse enabled, a device run skips preparing and
-        uploading a resource whose device copy was transferred at its current
-        revision. Use ``world.resources.read[T]()`` for reads between device
-        runs, since mutable ``get`` counts as a mutation.
+        Off by default. Larecs tracks revisions that conservatively advance
+        on each Larecs access that may mutate data:
+
+        - Resources: ``add``, ``set``, ``get`` through mutable storage, host
+          runs declaring ``write`` or ``read_write``, and device runs
+          writing the resource.
+        - Component columns, per type and store: ``storage.get``, ``set``,
+          ``apply``, kernel runs writing the type, and every structural
+          change, spatial reordering, or partition move of the store.
+
+        With reuse enabled, a device run skips uploading a resource or a
+        column segment whose device copy matches its current revision.
+        Use ``world.resources.read[T]()`` and ``world.storage.read[T](entity)``
+        for reads between device runs, since mutable ``get`` counts as a
+        mutation.
 
         Mutations through references obtained before a later Larecs call, or
         through raw pointers, are not detected. Re-obtain references after a
@@ -231,6 +239,8 @@ struct World[*component_types: ComponentType](Copyable, Sized):
             enabled: Whether device runs may reuse unchanged device copies.
         """
         self.resources._set_reuse_device(enabled)
+        if self._device_storage:
+            self._device_storage.unsafe_value()._set_reuse(enabled)
 
     def invalidate_device_copies(mut self):
         """Marks every device copy stale, so the next device run uploads it.
@@ -239,6 +249,8 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         pointers in a world that reuses device copies.
         """
         self.resources._invalidate_device_copies()
+        if self._device_storage:
+            self._device_storage.unsafe_value()._invalidate_records()
 
     def __len__(self, out size: Int):
         """

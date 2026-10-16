@@ -34,8 +34,25 @@ from .types import ComponentId
 from ._utils import concatenate_arrays, assert_unreachable
 
 from std.sys import size_of
+from std.time import perf_counter_ns
 
 from tracy import Zone
+
+
+def _revision_seed(salt: Int) -> UInt64:
+    """Derives an unpredictable starting revision without global state.
+
+    Args:
+        salt: Distinguishes storages created in the same nanosecond.
+
+    Returns:
+        A nonzero value below 2**62, leaving room to count upward.
+    """
+    var z = UInt64(perf_counter_ns()) ^ (UInt64(salt) * 0x9E3779B97F4A7C15)
+    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9
+    z = (z ^ (z >> 27)) * 0x94D049BB133111EB
+    z ^= z >> 31
+    return (z >> 2) | 1
 
 
 def _sort_entity_ranges(mut ranges: List[EntityRange]):
@@ -194,6 +211,14 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     var _archetype_map: BitMaskGraph[-1]
     """Graph mapping component masks to canonical logical staging indices."""
 
+    var _clock: UInt64
+    """Last issued store incarnation (decision 0021).
+
+    Starts at an unpredictable offset so that incarnations of distinct host
+    storages, including copies, do not collide when one replaces another in
+    a world with device copy records.
+    """
+
     def __init__(out self):
         """
         Initializes the storage with the zero archetype and zero entity location.
@@ -213,6 +238,89 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             self._archetype_map = BitMaskGraph[-1](0)
             self._archetypes = [Self.Archetype()]
             self._locks = LockManager()
+            self._clock = _revision_seed(Int(self._archetypes.unsafe_ptr()))
+            self._stamp_store(0)
+
+    def __init__(out self, *, copy: Self):
+        """Copies the storage and gives every store a fresh incarnation.
+
+        Args:
+            copy: The storage to copy.
+        """
+        self._locks = copy._locks.copy()
+        self._spatial_partitioned = copy._spatial_partitioned
+        self._spatial_free_blocks = copy._spatial_free_blocks.copy()
+        self._spatial_enabled = copy._spatial_enabled
+        self._spatial_inputs = copy._spatial_inputs.copy()
+        self._spatial_full = copy._spatial_full
+        self._spatial_dirty = copy._spatial_dirty.copy()
+        self._spatial_marked = copy._spatial_marked.copy()
+        self._spatial_keys = copy._spatial_keys.copy()
+        self._entity_pool = copy._entity_pool.copy()
+        self._entity_locations = copy._entity_locations.copy()
+        self._archetypes = copy._archetypes.copy()
+        self._archetype_map = copy._archetype_map.copy()
+        self._clock = _revision_seed(
+            Int(self._archetypes.unsafe_ptr()) ^ Int(copy._clock)
+        )
+        for index in range(len(self._archetypes)):
+            self._stamp_store(index)
+
+    @always_inline
+    def _stamp_store(mut self, index: Int):
+        """Gives a newly created or replaced store a fresh incarnation.
+
+        Args:
+            index: Index of the store in `_archetypes`.
+        """
+        self._clock += 1
+        self._archetypes[index]._storage._incarnation = self._clock
+
+    def read[
+        T: ComponentType
+    ](self, entity: Entity) raises LarecsError -> ref[
+        ImmOrigin(
+            origin_of(
+                self._archetypes.unsafe_get(
+                    self._entity_locations[entity.get_id()].archetype_index
+                )
+            )
+        )
+    ] T:
+        """Returns an immutable reference to a component of an entity.
+
+        Unlike `get`, this does not count as a possible write, so the
+        component's device copy stays reusable in worlds that opted into
+        `World.reuse_device_copies`.
+
+        Parameters:
+            T: The type of the component. Constraints: Must be in the component manager.
+
+        Args:
+            entity: The entity whose component to read.
+
+        Raises:
+            LarecsError: If the entity is not alive or does not have the component.
+
+        Returns:
+            An immutable reference to the component value.
+        """
+        comptime assert Self.component_manager.contains_components[
+            T
+        ](), "Component type not in component manager"
+        self.assert_alive(entity)
+        var entity_loc = self._entity_locations[entity.get_id()]
+        if not self._archetypes.unsafe_get(
+            entity_loc.archetype_index
+        ).has_components[T]():
+            raise LarecsError(
+                ComponentError.missing_components_on_assert.with_components(
+                    BitMask(Self.component_manager.get_id[T]())
+                )
+            )
+        return self._archetypes.unsafe_get(
+            entity_loc.archetype_index
+        ).get_component[T](entity_loc.entity_index)
 
     def invalidate_spatial(mut self):
         """Requests a full key rebuild at the next explicit boundary.
@@ -419,6 +527,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             )
 
             self._archetype_map[node_index] = archetype_index
+            self._stamp_store(archetype_index)
 
             return archetype_index
 
@@ -449,6 +558,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             var archetype_index = len(self._archetypes)
             self._archetypes.append(Self.Archetype(node_index, mask^))
             self._archetype_map[node_index] = archetype_index
+            self._stamp_store(archetype_index)
             return archetype_index
 
     def add_entity[
@@ -956,6 +1066,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 )
 
             self._mark_spatial_write[T](entity)
+            self._archetypes.unsafe_get(
+                entity_loc.archetype_index
+            )._storage._touch_column(Self.component_manager.get_id[T]())
             return self._archetypes.unsafe_get(
                 entity_loc.archetype_index
             ).get_component[T](entity_loc.entity_index)
@@ -2161,6 +2274,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     Pointer(to=self._archetypes),
                     filter.copy(),
                 ):
+                    archetype._storage._touch_rows()
                     for i in range(len(archetype)):
                         try:
                             ref entity = archetype.get_row_accessor(i)

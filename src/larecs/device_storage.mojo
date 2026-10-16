@@ -18,6 +18,42 @@ from .resource_adapter import _TransferFrame
 from .resource_representation import _plain_device_value
 
 
+@fieldwise_init
+struct _Segment(Copyable, Equatable, ImplicitlyCopyable):
+    """One contiguous store range at a fixed offset of a device column."""
+
+    var store: Int
+    """Index of the physical store."""
+    var incarnation: UInt64
+    """Identity of the store object; 0 never matches."""
+    var revision: UInt64
+    """Column revision the device bytes match."""
+    var first_row: Int
+    """First store row of the range."""
+    var row_count: Int
+    """Number of rows in the range."""
+    var offset: Int
+    """First device column row of the range."""
+
+    def __eq__(self, other: Self) -> Bool:
+        """Compares every field.
+
+        Args:
+            other: Segment to compare with.
+
+        Returns:
+            Whether both segments describe the same device bytes.
+        """
+        return (
+            self.store == other.store
+            and self.incarnation == other.incarnation
+            and self.revision == other.revision
+            and self.first_row == other.first_row
+            and self.row_count == other.row_count
+            and self.offset == other.offset
+        )
+
+
 struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
     """Owns one byte-addressed device column per configured component type.
 
@@ -35,6 +71,15 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
     var _columns: Self.Columns
     var _length: Int
     var _device_context: DeviceContext
+    var _records: List[List[_Segment]]
+    """Per component ID, the segments the device column holds (decision 0021).
+
+    Only maintained while `_reuse` is enabled. A device run takes the
+    records of every column it accesses and restores them only after
+    successful publication, so a failure leaves those columns unknown.
+    """
+    var _reuse: Bool
+    """Whether device runs may skip uploading unchanged segments."""
     var _max_grid_dim: Int
     """Maximum number of blocks a kernel launch on this device should use.
 
@@ -62,6 +107,8 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             self._max_grid_dim = max_resident_blocks(device_context)
             self._device_context = device_context^
             self._length = length
+            self._records = Self._empty_records()
+            self._reuse = False
 
     def __init__(out self, *, copy: Self):
         """Copies the device storage from another instance.
@@ -76,6 +123,8 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             self._device_context = copy._device_context
             self._length = copy._length
             self._max_grid_dim = copy._max_grid_dim
+            self._records = Self._empty_records()
+            self._reuse = copy._reuse
 
             comptime for i in range(len(Self.ComponentTypes)):
                 comptime T = Self.ComponentTypes[i]
@@ -102,6 +151,62 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
                             t" the device column for"
                             t" {reflect[T].name()}: {String(e)}"
                         )
+
+    @staticmethod
+    def _empty_records() -> List[List[_Segment]]:
+        """Creates one empty record list per component type.
+
+        Returns:
+            Records describing no device bytes.
+        """
+        var records = List[List[_Segment]](capacity=len(Self.ComponentTypes))
+        for _ in range(len(Self.ComponentTypes)):
+            records.append(List[_Segment]())
+        return records^
+
+    def _set_reuse(mut self, enabled: Bool):
+        """Enables or disables segment reuse; disabling discards records.
+
+        Args:
+            enabled: Whether device runs may skip unchanged segments.
+        """
+        self._reuse = enabled
+        if not enabled:
+            self._invalidate_records()
+
+    def _invalidate_records(mut self):
+        """Marks every device column's contents unknown."""
+        for i in range(len(self._records)):
+            self._records[i].clear()
+
+    def _take_records[T: ComponentType](mut self) -> List[_Segment]:
+        """Removes and returns the records of one column before queueing work.
+
+        Parameters:
+            T: The column's component type.
+
+        Returns:
+            The previous records; the column is unknown until restored.
+        """
+        comptime id = Self.component_manager.get_id[T]()
+        var records = self._records[id].copy()
+        self._records[id].clear()
+        return records^
+
+    def _restore_records[
+        T: ComponentType
+    ](mut self, var records: List[_Segment]):
+        """Records the segments a column holds after a successful run.
+
+        Parameters:
+            T: The column's component type.
+
+        Args:
+            records: Segments in transfer order.
+        """
+        comptime id = Self.component_manager.get_id[T]()
+        if self._reuse:
+            self._records[id] = records^
 
     def has_component[T: ComponentType](self) -> Bool:
         """Returns whether the device column for ``T`` is initialized.

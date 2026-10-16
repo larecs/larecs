@@ -433,6 +433,7 @@ def _partition_spatial_rows[
             else:
                 destination = len(storage._archetypes)
                 storage._archetypes.append(fresh^)
+            storage._stamp_store(destination)
             stores[cluster] = destination
         _transfer_partition_row(storage, entity, destination)
     # Replacing empty storage destroys its allocations, never live values.
@@ -442,6 +443,7 @@ def _partition_spatial_rows[
         if storage._archetypes[index]._partition_key:
             storage._archetypes[index] = storage.Archetype()
             storage._archetypes[index]._node_index = -1
+            storage._stamp_store(index)
             storage._spatial_free_blocks.append(index)
         elif (
             storage._archetypes[index].get_node_index() >= 0
@@ -452,6 +454,7 @@ def _partition_spatial_rows[
             storage._archetypes[index] = storage.Archetype(
                 node, component_mask, capacity=0
             )
+            storage._stamp_store(index)
     # Drop trailing tombstones without changing any live or graph-owned index.
     while (
         storage._archetypes[len(storage._archetypes) - 1].get_node_index() == -1
