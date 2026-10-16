@@ -4,6 +4,14 @@
 
 ### Added
 
+- Add experimental opt-in `threaded=True` host execution for ordinary and exact
+  selected kernel calls, with fixed `World(execution_config=...)` worker-task
+  budgets and dynamically claimed contiguous chunks. Keep ordinary sequential
+  execution and below-cutoff whole-range fallback unchanged. Admit pointer-free
+  accessed components and explicit read-only resources, including shared
+  `KernelView` adapters; reject unsafe bindings and active-world lifecycle changes.
+  Validate Linux concurrency; macOS arm64 validation remains pending.
+
 - Add source-declared `DevicePassableResource` adapters, portable read-only
   views, `BufferResource`, and source-keyed allocation reuse. Kernels keep
   `get[Source]()` on host and device; current source edits and replacements

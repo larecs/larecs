@@ -211,9 +211,13 @@ struct ResourceDeviceCache(Movable):
 trait ResourceAdapter:
     """Stateless operations over the current source; no factory or adapter instance.
 
-    Views and their pointers must not escape a synchronous invocation. Device
-    preparation must upload through ResourceDeviceCache, never enqueue a copy
-    from an external host pointer. Validation must neither mutate nor queue work.
+    Views and their pointers must not escape a synchronous invocation.
+    Every view must support concurrent reads on its execution target, including
+    view methods and all reachable data, without hidden unsafe mutation. No
+    alias may mutate, resize, relocate, or free backing data before completion.
+    The adapter author guarantees this; descriptor checks cannot prove it.
+    Device preparation must upload through ResourceDeviceCache, never enqueue
+    a copy from an external host pointer. Validation must neither mutate nor queue work.
     """
 
     comptime Source: Copyable & Deinitable

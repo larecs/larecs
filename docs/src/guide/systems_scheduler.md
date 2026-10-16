@@ -201,6 +201,89 @@ in the kernel's `Resources[Time]()` list. See
 [Resources](../resources#using-resources-in-kernels) for the complete kernel
 API, missing-resource behavior, mutation semantics, and runnable examples.
 
+## Threaded host execution (experimental)
+
+Configure a fixed worker-task budget on the world and explicitly opt in per run:
+
+```mojo {doctest="guide_threaded_execution" global=true}
+from larecs import World, SystemContext, KernelContext, Filter, ThreadedExecutionConfig
+
+
+def increment_threaded(rows: KernelContext[Filter().include[Int32]()]):
+    """Increments each row in one prepared range.
+
+    Args:
+        rows: Disjoint host range with chunk-local indices.
+    """
+    for row in rows:
+        row.get[Int32]() += 1
+
+
+def threaded_example() raises:
+    """Runs the same kernel sequentially and on the shared CPU runtime.
+
+    Raises:
+        Error: If configuration or execution preparation fails.
+    """
+    var world = World[Int32](
+        execution_config=ThreadedExecutionConfig(workers=4)
+    )
+    _ = world.storage.add_entities(Int32(0), count=65_536)
+    var context = SystemContext(world)
+    context.run[increment_threaded, threaded=True]()
+    context.run[increment_threaded]()
+```
+
+```mojo {doctest="guide_threaded_execution" hide=true}
+threaded_example()
+```
+
+`ThreadedExecutionConfig()` defaults to one worker, four target chunks per
+worker, and a 65,536 matched-row cutoff. Custom construction requires `workers`;
+`chunks_per_worker` and `min_parallel_rows` are optional. Worker and chunk counts
+must be positive, the cutoff nonnegative, and their product representable.
+`min_parallel_rows=0` disables the row cutoff. Invalid settings raise an error.
+`World.execution_config()` returns a copy; idle world copies/moves retain the
+policy. MAX owns the shared runtime: the budget bounds submitted tasks, without
+reserving cores or promising that many simultaneous OS threads.
+
+Both `SystemContext.run[kernel, threaded=True]()` and
+`EntitySelection.run[kernel, threaded=True]()` support the same engine. Each
+physical store or exact selected range is split independently, including
+partition/staging stores; selected gaps remain untouched. Workers claim jobs
+dynamically. Each row executes once, and the call joins all workers before
+returning. Systems and successive kernel calls retain their sequential order.
+
+Ordinary calls keep existing whole-range sequential behavior. Explicit threaded
+calls also use whole ranges when there is one worker or fewer matched rows than
+the cutoff, after validating threaded eligibility. Empty matches invoke no
+kernel. Only parallel dispatch introduces chunking: invocation order is
+unspecified, local indices restart in each chunk, and code outside the entity
+loop runs once per chunk. Kernels must tolerate these changes when the cutoff
+or worker settings change; cross-chunk dependencies require a later run.
+`KernelContext.thread_count` remains one within each host chunk; it does not
+report the configured worker-task budget.
+
+The initial engine accepts nonraising thin kernels, pointer-free plain-value
+accessed components, and explicit `Resources().read[T]()` resources. Ordinary
+read resources must also be plain values; heap-backed resources use read-only
+`KernelView` adapters, bound once on the caller and shared until join. Unaccessed
+owning components do not prevent threading. Mutable resources (including the
+legacy `Resources[T]()` default), explicit captures, lexical closures, and
+`threaded=True` with `on_device=True` are rejected even on fallback.
+
+Keep the world confined to one coordinating caller. Reentrant execution and
+structural mutation during a threaded call are rejected; copying, moving,
+replacing, or destroying an active world aborts. Escaped aliases must not mutate
+resource backing data or invalidate component storage. Avoid mutable globals
+and non-thread-safe callees: signature and representation checks cannot prove
+an arbitrary kernel safe. Overlapping selected ranges are rejected before dispatch.
+All fallible preparation completes before writes;
+fatal worker/runtime failures have no recovery or rollback guarantee.
+
+Linux correctness tests exercise actual worker overlap. macOS arm64 validation
+and performance measurements remain pending, so this engine is experimental.
+
 ## Capturing host kernels
 
 Pass a closure as an argument to `context.run(kernel)` to borrow surrounding
