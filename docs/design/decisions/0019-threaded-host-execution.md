@@ -10,8 +10,11 @@ status_notes: |
   are agreed. Value-only components, ordinary value-only read resources, and
   shared read-only KernelView resources are in scope. Concurrent reads are an
   adapter contract, not an optional capability. Ordinary and selected execution
-  and configurable scheduling are in scope. Remaining choices below are
-  unresolved. No production engine is implemented or authorized by this record.
+  and configurable scheduling are in scope. Defaults, active-world lifecycle
+  restrictions, and production validation are agreed. Existing sequential
+  execution retains its whole-range behavior; threaded small-workload fallback
+  granularity still needs clarification. No production engine is implemented or
+  authorized by this record.
 ---
 
 # Decision 0019: Threaded host execution
@@ -56,8 +59,8 @@ The following choices are settled in the design interview:
   adapter. Reject every write/read-write resource declaration, including legacy
   mutable defaults, in the initial threaded engine.
 - Every resource adapter must support concurrent reads of its `KernelView` on
-  the view's execution target under the frozen-data contract. Document this as part of `ResourceAdapter`'s
-  contract; do not introduce a separate opt-in trait or capability flag. View
+  the view's execution target under the frozen-data contract. Document this as
+  part of `ResourceAdapter`'s contract; do not introduce a separate opt-in trait or capability flag. View
   methods and reachable data must permit concurrent reads without hidden unsafe
   mutation. Structural descriptor validation alone cannot prove this guarantee.
 - Validate only component types accessed by the kernel. Accept scalar/SIMD values
@@ -67,7 +70,10 @@ The following choices are settled in the design interview:
   prohibit threading. This component rule does not prohibit adapter-managed
   immutable pointers in resource `KernelView` descriptors.
 - Require explicit threaded selection for each `run`; existing calls remain
-  sequential. Worker configuration alone does not activate threaded execution.
+  sequential and keep their existing whole-store or exact selected-range
+  invocation behavior. Only the new threaded engine performs chunking; its
+  introduction must not change ordinary sequential iteration or dispatch.
+  Worker configuration alone does not activate threaded execution.
 - Row indices are local to a chunk; chunk order is unspecified. Code outside
   the entity loop runs once per chunk. Kernels cannot assume whole-archetype
   invocation or ordering between chunks. Cross-chunk dependencies require a
@@ -78,7 +84,11 @@ The following choices are settled in the design interview:
 - Expose a configurable minimum matched-row count for parallel dispatch and a
   target number of chunks per worker. Start with a target of four chunks per
   worker; use deterministic policy rather than automatic tuning. These settings
-  change scheduling, not kernel eligibility. The default row cutoff is unresolved.
+  change scheduling, not kernel eligibility.
+- Default configuration to one worker, four target chunks per worker, and a
+  parallel dispatch cutoff of 65,536 matched rows. Each setting is configurable
+  at world construction. The cutoff is a conservative initial policy from one
+  machine's measurements, not a portable performance guarantee.
 - Support both ordinary `SystemContext.run` and exact `EntitySelection.run`,
   including spatially partitioned physical stores. Split each matching store or
   saved selected range independently without crossing store boundaries or
@@ -92,6 +102,10 @@ The following choices are settled in the design interview:
 - Store threaded configuration on `World`, supplied at construction and immutable
   thereafter. Copying an idle world preserves the configuration; MAX retains
   ownership of its shared runtime rather than duplicating a pool per copy.
+- Prohibit copying, moving, replacing, or destroying a world while execution is
+  active. Enforce tracked borrows where possible; detected lifecycle violations
+  through escaped aliases must fail unconditionally rather than leave workers
+  using invalid storage. Idle copies and moves preserve immutable configuration.
 - Add a compile-time `threaded=True` option to `run`, retaining `on_device`.
   Reject selecting both before hardware fallback or row processing.
 - Require threaded kernel implementations to avoid mutable globals and
@@ -101,6 +115,11 @@ The following choices are settled in the design interview:
   are recoverable without row writes; the initial engine retains nonraising
   kernels and offers no recovery or rollback guarantee for fatal MAX worker or
   runtime failures.
+- Require correctness and actual concurrency validation on Linux x86-64 and
+  macOS arm64 before advertising production support on both. Cover shared
+  resource lifetimes, exact selections, partition stores, fallback behavior,
+  and rejected inputs. Measure performance on both without requiring a fixed
+  speedup. Keep support experimental wherever validation remains incomplete.
 
 The user affirmed the execution boundary, runtime budget, and initial safety
 scope in interview answers Q1–Q3, and affirmed explicit activation, chunk
@@ -114,18 +133,22 @@ Q15 admitted ordinary value-only read resources. For Q16, the user requires ever
 adapter to support concurrent reads as a documented contract, without an opt-in
 marker. Q17 and Q18 settled configurable scheduling and ordinary/selected API
 coverage, including partitions. Contiguous chunks and iterator reuse were agreed
-before those rounds. The complete decision remains proposed until the
+before those rounds. Q19, Q21, and Q22 settled defaults, active-world lifecycle
+restrictions, and production validation. The user rejected Q20's same-chunk
+fallback recommendation and requires existing sequential behavior to remain
+unchanged. The granularity of an explicitly threaded call's small-workload
+fallback remains to clarify. The complete decision remains proposed until the
 remaining branches are resolved and the user confirms shared understanding.
 
 Unresolved choices:
 
-- Configuration type/constructor spelling, defaults, and validation.
-- Exact deterministic chunk-sizing policy and default parallel cutoff.
-- Adapter contract documentation and compatibility validation under decision 0018.
-- Eligibility diagnostics and the neutral component-validator API.
-- Active-world copy/move rules, lifecycle details, and confinement enforcement.
-- Dispatch completion guarantees beyond the agreed initial failure boundary.
-- Production validation coverage and promotion of the proposal to requirements.
+- Granularity of sequential fallback within an explicitly threaded invocation.
+- Final confirmation of shared understanding before adopting the proposal.
+
+Configuration spelling and validation, deterministic chunk-size arithmetic,
+validator naming and diagnostics, adapter guidance, lifecycle enforcement, and
+platform validation are implementation work under the settled contract. They
+do not reopen the agreed design choices.
 
 ## Rationale
 
