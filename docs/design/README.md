@@ -31,7 +31,7 @@ decision record before changing an established behavior:
 | [0017](decisions/0017-deferred-kernel-access.md) | Proposed | Common host/device scoped operations with executor-managed access retries |
 | [0018](decisions/0018-portable-resource-adapters.md) | Accepted | Source-declared automatic registration, stateless read-only adapters, and invocation-owned transfer lifetimes |
 | [0019](decisions/0019-threaded-host-execution.md) | Accepted; experimental | Opt-in host chunks, unchanged sequential fallback, and shared read-only kernel views |
-| [0021](decisions/0021-skip-unchanged-device-uploads.md) | Accepted; experimental, not implemented | Opt-in revision-tracked device copies that skip unchanged uploads |
+| [0021](decisions/0021-skip-unchanged-device-uploads.md) | Accepted; experimental, resources implemented | Opt-in revision-tracked device copies that skip unchanged uploads |
 
 ## Research evidence
 

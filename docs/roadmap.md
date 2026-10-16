@@ -63,14 +63,19 @@ selected mutation chains, and a selected device case.
 [Decision 0021](design/decisions/0021-skip-unchanged-device-uploads.md) is
 accepted. Implement resources first, then component columns.
 
-- [ ] Add per-world revisions, the `reuse_device_copies` switch, `read`
-  accessors, and explicit invalidation; skip unchanged resource preparation.
-- [ ] Record component column segments and skip matching segment uploads.
-- [ ] Add the transfer counter, stale-copy, escape-hatch, store-identity, and
-  failure tests listed in the decision.
-- [ ] Measure 13 repeated unchanged runs in the adapter benchmark and Tree-D's
-  `light_benchmark` before and after.
-- [ ] Document the re-obtain-or-invalidate rule in the resource and device guides.
+- [x] Add resource revisions, the `reuse_device_copies` switch,
+  `resources.read`, and explicit invalidation; skip unchanged resource
+  preparation.
+- [x] Add the transfer counter and the resource stale-copy, escape-hatch,
+  failure, world-copy, and disabled-transfer tests.
+- [ ] Run the device resource tests on a supported GPU (Linux and macOS).
+- [ ] Add per-store column revisions and `world.read[T](entity)`; record
+  component column segments and skip matching segment uploads.
+- [ ] Add the component stale-copy, store-identity, and alternating-filter tests.
+- [x] Add 13 repeated unchanged runs to the adapter benchmark.
+- [ ] Measure the adapter benchmark on a GPU and Tree-D's `light_benchmark`
+  before and after.
+- [x] Document the re-obtain-or-invalidate rule in the resource and device guides.
 
 ## Later — lower priority
 
