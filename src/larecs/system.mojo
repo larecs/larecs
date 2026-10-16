@@ -399,6 +399,7 @@ def _run_threaded[
     if job_count > Int(UInt32.MAX) - workers:
         raise Error("Threaded job cursor would overflow UInt32")
     # Publish write invalidation only after every fallible preparation step.
+    # Keep this range predicate synchronized with context preparation above.
     for rows in ranges:
         if rows.row_count > 0 and bitmask.matches(
             world.storage._archetypes[rows.archetype_index].get_mask()
@@ -710,7 +711,11 @@ struct EntitySelection[
             bindings: Capture bindings in ``capture_spec`` order.
 
         Raises:
-            Error: If bindings or resources are invalid, or device execution fails.
+            Error: If the world is unusable or already executing; selected ranges
+                are invalid or overlap; bindings or resources are invalid;
+                structural lock slots are exhausted; threaded row totals, job
+                counts, or context sizes overflow; context preparation fails;
+                or device execution fails.
         """
         comptime assert not (
             threaded and on_device
@@ -1594,8 +1599,11 @@ struct SystemContext[
             bindings: Explicit read-only and mutable bindings in declared slot order.
 
         Raises:
-            Error: If a required resource is missing, or if the device
-                execution path fails to allocate or synchronize.
+            Error: If the world is unusable or already executing; bindings or
+                required resources are invalid; structural lock slots are
+                exhausted; threaded row totals, job counts, or context sizes
+                overflow; context preparation fails; or the device execution
+                path fails to allocate or synchronize.
         """
         with Zone(
             function_name=String(

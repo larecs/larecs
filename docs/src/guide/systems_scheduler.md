@@ -287,9 +287,11 @@ All fallible preparation completes before spatial invalidation and row writes;
 fatal worker/runtime failures have no recovery or rollback guarantee.
 
 Linux correctness tests exercise actual worker overlap. The overlap check
-explicitly skips hosts reporting fewer than two logical cores; a skip does not
-establish concurrency coverage. macOS arm64 validation and performance
-measurements remain pending, so this engine is experimental.
+uses a Python test probe to skip hosts with fewer than two available CPUs,
+accounting for process affinity and inherited Linux cgroup v1/v2 CPU quotas.
+Fractional quotas round down; a skip does not establish concurrency coverage.
+macOS arm64 validation and performance measurements remain pending, so this
+engine is experimental.
 
 ## Capturing host kernels
 
