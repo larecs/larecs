@@ -19,6 +19,7 @@ from .debug_utils import debug_warn
 from .host_storage import HostStorage
 from .device_storage import DeviceComponentStorage
 from .resource import ResourceStorage
+from .resource_adapter import _TransferStats
 from .filter import Filter, BitMaskFilter
 from .spatial import SpatialClassifier, _maintain_spatial
 from .unsafe_box import UnsafeBox
@@ -56,6 +57,9 @@ struct World[*component_types: ComponentType](Copyable, Sized):
 
     var _execution_unusable: Bool
     """Completion health retained even if the public resource table is replaced."""
+
+    var _last_device_upload: _TransferStats
+    """Uploads queued by the latest device invocation, for tests and benchmarks."""
 
     var resources: ResourceStorage  # The resources of the world.
     """[..resource.ResourceStorage Resource Storage] associated with the world."""
@@ -97,6 +101,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
             self._threaded_config = execution_config.copy()
             self._execution_active = False
             self._execution_unusable = False
+            self._last_device_upload = _TransferStats()
             self._spatial_classifier = None
             self._spatial_maintenance = None
 
@@ -158,6 +163,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         self._threaded_config = copy._threaded_config.copy()
         self._execution_active = False
         self._execution_unusable = copy._execution_unusable
+        self._last_device_upload = _TransferStats()
         self.resources = copy.resources.copy()
         self._spatial_classifier = copy._spatial_classifier.copy()
         self._spatial_maintenance = copy._spatial_maintenance.copy()
@@ -175,6 +181,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         self._threaded_config = move._threaded_config^
         self._execution_active = False
         self._execution_unusable = move._execution_unusable
+        self._last_device_upload = move._last_device_upload^
         self.resources = move.resources^
         self._spatial_classifier = move._spatial_classifier^
         self._spatial_maintenance = move._spatial_maintenance^
@@ -199,6 +206,39 @@ struct World[*component_types: ComponentType](Copyable, Sized):
             Settings preserved by idle world copies and moves.
         """
         return self._threaded_config.copy()
+
+    def reuse_device_copies(mut self, enabled: Bool):
+        """Lets device runs skip uploading unchanged resources (experimental).
+
+        Off by default. Larecs tracks a revision for every resource that
+        advances on each Larecs access that may mutate it: ``add``, ``set``,
+        ``get`` through mutable storage, and host runs declaring ``write`` or
+        ``read_write``. With reuse enabled, a device run skips preparing and
+        uploading a resource whose device copy was transferred at its current
+        revision. Use ``world.resources.read[T]()`` for reads between device
+        runs, since mutable ``get`` counts as a mutation.
+
+        Mutations through references obtained before a later Larecs call, or
+        through raw pointers, are not detected. Re-obtain references after a
+        run, or call ``world.resources.invalidate_device[T]()`` or
+        ``invalidate_device_copies()`` after such a mutation; otherwise the
+        next device run reads stale values.
+
+        Disabling discards every device copy record. World copies keep the
+        setting but start without records.
+
+        Args:
+            enabled: Whether device runs may reuse unchanged device copies.
+        """
+        self.resources._set_reuse_device(enabled)
+
+    def invalidate_device_copies(mut self):
+        """Marks every device copy stale, so the next device run uploads it.
+
+        Call this after mutating world data through escaped references or raw
+        pointers in a world that reuses device copies.
+        """
+        self.resources._invalidate_device_copies()
 
     def __len__(self, out size: Int):
         """

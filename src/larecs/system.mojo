@@ -892,6 +892,7 @@ struct EntitySelection[
                 device_captures.copy_back(host_captures, frame)
                 device_storage.synchronize()
                 frame.publish()
+                resource_binding.commit_device()
             except error:
                 _drain_failed_device(
                     self._world[].resources,
@@ -901,6 +902,7 @@ struct EntitySelection[
                 )
             finally:
                 resource_binding.release()
+                self._world[]._last_device_upload = frame.uploaded.copy()
 
     def run[
         filter: Filter,
@@ -1846,6 +1848,7 @@ struct SystemContext[
                     device_captures.copy_back(host_captures, frame)
                     device_storage.synchronize()
                     frame.publish()
+                    resource_binding.commit_device()
                 except error:
                     _drain_failed_device(
                         self.world[].resources,
@@ -1855,6 +1858,7 @@ struct SystemContext[
                     )
                 finally:
                     resource_binding.release()
+                    self.world[]._last_device_upload = frame.uploaded.copy()
 
     def run[
         filter: Filter,
