@@ -58,9 +58,9 @@ are ten times the base row count. Report compilation separately and retain
 hardware/compiler details; this synthetic comparison establishes no portable
 cutoff, fixed speedup, or application-level benefit.
 
-On Linux x86-64 (`7.2.5-3-omarchy`), AMD Ryzen 7 PRO 5850U (8 cores,
-16 hardware threads), Mojo 1.0.0 (`ed45d567`), and MAX 26.5.0, the optimized
-build took 17.57 seconds in the installed environment; this is not a cold-cache
+At revision `4489ceb`, on Linux x86-64 (`7.2.5-3-omarchy`), AMD Ryzen 7 PRO
+5850U (8 cores, 16 hardware threads), Mojo 1.0.0 (`ed45d567`), and MAX 26.5.0,
+the optimized build took 17.57 seconds in the installed environment; this is not a cold-cache
 compilation measurement. Three serial binary runs took 7.12, 7.48, and 7.70
 seconds after regression builds completed. All 30 scenarios and 450 paired
 measurements passed exact result validation. Raw local output is retained in

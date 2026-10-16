@@ -9,6 +9,7 @@ from std.testing import (
 )
 from std.ffi import external_call
 from std.time import perf_counter_ns
+from std.sys.info import num_logical_cores
 from larecs import (
     World,
     SystemContext,
@@ -25,6 +26,7 @@ from larecs import (
     ResourceDeviceCache,
 )
 from larecs.entity import EntityAccessor
+from larecs.bitmask import BitMask
 
 
 @fieldwise_init
@@ -431,6 +433,91 @@ def test_partition_staging_and_cluster_selection() raises:
     world.maintain_spatial()
 
 
+def test_failed_context_preparation_preserves_spatial_state() raises:
+    """A later column-lookup failure must not dirty an earlier prepared store.
+
+    Raises:
+        Error: If preparation writes rows, invalidates spatial state, or leaks locks.
+    """
+    var world = World[Int32, Float32](
+        execution_config=ThreadedExecutionConfig(workers=4, min_parallel_rows=0)
+    )
+    _ = world.storage.add_entity(Int32(1))
+    var damaged = world.storage.add_entity(Int32(2), Float32(0))
+    world.register_spatial_classifier[Filter().read[Int32]()](Policy())
+    world.maintain_spatial()
+    var index = world.storage._entity_locations[
+        damaged.get_id()
+    ].archetype_index
+    var saved_mask = world.storage._archetypes[
+        index
+    ]._storage._active_component_mask.copy()
+    var context = SystemContext(world)
+    try:
+        # Inject inconsistent column metadata to fail after the first context.
+        world.storage._archetypes[
+            index
+        ]._storage._active_component_mask = BitMask()
+        with assert_raises():
+            context.run[increment, threaded=True]()
+    finally:
+        world.storage._archetypes[
+            index
+        ]._storage._active_component_mask = saved_mask
+    assert_false(world.storage._spatial_full)
+    assert_equal(len(world.storage._spatial_dirty), 0)
+    assert_false(world.storage.is_locked())
+    assert_false(world._execution_active)
+    var total = Int32(0)
+    for row in world.storage.query[Filter().read[Int32]()]():
+        total += row.get[Int32]()
+    assert_equal(total, 3)
+
+
+def test_public_batch_selections() raises:
+    """Creation and component-mutation selections exclude preexisting rows.
+
+    Raises:
+        Error: If public selections visit unrelated rows or lose their lock.
+    """
+    for cutoff in [0, 1000]:
+        var world = World[Int32, Float32](
+            execution_config=ThreadedExecutionConfig(
+                workers=4, min_parallel_rows=cutoff
+            )
+        )
+        var existing = world.storage.add_entity(Int32(100))
+        var tagged = world.storage.add_entity(Int32(200), Float32(0))
+        var context = SystemContext(world)
+        var created = context.add_entities(Int32(1), count=67)
+        created.run[increment, threaded=True]()
+        assert_equal(len(created), 67)
+        created^.release()
+        var modified = context.add[
+            Float32, filter=Filter().read[Int32]().exclude[Float32]()
+        ](Float32(1))
+        assert_equal(len(modified), 68)
+        modified.run[increment, threaded=True]()
+        modified^.release()
+        assert_false(world.storage.is_locked())
+        assert_equal(world.storage.get[Int32](existing), 101)
+        assert_equal(world.storage.get[Int32](tagged), 200)
+        var count = 0
+        for row in world.storage.query[Filter().read[Int32]()]():
+            var value = row.get[Int32]()
+            if value != 101 and value != 200:
+                assert_equal(value, 3)
+                count += 1
+        assert_equal(count, 67)
+
+
+@fieldwise_init
+struct ConcurrencyWindow(ResourceType):
+    """Bounded retry duration for read-only concurrency-test instrumentation."""
+
+    var nanoseconds: Int
+
+
 @fieldwise_init
 struct Interval(Copyable, Movable):
     """One chunk's thread identity and measured execution interval."""
@@ -440,7 +527,11 @@ struct Interval(Copyable, Movable):
     var end: Int
 
 
-def overlap_kernel(rows: KernelContext[Filter().include[Interval]()]):
+def overlap_kernel(
+    rows: KernelContext[
+        Filter().include[Interval](), Resources().read[ConcurrencyWindow]()
+    ]
+):
     """Records overlapping execution without mutable shared bindings or a barrier.
 
     Args:
@@ -448,7 +539,10 @@ def overlap_kernel(rows: KernelContext[Filter().include[Interval]()]):
     """
     var thread = external_call["pthread_self", UInt64]()
     var start = Int(perf_counter_ns())
-    while Int(perf_counter_ns()) - start < 5_000_000:
+    while (
+        Int(perf_counter_ns()) - start
+        < rows.resources.get[ConcurrencyWindow]().nanoseconds
+    ):
         pass
     var end = Int(perf_counter_ns())
     for row in rows:
@@ -456,20 +550,30 @@ def overlap_kernel(rows: KernelContext[Filter().include[Interval]()]):
 
 
 def test_actual_concurrency() raises:
-    """Requires overlapping intervals on distinct runtime threads.
+    """Requires actual overlap, with bounded adaptive retries on multicore hosts.
 
     Raises:
         Error: If the runtime executes all jobs serially.
     """
+    var available = num_logical_cores()
+    if available < 2:
+        print(
+            "SKIP: actual threaded overlap requires at least two logical cores"
+        )
+        return
     var world = World[Interval](
         execution_config=ThreadedExecutionConfig(
-            workers=4, chunks_per_worker=1, min_parallel_rows=0
+            workers=min(4, available), chunks_per_worker=1, min_parallel_rows=0
         )
     )
     _ = world.storage.add_entities(Interval(0, 0, 0), count=4)
+    world.resources.add(ConcurrencyWindow(2_000_000))
     var context = SystemContext(world)
     var overlap = False
-    for _ in range(3):
+    for attempt in range(6):
+        world.resources.get[ConcurrencyWindow]().nanoseconds = (
+            2_000_000 << attempt
+        )
         context.run[overlap_kernel, threaded=True]()
         var intervals = List[Interval]()
         for row in world.storage.query[Filter().read[Interval]()]():
@@ -480,6 +584,8 @@ def test_actual_concurrency() raises:
                     intervals[i].start, intervals[j].start
                 ) < min(intervals[i].end, intervals[j].end):
                     overlap = True
+        if overlap:
+            break
     assert_true(overlap)
 
 

@@ -379,9 +379,6 @@ def _run_threaded[
             or rows.row_count == 0
         ):
             continue
-        world.storage._mark_spatial_range[filter](
-            rows.archetype_index, rows.first_row, rows.row_count
-        )
         ref store = world.storage._archetypes.unsafe_get(rows.archetype_index)
         var first = rows.first_row
         var remaining = rows.row_count
@@ -401,6 +398,14 @@ def _run_threaded[
     # Each worker can make one terminal claim after all useful claims.
     if job_count > Int(UInt32.MAX) - workers:
         raise Error("Threaded job cursor would overflow UInt32")
+    # Publish write invalidation only after every fallible preparation step.
+    for rows in ranges:
+        if rows.row_count > 0 and bitmask.matches(
+            world.storage._archetypes[rows.archetype_index].get_mask()
+        ):
+            world.storage._mark_spatial_range[filter](
+                rows.archetype_index, rows.first_row, rows.row_count
+            )
     if not parallel or workers <= 1:
         for job in contexts:
             KernelFunc(job)
@@ -711,6 +716,9 @@ struct EntitySelection[
             threaded and on_device
         ), "Threaded and device execution are mutually exclusive"
         comptime if threaded:
+            comptime assert (
+                len(Bindings) == 0
+            ), "Threaded execution does not support captures"
             _run_threaded[
                 filter, required_resources, capture_spec, KernelFunc, True
             ](self._world[], self._ranges)
@@ -1601,6 +1609,9 @@ struct SystemContext[
                 threaded and on_device
             ), "Threaded and device execution are mutually exclusive"
             comptime if threaded:
+                comptime assert (
+                    len(Bindings) == 0
+                ), "Threaded execution does not support captures"
                 _run_threaded[
                     filter, required_resources, capture_spec, KernelFunc, False
                 ](self.world[], List[EntityRange]())
