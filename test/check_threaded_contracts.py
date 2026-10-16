@@ -4,7 +4,8 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, Captures, ReadCapture, read_capture, mut_capture, ThreadedExecutionConfig
+PRELUDE = """from std.utils import StaticTuple
+from larecs import World, SystemContext, KernelContext, Filter, Resources, Captures, ReadCapture, read_capture, mut_capture, ThreadedExecutionConfig
 
 @fieldwise_init
 struct Owner(Copyable, Movable):
@@ -13,6 +14,10 @@ struct Owner(Copyable, Movable):
 @fieldwise_init
 struct Indirect(Copyable, Movable):
     var pointer: Pointer[Int32, ImmUntrackedOrigin]
+
+@fieldwise_init
+struct Undeclared(Copyable, Movable):
+    var values: StaticTuple[Float32, 4]
 """
 
 
@@ -45,6 +50,7 @@ def thin_program(component="Int32", resources="Resources()", captures="Captures(
 CASES = {
     "owning_component": (thin_program(component="Owner"), "Threaded components require pointer-free trivial plain values"),
     "pointer_component": (thin_program(component="Indirect"), "Threaded components require pointer-free trivial plain values"),
+    "undeclared_array_component": (thin_program(component="Undeclared"), "Threaded components require pointer-free trivial plain values"),
     "owning_read_resource": (thin_program(resources="Resources().read[Owner]()"), "Threaded resources require pointer-free plain values or KernelView adapters"),
     "mutable_resource": (thin_program(resources="Resources[Int32]()"), "Threaded resources require explicit read access"),
     "read_write_resource": (thin_program(resources="Resources().read_write[Int32]()"), "Threaded resources require explicit read access"),

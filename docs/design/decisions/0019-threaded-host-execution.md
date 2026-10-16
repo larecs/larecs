@@ -77,6 +77,9 @@ Initially accept nonraising thin kernels with these bindings:
 - Validate only accessed component types. Admit scalar/SIMD values and recursively
   validated plain-value structs; reject accessed pointer-bearing, owning-container,
   and opaque types until a supported ownership/synchronization contract exists.
+  Types conforming to the `PlainValue` marker declare a pointer-free opaque
+  representation, such as a `StaticTuple` of scalars, and are admitted when
+  trivial; the declaring author is responsible for that claim.
   Unaccessed components do not prohibit threading.
 - Admit ordinary resources with explicit read access when their types pass the
   pointer-free value validator. Scalar parameters do not need adapters.

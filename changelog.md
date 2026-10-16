@@ -11,6 +11,9 @@
   accessed components and explicit read-only resources, including shared
   `KernelView` adapters; reject unsafe bindings and active-world lifecycle changes.
   Validate Linux concurrency; macOS arm64 validation remains pending.
+  Trivial types with `StaticTuple` or `InlineArray` fields of scalars can
+  conform to the `PlainValue` marker to declare a pointer-free representation
+  that reflection cannot inspect.
 
 - Add source-declared `DevicePassableResource` adapters, portable read-only
   views, `BufferResource`, and source-keyed allocation reuse. Kernels keep
