@@ -34,25 +34,8 @@ from .types import ComponentId
 from ._utils import concatenate_arrays, assert_unreachable
 
 from std.sys import size_of
-from std.time import perf_counter_ns
 
 from tracy import Zone
-
-
-def _revision_seed(salt: Int) -> UInt64:
-    """Derives an unpredictable starting revision without global state.
-
-    Args:
-        salt: Distinguishes storages created in the same nanosecond.
-
-    Returns:
-        A nonzero value below 2**62, leaving room to count upward.
-    """
-    var z = UInt64(perf_counter_ns()) ^ (UInt64(salt) * 0x9E3779B97F4A7C15)
-    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9
-    z = (z ^ (z >> 27)) * 0x94D049BB133111EB
-    z ^= z >> 31
-    return (z >> 2) | 1
 
 
 def _sort_entity_ranges(mut ranges: List[EntityRange]):
@@ -211,13 +194,14 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     var _archetype_map: BitMaskGraph[-1]
     """Graph mapping component masks to canonical logical staging indices."""
 
-    var _clock: UInt64
-    """Last issued store incarnation (decision 0021).
+    var _id: UInt64
+    """Identity of this storage; copies get a different one (decision 0021).
 
-    Starts at an unpredictable offset so that incarnations of distinct host
-    storages, including copies, do not collide when one replaces another in
-    a world with device copy records.
+    Device column records only match the storage identity they were made
+    with, so a copy replacing `world.storage` never matches old records.
     """
+    var _clock: UInt64
+    """Last issued store incarnation (decision 0021)."""
 
     def __init__(out self):
         """
@@ -238,11 +222,12 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             self._archetype_map = BitMaskGraph[-1](0)
             self._archetypes = [Self.Archetype()]
             self._locks = LockManager()
-            self._clock = _revision_seed(Int(self._archetypes.unsafe_ptr()))
+            self._id = 0
+            self._clock = 0
             self._stamp_store(0)
 
     def __init__(out self, *, copy: Self):
-        """Copies the storage and gives every store a fresh incarnation.
+        """Copies the storage under a new storage identity.
 
         Args:
             copy: The storage to copy.
@@ -260,11 +245,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         self._entity_locations = copy._entity_locations.copy()
         self._archetypes = copy._archetypes.copy()
         self._archetype_map = copy._archetype_map.copy()
-        self._clock = _revision_seed(
-            Int(self._archetypes.unsafe_ptr()) ^ Int(copy._clock)
-        )
-        for index in range(len(self._archetypes)):
-            self._stamp_store(index)
+        self._id = copy._id + 1
+        self._clock = copy._clock
 
     @always_inline
     def _stamp_store(mut self, index: Int):

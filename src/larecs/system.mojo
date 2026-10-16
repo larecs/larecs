@@ -285,6 +285,7 @@ def _stage_device_columns[
         successful run; empty while reuse is disabled.
     """
     ref device = world._device_storage.unsafe_value()
+    device._check_host(world.storage._id)
     comptime column_count = len(filter)
     var records = List[List[_Segment]](capacity=column_count)
     comptime for i in range(len(filter)):

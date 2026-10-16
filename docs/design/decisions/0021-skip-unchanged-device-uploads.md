@@ -6,9 +6,10 @@ status_notes: |
   Accepted; experimental; implemented for resources and component columns.
   Resource revisions come from a counter owned by the resource storage, which
   travels with its device copy records. Column revisions are store-local and
-  paired with a store incarnation from a host-storage counter that starts at
-  an unpredictable offset, so replacing or copying `world.storage` cannot
-  produce matching records. The non-advancing component accessor is
+  paired with a store incarnation from a zero-based host-storage counter.
+  Larecs expects one host and one device storage per world; host-storage
+  copies get a new storage identity, and device records made for another
+  identity are discarded. The non-advancing component accessor is
   `world.storage.read[T](entity)`, next to `get`. Device tests compile for GPU
   targets but have not yet run on GPU hardware. Amends the unconditional-upload rule of
   decisions 0002 and 0018 for worlds that opt in; eager write-back is unchanged.
