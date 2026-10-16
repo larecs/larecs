@@ -185,21 +185,18 @@ def test_column_revisions_advance_on_mutating_access() raises:
     assert_true(_revision[Int32](world) > ints)
 
 
-def test_world_copies_get_fresh_store_incarnations() raises:
-    """Gives every copied store a fresh nonzero incarnation.
+def test_storage_copies_get_a_new_identity() raises:
+    """Gives copied host storages a new identity and stores nonzero incarnations.
 
     Raises:
-        Error: If a copy shares a store identity with its source.
+        Error: If a copy shares its source's identity.
     """
     var world = _world()
     _ = world.storage.add_entity(Int32(0))
     var copied = world.copy()
+    assert_true(copied.storage._id != world.storage._id)
     for index in range(len(world.storage._archetypes)):
-        var original = world.storage._archetypes[index]._storage._incarnation
-        assert_true(original != 0)
-        assert_true(
-            copied.storage._archetypes[index]._storage._incarnation != original
-        )
+        assert_true(world.storage._archetypes[index]._storage._incarnation != 0)
 
 
 @fieldwise_init
@@ -501,6 +498,10 @@ def test_world_copies_upload_columns_again() raises:
         comptime full = rows * (size_of[Int32]() + size_of[Float32]())
         assert_equal(_run(copied), full)
         assert_equal(_run(copied), 0)
+        assert_equal(_run(world), 0)
+        # A copy replacing the host storage has a new identity.
+        world.storage = world.storage.copy()
+        assert_equal(_run(world), full)
         assert_equal(_run(world), 0)
 
 
