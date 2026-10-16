@@ -10,6 +10,7 @@ from std.testing import (
 from std.ffi import external_call
 from std.time import perf_counter_ns
 from std.subprocess import run
+from std.utils import StaticTuple
 from larecs import (
     World,
     SystemContext,
@@ -24,6 +25,7 @@ from larecs import (
     DevicePassableResource,
     ResourceAdapter,
     ResourceDeviceCache,
+    PlainValue,
 )
 from larecs.entity import EntityAccessor
 from larecs.bitmask import BitMask
@@ -588,6 +590,59 @@ def test_actual_concurrency() raises:
         if overlap:
             break
     assert_true(overlap)
+
+
+@fieldwise_init
+struct Directions(Copyable, Movable, PlainValue):
+    """Scalar array field that reflection cannot inspect, declared plain."""
+
+    var values: StaticTuple[Float32, 4]
+
+
+@fieldwise_init
+struct DirectionRow(Copyable, Movable):
+    """Nested declared field inside an otherwise reflected component."""
+
+    var height: Float32
+    var directions: Directions
+
+
+def fill_directions(rows: KernelContext[Filter().include[DirectionRow]()]):
+    """Writes every array element from the row's own height.
+
+    Args:
+        rows: Disjoint host range with chunk-local indices.
+    """
+    for row in rows:
+        ref value = row.get[DirectionRow]()
+        comptime for i in range(4):
+            value.directions.values[i] = value.height * Float32(i + 1)
+
+
+def test_declared_plain_array_component() raises:
+    """Runs a component with a declared `StaticTuple` field in parallel chunks.
+
+    Raises:
+        Error: If any chunk misses a row or element.
+    """
+    var world = World[DirectionRow](
+        execution_config=ThreadedExecutionConfig(
+            workers=4, min_parallel_rows=0
+        )
+    )
+    var entities = List[Entity]()
+    for i in range(257):
+        entities.append(
+            world.storage.add_entity(
+                DirectionRow(Float32(i), Directions(StaticTuple[Float32, 4](0)))
+            )
+        )
+    var context = SystemContext(world)
+    context.run[fill_directions, threaded=True]()
+    for i in range(len(entities)):
+        ref value = world.storage.get[DirectionRow](entities[i])
+        comptime for j in range(4):
+            assert_equal(value.directions.values[j], Float32(i * (j + 1)))
 
 
 comptime functions = __functions_in_module()
