@@ -272,17 +272,24 @@ owning components do not prevent threading. Mutable resources (including the
 legacy `Resources[T]()` default), explicit captures, lexical closures, and
 `threaded=True` with `on_device=True` are rejected even on fallback.
 
+Every explicitly threaded call acquires an additional structural lock, including
+whole-range fallback and calls on an already locked selection. Exhausting the
+world's lock slots raises before execution; the selection's own lock remains
+held. Ordinary sequential calls retain their existing lock behavior.
+
 Keep the world confined to one coordinating caller. Reentrant execution and
 structural mutation during a threaded call are rejected; copying, moving,
 replacing, or destroying an active world aborts. Escaped aliases must not mutate
 resource backing data or invalidate component storage. Avoid mutable globals
 and non-thread-safe callees: signature and representation checks cannot prove
 an arbitrary kernel safe. Overlapping selected ranges are rejected before dispatch.
-All fallible preparation completes before writes;
+All fallible preparation completes before spatial invalidation and row writes;
 fatal worker/runtime failures have no recovery or rollback guarantee.
 
-Linux correctness tests exercise actual worker overlap. macOS arm64 validation
-and performance measurements remain pending, so this engine is experimental.
+Linux correctness tests exercise actual worker overlap. The overlap check
+explicitly skips hosts reporting fewer than two logical cores; a skip does not
+establish concurrency coverage. macOS arm64 validation and performance
+measurements remain pending, so this engine is experimental.
 
 ## Capturing host kernels
 

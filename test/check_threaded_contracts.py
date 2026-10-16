@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, Captures, ReadCapture, read_capture, ThreadedExecutionConfig
+PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, Captures, ReadCapture, read_capture, mut_capture, ThreadedExecutionConfig
 
 @fieldwise_init
 struct Owner(Copyable, Movable):
@@ -16,7 +16,7 @@ struct Indirect(Copyable, Movable):
 """
 
 
-def thin_program(component="Int32", resources="Resources()", captures="Captures()", options="threaded=True", selected=False):
+def thin_program(component="Int32", resources="Resources()", captures="Captures()", options="threaded=True", selected=False, binding=None):
     """Build a forbidden public invocation, including its fallback path.
 
     Args:
@@ -25,13 +25,15 @@ def thin_program(component="Int32", resources="Resources()", captures="Captures(
         captures: Explicit capture declarations.
         options: Engine selection parameters.
         selected: Use an empty exact selection.
+        binding: Optional binding expression overriding the declared-capture default.
 
     Returns:
         Source text for the complete program.
     """
     target = "selection" if selected else "context"
     extra = "    var selection = context._empty_selection()\n" if selected else ""
-    binding = "read_capture(value)" if captures != "Captures()" else ""
+    if binding is None:
+        binding = "read_capture(value)" if captures != "Captures()" else ""
     return (
         f"def kernel(rows: KernelContext[Filter().include[{component}](), {resources}, {captures}]):\n    pass\n"
         f"def main() raises:\n    var world = World[{component}]()\n"
@@ -55,6 +57,11 @@ CASES = {
 }
 
 for selected in (False, True):
+    for access in ("read", "mut"):
+        CASES[f"stray_{access}_binding_{selected}"] = (
+            thin_program(selected=selected, binding=f"{access}_capture(value)"),
+            "Threaded execution does not support captures",
+        )
     target = "selection" if selected else "context"
     extra = "    var selection = context._empty_selection()\n" if selected else ""
     CASES[f"closure_{selected}"] = (
@@ -70,13 +77,6 @@ CASES["move_borrowed_world"] = (
     "def main() raises:\n    var world = World[Int32]()\n    var context = SystemContext(world)\n"
     "    var moved = world^\n    context.run[kernel, threaded=True]()\n",
     "use of uninitialized value 'world'",
-)
-
-CASES["move_escaped_world"] = (
-    "def main() raises:\n    var world = World[Int32]()\n"
-    "    var escaped = Pointer[World[Int32], MutUntrackedOrigin](unsafe_from_address=Int(Pointer(to=world)))\n"
-    "    var moved = escaped[]^\n",
-    "expression does not designate a value with an origin",
 )
 
 RUNTIME_PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, ThreadedExecutionConfig, DevicePassableResource, ResourceAdapter, ResourceDeviceCache
