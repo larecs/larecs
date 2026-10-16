@@ -359,7 +359,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         mut: Bool, origin: Origin[mut=mut], //, T: ComponentType
     ](
         mut self,
-        frame: _TransferFrame,
+        mut frame: _TransferFrame,
         data: Span[T, origin],
         *,
         offset: Int = 0,
