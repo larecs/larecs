@@ -3,18 +3,8 @@ id: "0019"
 title: "Threaded host execution"
 status: proposed
 status_notes: |
-  Design interview in progress. Contiguous chunking and the execution boundary,
-  runtime budget, initial safety scope, explicit activation, chunk semantics,
-  fallback, eligibility errors, world confinement, configuration ownership,
-  selector compatibility, hidden-state obligations, and initial failure handling
-  are agreed. Value-only components, ordinary value-only read resources, and
-  shared read-only KernelView resources are in scope. Concurrent reads are an
-  adapter contract, not an optional capability. Ordinary and selected execution
-  and configurable scheduling are in scope. Defaults, active-world lifecycle
-  restrictions, and production validation are agreed. Existing sequential
-  execution retains its whole-range behavior; threaded small-workload fallback
-  granularity still needs clarification. No production engine is implemented or
-  authorized by this record.
+  Design interview complete; all choices below are agreed. Formal adoption and
+  implementation remain pending. Existing accepted requirements are unchanged.
 ---
 
 # Decision 0019: Threaded host execution
@@ -22,163 +12,159 @@ status_notes: |
 ## Context
 
 Whole-store jobs cannot parallelize a world dominated by one archetype.
-Contiguous chunks reuse existing host contexts and entity iteration, but affect
-invocation counts, shared access, and scheduling semantics.
+Contiguous chunks reuse existing host contexts and entity iteration, but change
+invocation granularity and require explicit resource-sharing and lifetime rules.
 
 ## Decision
 
-The following choices are settled in the design interview:
+### Selection and dispatch
 
-- Split matching physical-store or exact selected ranges into nonoverlapping
-  contiguous chunks. Prepare each chunk through `_host_kernel_context` and
-  reuse `EntityAccessorIterator` unchanged. Each host job iterates with stride one.
-- Parallelize chunks within one synchronous `run`. Join all chunks before
-  returning; retain sequential system and kernel-call order. Concurrent systems
-  and asynchronous submissions are outside the initial engine.
-- Use MAX's shared CPU runtime with a configurable worker-task concurrency
-  budget fixed for the engine's lifetime. The budget does not promise ownership
-  of that many persistent OS threads or simultaneous execution on all workers.
-- Initially support thin kernels over validated value components and include
-  shared read-only resources through the existing `KernelView` adapter design.
-  This expands the earlier component-only scope. Explicit captures and writable
-  shared resources remain outside the initial scope; dedicated synchronization
-  bindings under decision 0016 remain unfinished.
-- On the coordinating caller, validate and bind each adapted source once before
-  dispatch. All chunk accessors reference the same host view and backing data;
-  do not copy resource owners or sample buffers per worker. Retain source leases
-  and invocation-owned view descriptors until all workers join, including when
-  an eligible invocation uses sequential performance fallback.
-- All data reachable through a shared view must remain valid and safe for
-  concurrent reads throughout the invocation. No alias may mutate, resize,
-  relocate, or free that data, including writable component aliases. Immutable
-  pointer fields and source leases do not prove this contract for arbitrary
-  adapters or escaped references. Writable sharing requires a later explicit
-  synchronization design.
-- Admit ordinary resources declared with explicit read access when their types
-  pass the pointer-free value validator. Scalar parameters do not require an
-  adapter. Reject every write/read-write resource declaration, including legacy
-  mutable defaults, in the initial threaded engine.
-- Every resource adapter must support concurrent reads of its `KernelView` on
-  the view's execution target under the frozen-data contract. Document this as
-  part of `ResourceAdapter`'s contract; do not introduce a separate opt-in trait or capability flag. View
-  methods and reachable data must permit concurrent reads without hidden unsafe
-  mutation. Structural descriptor validation alone cannot prove this guarantee.
-- Validate only component types accessed by the kernel. Accept scalar/SIMD values
-  and recursively validated plain-value structs; reject accessed pointer-bearing,
-  owning-container, and opaque component types until a supported ownership or
-  synchronization contract exists. An unrelated unaccessed component does not
-  prohibit threading. This component rule does not prohibit adapter-managed
-  immutable pointers in resource `KernelView` descriptors.
-- Require explicit threaded selection for each `run`; existing calls remain
-  sequential and keep their existing whole-store or exact selected-range
-  invocation behavior. Only the new threaded engine performs chunking; its
-  introduction must not change ordinary sequential iteration or dispatch.
-  Worker configuration alone does not activate threaded execution.
-- Row indices are local to a chunk; chunk order is unspecified. Code outside
-  the entity loop runs once per chunk. Kernels cannot assume whole-archetype
-  invocation or ordering between chunks. Cross-chunk dependencies require a
-  subsequent synchronous `run`.
-- Permit sequential dispatch for small workloads, using the same threaded-engine
-  eligibility checks before choosing that performance fallback. The worker count
-  is an upper bound, not a minimum utilization guarantee.
-- Expose a configurable minimum matched-row count for parallel dispatch and a
-  target number of chunks per worker. Start with a target of four chunks per
-  worker; use deterministic policy rather than automatic tuning. These settings
-  change scheduling, not kernel eligibility.
-- Default configuration to one worker, four target chunks per worker, and a
-  parallel dispatch cutoff of 65,536 matched rows. Each setting is configurable
-  at world construction. The cutoff is a conservative initial policy from one
-  machine's measurements, not a portable performance guarantee.
-- Support both ordinary `SystemContext.run` and exact `EntitySelection.run`,
-  including spatially partitioned physical stores. Split each matching store or
-  saved selected range independently without crossing store boundaries or
-  bridging unselected gaps. Visit every eligible selected row exactly once.
-- Reject unsupported components, resources, and captures before modifying any
-  row. Eligibility errors do not silently select the sequential engine; this
-  differs from the performance fallback for an eligible kernel.
-- Require one coordinating caller per world. Initially prohibit reentrant
-  execution and world mutation from workers; workers receive prepared chunk
-  contexts. Structural locks alone do not arbitrate concurrent external callers.
-- Store threaded configuration on `World`, supplied at construction and immutable
-  thereafter. Copying an idle world preserves the configuration; MAX retains
-  ownership of its shared runtime rather than duplicating a pool per copy.
-- Prohibit copying, moving, replacing, or destroying a world while execution is
-  active. Enforce tracked borrows where possible; detected lifecycle violations
-  through escaped aliases must fail unconditionally rather than leave workers
-  using invalid storage. Idle copies and moves preserve immutable configuration.
-- Add a compile-time `threaded=True` option to `run`, retaining `on_device`.
-  Reject selecting both before hardware fallback or row processing.
-- Require threaded kernel implementations to avoid mutable globals and
-  non-thread-safe callees. Thin function signatures and validated component
-  representations cannot establish this obligation for arbitrary kernel code.
-- Complete all fallible context preparation before dispatch. Preparation errors
-  are recoverable without row writes; the initial engine retains nonraising
-  kernels and offers no recovery or rollback guarantee for fatal MAX worker or
-  runtime failures.
-- Require correctness and actual concurrency validation on Linux x86-64 and
-  macOS arm64 before advertising production support on both. Cover shared
-  resource lifetimes, exact selections, partition stores, fallback behavior,
-  and rejected inputs. Measure performance on both without requiring a fixed
-  speedup. Keep support experimental wherever validation remains incomplete.
+Add a compile-time `threaded=True` option to both `SystemContext.run` and
+`EntitySelection.run`. Keep `on_device`; reject selecting both before hardware
+fallback or row processing. Existing calls remain sequential with their current
+whole-store or exact selected-range invocation behavior.
 
-The user affirmed the execution boundary, runtime budget, and initial safety
-scope in interview answers Q1–Q3, and affirmed explicit activation, chunk
-semantics, validated fallback, pre-write eligibility errors, and world
-confinement in Q4–Q8. Q9, Q10, Q12, and Q13 settled configuration ownership,
-selector compatibility, hidden-state obligations, and initial failure handling.
-The Q11 clarification settled component eligibility; the user additionally
-requires resource sharing compatible with `KernelView`. Q14 settled shared
-read-only views with frozen reachable data and invocation-wide bindings.
-Q15 admitted ordinary value-only read resources. For Q16, the user requires every
-adapter to support concurrent reads as a documented contract, without an opt-in
-marker. Q17 and Q18 settled configurable scheduling and ordinary/selected API
-coverage, including partitions. Contiguous chunks and iterator reuse were agreed
-before those rounds. Q19, Q21, and Q22 settled defaults, active-world lifecycle
-restrictions, and production validation. The user rejected Q20's same-chunk
-fallback recommendation and requires existing sequential behavior to remain
-unchanged. The granularity of an explicitly threaded call's small-workload
-fallback remains to clarify. The complete decision remains proposed until the
-remaining branches are resolved and the user confirms shared understanding.
+For an eligible threaded invocation, select dispatch as follows:
 
-Unresolved choices:
+| Condition | Dispatch |
+| --- | --- |
+| No matching rows | No kernel invocation. |
+| Below the parallel cutoff, or one configured worker | Existing whole-range sequential dispatch after threaded eligibility checks. |
+| Otherwise | Contiguous chunk jobs on MAX's shared CPU runtime. |
 
-- Granularity of sequential fallback within an explicitly threaded invocation.
-- Final confirmation of shared understanding before adopting the proposal.
+Only parallel dispatch introduces chunking. Split each matching physical store
+or saved selected range independently, without crossing store boundaries or
+bridging unselected gaps, including partitioned storage. Prepare contexts with
+`_host_kernel_context` and reuse `EntityAccessorIterator` unchanged: offset
+component pointers to each chunk's start, set its exact length, and iterate with
+host stride one. Workers dynamically claim nonoverlapping jobs; each eligible
+row executes exactly once.
 
-Configuration spelling and validation, deterministic chunk-size arithmetic,
-validator naming and diagnostics, adapter guidance, lifecycle enforcement, and
-platform validation are implementation work under the settled contract. They
-do not reopen the agreed design choices.
+Every run is synchronous. Join all workers before releasing storage/bindings,
+returning, or starting the next kernel/system. Preserve sequential system and
+kernel-call order; asynchronous submission and concurrent systems are excluded.
+
+Chunk order is unspecified, indices are chunk-local, and code outside the entity
+loop runs once per chunk. Whole-range sequential fallback uses whole-range local
+indices and invocation counts. Consequently, changing the cutoff can change
+invocation counts and index resets for explicitly threaded calls. Kernels must
+tolerate that granularity; cross-chunk dependencies require a subsequent run.
+
+### Configuration
+
+Store immutable runtime configuration on `World`, supplied at construction:
+
+| Setting | Default | Constraint |
+| --- | ---: | --- |
+| Worker-task budget | 1 | Positive. |
+| Target chunks per worker | 4 | Positive. |
+| Minimum matched rows for parallel dispatch | 65,536 | Nonnegative; zero disables the row cutoff. |
+
+Use deterministic chunk sizing rather than automatic tuning. Configuration
+changes scheduling, not kernel eligibility. The cutoff is a conservative initial
+policy from one machine's measurements, not a portable performance guarantee.
+Worker configuration alone never activates threaded execution.
+
+The budget bounds submitted worker tasks; MAX owns the shared runtime. It does
+not reserve CPU cores, guarantee simultaneous execution, or create a dedicated
+pool of persistent OS threads. Idle world copies/moves preserve configuration
+without duplicating a pool.
+
+### Components, resources, and kernels
+
+Initially accept nonraising thin kernels with these bindings:
+
+- Validate only accessed component types. Admit scalar/SIMD values and recursively
+  validated plain-value structs; reject accessed pointer-bearing, owning-container,
+  and opaque types until a supported ownership/synchronization contract exists.
+  Unaccessed components do not prohibit threading.
+- Admit ordinary resources with explicit read access when their types pass the
+  pointer-free value validator. Scalar parameters do not need adapters.
+- Admit shared read-only adapted resources through the existing `KernelView`
+  design. The component pointer restriction does not reject adapter-managed
+  immutable pointers in resource views.
+- Reject all write/read-write resource declarations, including legacy mutable
+  defaults, and explicit captures. Lexical closure kernels are unsupported.
+  Dedicated synchronization bindings under decision 0016 remain unfinished.
+
+Every resource adapter must support concurrent reads of its `KernelView` on the
+view's execution target. This is a documented adapter contract, with no optional
+capability marker. View methods and reachable data must permit concurrent reads
+without hidden unsafe mutation; structural descriptor checks cannot prove this.
+
+Validate and bind each adapted source once on the coordinating caller before
+any kernel writes. All jobs share the same host descriptor and backing data;
+do not copy resource owners or sample buffers per worker. Retain source leases
+and invocation-owned descriptors until all workers finish, including fallback.
+
+All reachable resource data must remain valid and safe for concurrent reads
+throughout execution. No alias may mutate, resize, relocate, or free it, including
+aliases through writable components. Immutable pointer fields and source leases
+do not prove this for arbitrary adapters or escaped references. Writable sharing
+requires a later synchronization design.
+
+Kernel authors must avoid mutable globals and non-thread-safe callees. Thin
+signatures and value validation do not establish full thread safety for arbitrary
+kernel implementations.
+
+### Isolation and failure
+
+Require one coordinating caller per world. Workers receive prepared contexts;
+reentrant execution and worker access that mutates the world are prohibited.
+Structural locks alone do not arbitrate concurrent external callers.
+
+Prohibit copying, moving, replacing, or destroying an executing world. Enforce
+tracked borrows where possible; detected lifecycle violations through escaped
+aliases must fail unconditionally rather than invalidate worker pointers.
+
+Validate threaded eligibility before selecting fallback. Unsupported bindings
+produce errors rather than silently selecting sequential execution. Finish all
+fallible context/binding preparation before dispatch so recoverable preparation
+errors leave rows untouched. Fatal MAX worker/runtime failures have no recovery
+or rollback guarantee; recoverable worker exceptions are outside initial scope.
+
+### Validation
+
+Before advertising production support on both platforms, validate correctness
+and actual concurrency on Linux x86-64 and macOS arm64. Cover shared-resource
+lifetimes, exact selections, partition stores, fallback behavior, lifecycle
+violations, and rejected inputs. Measure performance on both without requiring
+a fixed speedup. Keep support experimental wherever validation is incomplete.
+
+Configuration spelling, checked arithmetic, diagnostics, validator naming,
+adapter documentation, and enforcement are implementation work under this
+contract. Track that work in the roadmap rather than reopening settled choices.
 
 ## Rationale
 
-Contiguous chunks expose parallelism within one store while retaining sequential
-row access. Synchronous completion provides an ownership and visibility boundary.
-A shared runtime avoids designing a dedicated thread pool. Restricting initial
-bindings avoids promising safety from incomplete synchronization integration.
-Making concurrent reads a universal adapter obligation preserves the existing
-view abstraction without adding a second resource capability hierarchy.
+Chunks expose parallelism within one store while retaining contiguous access.
+Explicit selection preserves sequential compatibility. Whole-range fallback
+avoids introducing chunking into the existing sequential runtime. Synchronous
+completion bounds borrowed lifetimes, and a shared runtime avoids pool ownership.
+
+Value-only components and shared read-only resource views provide a restricted
+initial safety boundary. A universal concurrent-read adapter contract preserves
+the existing view abstraction without adding another capability hierarchy.
 
 ## Consequences
 
-The concurrency budget limits submitted worker tasks rather than reserving CPU
-cores. Kernel source portability does not imply eligibility for every engine;
-changing workload size cannot make an ineligible threaded kernel valid. Existing
-kernel side effects outside the entity loop can observe a change in invocation
-count when callers explicitly select the threaded engine.
-The adapter contract extends decision 0018's read-only views with an explicit
-concurrent-read obligation. Existing adapters need an audit of view methods and
-reachable data; their ordinary read-only type signatures are not sufficient proof.
-The existing accepted requirements remain in force; ECS-09 needs clarification
-about sequential iteration within concurrent host jobs before adoption.
+Sequential behavior stays unchanged. Explicit threaded calls can observe changes
+in invocation granularity as workload size or scheduling settings change.
+Eligibility remains constant across parallel and sequential fallback paths.
+
+This proposal extends decision 0018 with concurrent-read adapter obligations;
+existing adapters need an audit of view methods and reachable data. Adoption
+must update adapter guidance and affected requirements, including ECS-09's
+sequential host iteration wording. This completed proposal does not itself
+change those accepted requirements or implement the engine.
 
 ## Evidence
 
-- [Investigation and measured chunk comparisons](../research/host-thread-execution.md).
-- [Host context preparation](../../../src/larecs/system.mojo) and
-  [entity iteration](../../../src/larecs/iteration.mojo).
-- [Kernel synchronization](0016-kernel-memory-synchronization.md),
-  [portable resource adapters](0018-portable-resource-adapters.md),
-  [grid-stride iteration](0003-grid-stride-entity-iteration.md), and
-  [current requirements](../requirements.md).
-- [Roadmap](../../roadmap.md) tracks implementation separately from this proposal.
+- [Investigation and measurements](../research/host-thread-execution.md).
+- [Host contexts and dispatch](../../../src/larecs/system.mojo),
+  [entity iteration](../../../src/larecs/iteration.mojo), and
+  [recursive value validation](../../../src/larecs/resource_representation.mojo).
+- [Grid-stride iteration](0003-grid-stride-entity-iteration.md),
+  [kernel synchronization](0016-kernel-memory-synchronization.md), and
+  [portable resource adapters](0018-portable-resource-adapters.md).
+- [Current requirements](../requirements.md) and [roadmap](../../roadmap.md).
