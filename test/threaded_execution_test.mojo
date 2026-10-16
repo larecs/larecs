@@ -9,7 +9,7 @@ from std.testing import (
 )
 from std.ffi import external_call
 from std.time import perf_counter_ns
-from std.sys.info import num_logical_cores
+from std.subprocess import run
 from larecs import (
     World,
     SystemContext,
@@ -553,12 +553,13 @@ def test_actual_concurrency() raises:
     """Requires actual overlap, with bounded adaptive retries on multicore hosts.
 
     Raises:
-        Error: If the runtime executes all jobs serially.
+        Error: If CPU capacity cannot be probed or all jobs execute serially.
     """
-    var available = num_logical_cores()
+    # Like the test runner, this probe runs from the repository root.
+    var available = Int(run("python test/threaded_cpu_capacity.py"))
     if available < 2:
         print(
-            "SKIP: actual threaded overlap requires at least two logical cores"
+            "SKIP: actual threaded overlap requires at least two available CPUs"
         )
         return
     var world = World[Interval](

@@ -79,6 +79,7 @@ if "$run_synchronization_contracts"; then
 fi
 
 if "$run_threaded_contracts"; then
+    python -m unittest discover -s "$larecs_test_directory" -p threaded_cpu_capacity_test.py
     python "$larecs_test_directory/check_threaded_contracts.py"
 fi
 
