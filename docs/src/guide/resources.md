@@ -486,6 +486,20 @@ Host-only resources can continue implementing `ResourceType` without an adapter.
 
 ### Adapter allocation and access rules
 
+Every adapter must support concurrent reads of its `KernelView` on the view's
+execution target. View methods and all reachable memory must permit concurrent
+reads without hidden unsafe mutation. No escaped alias may mutate, resize,
+relocate, or free backing data before invocation completion; immutable pointer
+fields alone do not establish this guarantee. This is a universal adapter
+contract, with no capability marker.
+
+Threaded host calls accept adapted sources only through explicit `read`
+declarations. The caller validates and binds each source once, then shares the
+same descriptor and sample storage across jobs. Resource leases and descriptor
+owners remain alive until all workers join, including whole-range fallback.
+Ordinary pointer-free read resources also work without an adapter. Mutable
+resources remain unsupported by this engine.
+
 Use nonnegative cache slots for sample allocations. Slot `-1` is reserved for
 Larecs's view descriptor. For multiple arrays, give each array its own stable
 slot, such as `0` for samples and `1` for coordinates. Each world keeps a separate

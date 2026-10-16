@@ -1,10 +1,10 @@
 ---
 id: "0019"
 title: "Threaded host execution"
-status: proposed
+status: accepted
 status_notes: |
-  Design interview complete; all choices below are agreed. Formal adoption and
-  implementation remain pending. Existing accepted requirements are unchanged.
+  Experimental implementation adopted. Linux correctness and concurrency are
+  validated; macOS arm64 correctness, concurrency, and performance remain pending.
 ---
 
 # Decision 0019: Threaded host execution
@@ -131,9 +131,13 @@ lifetimes, exact selections, partition stores, fallback behavior, lifecycle
 violations, and rejected inputs. Measure performance on both without requiring
 a fixed speedup. Keep support experimental wherever validation is incomplete.
 
-Configuration spelling, checked arithmetic, diagnostics, validator naming,
-adapter documentation, and enforcement are implementation work under this
-contract. Track that work in the roadmap rather than reopening settled choices.
+The public configuration is `ThreadedExecutionConfig(workers=1,
+chunks_per_worker=4, min_parallel_rows=65_536)`, supplied to
+`World(execution_config=...)`; its no-argument constructor supplies the defaults.
+Settings are returned by value through `World.execution_config()`. Custom
+configuration construction raises on invalid bounds or chunk-target overflow.
+Row totals, range bounds, context lengths, and terminal atomic claims use
+checked arithmetic before dispatch.
 
 ## Rationale
 
@@ -152,14 +156,20 @@ Sequential behavior stays unchanged. Explicit threaded calls can observe changes
 in invocation granularity as workload size or scheduling settings change.
 Eligibility remains constant across parallel and sequential fallback paths.
 
-This proposal extends decision 0018 with concurrent-read adapter obligations;
-existing adapters need an audit of view methods and reachable data. Adoption
-must update adapter guidance and affected requirements, including ECS-09's
-sequential host iteration wording. This completed proposal does not itself
-change those accepted requirements or implement the engine.
+This decision extends decision 0018 with concurrent-read adapter obligations.
+The built-in buffer adapter shares immutable sample memory without hidden
+mutation. Third-party adapters must audit view methods and reachable data.
+ECS-09 and ECS-18 distinguish sequential iteration within a job from concurrent
+host jobs. Existing sequential invocation boundaries remain unchanged.
 
 ## Evidence
 
+- Implementation: `src/larecs/execution.mojo` and the shared `_run_threaded`
+  preparation/dispatch path in `src/larecs/system.mojo`.
+- [Correctness and actual concurrency](../../../test/threaded_execution_test.mojo),
+  [eligibility and lifecycle diagnostics](../../../test/check_threaded_contracts.py),
+  [complete-call benchmark](../../../benchmark/threaded_execution.mojo), and
+  [Linux implementation measurements](../../src/guide/benchmarks.md#threaded-host-execution).
 - [Investigation and measurements](../research/host-thread-execution.md).
 - [Host contexts and dispatch](../../../src/larecs/system.mojo),
   [entity iteration](../../../src/larecs/iteration.mojo), and
