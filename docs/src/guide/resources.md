@@ -547,19 +547,30 @@ but perform no device allocation, upload, or launch.
 
 ## Reusing unchanged device copies (experimental)
 
-By default every `on_device=True` run uploads all resources it declares, even if
-they did not change. Worlds that call `world.reuse_device_copies(True)` skip the
-upload, and for adapted resources the whole `prepare_device` call, when a
-resource is unchanged since its device copy was made. Validation and leases
-still run on every call. Component columns are still uploaded on every run.
+By default every `on_device=True` run uploads all resources and readable
+component columns it declares, even if they did not change. Worlds that call
+`world.reuse_device_copies(True)` skip uploads of data that is unchanged since
+its device copy was made. For adapted resources this skips the whole
+`prepare_device` call; validation and leases still run on every call. Written
+data is still downloaded after every run.
 
 Larecs cannot see what you do with a reference after it returns it. It tracks
-a revision per resource that advances on every Larecs access that *may* mutate
-it: `add`, `set`, `get` through a mutable world, host runs declaring `write`
-or `read_write`, and device runs writing the resource. Use
-`world.resources.read[T]()` for reads between device runs: it returns an
-immutable reference and keeps the device copy reusable, whereas `get` on a
-mutable world always counts as a mutation.
+revisions that advance on every Larecs access that *may* mutate data:
+
+- Resources: `add`, `set`, `get` through a mutable world, host runs declaring
+  `write` or `read_write`, and device runs writing the resource.
+- Component columns, per type and physical store: `world.storage.get` and
+  `set`, kernel runs writing the type, and every structural change, spatial
+  reordering, or partition move of the store.
+
+Use `world.resources.read[T]()` and `world.storage.read[T](entity)` for reads
+between device runs: they return immutable references and keep device copies
+reusable, whereas `get` on a mutable world always counts as a mutation. Read
+queries never count as mutations.
+
+Component columns are reused per contiguous store range. Kernels with
+different filters on the same component type pack stores at different
+offsets, so alternating them uploads that column again each time.
 
 > **Re-obtain or invalidate.** In a world that reuses device copies, never
 > mutate a resource through a reference obtained before a later Larecs call or
