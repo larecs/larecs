@@ -9,6 +9,7 @@ from std.collections import Set
 from .resource_representation import _plain_device_value
 from .resource_adapter import (
     DevicePassableResource,
+    ResourceAccess,
     ResourceDeviceCache,
     _TransferFrame,
     _TransferStats,
@@ -36,7 +37,7 @@ comptime DeviceResourceType = TrivialRegisterPassable
 
 Ordinary device eligibility is checked recursively by
 [.constrain_device_safe_resources]. Owning sources instead opt into
-[..resource_adapter.DevicePassableResource] with a read-only kernel view.
+[..resource_adapter.DevicePassableResource] with access-selected kernel views.
 """
 
 
@@ -85,6 +86,9 @@ struct Resources[
         T
     ]() else (2 if Self._writeonly.Types.contains[T]() else 3)
 
+    comptime access[T: ResourceType] = ResourceAccess(Self._mode[T])
+    """Declared access of source `T`; undeclared types report `READ_WRITE`."""
+
     def read[
         *Ts: ResourceType
     ](self) -> Resources[
@@ -113,10 +117,14 @@ struct Resources[
             *TypeList._concat[Self._writeonly.Types.values, Ts.values]()
         ](),
     ]:
-        """Appends host set-only sources; device write access is unsupported.
+        """Appends write-only sources.
+
+        Ordinary sources offer host `set` only; device write access is
+        unsupported for them. Adapted sources whose adapter supports mutation
+        expose `View[True]` over fresh, adapter-initialized output.
 
         Parameters:
-            Ts: Types available through set only.
+            Ts: Ordinary types available through set, or mutable adapted sources.
 
         Returns:
             Extended access declarations.
@@ -130,10 +138,11 @@ struct Resources[
         _readonly=Self._readonly,
         _writeonly=Self._writeonly,
     ]:
-        """Appends mutable sources.
+        """Appends mutable sources preserving existing contents.
 
         Parameters:
-            Ts: Types exposed as mutable source references.
+            Ts: Ordinary types exposed as mutable source references, or adapted
+                sources exposing `View[True]` over their current contents.
 
         Returns:
             Extended access declarations.
@@ -665,14 +674,15 @@ struct ResourceStorage(Copyable, Movable, Sized):
             return reflect[T].name() in self._storage
 
 
-def _view_device_value[T: AnyType]() -> Bool:
-    """Checks trivial descriptors, permitting immutable adapter-managed pointers.
+def _view_device_value[T: AnyType, allow_mutable: Bool = False]() -> Bool:
+    """Checks trivial descriptors, permitting adapter-managed pointers.
 
     Parameters:
         T: Descriptor or nested field type.
+        allow_mutable: Whether mutable pointers are permitted (mutable views).
 
     Returns:
-        Whether the representation can be used as a read-only kernel descriptor.
+        Whether the representation can be used as a kernel descriptor.
         Pointer addresses and sample validity remain the adapter's contract.
     """
     comptime if not conforms_to(T, Copyable):
@@ -689,46 +699,66 @@ def _view_device_value[T: AnyType]() -> Bool:
             return False
         elif reflect[T].name().startswith("std.memory.pointer.Pointer[False,"):
             return True
+        elif reflect[T].name().startswith("std.memory.pointer.Pointer[True,"):
+            return allow_mutable
         elif T == Bool or reflect[T].name().startswith("SIMD["):
             return True
         else:
             comptime fields = reflect[T].field_types()
             comptime for i in range(len(fields)):
-                comptime if not _view_device_value[fields[i]]():
+                comptime if not _view_device_value[fields[i], allow_mutable]():
                     return False
             return True
 
 
 def _validate_adapter_type[T: DevicePassableResource]():
-    """Checks source, adapter, and read-only view agreement at registration.
+    """Checks source, adapter, and view agreement at registration.
 
     Parameters:
         T: Opt-in source type.
 
     Constraints:
-        Adapter types must match the source and its immutable trivial descriptor.
+        Adapter types must match the source. The read view is an immutable
+        trivial descriptor; mutable views may also hold mutable pointers.
+        Concurrent mutation requires mutation support.
     """
     comptime assert (
         T.Adapter.Source == T
     ), "Adapter.Source must equal the resource type"
     comptime assert (
-        T.Adapter.View == T.KernelView
-    ), "Adapter.View must equal KernelView"
+        T.View[False] == T.Adapter.View[False]
+        and T.View[True] == T.Adapter.View[True]
+    ), "View must forward to Adapter.View"
+    comptime assert (
+        T.KernelView == T.View[False]
+    ), "KernelView must equal View[False]"
     comptime assert _view_device_value[
-        T.KernelView
+        T.View[False]
     ](), "KernelView requires trivial metadata and immutable pointers"
+    comptime assert (
+        T.Adapter.supports_mutation
+        or not T.Adapter.supports_concurrent_mutation
+    ), "supports_concurrent_mutation requires supports_mutation"
+    comptime if T.Adapter.supports_mutation:
+        comptime assert _view_device_value[
+            T.View[True], True
+        ](), "View[True] requires trivial metadata and adapter-managed pointers"
 
 
-def _validate_resource_spec[spec: Resources, device: Bool]():
-    """Checks source identity and access before either execution backend.
+def _validate_resource_spec[
+    spec: Resources, device: Bool, concurrent: Bool = False
+]():
+    """Checks source identity and access before any execution backend.
 
     Parameters:
         spec: Invocation declarations.
         device: Whether device execution was requested, including fallback hosts.
+        concurrent: Whether threaded host execution was requested.
 
     Constraints:
-        Sources must be unique. Adapted resources require read access.
-        Device write-only resources are unsupported.
+        Sources must be unique. Mutable adapted access requires
+        `supports_mutation`, plus `supports_concurrent_mutation` for device or
+        threaded execution. Device write-only ordinary resources are unsupported.
     """
     comptime for i in range(len(spec)):
         comptime T = spec.ResourceTypes[i]
@@ -739,9 +769,18 @@ def _validate_resource_spec[spec: Resources, device: Bool]():
         comptime if conforms_to(T, DevicePassableResource):
             comptime assert conforms_to(T, DevicePassableResource)
             _validate_adapter_type[T]()
-            comptime assert (
-                spec._mode[T] == 1
-            ), "DevicePassableResource requires read access on both targets"
+            comptime if spec._mode[T] != 1:
+                comptime assert T.Adapter.supports_mutation, (
+                    "DevicePassableResource mutable access requires"
+                    " Adapter.supports_mutation"
+                )
+                comptime assert (
+                    not (device or concurrent)
+                    or T.Adapter.supports_concurrent_mutation
+                ), (
+                    "Device or threaded mutable adapted access requires"
+                    " Adapter.supports_concurrent_mutation"
+                )
         elif device:
             comptime assert (
                 spec._mode[T] != 2
@@ -755,10 +794,21 @@ def _validate_resource_spec[spec: Resources, device: Bool]():
 struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
     """Retains source leases and host descriptors for one synchronous run.
 
+    Lifecycle: the constructor validates every declaration and source before
+    leasing; host binding or device preparation creates invocation-owned views;
+    kernels share them across all ranges and chunks; device outputs are staged
+    and published after completion; `finalize` then completes mutable adapted
+    results once; `release` ends the leases.
+
     Parameters:
         spec: Ordered source access declarations.
         origin: Borrow of the source storage retained through invocation release.
     """
+
+    comptime _mutable_adapted[T: ResourceType] = conforms_to(
+        T, DevicePassableResource
+    ) and Self.spec._mode[T] != 1
+    """Whether `T` is an adapted source bound through its mutable view."""
 
     var _storage: Pointer[ResourceStorage, Self.origin]
     var _views: Array[Optional[UnsafeBox], len(Self.spec)]
@@ -813,10 +863,11 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
         """Constructs host descriptors without queueing device work.
 
         Advances the revision of every resource declared writable, since the
-        host kernel may mutate it.
+        host kernel may mutate it. Mutable adapted sources prepare their host
+        backing storage here, once for all ranges and chunks.
 
         Raises:
-            Error: If host descriptor construction fails.
+            Error: If host descriptor construction or preparation fails.
         """
         comptime for i in range(len(Self.spec)):
             comptime T = Self.spec.ResourceTypes[i]
@@ -825,22 +876,88 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
             ref source = self._storage[]._get_bound[T]()
             comptime if conforms_to(T, DevicePassableResource):
                 comptime assert conforms_to(T, DevicePassableResource)
-                var view = T.Adapter.bind_host(
-                    Pointer(to=source).unsafe_bitcast[T.Adapter.Source]()[]
-                )
-                self._views[i] = UnsafeBox(view)
-                self.pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
-                    unsafe_from_address=Int(
-                        Pointer(
-                            to=self._views[i]
-                            .unsafe_value()
-                            .unsafe_get[T.KernelView]()
+                comptime if Self.spec._mode[T] == 1:
+                    self._views[i] = UnsafeBox(
+                        T.Adapter.bind_host(
+                            Pointer(to=source).unsafe_bitcast[
+                                T.Adapter.Source
+                            ]()[]
                         )
                     )
-                )
+                    self.pointers[i] = self._view_pointer[T.View[False]](i)
+                else:
+                    self._views[i] = UnsafeBox(
+                        T.Adapter.bind_host_mutable[Self.spec.access[T]](
+                            Pointer(to=source).unsafe_bitcast[
+                                T.Adapter.Source
+                            ]()[]
+                        )
+                    )
+                    self.pointers[i] = self._view_pointer[T.View[True]](i)
             else:
                 self.pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
                     unsafe_from_address=Int(Pointer(to=source))
+                )
+
+    def _view_pointer[
+        V: TrivialRegisterPassable
+    ](self, index: Int) -> Pointer[UInt8, MutUntrackedOrigin]:
+        """Addresses one retained host descriptor.
+
+        Parameters:
+            V: Stored descriptor type.
+
+        Args:
+            index: Declaration position whose descriptor is boxed.
+
+        Returns:
+            Untracked byte pointer valid until the invocation is destroyed.
+        """
+        return Pointer[UInt8, MutUntrackedOrigin](
+            unsafe_from_address=Int(
+                Pointer(to=self._views[index].unsafe_value().unsafe_get[V]())
+            )
+        )
+
+    def complete_without_launch(mut self) raises:
+        """Prepares and finalizes mutable adapted sources for an empty device run.
+
+        No rows match, so no device work is queued: `WRITE` output is
+        initialized on the host and every mutable adapted source is finalized,
+        exactly as for a host run without matches. Other sources are untouched.
+
+        Raises:
+            Error: If preparation or finalization fails.
+        """
+        comptime for i in range(len(Self.spec)):
+            comptime T = Self.spec.ResourceTypes[i]
+            comptime if Self._mutable_adapted[T]:
+                comptime assert conforms_to(T, DevicePassableResource)
+                comptime id = reflect[T].name()
+                _ = self._storage[]._touch(id)
+                self._storage[]._drop_device_record(id)
+                ref source = self._storage[]._get_bound[T]()
+                _ = T.Adapter.bind_host_mutable[Self.spec.access[T]](
+                    Pointer(to=source).unsafe_bitcast[T.Adapter.Source]()[]
+                )
+        self.finalize()
+
+    def finalize(mut self) raises:
+        """Completes mutable adapted results after execution and publication.
+
+        Runs once per invocation, after every kernel range or worker finished
+        and staged device outputs were published.
+
+        Raises:
+            Error: If an adapter reports a result failure; outputs stay published.
+        """
+        comptime for i in range(len(Self.spec)):
+            comptime T = Self.spec.ResourceTypes[i]
+            comptime if Self._mutable_adapted[T]:
+                comptime assert conforms_to(T, DevicePassableResource)
+                ref source = self._storage[]._get_bound[T]()
+                T.Adapter.finalize[Self.spec.access[T]](
+                    Pointer(to=source).unsafe_bitcast[T.Adapter.Source]()[]
                 )
 
     def validate_device(self, context: DeviceContext) raises:
@@ -874,6 +991,7 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
         its current revision when the world reuses device copies. Every
         other device copy, and every copy the kernel may write, is marked
         unknown before work is queued, so a failure leaves no stale record.
+        Mutable adapted sources are prepared on every call.
 
         Args:
             context: The world's device queue.
@@ -895,7 +1013,10 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
             ref storage = self._storage[]
             if id not in storage._device_cache:
                 storage._device_cache[id] = ResourceDeviceCache(context)
-            var reuse = storage._device_copy_current(id)
+            var reuse = (
+                storage._device_copy_current(id)
+                and not Self._mutable_adapted[T]
+            )
             # Copies the kernel may write are unknown until commit_device.
             if not reuse or Self.spec._mode[T] != 1:
                 storage._drop_device_record(id)
@@ -909,11 +1030,25 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
                 comptime assert conforms_to(T, DevicePassableResource)
                 if not reuse:
                     cache._uploaded = _TransferStats()
-                    var view = T.Adapter.prepare_device(
-                        Pointer(to=source).unsafe_bitcast[T.Adapter.Source]()[],
-                        cache,
-                    )
-                    _ = cache._descriptor(view)
+                    cache._downloads.clear()
+                    comptime if Self.spec._mode[T] == 1:
+                        var view = T.Adapter.prepare_device(
+                            Pointer(to=source).unsafe_bitcast[
+                                T.Adapter.Source
+                            ]()[],
+                            cache,
+                        )
+                        _ = cache._descriptor(view)
+                    else:
+                        var view = T.Adapter.prepare_device_mutable[
+                            Self.spec.access[T]
+                        ](
+                            Pointer(to=source).unsafe_bitcast[
+                                T.Adapter.Source
+                            ]()[],
+                            cache,
+                        )
+                        _ = cache._descriptor(view)
                     frame.uploaded.add(cache._uploaded)
                 result[i] = rebind[
                     DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
@@ -941,22 +1076,27 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
 
         Advances the revision of every resource the kernel could write, since
         publication changed its host value. With device copy reuse enabled,
-        stamps each device copy with the revision it now matches.
+        stamps each device copy with the revision it now matches. Mutable
+        adapted sources are never reused, so they receive no record.
         """
         ref storage = self._storage[]
         comptime for i in range(len(Self.spec)):
             comptime T = Self.spec.ResourceTypes[i]
             comptime id = reflect[T].name()
             var revision: UInt64
-            comptime if Self.spec._mode[T] == 3:
+            comptime if Self.spec._mode[T] != 1:
                 revision = storage._touch(id)
             else:
                 revision = storage._revision(id)
-            if storage._reuse_device and id in storage._device_cache:
-                storage._device_revisions[id] = revision
+            comptime if not Self._mutable_adapted[T]:
+                if storage._reuse_device and id in storage._device_cache:
+                    storage._device_revisions[id] = revision
 
     def download(mut self, mut frame: _TransferFrame) raises:
-        """Stages mutable plain resources without publishing partial results.
+        """Stages mutable resource outputs without publishing partial results.
+
+        Plain read_write resources download their bytes. Mutable adapted
+        sources stage their outputs through the adapter.
 
         Args:
             frame: Invocation's staged output owner.
@@ -966,7 +1106,19 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
         """
         comptime for i in range(len(Self.spec)):
             comptime T = Self.spec.ResourceTypes[i]
-            comptime if Self.spec._mode[T] == 3 and size_of[T]() > 0:
+            comptime if Self._mutable_adapted[T]:
+                comptime assert conforms_to(T, DevicePassableResource)
+                ref source = self._storage[]._get_bound[T]()
+                ref cache = self._storage[]._device_cache[reflect[T].name()]
+                try:
+                    T.Adapter.stage_device_results[Self.spec.access[T]](
+                        Pointer(to=source).unsafe_bitcast[T.Adapter.Source]()[],
+                        cache,
+                    )
+                finally:
+                    while len(cache._downloads) > 0:
+                        frame.downloads.append(cache._downloads.pop())
+            elif Self.spec._mode[T] == 3 and size_of[T]() > 0:
                 ref source = self._storage[]._get_bound[T]()
                 frame.download(
                     self._storage[]
