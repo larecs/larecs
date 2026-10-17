@@ -489,3 +489,55 @@ query/host execution changes were +0.1%/-0.6%, stable-ID access was +3.9%, and
 selected mutation was +0.9% in that run. These small shared-machine differences
 are not a zero-overhead guarantee; the existing 30%/500 ns rule is unchanged.
 Hosted Linux/macOS evidence is retained by the PR checks.
+
+## Resource execution
+
+`resource_execution_benchmark.mojo` builds unchanged against the PR base and
+current library. It measures complete calls over 512 Int32 rows with either no
+resources or one legacy scalar resource. `resource_adapter_benchmark.mojo`
+measures current read-only adapters over the same rows and 4,096 initial Int32
+samples. Only the first sample is read; the entire source is uploaded. Each timed
+adapter call edits that sample, and growth cases append one sample per call.
+Host calls use 10,000 iterations; GPU calls use 100. One warmup invocation precedes
+each timer. Construction and final checks are excluded; validation, leases,
+component transfers, resource uploads/downloads, allocation growth, and
+synchronization are included when applicable. Exact outputs, row counts, source
+values, and final sample lengths are checked outside timing.
+
+Build optimized binaries once without debug information, sanitizers, or tracing:
+
+```sh
+pixi run mojo build -I /path/to/base/src benchmark/resource_execution_benchmark.mojo -o /tmp/resource-base
+pixi run mojo build -I src benchmark/resource_execution_benchmark.mojo -o /tmp/resource-current
+pixi run mojo build -I src benchmark/resource_adapter_benchmark.mojo -o /tmp/resource-adapters
+```
+
+On Apple M4, macOS 27.0.1, Mojo `1.0.0 (ed45d567)`, compare base `6a3841b`
+against this implementation with the same driver. Warm each binary, then run five
+paired samples, alternating base/current order, with no concurrent compilation
+or benchmark jobs. Median per-call means were:
+
+| Complete invocation | Base | Current |
+| --- | --- | --- |
+| Host, no resource | 294.2 ns | 299.6 ns |
+| Host, legacy scalar resource | 299.8 ns | 350.7 ns |
+| GPU, no resource | 250.50 µs | 251.52 µs |
+| GPU, legacy scalar resource | 243.51 µs | 268.59 µs |
+| Host, edited adapter | — | 449.1 ns |
+| Host, edited adapter plus growth | — | 451.4 ns |
+| GPU, edited adapter | — | 323.76 µs |
+| GPU, edited adapter plus growth | — | 303.54 µs |
+
+The scalar GPU case costs about 10.3% more with staged publication and lifetime
+protection. These measurements establish the cost of this synthetic workload,
+not an application speedup or Tree-D shading result. Short GPU batches are noisy;
+the growth-case ordering does not establish a growth benefit. Source/sample allocation
+and scientific preprocessing during initial construction are excluded; incremental
+host append and device allocation growth are included in growth cases. Existing
+allocation capacity is reused in nongrowing cases; contents are uploaded every run.
+
+Sequential base/current/adapter driver builds took 1.18/3.00/3.01 seconds with
+existing compiler caches and no competing builds. These are recorded build costs,
+not comparable cold-compilation measurements.
+Linux resource timings and cold compilation remain unmeasured. These focused
+manual cases do not enlarge the normal PR performance matrix.

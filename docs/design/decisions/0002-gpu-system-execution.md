@@ -60,6 +60,11 @@ with opt-in partition blocks. Packing and scattering traverse each matching
 physical block/range through these same transfer boundaries; logical component
 filters and exact selected membership remain unchanged.
 
+[Decision 0018](0018-portable-resource-adapters.md) adds source-declared read-only
+resource adapters and access modes. It retains the packing and synchronous
+boundaries here while staging high-level IO in owned buffers, publishing only
+after completion, and rejecting further execution after unconfirmed failure.
+
 ## Evidence
 
 The implementation is in `src/larecs/system.mojo`,

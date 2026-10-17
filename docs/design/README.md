@@ -29,6 +29,7 @@ decision record before changing an established behavior:
 | [0015](decisions/0015-host-device-execution-terminology.md) | Accepted | Host/device execution terminology and beta API renames |
 | [0016](decisions/0016-kernel-memory-synchronization.md) | Accepted; partially implemented | Common CPU/GPU API using 32-bit atomics and nonblocking reader/writer guards |
 | [0017](decisions/0017-deferred-kernel-access.md) | Proposed | Common host/device scoped operations with executor-managed access retries |
+| [0018](decisions/0018-portable-resource-adapters.md) | Accepted | Source-declared automatic registration, stateless read-only adapters, and invocation-owned transfer lifetimes |
 
 ## Research evidence
 

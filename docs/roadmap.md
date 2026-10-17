@@ -51,22 +51,26 @@ selected mutation chains, and a selected device case.
   from tests or benchmarks skipped because hardware is unavailable.
 - [ ] Investigate material regressions before closing the selection migration.
 
-### Support heap-backed device resources
+### Scientific resource integration
 
-The current device resource path copies raw bytes and does not encode host heap
-ownership for the device. Keep existing type restrictions until a safe transfer
-model is implemented. See [decision 0002](design/decisions/0002-gpu-system-execution.md).
-
-- [ ] Decide and document ownership, encoding, lifetime, synchronization, and
-  copy-back for heap-backed device resources.
-- [ ] Implement and test `TileTensor` compatibility under that model.
-- [ ] Resolve `Dict` compatibility and any `DevicePassable` conversion needed;
-  ensure unsupported types fail clearly.
-- [ ] Update device resource guides after API and hardware tests pass. Preserve the
-  documented `ResourceStorage.get` `UnsafeAnyOrigin` contract unless Mojo can
-  express the ownership relationship.
+- [ ] Validate Tree-D's actual sample representation, indexing, and empty-grid
+  semantics against [decision 0018](design/decisions/0018-portable-resource-adapters.md).
+  The read-only contiguous-buffer API is implemented; application compatibility
+  and shading performance need application source and measurements.
 
 ## Later — lower priority
+
+### Broader resource adaptation
+
+- [ ] Design writable adapted resources and complete-initialization semantics for
+  write-only shared device values before exposing either access path.
+
+- [ ] Evaluate shared immutable preprocessing/configuration, construction-input
+  caching, and explicit adapter overrides only when measured application costs
+  justify a separate ownership/API design. These are outside 0018's first increment.
+- [ ] Evaluate `TileTensor` compatibility and `Dict` serialization beyond the
+  implemented read-only contiguous-buffer model; reject unsupported
+  representations clearly and document validated host/device limits.
 
 ### Performance regression coverage
 
