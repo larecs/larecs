@@ -5,9 +5,9 @@ status: accepted
 status_notes: |
   Accepted; experimental. Implemented for sequential host, opted-in threaded
   host, and device execution. Host paths, including threaded execution, are
-  tested on Linux x86-64. Device paths compile for NVIDIA sm_80 and AMD gfx942
-  but have not run on a GPU; Apple targets were not compiled because the Metal
-  toolchain was unavailable. Extends decisions 0018 and 0019.
+  tested on Linux x86-64 and macOS arm64. Device paths are tested on NVIDIA
+  A100 (sm_80) and Apple M4 (Metal) with Mojo 1.0.0 and MAX 26.5.0; AMD gfx942
+  is compile-checked only. Extends decisions 0018 and 0019.
 ---
 
 # Decision 0022: Mutable adapted resource access
@@ -160,8 +160,8 @@ per-archetype preparation were rejected for the reasons above.
   makes no assumption about slot order.
 - [Device tests](../../../test/mutable_resource_adapter_test.mojo) cover the same
   contract with device copy reuse, empty matches, overflow, and selections. They
-  compile with `--target-accelerator=sm_80` and `gfx942`. They skip at runtime
-  without a GPU, and have not yet run on one.
+  pass on NVIDIA A100 and Apple M4 and compile for `gfx942`. They skip at
+  runtime without a GPU.
 - [Resource](../../../test/check_resource_contracts.py) and
   [threaded](../../../test/check_threaded_contracts.py) contract checks reject
   unsupported mutable access, sequential-only adapters on device or threaded

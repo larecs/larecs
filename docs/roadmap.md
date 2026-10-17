@@ -60,9 +60,10 @@ selected mutation chains, and a selected device case.
 - [ ] Migrate Tree-D's leaf-distribution writer from `MutCapture` to a mutable
   adapted resource under [decision 0022](design/decisions/0022-mutable-adapted-resources.md),
   and compare its host and device results and timings.
-- [ ] Run `test/mutable_resource_adapter_test.mojo` and the scatter example on
-  supported GPUs (Linux and Apple). Device paths are compile-checked only for
-  sm_80 and gfx942; Apple targets need the macOS Metal toolchain.
+- [x] Run `test/mutable_resource_adapter_test.mojo` and the scatter example on
+  supported GPUs (Linux and Apple). Both pass on NVIDIA A100 (Linux) and
+  Apple M4.
+- [ ] Run the mutable adapter device tests on an AMD GPU (gfx942).
 
 ### Skip unchanged device uploads
 

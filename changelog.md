@@ -12,7 +12,8 @@
   once per invocation, including empty queries; device outputs are staged and
   published before `finalize`. Add `ResourceAccess`, the cache helpers
   `upload_mutable`, `fill`, and `download`, and a capture-free scatter example.
-  Host paths are tested on Linux; device paths are compile-checked only.
+  Host paths are tested on Linux and macOS; device paths are tested on NVIDIA
+  A100 and Apple M4.
 
 - Add experimental opt-in `threaded=True` host execution for ordinary and exact
   selected kernel calls, with fixed `World(execution_config=...)` worker-task
