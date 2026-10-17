@@ -6,7 +6,7 @@
 from std.sys import has_accelerator
 from std.testing import assert_equal, assert_true, assert_raises, TestSuite
 from larecs import World, SystemContext, Filter
-from scatter_fixture import (
+from fixtures.scatter import (
     Cell,
     Seen,
     Scatter,

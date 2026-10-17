@@ -1,5 +1,6 @@
 """Mutable adapted resources on sequential and threaded host execution."""
 
+from std.reflection import reflect
 from std.testing import (
     assert_equal,
     assert_true,
@@ -20,7 +21,7 @@ from larecs import (
     ResourceAdapter,
     ResourceDeviceCache,
 )
-from scatter_fixture import (
+from fixtures.scatter import (
     Cell,
     Seen,
     Scatter,
@@ -533,12 +534,12 @@ def test_invocation_cleanup() raises:
         context.run[scatter_write]()
     assert_equal(world.resources.read[Scatter]().prepared, 0)
     _ = world.resources.get[Scatter]().counts.pop()
-    var before = world.resources._revision("scatter_fixture.Scatter")
+    var before = world.resources._revision(reflect[Scatter].name())
     context.run[scatter_write]()
-    assert_true(world.resources._revision("scatter_fixture.Scatter") > before)
-    before = world.resources._revision("scatter_fixture.Scatter")
+    assert_true(world.resources._revision(reflect[Scatter].name()) > before)
+    before = world.resources._revision(reflect[Scatter].name())
     context.run[scatter_read]()
-    assert_equal(world.resources._revision("scatter_fixture.Scatter"), before)
+    assert_equal(world.resources._revision(reflect[Scatter].name()), before)
     assert_equal(len(world.resources._leases), 0)
 
 

@@ -156,7 +156,7 @@ per-archetype preparation were rejected for the reasons above.
   writers, shared totals, overflow reporting and propagation, empty queries,
   multiple archetypes, repeated runs, threaded execution at one and four
   workers, capturing kernels, selections, a sequential-only adapter, and lease
-  and revision cleanup. The [synthetic scatter fixture](../../../test/scatter_fixture.mojo)
+  and revision cleanup. The [synthetic scatter fixture](../../../test/fixtures/scatter.mojo)
   makes no assumption about slot order.
 - [Device tests](../../../test/mutable_resource_adapter_test.mojo) cover the same
   contract with device copy reuse, empty matches, overflow, and selections. They
