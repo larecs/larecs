@@ -117,10 +117,11 @@ def test_device_collisions_and_overflow() raises:
         Error: If slots, totals, or overflow counts differ.
     """
     comptime if has_accelerator():
-        var world = _world(5000, 1, 5000)
+        # 5000 threads contend for two cell counters, 2500 per counter.
+        var world = _world(5000, 2, 2500)
         var context = SystemContext(world)
         context.run[scatter_write, on_device=True]()
-        _check_cells(world.resources.read[Scatter](), 5000, 1, 1)
+        _check_cells(world.resources.read[Scatter](), 5000, 2, 1)
         world.resources.get[Scatter]() = Scatter(2, 100, strict=True)
         with assert_raises(contains="Scatter capacity exceeded: 4800 dropped"):
             context.run[scatter_write, on_device=True]()
@@ -134,9 +135,9 @@ def test_device_collisions_and_overflow() raises:
             for value in grid.values(cell):
                 total += value
         assert_equal(grid.total(), total)
-        world.resources.get[Scatter]() = Scatter(1, 5000)
+        world.resources.get[Scatter]() = Scatter(2, 2500)
         context.run[scatter_write, on_device=True]()
-        _check_cells(world.resources.read[Scatter](), 5000, 1, 1)
+        _check_cells(world.resources.read[Scatter](), 5000, 2, 1)
     else:
         _skip("test_device_collisions_and_overflow")
 
