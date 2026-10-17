@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, ResourceType, BufferResource, DevicePassableResource, ResourceAdapter, ResourceDeviceCache
+PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, ResourceType, BufferResource, DevicePassableResource, ResourceAdapter, ResourceDeviceCache, ResourceAccess
 from larecs.resource import ResourceStorage, _validate_resource_spec, _ResourceInvocation
 
 @fieldwise_init
@@ -16,16 +16,55 @@ struct Owner(ResourceType):
     var values: List[Int32]
 
 comptime Samples = BufferResource[DType.int32]
+
+@fieldwise_init
+struct CounterView(TrivialRegisterPassable):
+    var value: Pointer[Int32, ImmUntrackedOrigin]
+
+@fieldwise_init
+struct CounterFill(TrivialRegisterPassable):
+    var value: Pointer[Int32, MutUntrackedOrigin]
+
+@fieldwise_init
+struct Counter(DevicePassableResource):
+    comptime Adapter = CounterAdapter
+    var value: Int32
+
+struct CounterAdapter(ResourceAdapter):
+    comptime Source = Counter
+    comptime View[mutable: Bool] = CounterFill if mutable else CounterView
+    comptime supports_mutation = True
+    @staticmethod
+    def validate(source: Self.Source) raises:
+        pass
+    @staticmethod
+    def bind_host(source: Self.Source) raises -> Self.View[False]:
+        return {Pointer[Int32, ImmUntrackedOrigin](unsafe_from_address=Int(Pointer(to=source.value)))}
+    @staticmethod
+    def prepare_device(source: Self.Source, mut cache: ResourceDeviceCache) raises -> Self.View[False]:
+        raise Error("unused")
+    @staticmethod
+    def bind_host_mutable[access: ResourceAccess](mut source: Self.Source) raises -> Self.View[True]:
+        return {Pointer[Int32, MutUntrackedOrigin](unsafe_from_address=Int(Pointer(to=source.value)))}
 """
+
+MUTABLE_ADAPTER = (
+    "@fieldwise_init\nstruct Bad(DevicePassableResource):\n    comptime Adapter = BadAdapter\n    var value: Int32\n"
+    "struct BadAdapter(ResourceAdapter):\n    comptime Source = Bad\n    comptime View[mut: Bool] = {view}\n{flags}"
+    "    @staticmethod\n    def validate(source: Self.Source) raises:\n        pass\n"
+    "    @staticmethod\n    def bind_host(source: Self.Source) raises -> Self.View[False]:\n        raise Error(\"unused\")\n"
+    "    @staticmethod\n    def prepare_device(source: Self.Source, mut cache: ResourceDeviceCache) raises -> Self.View[False]:\n        raise Error(\"unused\")\n"
+    "def main() raises:\n    var resources = ResourceStorage()\n    resources.add(Bad(1))\n"
+)
 
 CASES = {
     "mutable_descriptor": (
-        "@fieldwise_init\nstruct View(TrivialRegisterPassable):\n    var samples: Pointer[Int32, MutUntrackedOrigin]\n"
-        "@fieldwise_init\nstruct Adapted(DevicePassableResource):\n    comptime KernelView = View\n    comptime Adapter = BadAdapter\n    var values: List[Int32]\n"
-        "struct BadAdapter(ResourceAdapter):\n    comptime Source = Adapted\n    comptime View = View\n"
+        "@fieldwise_init\nstruct MutView(TrivialRegisterPassable):\n    var samples: Pointer[Int32, MutUntrackedOrigin]\n"
+        "@fieldwise_init\nstruct Adapted(DevicePassableResource):\n    comptime Adapter = BadAdapter\n    var values: List[Int32]\n"
+        "struct BadAdapter(ResourceAdapter):\n    comptime Source = Adapted\n    comptime View[mut: Bool] = MutView\n"
         "    @staticmethod\n    def validate(source: Self.Source) raises:\n        pass\n"
-        "    @staticmethod\n    def bind_host(source: Self.Source) raises -> Self.View:\n        return {Pointer[Int32, MutUntrackedOrigin](unsafe_from_address=1)}\n"
-        "    @staticmethod\n    def prepare_device(source: Self.Source, mut cache: ResourceDeviceCache) raises -> Self.View:\n        return {Pointer[Int32, MutUntrackedOrigin](unsafe_from_address=1)}\n"
+        "    @staticmethod\n    def bind_host(source: Self.Source) raises -> Self.View[False]:\n        return {Pointer[Int32, MutUntrackedOrigin](unsafe_from_address=1)}\n"
+        "    @staticmethod\n    def prepare_device(source: Self.Source, mut cache: ResourceDeviceCache) raises -> Self.View[False]:\n        return {Pointer[Int32, MutUntrackedOrigin](unsafe_from_address=1)}\n"
         "def main() raises:\n    var resources = ResourceStorage()\n    resources.add(Adapted(List[Int32]()))\n",
         "KernelView requires trivial metadata and immutable pointers",
     ),
@@ -59,11 +98,42 @@ CASES = {
     ),
     "adapted_legacy": (
         "def main():\n    _validate_resource_spec[Resources[Samples](), False]()\n",
-        "DevicePassableResource requires read access on both targets",
+        "DevicePassableResource mutable access requires Adapter.supports_mutation",
     ),
     "adapted_write": (
         "def main():\n    _validate_resource_spec[Resources().write[Samples](), False]()\n",
-        "DevicePassableResource requires read access on both targets",
+        "DevicePassableResource mutable access requires Adapter.supports_mutation",
+    ),
+    "adapted_read_write_kernel": (
+        "def bad(context: KernelContext[Filter().include[Int32](), Resources().read_write[Samples]()]):\n"
+        "    _ = context.resources.get[Samples]()\n\ndef main() raises:\n"
+        "    var world = World[Int32]()\n    var context = SystemContext(world)\n    context.run[bad]()\n",
+        "DevicePassableResource mutable access requires Adapter.supports_mutation",
+    ),
+    "sequential_adapter_device": (
+        "def main():\n    _validate_resource_spec[Resources().read_write[Counter](), True]()\n",
+        "Device or threaded mutable adapted access requires Adapter.supports_concurrent_mutation",
+    ),
+    "sequential_adapter_device_run": (
+        "def bad(context: KernelContext[Filter().include[Int32](), Resources().write[Counter]()]):\n"
+        "    pass\n\ndef main() raises:\n"
+        "    var world = World[Int32]()\n    var context = SystemContext(world)\n    context.run[bad, on_device=True]()\n",
+        "Device or threaded mutable adapted access requires Adapter.supports_concurrent_mutation",
+    ),
+    "adapted_set": (
+        "def bad(context: KernelContext[Filter().include[Int32](), Resources().read_write[Counter]()]):\n"
+        "    context.resources.set[Counter](Counter(1))\n\ndef main() raises:\n"
+        "    var world = World[Int32]()\n    var context = SystemContext(world)\n    context.run[bad]()\n",
+        "DevicePassableResource kernels write through views, not set",
+    ),
+    "immutable_mutable_descriptor": (
+        "def bad(context: KernelContext[Filter().include[Int32](), Resources().write[Counter]()]):\n"
+        "    context.resources.get[Counter]().value = Pointer[Int32, MutUntrackedOrigin](unsafe_from_address=8)\n\ndef main():\n    pass\n",
+        "expression must be mutable",
+    ),
+    "concurrent_without_mutation": (
+        MUTABLE_ADAPTER.format(view="CounterView", flags="    comptime supports_concurrent_mutation = True\n"),
+        "supports_concurrent_mutation requires supports_mutation",
     ),
     "duplicate_source": (
         "def main():\n    _validate_resource_spec[Resources().read[Plain]().read_write[Plain](), False]()\n",

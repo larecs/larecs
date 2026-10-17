@@ -4,7 +4,34 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, Captures, ReadCapture, read_capture, mut_capture, ThreadedExecutionConfig
+PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, Captures, ReadCapture, read_capture, mut_capture, ThreadedExecutionConfig, BufferResource, DevicePassableResource, ResourceAdapter, ResourceAccess, ResourceDeviceCache
+
+@fieldwise_init
+struct CounterView(TrivialRegisterPassable):
+    var value: Pointer[Int32, ImmUntrackedOrigin]
+
+@fieldwise_init
+struct CounterFill(TrivialRegisterPassable):
+    var value: Pointer[Int32, MutUntrackedOrigin]
+
+@fieldwise_init
+struct Counter(DevicePassableResource):
+    comptime Adapter = CounterAdapter
+    var value: Int32
+
+struct CounterAdapter(ResourceAdapter):
+    comptime Source = Counter
+    comptime View[mutable: Bool] = CounterFill if mutable else CounterView
+    comptime supports_mutation = True
+    @staticmethod
+    def validate(source: Self.Source) raises:
+        pass
+    @staticmethod
+    def bind_host(source: Self.Source) raises -> Self.View[False]:
+        raise Error("unused")
+    @staticmethod
+    def prepare_device(source: Self.Source, mut cache: ResourceDeviceCache) raises -> Self.View[False]:
+        raise Error("unused")
 
 @fieldwise_init
 struct Owner(Copyable, Movable):
@@ -45,7 +72,7 @@ def thin_program(component="Int32", resources="Resources()", captures="Captures(
 CASES = {
     "owning_component": (thin_program(component="Owner"), "Threaded components require pointer-free trivial plain values"),
     "pointer_component": (thin_program(component="Indirect"), "Threaded components require pointer-free trivial plain values"),
-    "owning_read_resource": (thin_program(resources="Resources().read[Owner]()"), "Threaded resources require pointer-free plain values or KernelView adapters"),
+    "owning_read_resource": (thin_program(resources="Resources().read[Owner]()"), "Threaded resources require pointer-free plain values or DevicePassableResource adapters"),
     "mutable_resource": (thin_program(resources="Resources[Int32]()"), "Threaded resources require explicit read access"),
     "read_write_resource": (thin_program(resources="Resources().read_write[Int32]()"), "Threaded resources require explicit read access"),
     "write_resource": (thin_program(resources="Resources().write[Int32]()"), "Threaded resources require explicit read access"),
@@ -53,6 +80,9 @@ CASES = {
     "conflicting_engines": (thin_program(options="threaded=True, on_device=True"), "Threaded and device execution are mutually exclusive"),
     "selected_component": (thin_program(component="Owner", selected=True), "Threaded components require pointer-free trivial plain values"),
     "selected_resource": (thin_program(resources="Resources[Int32]()", selected=True), "Threaded resources require explicit read access"),
+    "read_only_adapter_write": (thin_program(resources="Resources().write[BufferResource[DType.int32]]()"), "DevicePassableResource mutable access requires Adapter.supports_mutation"),
+    "sequential_adapter": (thin_program(resources="Resources().read_write[Counter]()"), "Device or threaded mutable adapted access requires Adapter.supports_concurrent_mutation"),
+    "selected_sequential_adapter": (thin_program(resources="Resources().write[Counter]()", selected=True), "Device or threaded mutable adapted access requires Adapter.supports_concurrent_mutation"),
     "selected_conflict": (thin_program(options="threaded=True, on_device=True", selected=True), "Threaded and device execution are mutually exclusive"),
 }
 
@@ -84,26 +114,25 @@ from std.testing import assert_equal, assert_false
 comptime W = World[Int32]
 
 @fieldwise_init
-struct View(TrivialRegisterPassable):
+struct ProbeView(TrivialRegisterPassable):
     var active: Pointer[Bool, ImmUntrackedOrigin]
 
 @fieldwise_init
 struct Probe(DevicePassableResource):
-    comptime KernelView = View
     comptime Adapter = Adapter
     var world: Pointer[W, MutUntrackedOrigin]
 
 struct Adapter(ResourceAdapter):
     comptime Source = Probe
-    comptime View = View
+    comptime View[mut: Bool] = ProbeView
     @staticmethod
     def validate(source: Self.Source) raises:
         pass
     @staticmethod
-    def prepare_device(source: Self.Source, mut cache: ResourceDeviceCache) raises -> Self.View:
+    def prepare_device(source: Self.Source, mut cache: ResourceDeviceCache) raises -> Self.View[False]:
         raise Error("host-only test")
     @staticmethod
-    def bind_host(source: Self.Source) raises -> Self.View:
+    def bind_host(source: Self.Source) raises -> Self.View[False]:
 {action}
         return {Pointer[Bool, ImmUntrackedOrigin](unsafe_from_address=Int(Pointer(to=source.world[]._execution_active)))}
 

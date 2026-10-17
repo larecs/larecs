@@ -10,8 +10,8 @@ status_notes: |
   Larecs expects one host and one device storage per world; host-storage
   copies get a new storage identity, and device records made for another
   identity are discarded. The non-advancing component accessor is
-  `world.storage.read[T](entity)`, next to `get`. Device tests compile for GPU
-  targets but have not yet run on GPU hardware. Amends the unconditional-upload rule of
+  `world.storage.read[T](entity)`, next to `get`. Device tests pass on NVIDIA
+  A100 and Apple M4; AMD is compile-checked only. Amends the unconditional-upload rule of
   decisions 0002 and 0018 for worlds that opt in; eager write-back is unchanged.
 ---
 
