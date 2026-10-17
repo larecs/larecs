@@ -503,8 +503,10 @@ resources remain unsupported by this engine.
 Use nonnegative cache slots for sample allocations. Slot `-1` is reserved for
 Larecs's view descriptor. For multiple arrays, give each array its own stable
 slot, such as `0` for samples and `1` for coordinates. Each world keeps a separate
-cache per source type, tied to its device context. Capacity is reused, but every
-preparation uploads current contents; adapters need no revision tracking.
+cache per source type, tied to its device context. Capacity is reused, and every
+preparation uploads current contents. Adapters need no revision tracking of
+their own: in worlds that [reuse device copies](#reusing-unchanged-device-copies-experimental),
+Larecs skips `prepare_device` entirely while the source is unchanged.
 
 The cache accepts supported pointer-free trivial sample
 values, snapshots them in native owned staging, and returns an immutable device
@@ -542,6 +544,56 @@ propagates the error; if completion remains unknown, further execution on the
 world raises. Failed calls discard staged outputs, without promising rollback of
 other host effects. Empty device matches still validate resources and adapters
 but perform no device allocation, upload, or launch.
+
+## Reusing unchanged device copies (experimental)
+
+By default every `on_device=True` run uploads all resources and readable
+component columns it declares, even if they did not change. Worlds that call
+`world.reuse_device_copies(True)` skip uploads of data that is unchanged since
+its device copy was made. For adapted resources this skips the whole
+`prepare_device` call; validation and leases still run on every call. Written
+data is still downloaded after every run.
+
+Larecs cannot see what you do with a reference after it returns it. It tracks
+revisions that advance on every Larecs access that *may* mutate data:
+
+- Resources: `add`, `set`, `get` through a mutable world, host runs declaring
+  `write` or `read_write`, and device runs writing the resource.
+- Component columns, per type and physical store: `world.storage.get` and
+  `set`, kernel runs writing the type, and every structural change, spatial
+  reordering, or partition move of the store.
+
+Use `world.resources.read[T]()` and `world.storage.read[T](entity)` for reads
+between device runs: they return immutable references and keep device copies
+reusable, whereas `get` on a mutable world always counts as a mutation. Read
+queries never count as mutations.
+
+Component columns are reused per contiguous store range. Kernels with
+different filters on the same component type pack stores at different
+offsets, so alternating them uploads that column again each time.
+
+> **Re-obtain or invalidate.** In a world that reuses device copies, never
+> mutate a resource through a reference obtained before a later Larecs call or
+> through a raw pointer without telling Larecs. Re-obtain the reference with
+> `get` after each run, or call `world.resources.invalidate_device[T]()` (or
+> `world.invalidate_device_copies()` for everything) after the mutation.
+> Otherwise the next device run silently reads the stale device copy.
+
+```mojo {doctest="guide_resources" global=true}
+    world.reuse_device_copies(True)
+    # Reading through `read` keeps an unchanged device copy reusable.
+    _ = world.resources.read[Time]().time
+    # A pointer kept across runs bypasses revision tracking...
+    var time_ptr = Pointer(to=world.resources.get[Time]())
+    time_ptr[].time = 4.0
+    # ...so invalidate after mutating through it.
+    world.resources.invalidate_device[Time]()
+    world.reuse_device_copies(False)
+```
+
+A failed device run marks the copies it touched as unknown, so the next run
+uploads them again. Disabling reuse, removing a resource, and copying the world
+discard device copy records.
 
 ## Removing resources
 

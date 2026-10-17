@@ -445,6 +445,12 @@ Resource transfer constraints, shared-write safety, and the non-capturing
 kernel requirement are covered in
 [Resources](../resources#using-resources-in-kernels).
 
+Each device run uploads the components and resources it reads. Worlds that opt
+into `world.reuse_device_copies(True)` (experimental) skip uploading unchanged
+resources and component column ranges; this requires re-obtaining references
+after runs or invalidating device copies explicitly. See
+[Reusing unchanged device copies](../resources#reusing-unchanged-device-copies-experimental).
+
 Use explicit bindings above to pass host-local values to device entry points;
 lexical host borrows are not transferred automatically. Nested closures **inside**
 a device kernel can capture that thread's kernel-local variables with `imm` and
