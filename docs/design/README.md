@@ -29,9 +29,10 @@ decision record before changing an established behavior:
 | [0015](decisions/0015-host-device-execution-terminology.md) | Accepted | Host/device execution terminology and beta API renames |
 | [0016](decisions/0016-kernel-memory-synchronization.md) | Accepted; partially implemented | Common CPU/GPU API using 32-bit atomics and nonblocking reader/writer guards |
 | [0017](decisions/0017-deferred-kernel-access.md) | Proposed | Common host/device scoped operations with executor-managed access retries |
-| [0018](decisions/0018-portable-resource-adapters.md) | Accepted | Source-declared automatic registration, stateless read-only adapters, and invocation-owned transfer lifetimes |
+| [0018](decisions/0018-portable-resource-adapters.md) | Accepted; extended by 0022 | Source-declared automatic registration, stateless read-only adapters, and invocation-owned transfer lifetimes |
 | [0019](decisions/0019-threaded-host-execution.md) | Accepted; experimental | Opt-in host chunks, unchanged sequential fallback, and shared read-only kernel views |
 | [0021](decisions/0021-skip-unchanged-device-uploads.md) | Accepted; experimental | Opt-in revision-tracked device copies that skip unchanged uploads |
+| [0022](decisions/0022-mutable-adapted-resources.md) | Accepted; experimental | Access-selected adapter views, opt-in mutation capabilities, and once-per-invocation preparation and finalization |
 
 ## Research evidence
 

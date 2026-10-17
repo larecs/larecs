@@ -5,6 +5,8 @@ status: accepted
 status_notes: |
   Experimental implementation adopted. Linux correctness and concurrency are
   validated; macOS arm64 correctness, concurrency, and performance remain pending.
+  Decision 0022 additionally admits mutable adapted resources whose adapters
+  declare `supports_concurrent_mutation`.
 ---
 
 # Decision 0019: Threaded host execution

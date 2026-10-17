@@ -87,7 +87,11 @@ struct Resources[
     ]() else (2 if Self._writeonly.Types.contains[T]() else 3)
 
     comptime access[T: ResourceType] = ResourceAccess(Self._mode[T])
-    """Declared access of source `T`; undeclared types report `READ_WRITE`."""
+    """Declared access of a source; undeclared types report `READ_WRITE`.
+
+    Parameters:
+        T: The source type.
+    """
 
     def read[
         *Ts: ResourceType

@@ -4,6 +4,16 @@
 
 ### Added
 
+- Add experimental mutable adapted resources. `read` selects an adapter's
+  `View[False]`; `write` (fresh, adapter-initialized output) and `read_write`
+  (preserved contents) select `View[True]`, which may be a distinct writer type.
+  Opt in with `supports_mutation` for sequential host runs and
+  `supports_concurrent_mutation` for device and threaded runs. Adapters prepare
+  once per invocation, including empty queries; device outputs are staged and
+  published before `finalize`. Add `ResourceAccess`, the cache helpers
+  `upload_mutable`, `fill`, and `download`, and a capture-free scatter example.
+  Host paths are tested on Linux; device paths are compile-checked only.
+
 - Add experimental opt-in `threaded=True` host execution for ordinary and exact
   selected kernel calls, with fixed `World(execution_config=...)` worker-task
   budgets and dynamically claimed contiguous chunks. Keep ordinary sequential
@@ -53,6 +63,11 @@
 
 ### Changed
 
+- **Breaking:** declare `ResourceAdapter.View` as `comptime View[mut: Bool]`
+  and return `Self.View[False]` from `bind_host` and `prepare_device`.
+  `DevicePassableResource.KernelView` now defaults to `View[False]`; remove
+  explicit declarations. Mutable declarations of adapters without mutation
+  support report "requires Adapter.supports_mutation".
 - Stage high-level device transfers in owned buffers and publish downloads only
   after successful completion. Drain failures; reject further execution if
   completion cannot be confirmed. Reject resource changes during active leases.

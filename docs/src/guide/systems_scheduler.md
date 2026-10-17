@@ -266,11 +266,14 @@ report the configured worker-task budget.
 
 The initial engine accepts nonraising thin kernels, pointer-free plain-value
 accessed components, and explicit `Resources().read[T]()` resources. Ordinary
-read resources must also be plain values; heap-backed resources use read-only
-`KernelView` adapters, bound once on the caller and shared until join. Unaccessed
-owning components do not prevent threading. Mutable resources (including the
-legacy `Resources[T]()` default), explicit captures, lexical closures, and
-`threaded=True` with `on_device=True` are rejected even on fallback.
+read resources must also be plain values; heap-backed resources use adapter
+views, bound once on the caller and shared until join. Adapted resources may be
+declared `write` or `read_write` when their adapter declares
+`supports_concurrent_mutation`; see
+[mutable adapted resources](../resources#mutable-adapted-resources-experimental).
+Unaccessed owning components do not prevent threading. Other mutable resources
+(including the legacy `Resources[T]()` default), explicit captures, lexical
+closures, and `threaded=True` with `on_device=True` are rejected even on fallback.
 
 Every explicitly threaded call acquires an additional structural lock, including
 whole-range fallback and calls on an already locked selection. Exhausting the

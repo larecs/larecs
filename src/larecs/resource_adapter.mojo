@@ -483,7 +483,11 @@ trait ResourceAdapter:
 
     comptime Source: Copyable & Deinitable
     comptime View[mut: Bool]: TrivialRegisterPassable
-    """Kernel descriptor selected by declared access: read or mutable."""
+    """Kernel descriptor selected by declared access.
+
+    Parameters:
+        mut: False for the read view, True for the mutable view.
+    """
     comptime supports_mutation: Bool = False
     """Whether `write` and `read_write` declarations are supported."""
     comptime supports_concurrent_mutation: Bool = False
@@ -638,7 +642,11 @@ trait DevicePassableResource(Copyable, Deinitable):
 
     comptime Adapter: ResourceAdapter
     comptime View[mut: Bool]: TrivialRegisterPassable = Self.Adapter.View[mut]
-    """Kernel descriptor selected by declared access."""
+    """Kernel descriptor selected by declared access.
+
+    Parameters:
+        mut: False for the read view, True for the mutable view.
+    """
     comptime KernelView: TrivialRegisterPassable = Self.View[False]
     """Compatibility alias for the read view."""
 
