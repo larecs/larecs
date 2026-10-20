@@ -179,6 +179,17 @@ Particularly, the processors have 256MB of cache.
 On a laptop or desktop computer with typically much less cache,
 Larecs🌲 will outperform AoS for everything but the smallest setups.
 
+## Tracy zone overhead
+
+`pixi run zone-overhead` builds `benchmark/core_smoke.mojo` three times: without
+Tracy, with Tracy and the default coarse zones (`-DTRACY_ENABLED`), and with
+fine zones as well (`-DLARECS_FINE_ZONES`). It runs the three binaries
+interleaved (`--repetitions`, default 5) and reports the median nanoseconds per
+operation and each instrumented build's ratio to the uninstrumented one. No
+profiler connects, so the table shows what an instrumented build costs while
+nobody captures; capturing adds the transmission of every zone, and Tracy's
+per-zone call stacks (`MOJO_TRACY_CALLSTACK`) cost more again.
+
 ## PR-to-PR performance checks
 
 `pixi run performance-check --base <revision>` compares the current library
