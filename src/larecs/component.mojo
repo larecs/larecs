@@ -245,7 +245,9 @@ struct ComponentManager[
         Returns:
             The ID of the component type.
         """
-        with FineZone(function_name="ComponentManager.get_id[T: ComponentType]()"):
+        with FineZone(
+            function_name="ComponentManager.get_id[T: ComponentType]()"
+        ):
             comptime assert Self.contains_components[
                 T
             ](), "Component type not in component manager"

@@ -148,7 +148,9 @@ struct Entity(
         Args:
             hasher: The hasher to update with the entity's ID and generation.
         """
-        with FineZone(function_name="Entity.__hash__[H: Hasher](mut hasher: H)"):
+        with FineZone(
+            function_name="Entity.__hash__[H: Hasher](mut hasher: H)"
+        ):
             hasher.update(self._id)
             hasher.update(self._generation)
 

@@ -458,7 +458,9 @@ struct ResourceStorage(Copyable, Movable, Sized):
             Error: If a resource is missing, leased, or storage is unusable.
         """
 
-        with FineZone(function_name="ResourceStorage.remove[*Ts: ResourceType]()"):
+        with FineZone(
+            function_name="ResourceStorage.remove[*Ts: ResourceType]()"
+        ):
             comptime for i in range(len(Ts)):
                 self._check(reflect[Ts[i]].name())
             comptime for i in range(len(Ts)):

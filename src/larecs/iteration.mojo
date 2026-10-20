@@ -772,7 +772,9 @@ struct _WorldEntityIterator[
         Note that this requires iterating over all archetypes
         and may be a complex operation.
         """
-        with FineZone(function_name="_WorldEntityIterator.__len__(out size: Int)"):
+        with FineZone(
+            function_name="_WorldEntityIterator.__len__(out size: Int)"
+        ):
             size = 0
 
             if not self._has_next():

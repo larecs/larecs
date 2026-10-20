@@ -173,7 +173,9 @@ struct UnsafeBox(Copyable, Movable):
         Constraints:
             `used_internally` must be `True` to use this constructor.
         """
-        with FineZone(function_name="UnsafeBox.__init__[used_internally: Bool]()"):
+        with FineZone(
+            function_name="UnsafeBox.__init__[used_internally: Bool]()"
+        ):
             comptime assert (
                 used_internally
             ), "This constructor is meant for internal use only."

@@ -137,7 +137,9 @@ struct ArchetypeRowAccessor[
             check. Use `unsafe_get[T]()` for components the filter
             doesn't guarantee, or `has[T]()` to check first.
         """
-        with FineZone(function_name="ArchetypeRowAccessor.get[T: ComponentType]()"):
+        with FineZone(
+            function_name="ArchetypeRowAccessor.get[T: ComponentType]()"
+        ):
             comptime assert Self.filter.includes[T]() != -1, (
                 "Component type is not included by this accessor's"
                 " filter. Use unsafe_get[T]() to access components not"
@@ -222,7 +224,9 @@ struct ArchetypeRowAccessor[
         Returns:
             Whether the entity has the component.
         """
-        with FineZone(function_name="ArchetypeRowAccessor.has[T: ComponentType]()"):
+        with FineZone(
+            function_name="ArchetypeRowAccessor.has[T: ComponentType]()"
+        ):
             return self._archetype[].has_components[T]()
 
 
@@ -636,7 +640,9 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         Args:
             length: The number of initialized values to destroy.
         """
-        with FineZone(function_name="_ComponentColumn.clear_values(length: Int)"):
+        with FineZone(
+            function_name="_ComponentColumn.clear_values(length: Int)"
+        ):
             self._clear_values(self._data, length)
 
     def destroy(mut self, length: Int, capacity: Int):
@@ -663,7 +669,9 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         Returns:
             A pointer to the column's component values.
         """
-        with FineZone(function_name="_ComponentColumn.get_ptr[T: ComponentType]()"):
+        with FineZone(
+            function_name="_ComponentColumn.get_ptr[T: ComponentType]()"
+        ):
             return (
                 self._data.value()
                 .unsafe_ptr()
@@ -892,7 +900,9 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             new_capacity: The minimum required capacity. The actual allocated capacity
                          will be `next_power_of_two(new_capacity)` to maintain power-of-2 growth.
         """
-        with FineZone(function_name="_ComponentTable.reserve(new_capacity: Int)"):
+        with FineZone(
+            function_name="_ComponentTable.reserve(new_capacity: Int)"
+        ):
             debug_assert(
                 0 < new_capacity, "New capacity must be greater than zero."
             )

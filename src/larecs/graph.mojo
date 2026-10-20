@@ -237,7 +237,9 @@ struct BitMaskGraph[
         Returns:
             The mask of the node.
         """
-        with FineZone(function_name="BitMaskGraph.get_node_mask(node_index: Int)"):
+        with FineZone(
+            function_name="BitMaskGraph.get_node_mask(node_index: Int)"
+        ):
             check_bounds(node_index, len(self._nodes))
             return self._nodes[node_index].bit_mask
 
@@ -253,7 +255,9 @@ struct BitMaskGraph[
         Returns:
             The value stored in the node.
         """
-        with FineZone(function_name="BitMaskGraph.__getitem__(node_index: Int)"):
+        with FineZone(
+            function_name="BitMaskGraph.__getitem__(node_index: Int)"
+        ):
             check_bounds(node_index, len(self._nodes))
             return self._nodes[node_index].value
 

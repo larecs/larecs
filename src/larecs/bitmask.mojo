@@ -198,7 +198,9 @@ struct _BitMask[total_bits: Int](
         Args:
             hasher: The hasher to update with the mask's bytes.
         """
-        with FineZone(function_name="BitMask.__hash__[H: Hasher](mut hasher: H)"):
+        with FineZone(
+            function_name="BitMask.__hash__[H: Hasher](mut hasher: H)"
+        ):
             hasher.update(self._bytes)
 
     @always_inline
@@ -370,7 +372,9 @@ struct _BitMask[total_bits: Int](
         Args:
             writer: The destination writer.
         """
-        with FineZone(function_name="BitMask.write_to(mut writer: Some[Writer])"):
+        with FineZone(
+            function_name="BitMask.write_to(mut writer: Some[Writer])"
+        ):
             writer.write("[")
             for i in range(len(self._bytes) * 8):
                 if self.get(i):

@@ -827,7 +827,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         self.invalidate_spatial()
         self.assert_alive(entity)
 
-        with FineZone(function_name="HostStorage.remove_entity(entity: Entity)"):
+        with FineZone(
+            function_name="HostStorage.remove_entity(entity: Entity)"
+        ):
             var entity_loc = self._entity_locations[entity.get_id()]
             ref old_archetype = self._archetypes.unsafe_get(
                 entity_loc.archetype_index
@@ -1462,7 +1464,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             A [..host_storage.Replacer] configured to remove the given component types.
         """
-        with FineZone(function_name="HostStorage.replace[*Ts: ComponentType]()"):
+        with FineZone(
+            function_name="HostStorage.replace[*Ts: ComponentType]()"
+        ):
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in replace are not allowed."
