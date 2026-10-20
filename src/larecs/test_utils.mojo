@@ -4,7 +4,7 @@ from std.testing import assert_true, assert_false, assert_equal
 from std.random import random
 from std.memory import Layout, alloc, dealloc
 
-from tracy import Zone
+from ._zones import FineZone
 
 from .component import ComponentType
 from .bitmask import BitMask
@@ -32,7 +32,7 @@ def load[
     Returns:
         The loaded SIMD value.
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "test_utils.load[dType: DType, //, simd_width: Int, stride: Int ="
             " 1](ref val: SIMD[dType, 1], out simd: SIMD[dType, simd_width])"
@@ -61,7 +61,7 @@ def store[
 
     The SIMD values are written through the pointer to `val`.
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "test_utils.store[dType: DType, //, simd_width: Int, stride: Int"
             " = 1](mut val: SIMD[dType, 1], simd: SIMD[dType, simd_width])"
@@ -105,7 +105,7 @@ def is_mutable[
     Returns:
         True if the value has a mutable origin, False otherwise.
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "test_utils.is_mutable[mut: Bool, //, T: AnyType, origin:"
             " Origin[mut=mut]](ref[origin] val: T) -> Bool"
@@ -135,7 +135,7 @@ def get_random_bitmask_list(
             - `range_end` must be at most 2^64.
             - `range_start` must be less than `range_end`.
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "test_utils.get_random_bitmask_list(count: Int, range_start: Int"
             " = 0, range_end: Int = 1000, out list: List[BitMask])"
@@ -171,7 +171,7 @@ def get_random_bitmask() -> BitMask:
     Returns:
         A bitmask with each bit set independently at random.
     """
-    with Zone(function_name="test_utils.get_random_bitmask() -> BitMask"):
+    with FineZone(function_name="test_utils.get_random_bitmask() -> BitMask"):
         var mask = BitMask()
         for i in range(BitMask.total_bits):
             if random.random_float64() < 0.5:
@@ -538,7 +538,7 @@ struct MemTestStruct[
 
         The source value is consumed by this initializer.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "MemTestStruct.__init__(out self, *, deinit move: Self)"
             )
@@ -556,7 +556,7 @@ struct MemTestStruct[
 
         The new value shares the same lifecycle counters as the source value.
         """
-        with Zone(
+        with FineZone(
             function_name="MemTestStruct.__init__(out self, *, copy: Self)"
         ):
             self.move_counter = copy.move_counter
@@ -569,7 +569,7 @@ struct MemTestStruct[
 
         The delete counter is incremented in place.
         """
-        with Zone(function_name="MemTestStruct.__deinit__(deinit self)"):
+        with FineZone(function_name="MemTestStruct.__deinit__(deinit self)"):
             self.del_counter[] += 1
 
 
@@ -601,7 +601,7 @@ def test_copy_move_del[
     Raises:
         AssertionError: If any copy, move, or delete count differs from the expected value.
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "test_utils.test_copy_move_del[Container: Copyable &"
             " Deinitable, //, container_factory: def(var val:"

@@ -36,7 +36,7 @@ plots = { cmd = "cd benchmark/plots && pixi run plots" }
 
 [dependencies]
 mojo = ">=1.0.0,<1.1.0"
-mojo-tracy = ">=1.1.0,<2"
+mojo-tracy = ">=1.3.0,<2"
 max = ">=26.5.0,<27"
 
 [feature.test.dependencies]

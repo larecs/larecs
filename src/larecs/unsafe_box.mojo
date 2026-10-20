@@ -8,7 +8,7 @@ from std.sys import size_of
 from std.reflection import call_location
 from std.memory import alloc, dealloc, Layout, Allocation
 
-from tracy import Zone
+from ._zones import FineZone
 
 
 def _destructor[T: Deinitable](mut box_storage: UnsafeBox.data_type):
@@ -23,7 +23,7 @@ def _destructor[T: Deinitable](mut box_storage: UnsafeBox.data_type):
     Args:
         box_storage: The UnsafeBox.data_type instance to be destroyed.
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "unsafe_box._destructor[T: Deinitable](box_storage:"
             " UnsafeBox.data_type)"
@@ -47,7 +47,7 @@ def _dummy_destructor(box: UnsafeBox.data_type):
         box: The UnsafeBox.data_type instance to be destroyed.
              Note, this will not be touched here.
     """
-    with Zone(
+    with FineZone(
         function_name="unsafe_box._dummy_destructor(box: UnsafeBox.data_type)"
     ):
         pass
@@ -72,7 +72,7 @@ def _copy_initializer[
         A pointer to the newly allocated data.
     """
 
-    with Zone(
+    with FineZone(
         function_name=(
             "unsafe_box._copy_initializer[T: Copyable](existing_box:"
             " UnsafeBox.data_type)"
@@ -110,7 +110,7 @@ def _dummy_copy_initializer(
     Returns:
         None
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "unsafe_box._dummy_copy_initializer(existing_box:"
             " UnsafeBox.data_type)"
@@ -173,7 +173,7 @@ struct UnsafeBox(Copyable, Movable):
         Constraints:
             `used_internally` must be `True` to use this constructor.
         """
-        with Zone(function_name="UnsafeBox.__init__[used_internally: Bool]()"):
+        with FineZone(function_name="UnsafeBox.__init__[used_internally: Bool]()"):
             comptime assert (
                 used_internally
             ), "This constructor is meant for internal use only."
@@ -193,7 +193,7 @@ struct UnsafeBox(Copyable, Movable):
             data: The value to be stored in the box.
         """
 
-        with Zone(
+        with FineZone(
             function_name="UnsafeBox.__init__[T: Self.EltType](var data: T)"
         ):
             comptime if size_of[T]() == 0:
@@ -222,7 +222,7 @@ struct UnsafeBox(Copyable, Movable):
         Args:
             move: The UnsafeBox instance to be moved from.
         """
-        with Zone(function_name="UnsafeBox.__init__(move: Self)"):
+        with FineZone(function_name="UnsafeBox.__init__(move: Self)"):
             self._data = move._data^
             self._destructor = move._destructor
             self._copy_initializer = move._copy_initializer
@@ -235,7 +235,7 @@ struct UnsafeBox(Copyable, Movable):
         Args:
             copy: The UnsafeBox instance to be copied from.
         """
-        with Zone(function_name="UnsafeBox.__init__(copy: Self)"):
+        with FineZone(function_name="UnsafeBox.__init__(copy: Self)"):
             self = Self.__init__[used_internally=True]()
             self._data^.deinit_assert_empty()
             self._data = copy._copy_initializer(copy._data)
@@ -251,7 +251,7 @@ struct UnsafeBox(Copyable, Movable):
         It destroys the data stored in the box and frees the memory
         associated with the box.
         """
-        with Zone(function_name="UnsafeBox.__del__()"):
+        with FineZone(function_name="UnsafeBox.__del__()"):
             debug_assert(
                 self._initialized,
                 "Attempting to destroy an empty UnsafeBox.",
@@ -273,7 +273,7 @@ struct UnsafeBox(Copyable, Movable):
         Returns:
             A reference to the data stored in the box.
         """
-        with Zone(function_name="UnsafeBox.unsafe_get[T: Self.EltType]()"):
+        with FineZone(function_name="UnsafeBox.unsafe_get[T: Self.EltType]()"):
             debug_assert(
                 self._initialized,
                 (

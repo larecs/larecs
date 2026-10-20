@@ -6,7 +6,7 @@ an `ElementType` value or a zero-sized empty placeholder.
 
 from std.utils.type_functions import ConditionalType
 
-from tracy import Zone
+from ._zones import FineZone
 
 
 @fieldwise_init
@@ -28,7 +28,7 @@ struct _EmptyStaticOptionalStorage(Copyable, Deinitable, Movable, Writable):
         Args:
             writer: The writer to write to.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_EmptyStaticOptionalStorage.write_to(mut writer: Some[Writer])"
             )
@@ -75,7 +75,7 @@ struct StaticOptional[
         Returns:
             A `StaticOptional` with empty backing storage.
         """
-        with Zone(function_name="StaticOptional.__init__(none: None)"):
+        with FineZone(function_name="StaticOptional.__init__(none: None)"):
             comptime assert (
                 not Self.has_value
             ), "Cannot initialize with `None` if `has_value` is `True`"
@@ -97,7 +97,7 @@ struct StaticOptional[
         Returns:
             A `StaticOptional` initialized with selected backing storage.
         """
-        with Zone(
+        with FineZone(
             function_name="StaticOptional.__init__(var value: Self.ElementType)"
         ):
             comptime assert (
@@ -109,7 +109,7 @@ struct StaticOptional[
     @always_inline
     def __deinit__(deinit self):
         """Destroy the stored value when present."""
-        with Zone(function_name="StaticOptional.__deinit__()"):
+        with FineZone(function_name="StaticOptional.__deinit__()"):
             comptime if Self.has_value:
                 _ = self._value^
 
@@ -120,7 +120,7 @@ struct StaticOptional[
         Returns:
             A reference to the contained value.
         """
-        with Zone(function_name="StaticOptional.__getitem__()"):
+        with FineZone(function_name="StaticOptional.__getitem__()"):
             comptime assert (
                 Self.has_value
             ), "The value is not present. Use `has_value` to check first."
@@ -139,7 +139,7 @@ struct StaticOptional[
         Returns:
             The stored value when present, otherwise `value`.
         """
-        with Zone(
+        with FineZone(
             function_name="StaticOptional.or_else(ref value: Self.ElementType)"
         ):
             comptime if Self.has_value:
@@ -156,7 +156,7 @@ struct StaticOptional[
         Returns:
             An `Pointer` to the contained value.
         """
-        with Zone(function_name="StaticOptional.unsafe_ptr()"):
+        with FineZone(function_name="StaticOptional.unsafe_ptr()"):
             comptime assert (
                 Self.has_value
             ), "The value is not present. Use `has_value` to check first."
@@ -170,5 +170,5 @@ struct StaticOptional[
         Returns:
             The value of `has_value`.
         """
-        with Zone(function_name="StaticOptional.__bool__()"):
+        with FineZone(function_name="StaticOptional.__bool__()"):
             return Self.has_value

@@ -36,6 +36,7 @@ from ._utils import concatenate_arrays, assert_unreachable
 from std.sys import size_of
 
 from tracy import Zone
+from ._zones import FineZone
 
 
 def _sort_entity_ranges(mut ranges: List[EntityRange]):
@@ -207,7 +208,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         """
         Initializes the storage with the zero archetype and zero entity location.
         """
-        with Zone(function_name="HostStorage.__init__()"):
+        with FineZone(function_name="HostStorage.__init__()"):
             self._entity_locations = [EntityLocation(0, 0)]
             self._entity_pool = EntityPool()
             self._spatial_partitioned = False
@@ -401,7 +402,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             A bitmask filter for this storage's component types.
         """
-        with Zone(function_name="HostStorage.filter[filter: Filter]()"):
+        with FineZone(function_name="HostStorage.filter[filter: Filter]()"):
             comptime bitmask_filter = filter.get_bitmask_filter[
                 *Self.ComponentTypes
             ]()
@@ -486,7 +487,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Constraints:
             `size` must be non-negative.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Components._get_archetype_index[size: Int](components:"
                 " Array[ComponentId, size], start_node_index: Int)"
@@ -523,7 +524,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             The archetype list index for the mask.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Components._get_archetype_index_by_mask(mask: BitMask)"
             )
@@ -591,7 +592,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             The new or recycled [..entity.Entity].
 
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "HostStorage.add_entity[*Ts: ComponentType](var *components:"
                 " *Ts)"
@@ -777,7 +778,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             The index of the first newly created entity in the archetype.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "HostStorage._create_entities(archetype_index: Int, count: Int)"
             )
@@ -826,7 +827,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         self.invalidate_spatial()
         self.assert_alive(entity)
 
-        with Zone(function_name="HostStorage.remove_entity(entity: Entity)"):
+        with FineZone(function_name="HostStorage.remove_entity(entity: Entity)"):
             var entity_loc = self._entity_locations[entity.get_id()]
             ref old_archetype = self._archetypes.unsafe_get(
                 entity_loc.archetype_index
@@ -955,7 +956,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             True if the entity is still alive.
         """
-        with Zone(function_name="HostStorage.is_alive(entity: Entity)"):
+        with FineZone(function_name="HostStorage.is_alive(entity: Entity)"):
             return self._entity_pool.is_alive(entity)
 
     @always_inline
@@ -968,7 +969,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             LarecsError: If the entity does not exist.
         """
-        with Zone(function_name="HostStorage.assert_alive(entity: Entity)"):
+        with FineZone(function_name="HostStorage.assert_alive(entity: Entity)"):
             if not self.is_alive(entity):
                 raise LarecsError(
                     EntityError.non_existent_entity.with_entities(entity)
@@ -991,7 +992,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             True if the entity has the component.
         """
-        with Zone(
+        with FineZone(
             function_name="HostStorage.has[T: ComponentType](entity: Entity)"
         ):
             comptime assert Self.component_manager.contains_components[
@@ -1035,7 +1036,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         self.assert_alive(entity)
         var entity_loc = self._entity_locations[entity.get_id()]
 
-        with Zone(
+        with FineZone(
             function_name="HostStorage.get[T: ComponentType](entity: Entity)"
         ):
             if not self._archetypes.unsafe_get(
@@ -1072,7 +1073,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: If the [..entity.Entity] does not exist.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "HostStorage.set[T: ComponentType](entity: Entity, var"
                 " component: T)"
@@ -1106,7 +1107,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             Error: If the entity does not exist.
             Error: If the entity does not have one of the components.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "HostStorage.set[*Ts: ComponentType](entity: Entity, var"
                 " *components: *Ts)"
@@ -1144,7 +1145,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             Error: when called with components that can't be added because they are already present.
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "HostStorage.add[*Ts: ComponentType](entity: Entity, var"
                 " *add_components: *Ts)"
@@ -1170,7 +1171,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             Error: when called with components that can't be added because they are already present.
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "HostStorage.add[*Ts: ComponentType](var *add_components: *Ts,"
                 " entity: Entity)"
@@ -1313,7 +1314,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             Error: when called with components that can't be removed because they are not present.
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "HostStorage.remove[*Ts: ComponentType](entity: Entity)"
             )
@@ -1461,7 +1462,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             A [..host_storage.Replacer] configured to remove the given component types.
         """
-        with Zone(function_name="HostStorage.replace[*Ts: ComponentType]()"):
+        with FineZone(function_name="HostStorage.replace[*Ts: ComponentType]()"):
             comptime assert constrain_components_unique[
                 *Ts
             ](), "Duplicate component types in replace are not allowed."
@@ -1494,7 +1495,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             Error: when called with components that can't be removed because they are not present.
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "HostStorage._remove_and_add[*Ts: ComponentType, rem_size: Int,"
                 " remove_ids: Array[ComponentId, rem_size]](entity:"
@@ -2208,7 +2209,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: If the world is locked.
         """
-        with Zone(function_name="HostStorage._assert_unlocked()"):
+        with FineZone(function_name="HostStorage._assert_unlocked()"):
             if self.is_locked():
                 raise LarecsError(WorldError.world_is_locked)
 
@@ -2440,7 +2441,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             exclude_mask:   The mask of components to exclude.
             start_indices: The start indices of the iterator. See [..iteration._WorldEntityIterator].
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "HostStorage._get_entity_iterator[has_exclude_mask: Bool,"
                 " has_start_indices: Bool](include_mask: BitMask, exclude_mask:"
@@ -2483,7 +2484,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             An iterator over all archetypes that are matched by the filter.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "HostStorage._get_archetype_iterator[has_exclude_mask_mask:"
                 " Bool](include_mask: BitMask, exclude_mask:"
@@ -2507,7 +2508,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             True if the world is currently locked.
         """
-        with Zone(function_name="HostStorage.is_locked(out result: Bool)"):
+        with FineZone(function_name="HostStorage.is_locked(out result: Bool)"):
             return self._locks.is_locked()
 
     @always_inline
@@ -2521,7 +2522,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             LarecsError: when the world is already locked by the maximum number of locks (256 in the current implementation).
         """
-        with Zone(function_name="HostStorage._lock(out lock: Int)"):
+        with FineZone(function_name="HostStorage._lock(out lock: Int)"):
             try:
                 return self._locks.lock()
             except:
@@ -2535,7 +2536,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Args:
             lock: The lock bit to unlock.
         """
-        with Zone(function_name="HostStorage._unlock(lock: Int)"):
+        with FineZone(function_name="HostStorage._unlock(lock: Int)"):
             try:
                 self._locks.unlock(lock)
             except e:
@@ -2552,7 +2553,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             A context manager that unlocks the world when it goes out of scope.
         """
-        with Zone(function_name="HostStorage._locked()"):
+        with FineZone(function_name="HostStorage._locked()"):
             return LockedContext(Pointer(to=self._locks))
 
 
@@ -2578,7 +2579,7 @@ struct LockedContext[origin: MutOrigin](ImplicitlyCopyable):
         Args:
             locks: The LockManager to handle.
         """
-        with Zone(
+        with FineZone(
             function_name="LockedContext.__init__(locks: Pointer[LockManager])"
         ):
             self._locks = locks
@@ -2595,7 +2596,7 @@ struct LockedContext[origin: MutOrigin](ImplicitlyCopyable):
         Raises:
             LarecsError: If the number of locks exceeds 256.
         """
-        with Zone(function_name="LockedContext.__enter__()"):
+        with FineZone(function_name="LockedContext.__enter__()"):
             try:
                 self._lock = self._locks[].lock()
             except:
@@ -2608,7 +2609,7 @@ struct LockedContext[origin: MutOrigin](ImplicitlyCopyable):
         """
         Unlocks the world.
         """
-        with Zone(function_name="LockedContext.__exit__()"):
+        with FineZone(function_name="LockedContext.__exit__()"):
             try:
                 self._locks[].unlock(self._lock)
             except e:
@@ -2655,7 +2656,7 @@ struct Replacer[
             Error: when called with components that can't be removed because they are not present.
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
-        with Zone(function_name="Replacer.by(entity: Entity)"):
+        with FineZone(function_name="Replacer.by(entity: Entity)"):
             self._storage[]._remove_and_add[
                 rem_size=Self.size,
                 remove_ids=Self.remove_ids,
@@ -2680,7 +2681,7 @@ struct Replacer[
             Error: when called with components that can't be removed because they are not present.
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Replacer.by[T: ComponentType](var component: T, entity:"
                 " Entity)"
@@ -2711,7 +2712,7 @@ struct Replacer[
             Error: when called with components that can't be removed because they are not present.
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Replacer.by[*AddTs: ComponentType](var *components: *AddTs,"
                 " entity: Entity)"
@@ -2753,7 +2754,7 @@ struct Replacer[
         Returns:
             An iterator over the modified entities.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Replacer.by[*AddTs: ComponentType](filter: BitMaskFilter, var"
                 " *components: *AddTs, out iterator: Self.HostStorage.Iterator)"
@@ -2795,7 +2796,7 @@ struct Replacer[
             An iterator over the modified entities.
         """
 
-        with Zone(
+        with FineZone(
             function_name=(
                 "Replacer.by[*AddTs: ComponentType, has_exclude_mask: Bool](var"
                 " *components: *AddTs, query: QueryInfo, out iterator:"
@@ -2840,7 +2841,7 @@ struct Replacer[
         Returns:
             An iterator over the modified entities.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Replacer.by[*AddTs: ComponentType, filter: Filter](var"
                 " *components: *AddTs, out iterator:"

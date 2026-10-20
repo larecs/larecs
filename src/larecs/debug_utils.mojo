@@ -6,7 +6,7 @@ when compiled with `DEBUG_MODE` defined.
 
 from std.sys.defines import is_defined
 
-from tracy import Zone
+from ._zones import FineZone
 
 
 @always_inline
@@ -16,7 +16,7 @@ def warn(msg: Some[Writable]) -> None:
     Args:
         msg: The message to print.
     """
-    with Zone(function_name="debug_utils.warn(msg: Some[Writable])"):
+    with FineZone(function_name="debug_utils.warn(msg: Some[Writable])"):
         print("Warning: ", msg)
 
 
@@ -28,6 +28,6 @@ def debug_warn(msg: Some[Writable]) -> None:
         msg: The message to print.
     """
 
-    with Zone(function_name="debug_utils.debug_warn(msg: Some[Writable])"):
+    with FineZone(function_name="debug_utils.debug_warn(msg: Some[Writable])"):
         comptime if is_defined["DEBUG_MODE"]():
             warn(msg)

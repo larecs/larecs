@@ -10,7 +10,7 @@ from std.gpu import global_idx
 from std.utils.type_functions import ConditionalType
 from std.sys import is_gpu
 
-from tracy import Zone
+from ._zones import FineZone
 
 from .entity import Entity, EntityAccessor
 from .component import ComponentType
@@ -57,7 +57,7 @@ struct _ArchetypeIterator[
             archetypes: a pointer to the world's archetypes.
             archetype_indices: The indices of the archetypes in the list that are being iterated over.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ArchetypeIterator.__init__(archetypes:"
                 " Pointer[List[Self.Archetype]], var archetype_indices:"
@@ -76,7 +76,7 @@ struct _ArchetypeIterator[
         """
         Creates an archetype iterator from a list of archetypes and a query info.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ArchetypeIterator.__init__(archetypes:"
                 " Pointer[List[Self.Archetype]], var filter: BitMaskFilter[_])"
@@ -100,7 +100,7 @@ struct _ArchetypeIterator[
         Args:
             copy: The iterator to copy.
         """
-        with Zone(function_name="_ArchetypeIterator.__init__(copy: Self)"):
+        with FineZone(function_name="_ArchetypeIterator.__init__(copy: Self)"):
             self._archetypes = copy._archetypes
             self._archetype_indices = copy._archetype_indices.copy()
             self._index = copy._index
@@ -113,7 +113,7 @@ struct _ArchetypeIterator[
         Returns:
             Self as an iterator usable in for loops.
         """
-        with Zone(
+        with FineZone(
             function_name="_ArchetypeIterator.__iter__(out iterator: Self)"
         ):
             iterator = self^
@@ -138,7 +138,7 @@ struct _ArchetypeIterator[
         Returns:
             The next archetype as a pointer.
         """
-        with Zone(
+        with FineZone(
             function_name="_ArchetypeIterator.__next__() -> ref Self.Element"
         ):
             if not self._has_next():
@@ -154,7 +154,7 @@ struct _ArchetypeIterator[
         """
         Returns the number of archetypes remaining in the iterator.
         """
-        with Zone(function_name="_ArchetypeIterator.__len__()"):
+        with FineZone(function_name="_ArchetypeIterator.__len__()"):
             return len(self._archetype_indices) - self._index
 
     @always_inline
@@ -165,7 +165,7 @@ struct _ArchetypeIterator[
         Returns:
             Whether there are more elements to iterate.
         """
-        with Zone(function_name="_ArchetypeIterator._has_next()"):
+        with FineZone(function_name="_ArchetypeIterator._has_next()"):
             return self._index < len(self._archetype_indices)
 
     @always_inline
@@ -176,7 +176,7 @@ struct _ArchetypeIterator[
         Returns:
             Whether there are more elements to iterate.
         """
-        with Zone(function_name="_ArchetypeIterator.__bool__()"):
+        with FineZone(function_name="_ArchetypeIterator.__bool__()"):
             return self._has_next()
 
 
@@ -304,7 +304,7 @@ struct _ArchetypeEntityIterator[
                 valid for the lifetime of the iterator.
             _index: The index of the entity to start iterating from.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ArchetypeEntityIterator.__init__(archetype:"
                 " Pointer[UntrackedOrigin], _index: Int)"
@@ -331,7 +331,7 @@ struct _ArchetypeEntityIterator[
         Returns:
             Whether there are more elements to iterate.
         """
-        with Zone(function_name="_ArchetypeEntityIterator._has_next()"):
+        with FineZone(function_name="_ArchetypeEntityIterator._has_next()"):
             return self._index < len(self.archetype[])
 
     def __bool__(self) -> Bool:
@@ -341,14 +341,14 @@ struct _ArchetypeEntityIterator[
         Returns:
             Whether there are more elements to iterate.
         """
-        with Zone(function_name="_ArchetypeEntityIterator.__bool__()"):
+        with FineZone(function_name="_ArchetypeEntityIterator.__bool__()"):
             return self._has_next()
 
     def __len__(self) -> Int:
         """
         Returns the number of entities remaining in the iterator.
         """
-        with Zone(function_name="_ArchetypeEntityIterator.__len__()"):
+        with FineZone(function_name="_ArchetypeEntityIterator.__len__()"):
             return len(self.archetype[]) - self._index
 
     @__unsafe_nested_origins_read_only
@@ -367,7 +367,7 @@ struct _ArchetypeEntityIterator[
         Returns:
             An [..archetype.ArchetypeRowAccessor] to the entity.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ArchetypeEntityIterator.__next__[archetype_origin:"
                 " Origin](out accessor: ArchetypeRowAccessor)"
@@ -633,7 +633,7 @@ struct _WorldEntityIterator[
             archetype_iter: The archetype iterator to consume.
             start_indices: Starting row indices in archetype iteration order.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_WorldEntityIterator.__init__(var archetype_iter:"
                 " Self.ArchetypeIterator, var start_indices: Self.StartIndices)"
@@ -691,7 +691,7 @@ struct _WorldEntityIterator[
         Returns:
             Self as an iterator usable in for loops.
         """
-        with Zone(
+        with FineZone(
             function_name="_WorldEntityIterator.__iter__(out iterator: Self)"
         ):
             iterator = self^
@@ -728,7 +728,7 @@ struct _WorldEntityIterator[
         # the caller (see `_DequeIter.__next__` in the Mojo stdlib, which uses
         # the whole-container origin for the same reason).
 
-        with Zone(
+        with FineZone(
             function_name=(
                 "_WorldEntityIterator.__next__(out accessor: Self.Element)"
             )
@@ -772,7 +772,7 @@ struct _WorldEntityIterator[
         Note that this requires iterating over all archetypes
         and may be a complex operation.
         """
-        with Zone(function_name="_WorldEntityIterator.__len__(out size: Int)"):
+        with FineZone(function_name="_WorldEntityIterator.__len__(out size: Int)"):
             size = 0
 
             if not self._has_next():
@@ -809,7 +809,7 @@ struct _WorldEntityIterator[
         Returns:
             Whether there are more elements to iterate.
         """
-        with Zone(function_name="_WorldEntityIterator._has_next()"):
+        with FineZone(function_name="_WorldEntityIterator._has_next()"):
             return self._entity_iterator or self._archetype_iterator
 
     @always_inline
@@ -820,5 +820,5 @@ struct _WorldEntityIterator[
         Returns:
             Whether there are more elements to iterate.
         """
-        with Zone(function_name="_WorldEntityIterator.__bool__()"):
+        with FineZone(function_name="_WorldEntityIterator.__bool__()"):
             return self._has_next()

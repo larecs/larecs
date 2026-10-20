@@ -4,7 +4,7 @@ Provides `Filter`, built up via `include`/`exclude`, and `BitMaskFilter`,
 its runtime BitMask-based counterpart used to match archetypes.
 """
 
-from tracy import Zone
+from ._zones import FineZone
 
 from .bitmask import BitMask
 from .component import Components, ComponentType, ComponentManager
@@ -147,7 +147,7 @@ struct Filter[
         Returns:
             The number of included components.
         """
-        with Zone(function_name="Filter.__len__()"):
+        with FineZone(function_name="Filter.__len__()"):
             comptime include_length = len(self._include)
             return include_length
 
@@ -160,7 +160,7 @@ struct Filter[
         Returns:
             The component index when ``T`` is included; otherwise ``-1``.
         """
-        with Zone(function_name="Filter.includes[T: ComponentType]()"):
+        with FineZone(function_name="Filter.includes[T: ComponentType]()"):
             comptime for i in range(len(Self._include)):
                 comptime if Self._include.ComponentTypes[i] == T:
                     return i
@@ -177,7 +177,7 @@ struct Filter[
         Returns:
             The component index when ``T`` is excluded; otherwise ``-1``.
         """
-        with Zone(function_name="Filter.excludes[T: ComponentType]()"):
+        with FineZone(function_name="Filter.excludes[T: ComponentType]()"):
             comptime for i in range(len(Self._exclude)):
                 comptime if Self._exclude.ComponentTypes[i] == T:
                     return i
@@ -216,7 +216,7 @@ struct Filter[
         Returns:
             The mask of the included components.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Filter.get_include_mask[*ComponentTypes:"
                 " ComponentType]() -> BitMask"
@@ -238,7 +238,7 @@ struct Filter[
             The mask of the excluded components, or the inverse of the
             include mask when the filter is exclusive.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Filter.get_exclude_mask[*ComponentTypes:"
                 " ComponentType]() -> BitMask"
@@ -270,7 +270,7 @@ struct Filter[
         Returns:
             A BitMaskFilter with the appropriate include and exclude masks.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Filter.get_bitmask_filter[*ComponentTypes: ComponentType]()"
                 " -> BitMaskFilter[len(Self._exclude) > 0 or"
@@ -326,7 +326,7 @@ struct BitMaskFilter[
             include: The mask of the components to include.
             exclude: The optional mask of the components to exclude.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "BitMaskFilter.__init__(include: BitMask, exclude:"
                 " StaticOptional[BitMask, Self.is_excluding])"
@@ -346,7 +346,7 @@ struct BitMaskFilter[
         Args:
             copy: The query to copy.
         """
-        with Zone(function_name="BitMaskFilter.__init__(*, copy: Self)"):
+        with FineZone(function_name="BitMaskFilter.__init__(*, copy: Self)"):
             self.include_mask = copy.include_mask
             self.exclude_mask = copy.exclude_mask.copy()
 
@@ -365,7 +365,7 @@ struct BitMaskFilter[
         Returns:
             BitMaskFilter with an active exclusion mask.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "BitMaskFilter.exclude(var mask: BitMask, out filter:"
                 " Self.ExcludingBitMaskFilter)"
@@ -387,7 +387,7 @@ struct BitMaskFilter[
         Returns:
             BitMaskFilter with an exclusion mask for all non-included components.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "BitMaskFilter.exclusive(out filter:"
                 " Self.ExcludingBitMaskFilter)"
@@ -407,7 +407,7 @@ struct BitMaskFilter[
         Returns:
             Whether the archetype matches the filter.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "BitMaskFilter.matches(archetype_mask: BitMask, out is_valid:"
                 " Bool)"

@@ -17,7 +17,7 @@ from std.memory import (
 )
 from std.bit import next_power_of_two
 
-from tracy import Zone
+from ._zones import FineZone
 
 from .entity import Entity
 from .component import (
@@ -90,7 +90,7 @@ struct ArchetypeRowAccessor[
             archetype: The archetype of the entity.
             index_in_archetype: The index of the entity in the archetype.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "ArchetypeRowAccessor.__init__(ref archetype: Self.Archetype,"
                 " index_in_archetype: Int)"
@@ -107,7 +107,7 @@ struct ArchetypeRowAccessor[
             The entity of the accessor.
         """
 
-        with Zone(function_name="ArchetypeRowAccessor.get_entity()"):
+        with FineZone(function_name="ArchetypeRowAccessor.get_entity()"):
             return self._archetype[].get_entity(self._index_in_archetype)
 
     @__unsafe_nested_origins_read_only
@@ -137,7 +137,7 @@ struct ArchetypeRowAccessor[
             check. Use `unsafe_get[T]()` for components the filter
             doesn't guarantee, or `has[T]()` to check first.
         """
-        with Zone(function_name="ArchetypeRowAccessor.get[T: ComponentType]()"):
+        with FineZone(function_name="ArchetypeRowAccessor.get[T: ComponentType]()"):
             comptime assert Self.filter.includes[T]() != -1, (
                 "Component type is not included by this accessor's"
                 " filter. Use unsafe_get[T]() to access components not"
@@ -169,7 +169,7 @@ struct ArchetypeRowAccessor[
         Returns:
             A reference to the component of the entity.
         """
-        with Zone(
+        with FineZone(
             function_name="ArchetypeRowAccessor.unsafe_get[T: ComponentType]()"
         ):
             self._archetype[].assert_has_components[T]()
@@ -196,7 +196,7 @@ struct ArchetypeRowAccessor[
         Raises:
             LarecsError: If the entity's archetype does not contain one of the components.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "ArchetypeRowAccessor.set[*Ts: ComponentType](var *components:"
                 " *Ts)"
@@ -222,7 +222,7 @@ struct ArchetypeRowAccessor[
         Returns:
             Whether the entity has the component.
         """
-        with Zone(function_name="ArchetypeRowAccessor.has[T: ComponentType]()"):
+        with FineZone(function_name="ArchetypeRowAccessor.has[T: ComponentType]()"):
             return self._archetype[].has_components[T]()
 
 
@@ -267,7 +267,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         var data: ThinAllocation[Byte], length: Int, capacity: Int
     ):
         """Frees an empty column allocation without destroying values."""
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn._empty_destroy(var data:"
                 " ThinAllocation[Byte], length: Int, capacity: Int)"
@@ -278,7 +278,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
     @staticmethod
     def _empty_copy(data: Self.Data, length: Int, capacity: Int) -> Self.Data:
         """Returns no allocation for an untyped empty column."""
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn._empty_copy(data: Self.Data, length: Int,"
                 " capacity: Int)"
@@ -294,7 +294,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         new_capacity: Int,
     ) -> Self.Data:
         """Leaves an untyped empty column without allocating storage."""
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn._empty_resize(mut data: Self.Data, length:"
                 " Int, old_capacity: Int, new_capacity: Int)"
@@ -305,7 +305,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
     @staticmethod
     def _empty_swap_remove(mut data: Self.Data, length: Int, remove_idx: Int):
         """Does nothing because an untyped empty column has no values."""
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn._empty_swap_remove(mut data: Self.Data,"
                 " length: Int, remove_idx: Int)"
@@ -348,7 +348,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
     @staticmethod
     def _empty_clear_values(mut data: Self.Data, length: Int):
         """Does nothing because an untyped empty column has no values."""
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn._empty_clear_values(mut data: Self.Data,"
                 " length: Int)"
@@ -360,7 +360,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         """
         Initializes an empty _ComponentColumn.
         """
-        with Zone(function_name="_ComponentColumn.__init__()"):
+        with FineZone(function_name="_ComponentColumn.__init__()"):
             self._data = None
             self._destroy = Self._empty_destroy
             self._copy = Self._empty_copy
@@ -383,7 +383,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             length: The number of initialized values.
             capacity: The allocation capacity.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn._destroy_t[T: ComponentType](var byte_thin:"
                 " ThinAllocation[Byte], length: Int, capacity: Int)"
@@ -412,7 +412,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         Returns:
             A type-erased allocation containing the copied values, or `None`.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn._copy_t[T: ComponentType](data: Self.Data,"
                 " length: Int, capacity: Int)"
@@ -455,7 +455,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         Returns:
             A type-erased allocation with the moved values.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn._resize_t[T: ComponentType](mut data:"
                 " Self.Data, length: Int, old_capacity: Int, new_capacity: Int)"
@@ -493,7 +493,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             length: The current number of values.
             remove_idx: The index of the value to remove.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn._swap_remove_t[T: ComponentType](mut data:"
                 " Self.Data, length: Int, remove_idx: Int)"
@@ -519,7 +519,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             data: The column allocation, if present.
             length: The number of initialized values.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn._clear_values_t[T: ComponentType](mut"
                 " data: Self.Data, length: Int)"
@@ -544,7 +544,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             preallocate: Whether to allocate storage immediately.
             capacity: The initial allocation capacity.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn.create[T: ComponentType](out column: Self,"
                 " preallocate: Bool, capacity: Int)"
@@ -565,7 +565,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
 
     def __init__(out self, *, copy: Self):
         """Initializes an empty column with the source column's callbacks."""
-        with Zone(function_name="_ComponentColumn.__init__(copy: Self)"):
+        with FineZone(function_name="_ComponentColumn.__init__(copy: Self)"):
             self._data = None
             self._destroy = copy._destroy
             self._copy = copy._copy
@@ -576,7 +576,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
 
     def __deinit__(deinit self):
         """Asserts that the column allocation was explicitly destroyed."""
-        with Zone(function_name="_ComponentColumn.__del__()"):
+        with FineZone(function_name="_ComponentColumn.__del__()"):
             self._data^.deinit_assert_empty()
 
     def copy_data_from(mut self, source: Self, length: Int, capacity: Int):
@@ -587,7 +587,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             length: The number of values to copy.
             capacity: The capacity of the copied allocation.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn.copy_data_from(source: Self, length: Int,"
                 " capacity: Int)"
@@ -604,7 +604,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             old_capacity: The current allocation capacity.
             new_capacity: The requested allocation capacity.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn.resize(length: Int, old_capacity: Int,"
                 " new_capacity: Int)"
@@ -623,7 +623,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             length: The current number of values.
             remove_idx: The index of the value to remove.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentColumn.swap_remove(length: Int, remove_idx: Int)"
             )
@@ -636,7 +636,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         Args:
             length: The number of initialized values to destroy.
         """
-        with Zone(function_name="_ComponentColumn.clear_values(length: Int)"):
+        with FineZone(function_name="_ComponentColumn.clear_values(length: Int)"):
             self._clear_values(self._data, length)
 
     def destroy(mut self, length: Int, capacity: Int):
@@ -646,7 +646,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             length: The number of initialized values.
             capacity: The allocation capacity.
         """
-        with Zone(
+        with FineZone(
             function_name="_ComponentColumn.destroy(length: Int, capacity: Int)"
         ):
             if self._data:
@@ -663,7 +663,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         Returns:
             A pointer to the column's component values.
         """
-        with Zone(function_name="_ComponentColumn.get_ptr[T: ComponentType]()"):
+        with FineZone(function_name="_ComponentColumn.get_ptr[T: ComponentType]()"):
             return (
                 self._data.value()
                 .unsafe_ptr()
@@ -738,7 +738,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             length: The initial number of populated entity rows.
             capacity: The initial storage capacity.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentTable.__init__(active_component_mask: BitMask,"
                 " length: Int, capacity: Int)"
@@ -766,7 +766,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Returns:
             A deep copy of the component storage with its own allocations.
         """
-        with Zone(function_name="_ComponentTable.__init__(copy: Self)"):
+        with FineZone(function_name="_ComponentTable.__init__(copy: Self)"):
             self._columns = Self._Columns(fill=_ComponentColumn())
             self._capacity = copy._capacity
             self._length = copy._length
@@ -823,14 +823,14 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Returns:
             The current length of the component storage.
         """
-        with Zone(function_name="_ComponentTable.__len__()"):
+        with FineZone(function_name="_ComponentTable.__len__()"):
             return self._length
 
     @always_inline
     def __deinit__(deinit self):
         """Destroys and frees all active component buffers."""
 
-        with Zone(function_name="_ComponentTable.__del__()"):
+        with FineZone(function_name="_ComponentTable.__del__()"):
             var capacity = self._capacity
             var length = self._length
 
@@ -846,7 +846,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Returns:
             The number of active component types.
         """
-        with Zone(function_name="_ComponentTable.get_component_count()"):
+        with FineZone(function_name="_ComponentTable.get_component_count()"):
             return self._active_component_mask.total_bits_set()
 
     @always_inline
@@ -857,7 +857,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             The index of the newly added entity.
         """
         self._touch_rows()
-        with Zone(function_name="_ComponentTable.add_entity()"):
+        with FineZone(function_name="_ComponentTable.add_entity()"):
             if self._length == self._capacity:
                 self.reserve(max(self._capacity * 2, 8))
             var idx = self._length
@@ -872,7 +872,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Does not free any memory: the allocation is retained for reuse.
         """
         self._touch_rows()
-        with Zone(function_name="_ComponentTable.clear()"):
+        with FineZone(function_name="_ComponentTable.clear()"):
             comptime for id in range(len(Self.ComponentTypes)):
                 if self._active_component_mask.get(id):
                     self._columns[id].clear_values(self._length)
@@ -892,7 +892,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             new_capacity: The minimum required capacity. The actual allocated capacity
                          will be `next_power_of_two(new_capacity)` to maintain power-of-2 growth.
         """
-        with Zone(function_name="_ComponentTable.reserve(new_capacity: Int)"):
+        with FineZone(function_name="_ComponentTable.reserve(new_capacity: Int)"):
             debug_assert(
                 0 < new_capacity, "New capacity must be greater than zero."
             )
@@ -928,7 +928,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             add: The minimum number of additional entities to reserve capacity for.
         """
 
-        with Zone(function_name="_ComponentTable.reserve(add: Int)"):
+        with FineZone(function_name="_ComponentTable.reserve(add: Int)"):
             debug_assert(
                 0 <= add, "Amount of additional entities must be non-negative"
             )
@@ -948,7 +948,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             Whether a swap was performed (i.e. idx was not the last entity).
         """
         self._touch_rows()
-        with Zone(
+        with FineZone(
             function_name="_ComponentTable.swap_remove_entity(remove_idx: Int)"
         ):
             _assert_index_in_bounds(remove_idx, self._length)
@@ -984,7 +984,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             must already have been moved out of `remove_idx`.
         """
         self._touch_rows()
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentTable.unsafe_swap_remove_entity_after_moving_shared_components(remove_idx:"
                 " Int, destination_mask: BitMask)"
@@ -1032,7 +1032,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Raises:
             LarecsError: If the component is not contained in the storage.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentTable.get_component_ptr[T: ComponentType]()"
             )
@@ -1064,7 +1064,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Raises:
             LarecsError: If the component is not contained in the storage.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentTable.get_component_span[T: ComponentType]()"
             )
@@ -1087,7 +1087,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
     def has_components[*Ts: ComponentType](self) -> Bool:
         """Returns whether the storage contains all the given component types.
         """
-        with Zone(
+        with FineZone(
             function_name="_ComponentTable.has_components[*Ts: ComponentType]()"
         ):
             Self.component_manager.assert_valid_components[*Ts]()
@@ -1106,7 +1106,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         Raises:
             LarecsError: If at least one of the components is not contained in the storage.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentTable.assert_has_components[*Ts: ComponentType]()"
             )
@@ -1138,7 +1138,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         """
         comptime for i in range(len(Ts)):
             self._touch_column(Self.component_manager.get_id[Ts[i]]())
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentTable.set_components[*Ts:"
                 " ComponentType](entity_idx: Int, var *components: *Ts)"
@@ -1188,7 +1188,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             LarecsError: If at least one component is not present.
         """
         self._touch_rows()
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentTable.init_components[*Ts:"
                 " ComponentType](entity_idx: Int, var *components: *Ts)"
@@ -1248,7 +1248,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             source rows without destroying their shared component values.
         """
         self._touch_rows()
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentTable.unsafe_move_shared_components_from(to_idx:"
                 " Int, source: Pointer, count: Int, from_idx: Int)"
@@ -1306,7 +1306,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             LarecsError: If the component is not present in the storage.
         """
         self._touch_rows()
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentTable.copy_component_from[T:"
                 " ComponentType](to_idx: Int, storage: _ComponentTable,"
@@ -1356,7 +1356,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             shared component columns must have identical layouts.
         """
         self._touch_rows()
-        with Zone(
+        with FineZone(
             function_name=(
                 "_ComponentTable.unsafe_copy_shared_components_from(to_idx:"
                 " Int, source: Pointer, count: Int, from_idx: Int)"
@@ -1441,7 +1441,7 @@ struct Archetype[
         Returns:
             The zero archetype.
         """
-        with Zone(function_name="Archetype.__init__()"):
+        with FineZone(function_name="Archetype.__init__()"):
             self = Self.__init__(0, BitMask(), 0)
 
     @always_inline
@@ -1461,7 +1461,7 @@ struct Archetype[
         Returns:
             The archetype based on the given mask.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Archetype.__init__(node_index: Int, mask: BitMask, capacity:"
                 " Int)"
@@ -1494,7 +1494,7 @@ struct Archetype[
         Args:
             copy: The archetype to copy from.
         """
-        with Zone(function_name="Archetype.__init__(copy: Self)"):
+        with FineZone(function_name="Archetype.__init__(copy: Self)"):
             # Copy the attributes that can be trivially
             # copied via a simple assignment
             self._entities = copy._entities.copy()
@@ -1512,7 +1512,7 @@ struct Archetype[
         Returns:
             The number of entities in the archetype.
         """
-        with Zone(function_name="Archetype.__len__()"):
+        with FineZone(function_name="Archetype.__len__()"):
             return len(self._storage)
 
     @always_inline
@@ -1522,7 +1522,7 @@ struct Archetype[
         Returns:
             Whether the archetype contains entities.
         """
-        with Zone(function_name="Archetype.__bool__()"):
+        with FineZone(function_name="Archetype.__bool__()"):
             return Bool(self._entities)
 
     @always_inline
@@ -1532,7 +1532,7 @@ struct Archetype[
         Returns:
             The index of the archetype's node in the archetype graph.
         """
-        with Zone(function_name="Archetype.get_node_index()"):
+        with FineZone(function_name="Archetype.get_node_index()"):
             return self._node_index
 
     @always_inline
@@ -1542,7 +1542,7 @@ struct Archetype[
         Returns:
             The mask of the archetype's node in the archetype graph.
         """
-        with Zone(function_name="Archetype.get_mask()"):
+        with FineZone(function_name="Archetype.get_mask()"):
             return self._mask
 
     @always_inline
@@ -1553,7 +1553,7 @@ struct Archetype[
         the frequency of memory reallocations while maintaining reasonable memory usage.
         This follows standard container growth patterns optimized for amortized performance.
         """
-        with Zone(function_name="Archetype.reserve()"):
+        with FineZone(function_name="Archetype.reserve()"):
             self.reserve(max(self._storage._capacity * 2, 8))
 
     @always_inline
@@ -1581,7 +1581,7 @@ struct Archetype[
         archetype.reserve(64)   # Actually reserves 64
         ```
         """
-        with Zone(function_name="Archetype.reserve(new_capacity: Int)"):
+        with FineZone(function_name="Archetype.reserve(new_capacity: Int)"):
             self._storage.reserve(new_capacity)
             self._entities.reserve(self._storage._capacity)
 
@@ -1598,7 +1598,7 @@ struct Archetype[
         Returns:
             A reference to the entity at the given index.
         """
-        with Zone(function_name="Archetype.get_entity(idx: Int)"):
+        with FineZone(function_name="Archetype.get_entity(idx: Int)"):
             _assert_index_in_bounds(idx, self._storage._length)
 
             return self._entities[idx]
@@ -1627,7 +1627,7 @@ struct Archetype[
         Returns:
             An accessor for the entity at the given index.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Archetype.get_row_accessor[filter: Filter](idx: Int, out"
                 " accessor: ArchetypeRowAccessor)"
@@ -1661,7 +1661,7 @@ struct Archetype[
         Returns:
             A reference to the component.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Archetype.get_component[T: ComponentType](entity_idx: Int)"
             )
@@ -1688,7 +1688,7 @@ struct Archetype[
         Raises:
             LarecsError: If at least one of the components is not present.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Archetype.set_components[*Ts: ComponentType](entity_idx: Int,"
                 " var *components: *Ts)"
@@ -1712,7 +1712,7 @@ struct Archetype[
         Raises:
             LarecsError: If at least one component is not present.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Archetype.init_components[*Ts: ComponentType](entity_idx: Int,"
                 " var *components: *Ts)"
@@ -1744,7 +1744,7 @@ struct Archetype[
             LarecsError: If the component is not present.
         """
         self._storage._touch_column(self._storage.component_manager.get_id[T]())
-        with Zone(
+        with FineZone(
             function_name=(
                 "Archetype.set_component_range[T:"
                 " ComponentType](start_entity_idx: Int, count: Int, value: T)"
@@ -1788,7 +1788,7 @@ struct Archetype[
             LarecsError: If the component is not present.
         """
         self._storage._touch_rows()
-        with Zone(
+        with FineZone(
             function_name=(
                 "Archetype.init_component_range[T:"
                 " ComponentType](start_entity_idx: Int, count: Int, value: T)"
@@ -1833,7 +1833,7 @@ struct Archetype[
         """
         self._storage._touch_rows()
 
-        with Zone(
+        with FineZone(
             function_name=(
                 "Archetype.copy_component_from[T: ComponentType](to_idx: Int,"
                 " archetype: Archetype, count: Int, from_idx: Int)"
@@ -1850,7 +1850,7 @@ struct Archetype[
         Returns:
             A reference to the entities in the archetype.
         """
-        with Zone(function_name="Archetype.get_entities()"):
+        with FineZone(function_name="Archetype.get_entities()"):
             return self._entities
 
     @always_inline
@@ -1863,7 +1863,7 @@ struct Archetype[
         Returns:
             Whether the archetype contains the component.
         """
-        with Zone(
+        with FineZone(
             function_name="Archetype.has_components[*Ts: ComponentType]()"
         ):
             return self._storage.has_components[*Ts]()
@@ -1878,7 +1878,7 @@ struct Archetype[
         Raises:
             LarecsError: If the archetype does not contain the component.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Archetype.assert_has_components[*Ts: ComponentType]()"
             )
@@ -1953,7 +1953,7 @@ struct Archetype[
             Whether a swap was necessary.
         """
         self._storage._touch_rows()
-        with Zone(function_name="Archetype.remove(idx: Int)"):
+        with FineZone(function_name="Archetype.remove(idx: Int)"):
             var swapped = self._storage.swap_remove_entity(idx)
 
             if swapped:
@@ -1982,7 +1982,7 @@ struct Archetype[
             been moved out of row `idx`.
         """
         self._storage._touch_rows()
-        with Zone(
+        with FineZone(
             function_name=(
                 "Archetype.unsafe_remove_after_moving_shared_components(idx:"
                 " Int, destination_mask: BitMask)"
@@ -2007,7 +2007,7 @@ struct Archetype[
         Note: does not free any memory.
         """
         self._storage._touch_rows()
-        with Zone(function_name="Archetype.clear()"):
+        with FineZone(function_name="Archetype.clear()"):
             self._entities.clear()
             self._storage.clear()
 
@@ -2022,7 +2022,7 @@ struct Archetype[
             The index of the entity in the archetype.
         """
         self._storage._touch_rows()
-        with Zone(function_name="Archetype.add(entity: Entity)"):
+        with FineZone(function_name="Archetype.add(entity: Entity)"):
             debug_assert(
                 len(self._entities) == len(self._storage),
                 (
@@ -2059,7 +2059,7 @@ struct Archetype[
             The source and destination archetypes must be distinct.
         """
         self._storage._touch_rows()
-        with Zone(
+        with FineZone(
             function_name=(
                 "Archetype.unsafe_move_all_from_archetype(source: Pointer)"
             )
@@ -2126,7 +2126,7 @@ struct Archetype[
             `count` indices.
         """
         self._storage._touch_rows()
-        with Zone(
+        with FineZone(
             function_name=(
                 "Archetype.extend(count: Int, mut entity_pool: EntityPool)"
             )

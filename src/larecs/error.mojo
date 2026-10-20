@@ -7,7 +7,7 @@ Provides `LarecsError` and its variants (`UnknownError`, `WorldError`,
 from std.builtin.globals import global_constant
 from std.utils import Variant
 
-from tracy import Zone
+from ._zones import FineZone
 
 from .bitmask import BitMask
 from .entity import Entity
@@ -37,7 +37,7 @@ struct UnknownError(Movable, Writable):
         Args:
             writer: The destination writer.
         """
-        with Zone(
+        with FineZone(
             function_name="UnknownError.write_to(mut writer: Some[Writer])"
         ):
             writer.write("LarecsError: Unknown error.")
@@ -65,7 +65,7 @@ struct WorldError(Equatable, ImplicitlyCopyable, Writable):
         Args:
             variant: The numeric discriminator for the error variant.
         """
-        with Zone(function_name="WorldError.__init__(variant: Int)"):
+        with FineZone(function_name="WorldError.__init__(variant: Int)"):
             assert variant < 4, "Invalid variant for WorldError"
             self._variant = variant
 
@@ -76,7 +76,7 @@ struct WorldError(Equatable, ImplicitlyCopyable, Writable):
         Returns:
             The human-readable message for the variant.
         """
-        with Zone(function_name="WorldError.msg()"):
+        with FineZone(function_name="WorldError.msg()"):
             comptime WORLD_ERROR_VARIANT_MESSAGES: Array[StaticString, 4] = [
                 "Unknown error.",
                 "Attempt to modify a locked world.",
@@ -98,7 +98,7 @@ struct WorldError(Equatable, ImplicitlyCopyable, Writable):
         Args:
             writer: The destination writer.
         """
-        with Zone(
+        with FineZone(
             function_name="WorldError.write_to(mut writer: Some[Writer])"
         ):
             writer.write("LarecsError: ")
@@ -129,7 +129,7 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
         Args:
             variant: The numeric discriminator for the error variant.
         """
-        with Zone(function_name="EntityError.__init__(variant: Int)"):
+        with FineZone(function_name="EntityError.__init__(variant: Int)"):
             assert variant < 2, "Invalid variant for EntityError"
 
             self._variant = variant
@@ -144,7 +144,7 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
         Args:
             copy: The error to copy.
         """
-        with Zone(function_name="EntityError.__init__(*, copy: Self)"):
+        with FineZone(function_name="EntityError.__init__(*, copy: Self)"):
             self._variant = copy._variant
             self.entities = copy.entities.copy()
 
@@ -163,7 +163,7 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
         Returns:
             The error with `entities` set.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "EntityError.with_entities[entity_count: Int](entities:"
                 " Array[Entity, entity_count], out next_self: Self)"
@@ -190,7 +190,7 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
         Returns:
             The error with `entities` set.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "EntityError.with_entities(var *entities: Entity, out"
                 " next_self: Self)"
@@ -210,7 +210,7 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
         Returns:
             The human-readable message for the variant.
         """
-        with Zone(function_name="EntityError.msg()"):
+        with FineZone(function_name="EntityError.msg()"):
             comptime ENTITY_ERROR_VARIANT_MESSAGES: Array[StaticString, 2] = [
                 "Unknown error.",
                 "The considered entity does not exist anymore:",
@@ -227,7 +227,7 @@ struct EntityError(Equatable, ImplicitlyCopyable, Writable):
         Args:
             writer: The destination writer.
         """
-        with Zone(
+        with FineZone(
             function_name="EntityError.write_to(mut writer: Some[Writer])"
         ):
             writer.write("LarecsError: ")
@@ -279,7 +279,7 @@ struct ComponentError(Equatable, ImplicitlyCopyable, Writable):
         Args:
             variant: The numeric discriminator for the error variant.
         """
-        with Zone(function_name="ComponentError.__init__(variant: Int)"):
+        with FineZone(function_name="ComponentError.__init__(variant: Int)"):
             assert variant < 6, "Invalid variant for ComponentError"
             self._variant = variant
             self.components = BitMask(0)
@@ -294,7 +294,7 @@ struct ComponentError(Equatable, ImplicitlyCopyable, Writable):
         Returns:
             The error with `components` set.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "ComponentError.with_components(components: BitMask, out"
                 " next_self: Self)"
@@ -310,7 +310,7 @@ struct ComponentError(Equatable, ImplicitlyCopyable, Writable):
         Returns:
             The human-readable message for the variant.
         """
-        with Zone(function_name="ComponentError.msg()"):
+        with FineZone(function_name="ComponentError.msg()"):
             comptime COMPONENT_ERROR_VARIANT_MESSAGES: Array[
                 StaticString, 6
             ] = [
@@ -343,7 +343,7 @@ struct ComponentError(Equatable, ImplicitlyCopyable, Writable):
         Args:
             writer: The destination writer.
         """
-        with Zone(
+        with FineZone(
             function_name="ComponentError.write_to(mut writer: Some[Writer])"
         ):
             writer.write("LarecsError: ")

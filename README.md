@@ -199,6 +199,14 @@ mojo build -Xlinker -L"${CONDA_PREFIX}/lib" -Xlinker -lmojotracy -DTRACY_ENABLED
 
 This assumes that `mojo-tracy` was installed via `pixi`.
 
+By default, Larecs🌲 records coarse zones only: the scheduler, system updates,
+kernel runs, device transfers and synchronization, and batch storage
+operations. Zones in per-entity and per-component helpers, such as component
+access and entity iteration, run many times per system call, and their
+instrumentation cost would dominate the profile. Add `-DLARECS_FINE_ZONES` to
+record them as well, and set `MOJO_TRACY_CALLSTACK=0` at run time to skip
+Tracy's per-zone call stacks when timing such fine-grained zones.
+
 You can then run the Tracy profiler by calling:
 
 ```sh

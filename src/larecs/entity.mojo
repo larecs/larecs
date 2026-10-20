@@ -8,7 +8,7 @@ components.
 from std.bit import bit_reverse
 from std.hashlib import Hasher
 
-from tracy import Zone
+from ._zones import FineZone
 
 from .component import ComponentType
 from .filter import Filter
@@ -59,7 +59,7 @@ struct Entity(
             id: The entity ID.
             generation: The entity generation.
         """
-        with Zone(
+        with FineZone(
             function_name="Entity.__init__(id: EntityId, generation: UInt32)"
         ):
             self._id = id
@@ -74,7 +74,7 @@ struct Entity(
         Args:
             accessor: The entity accessor to initialize from.
         """
-        with Zone(
+        with FineZone(
             function_name="Entity.__init__(accessor: ArchetypeRowAccessor)"
         ):
             self = accessor.get_entity()
@@ -90,7 +90,7 @@ struct Entity(
         Returns:
             True if both entities have the same ID and generation.
         """
-        with Zone(function_name="Entity.__eq__(other: Entity)"):
+        with FineZone(function_name="Entity.__eq__(other: Entity)"):
             return (
                 self._id == other._id and self._generation == other._generation
             )
@@ -106,7 +106,7 @@ struct Entity(
         Returns:
             True if the entities differ in ID or generation.
         """
-        with Zone(function_name="Entity.__ne__(other: Entity)"):
+        with FineZone(function_name="Entity.__ne__(other: Entity)"):
             return not (self == other)
 
     @always_inline
@@ -117,7 +117,7 @@ struct Entity(
         Returns:
             True if this entity is not the zero entity.
         """
-        with Zone(function_name="Entity.__bool__()"):
+        with FineZone(function_name="Entity.__bool__()"):
             return self._id != 0
 
     @deprecated(use=write_to)
@@ -129,7 +129,7 @@ struct Entity(
         Returns:
             A string of the form "Entity(id, generation)".
         """
-        with Zone(function_name="Entity.__str__()"):
+        with FineZone(function_name="Entity.__str__()"):
             return (
                 "Entity("
                 + String(self._id)
@@ -148,7 +148,7 @@ struct Entity(
         Args:
             hasher: The hasher to update with the entity's ID and generation.
         """
-        with Zone(function_name="Entity.__hash__[H: Hasher](mut hasher: H)"):
+        with FineZone(function_name="Entity.__hash__[H: Hasher](mut hasher: H)"):
             hasher.update(self._id)
             hasher.update(self._generation)
 
@@ -159,7 +159,7 @@ struct Entity(
         Returns:
             The entity's ID.
         """
-        with Zone(function_name="Entity.get_id()"):
+        with FineZone(function_name="Entity.get_id()"):
             return self._id
 
     @always_inline
@@ -169,7 +169,7 @@ struct Entity(
         Returns:
             The entity's generation.
         """
-        with Zone(function_name="Entity.get_generation()"):
+        with FineZone(function_name="Entity.get_generation()"):
             return self._generation
 
     @always_inline
@@ -179,7 +179,7 @@ struct Entity(
         Returns:
             True if this entity is the reserved zero entity.
         """
-        with Zone(function_name="Entity.is_zero()"):
+        with FineZone(function_name="Entity.is_zero()"):
             return self._id == 0
 
 
