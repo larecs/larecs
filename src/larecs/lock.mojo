@@ -6,7 +6,7 @@ owning one bit until it is transferred into an owning container such as
 primitives.
 """
 
-from tracy import Zone
+from ._zones import FineZone
 
 from std.os import abort
 
@@ -33,7 +33,7 @@ struct LockManager(Copyable, Movable):
     @always_inline
     def __init__(out self):
         """Initializes an unlocked lock manager."""
-        with Zone(function_name="LockManager.__init__()"):
+        with FineZone(function_name="LockManager.__init__()"):
             self.locks = BitMask()
             self.bit_pool = BitPool()
 
@@ -48,7 +48,7 @@ struct LockManager(Copyable, Movable):
         Returns:
             The acquired lock bit.
         """
-        with Zone(function_name="LockManager.lock()"):
+        with FineZone(function_name="LockManager.lock()"):
             try:
                 lock = self.bit_pool.get()
             except:
@@ -67,7 +67,7 @@ struct LockManager(Copyable, Movable):
         Raises:
             LockError: If the lock is not set.
         """
-        with Zone(function_name="LockManager.unlock(lock: Int)"):
+        with FineZone(function_name="LockManager.unlock(lock: Int)"):
             if not self.locks.get(lock):
                 raise InternalError.unbalanced_unlock
 
@@ -82,7 +82,7 @@ struct LockManager(Copyable, Movable):
         Returns:
             True if any lock bit is currently set.
         """
-        with Zone(function_name="LockManager.is_locked()"):
+        with FineZone(function_name="LockManager.is_locked()"):
             return not self.locks.is_zero()
 
     @always_inline
@@ -95,7 +95,7 @@ struct LockManager(Copyable, Movable):
         Returns:
             True when the bit is active and no other lock bit is active.
         """
-        with Zone(function_name="LockManager.owns_only(lock: Int)"):
+        with FineZone(function_name="LockManager.owns_only(lock: Int)"):
             return self.locks.get(lock) and self.locks.total_bits_set() == 1
 
     @always_inline
@@ -103,7 +103,7 @@ struct LockManager(Copyable, Movable):
         """
         Reset the locks and the pool.
         """
-        with Zone(function_name="LockManager.reset()"):
+        with FineZone(function_name="LockManager.reset()"):
             self.locks = BitMask()
             self.bit_pool.reset()
 
@@ -162,7 +162,7 @@ struct LockGuard[lock_origin: MutOrigin](Copyable, Movable):
 
     def __deinit__(deinit self):
         """Releases the owned lock, warning if its bit was already cleared."""
-        with Zone(function_name="LockGuard.__deinit__()"):
+        with FineZone(function_name="LockGuard.__deinit__()"):
             try:
                 self._manager[].unlock(self._lock)
             except _:

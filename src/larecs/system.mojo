@@ -18,6 +18,7 @@ from .sync import AtomicValue
 from .resource_representation import _plain_device_value
 
 from tracy import Zone
+from ._zones import FineZone
 
 from .archetype import Archetype as _Archetype
 from .world import World
@@ -1274,7 +1275,7 @@ struct KernelContext[
             length: Total number of rows the kernel operates over.
             thread_count: Number of threads participating in the launch.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "KernelContext.__init__(var columns: Self.Columns, var"
                 " resources: ResourceAccessor[Self.required_resources], *,"
@@ -1324,7 +1325,7 @@ struct HostKernelContext[
         Returns:
             The type name shown in device diagnostics.
         """
-        with Zone(function_name="HostKernelContext.get_type_name()"):
+        with FineZone(function_name="HostKernelContext.get_type_name()"):
             return "KernelContext"
 
     var length: Int32
@@ -1373,7 +1374,7 @@ struct HostKernelContext[
             length: Total number of rows the kernel operates over.
             thread_count: Number of threads participating in the launch.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "HostKernelContext.__init__(var columns: Self.Columns, var"
                 " resource_pointers: Self.ResourceBuffers, *, length: Int32,"
@@ -1394,7 +1395,7 @@ struct HostKernelContext[
         target: Pointer[mut=True, T=NoneType, origin=_],
     ):
         """Encodes device buffers as their device-side pointer fields."""
-        with Zone(
+        with FineZone(
             function_name=(
                 "HostKernelContext._to_device_type[Encoder:"
                 " DeviceTypeEncoder](mut encoder: Encoder, target:"

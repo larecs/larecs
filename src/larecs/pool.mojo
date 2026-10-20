@@ -6,7 +6,7 @@ Provides `EntityPool`, which hands out and recycles entity IDs, and
 
 from std.collections.check_bounds import check_bounds
 
-from tracy import Zone
+from ._zones import FineZone
 
 from .types import EntityId
 from .entity import Entity
@@ -29,7 +29,7 @@ struct EntityPool(Copyable, Movable, Sized):
     @always_inline
     def __init__(out self):
         """Initializes an empty entity pool with the reserved zero entity."""
-        with Zone(function_name="EntityPool.__init__()"):
+        with FineZone(function_name="EntityPool.__init__()"):
             self._entities = List[Entity]()
             self._entities.append(Entity(0, UInt32(UInt16.MAX)))
             self._next = 0
@@ -41,7 +41,7 @@ struct EntityPool(Copyable, Movable, Sized):
         Returns:
             The acquired entity.
         """
-        with Zone(function_name="EntityPool.get()"):
+        with FineZone(function_name="EntityPool.get()"):
             if self._available == 0:
                 return self._get_new()
 
@@ -56,7 +56,7 @@ struct EntityPool(Copyable, Movable, Sized):
     @always_inline
     def _get_new(mut self, out entity: Entity):
         """Allocates and returns a new entity. For internal use."""
-        with Zone(function_name="EntityPool._get_new(out entity: Entity)"):
+        with FineZone(function_name="EntityPool._get_new(out entity: Entity)"):
             entity = Entity(EntityId(len(self._entities)))
             self._entities.append(entity)
 
@@ -70,7 +70,7 @@ struct EntityPool(Copyable, Movable, Sized):
         Raises:
             InternalError: If `entity` is the reserved zero entity.
         """
-        with Zone(function_name="EntityPool.recycle(entity: Entity)"):
+        with FineZone(function_name="EntityPool.recycle(entity: Entity)"):
             if entity.get_id() == 0:
                 raise InternalError.mutation_of_zero_entity
             check_bounds(entity.get_id(), len(self._entities))
@@ -85,7 +85,7 @@ struct EntityPool(Copyable, Movable, Sized):
     @always_inline
     def reset(mut self):
         """Recycles all entities. Does NOT free the reserved memory."""
-        with Zone(function_name="EntityPool.reset()"):
+        with FineZone(function_name="EntityPool.reset()"):
             self._entities.shrink(1)
             self._next = 0
             self._available = 0
@@ -102,7 +102,7 @@ struct EntityPool(Copyable, Movable, Sized):
             False if `entity`'s ID is out of the range ever handed out by this pool,
             e.g. because it stems from a different pool or was never a valid entity.
         """
-        with Zone(function_name="EntityPool.is_alive(entity: Entity)"):
+        with FineZone(function_name="EntityPool.is_alive(entity: Entity)"):
             var id = entity.get_id()
             if id < 0 or id >= len(self._entities):
                 return False
@@ -115,7 +115,7 @@ struct EntityPool(Copyable, Movable, Sized):
         Returns:
             The number of entities currently in use.
         """
-        with Zone(function_name="EntityPool.__len__()"):
+        with FineZone(function_name="EntityPool.__len__()"):
             return len(self._entities) - 1 - self._available
 
     @always_inline
@@ -125,7 +125,7 @@ struct EntityPool(Copyable, Movable, Sized):
         Returns:
             The total number of entities allocated so far, used or recycled.
         """
-        with Zone(function_name="EntityPool.capacity()"):
+        with FineZone(function_name="EntityPool.capacity()"):
             return len(self._entities) - 1
 
     @always_inline
@@ -135,7 +135,7 @@ struct EntityPool(Copyable, Movable, Sized):
         Returns:
             The number of recycled entities available for reuse.
         """
-        with Zone(function_name="EntityPool.available()"):
+        with FineZone(function_name="EntityPool.available()"):
             return self._available
 
 
@@ -175,7 +175,7 @@ struct BitPool(Copyable, Movable):
         to [.BitPool.get] return monotonically increasing indices until recycled
         bits become available.
         """
-        with Zone(function_name="BitPool.__init__()"):
+        with FineZone(function_name="BitPool.__init__()"):
             self._bits = Array[UInt8, Self.capacity](fill=0)
             self._next = 0
             self._length = 0
@@ -193,7 +193,7 @@ struct BitPool(Copyable, Movable):
         Returns:
             The acquired bit index.
         """
-        with Zone(function_name="BitPool.get(out bit_idx: Int)"):
+        with FineZone(function_name="BitPool.get(out bit_idx: Int)"):
             if self._available == 0:
                 bit_idx = self._next = self._get_new()
                 return
@@ -217,7 +217,7 @@ struct BitPool(Copyable, Movable):
         Returns:
             The index of the newly allocated bit.
         """
-        with Zone(function_name="BitPool._get_new(out bit_idx: Int)"):
+        with FineZone(function_name="BitPool._get_new(out bit_idx: Int)"):
             if self._length >= Self.capacity:
                 raise InternalError.ran_out_of_capacity
 
@@ -235,7 +235,7 @@ struct BitPool(Copyable, Movable):
         Args:
             bit_idx: The index of the bit to recycle.
         """
-        with Zone(function_name="BitPool.recycle(bit_idx: Int)"):
+        with FineZone(function_name="BitPool.recycle(bit_idx: Int)"):
             check_bounds(bit_idx, self._length)
             self._next, self._bits[bit_idx] = bit_idx, UInt8(self._next)
             self._available += 1
@@ -247,7 +247,7 @@ struct BitPool(Copyable, Movable):
         All previously handed-out indices are invalidated from the pool's point
         of view. The next allocation starts again at index 0.
         """
-        with Zone(function_name="BitPool.reset()"):
+        with FineZone(function_name="BitPool.reset()"):
             self._next = 0
             self._length = 0
             self._available = 0

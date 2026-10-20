@@ -9,7 +9,7 @@ from std.sys import size_of
 
 from std.collections import Set
 
-from tracy import Zone
+from ._zones import FineZone
 
 from .bitmask import BitMask
 from .types import ComponentId
@@ -47,7 +47,7 @@ def constrain_device_safe_components[*Ts: ComponentType]() -> Bool:
     Returns:
         True when every type in ``Ts`` conforms to [.DeviceComponentType].
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "component.constrain_device_safe_components[*Ts: ComponentType]()"
         )
@@ -72,7 +72,7 @@ struct Components[*ComponentTypes: ComponentType](Sized):
         Returns:
             The number of component types.
         """
-        with Zone(function_name="Components.__len__()"):
+        with FineZone(function_name="Components.__len__()"):
             return len(self.ComponentTypes)
 
 
@@ -86,7 +86,7 @@ def constrain_components_unique[*Ts: ComponentType]() -> Bool:
     Returns:
         True when no component type appears more than once.
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "component.constrain_components_unique[*Ts: ComponentType]()"
         )
@@ -107,7 +107,7 @@ def constrain_valid_components[*Ts: ComponentType]() -> Bool:
     Returns:
         True when there is at least one component type and all are unique.
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "component.constrain_valid_components[*Ts: ComponentType]()"
         )
@@ -148,7 +148,7 @@ struct ComponentManager[
         Returns:
             A dictionary mapping component type names to their IDs.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "ComponentManager._create_registry(out dict:"
                 " Dict[String, ComponentId])"
@@ -168,7 +168,7 @@ struct ComponentManager[
     @always_inline
     def _calc_component_sizes(out sizes: Array[Int, Self.component_count]):
         """Calculate the size of each component type."""
-        with Zone(
+        with FineZone(
             function_name=(
                 "ComponentManager._calc_component_sizes(out sizes:"
                 " Array[Int, Self.component_count])"
@@ -190,7 +190,7 @@ struct ComponentManager[
         Returns:
             The size of the component type, in bytes.
         """
-        with Zone(
+        with FineZone(
             function_name="ComponentManager.get_size(component_id: ComponentId)"
         ):
             return materialize[Self._component_size]()[component_id]
@@ -206,7 +206,7 @@ struct ComponentManager[
         Returns:
             True if all component types are registered, False otherwise.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "ComponentManager.contains_components[*Ts: ComponentType]()"
             )
@@ -225,7 +225,7 @@ struct ComponentManager[
         Parameters:
             Ts: The component types to check.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "ComponentManager.assert_valid_components[*Ts: ComponentType]()"
             )
@@ -245,7 +245,9 @@ struct ComponentManager[
         Returns:
             The ID of the component type.
         """
-        with Zone(function_name="ComponentManager.get_id[T: ComponentType]()"):
+        with FineZone(
+            function_name="ComponentManager.get_id[T: ComponentType]()"
+        ):
             comptime assert Self.contains_components[
                 T
             ](), "Component type not in component manager"
@@ -267,7 +269,7 @@ struct ComponentManager[
         Constraints:
             The component types must be pair-wise different.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "ComponentManager.get_id_arr[*Ts: ComponentType](out ids:"
                 " Array[ComponentId, len(Ts)])"
@@ -287,7 +289,7 @@ struct ComponentManager[
         Args:
             writer: The writer to write to.
         """
-        with Zone(
+        with FineZone(
             function_name="ComponentManager.write_to(mut writer: Some[Writer])"
         ):
             writer.write("ComponentManager[")
@@ -309,7 +311,7 @@ struct ComponentManager[
             The name of the component type, or `"<UNKNOWN_COMPONENT>"`
             if no component type has this ID.
         """
-        with Zone(
+        with FineZone(
             function_name="ComponentManager.get_type_name(id: ComponentId)"
         ):
             comptime for i in range(len(Self.ComponentTypes)):

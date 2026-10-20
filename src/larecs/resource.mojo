@@ -25,7 +25,7 @@ from std.memory import (
 
 from max.gpu.host import DeviceContext, DevicePointer
 
-from tracy import Zone
+from ._zones import FineZone
 
 from .unsafe_box import UnsafeBox
 
@@ -50,7 +50,7 @@ def constrain_device_safe_resources[*Ts: ResourceType]() -> Bool:
     Returns:
         True when every type has a supported pointer-free trivial representation.
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "resource.constrain_device_safe_resources[*Ts: ResourceType]()"
         )
@@ -159,7 +159,7 @@ struct Resources[
         Returns:
             The number of resource types.
         """
-        with Zone(function_name="Resources.__len__()"):
+        with FineZone(function_name="Resources.__len__()"):
             return len(self.ResourceTypes)
 
     @staticmethod
@@ -172,7 +172,7 @@ struct Resources[
         Returns:
             The index of ``T`` if present; otherwise -1.
         """
-        with Zone(function_name="Resources.index_of[T: ResourceType]()"):
+        with FineZone(function_name="Resources.index_of[T: ResourceType]()"):
             comptime for i in range(len(Self.ResourceTypes)):
                 comptime if Self.ResourceTypes[i] == T:
                     return i
@@ -293,7 +293,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
         """
         Constructs an empty resource container.
         """
-        with Zone(function_name="ResourceStorage.__init__()"):
+        with FineZone(function_name="ResourceStorage.__init__()"):
             self._storage = Dict[Self.IdType, _ResourceEntry]()
             self._bindings = Set[Self.IdType]()
             self._leases = Set[Self.IdType]()
@@ -310,7 +310,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
         Returns:
             The number of stored resources.
         """
-        with Zone(function_name="ResourceStorage.__len__()"):
+        with FineZone(function_name="ResourceStorage.__len__()"):
             return len(self._storage)
 
     def add[*Ts: ResourceType](mut self, var *resources: *Ts) raises:
@@ -326,7 +326,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
             Error: If a resource already exists, is leased, or storage is unusable.
         """
 
-        with Zone(
+        with FineZone(
             function_name=(
                 "ResourceStorage.add[*Ts: ResourceType](var *resources: *Ts)"
             )
@@ -357,7 +357,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
             id: The ID of the resource to add. It has to be not used already.
             resource: The resource to add.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "ResourceStorage._add(id: Self.IdType, var resource:"
                 " Some[ResourceType])"
@@ -388,7 +388,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
             Error: If a resource is missing, leased, or storage is unusable.
         """
 
-        with Zone(
+        with FineZone(
             function_name=(
                 "ResourceStorage.set[*Ts: ResourceType, add_if_not_found:"
                 " Bool](var *resources: *Ts)"
@@ -434,7 +434,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
             resource: The resource to set.
         """
 
-        with Zone(
+        with FineZone(
             function_name=(
                 "ResourceStorage._set[add_if_not_found: Bool](id: Self.IdType,"
                 " var resource: Some[ResourceType])"
@@ -458,7 +458,9 @@ struct ResourceStorage(Copyable, Movable, Sized):
             Error: If a resource is missing, leased, or storage is unusable.
         """
 
-        with Zone(function_name="ResourceStorage.remove[*Ts: ResourceType]()"):
+        with FineZone(
+            function_name="ResourceStorage.remove[*Ts: ResourceType]()"
+        ):
             comptime for i in range(len(Ts)):
                 self._check(reflect[Ts[i]].name())
             comptime for i in range(len(Ts)):
@@ -474,7 +476,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
         Raises:
             Error: If the resource does not exist.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "ResourceStorage._remove[T: ResourceType](id: Self.IdType)"
             )
@@ -654,7 +656,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
         Returns:
             The authoritative source reference, retaining storage mutability.
         """
-        with Zone(function_name="ResourceStorage.get[T: ResourceType]()"):
+        with FineZone(function_name="ResourceStorage.get[T: ResourceType]()"):
             try:
                 return Pointer(
                     to=self._storage[reflect[T].name()].box.unsafe_get[T]()
@@ -674,7 +676,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
         Returns:
             True if the resource is present, otherwise False.
         """
-        with Zone(function_name="ResourceStorage.has[T: ResourceType]()"):
+        with FineZone(function_name="ResourceStorage.has[T: ResourceType]()"):
             return reflect[T].name() in self._storage
 
 

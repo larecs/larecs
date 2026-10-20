@@ -4,6 +4,12 @@
 
 ### Added
 
+- Record only coarse Tracy zones by default: the scheduler, system updates,
+  kernel runs, device transfers and synchronization, and batch storage
+  operations. Zones in per-entity and per-component helpers, which dominated
+  instrumented profiles, are recorded only with `-DLARECS_FINE_ZONES`.
+  Requires mojo-tracy 1.3.0 for `Zone[enabled]`.
+
 - Add experimental mutable adapted resources. `read` selects an adapter's
   `View[False]`; `write` (fresh, adapter-initialized output) and `read_write`
   (preserved contents) select `View[True]`, which may be a distinct writer type.

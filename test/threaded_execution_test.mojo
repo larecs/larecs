@@ -625,9 +625,7 @@ def test_declared_plain_array_component() raises:
         Error: If any chunk misses a row or element.
     """
     var world = World[DirectionRow](
-        execution_config=ThreadedExecutionConfig(
-            workers=4, min_parallel_rows=0
-        )
+        execution_config=ThreadedExecutionConfig(workers=4, min_parallel_rows=0)
     )
     var entities = List[Entity]()
     for i in range(257):

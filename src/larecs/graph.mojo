@@ -7,7 +7,7 @@ so that a node reachable from a known starting point can be found quickly.
 # from collections import Dict
 from std.collections.check_bounds import check_bounds
 
-from tracy import Zone
+from ._zones import FineZone
 
 from .bitmask import BitMask
 
@@ -49,7 +49,7 @@ struct Node[DataType: NodeDataType](ImplicitlyCopyable):
             bit_mask: The bit mask of the node.
             value:    The value stored in the node.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "Node.__init__(bit_mask: BitMask, var value: Self.DataType)"
             )
@@ -64,7 +64,7 @@ struct Node[DataType: NodeDataType](ImplicitlyCopyable):
         Args:
             copy: The node to copy.
         """
-        with Zone(function_name="Node.__init__(copy: Self)"):
+        with FineZone(function_name="Node.__init__(copy: Self)"):
             self = Self(copy.bit_mask, copy.value.copy())
 
 
@@ -107,7 +107,7 @@ struct BitMaskGraph[
             first_value: The value stored in the first node,
                          corresponding to an empty bitmask.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "BitMaskGraph.__init__(var first_value: Self.DataType)"
             )
@@ -131,7 +131,7 @@ struct BitMaskGraph[
         Returns:
             The index of the added node.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "BitMaskGraph.add_node(node_mask: BitMask, var value:"
                 " Self.DataType)"
@@ -155,7 +155,7 @@ struct BitMaskGraph[
         Returns:
             The index of the node to which the link is created.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "BitMaskGraph.create_link(from_node_index: Int, changed_bit:"
                 " Int)"
@@ -201,7 +201,7 @@ struct BitMaskGraph[
         Returns:
             The index of the node differing from the start node by the given indices.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "BitMaskGraph.get_node_index[size: Int](different_bits:"
                 " Array[Int, size], start_node_index: Int)"
@@ -237,7 +237,9 @@ struct BitMaskGraph[
         Returns:
             The mask of the node.
         """
-        with Zone(function_name="BitMaskGraph.get_node_mask(node_index: Int)"):
+        with FineZone(
+            function_name="BitMaskGraph.get_node_mask(node_index: Int)"
+        ):
             check_bounds(node_index, len(self._nodes))
             return self._nodes[node_index].bit_mask
 
@@ -253,7 +255,9 @@ struct BitMaskGraph[
         Returns:
             The value stored in the node.
         """
-        with Zone(function_name="BitMaskGraph.__getitem__(node_index: Int)"):
+        with FineZone(
+            function_name="BitMaskGraph.__getitem__(node_index: Int)"
+        ):
             check_bounds(node_index, len(self._nodes))
             return self._nodes[node_index].value
 
@@ -267,6 +271,6 @@ struct BitMaskGraph[
         Returns:
             True if the node's value differs from `null_value`, False otherwise.
         """
-        with Zone(function_name="BitMaskGraph.has_value(node_index: Int)"):
+        with FineZone(function_name="BitMaskGraph.has_value(node_index: Int)"):
             check_bounds(node_index, len(self._nodes))
             return self[node_index] != materialize[Self.null_value]()

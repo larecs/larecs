@@ -1,7 +1,7 @@
 from std.memory import unsafe_uninit_copy_n
 from std.collections.check_bounds import check_bounds
 
-from tracy import Zone
+from ._zones import FineZone
 
 
 # FIXME: This is needed because of this [bug](https://github.com/modular/modular/issues/6636). Remove this and use `check_bounds` directly once the bug is fixed.
@@ -13,7 +13,7 @@ def _assert_index_in_bounds(index: Int, size: Int):
         index: The candidate index to validate.
         size: The logical number of available elements.
     """
-    with Zone(
+    with FineZone(
         function_name="_utils._assert_index_in_bounds(index: Int, size: Int)"
     ):
         # assert 0 <= index and index < size, "Index out of bounds"
@@ -32,7 +32,7 @@ def assert_unreachable[
     Args:
         reason: An optional value describing why this point was reached.
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "_utils.assert_unreachable[MsgType: Writable & Movable](reason:"
             " Optional[MsgType])"
@@ -66,7 +66,7 @@ def concatenate_arrays[
     Returns:
         The output array containing `a` followed by `b`.
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "_utils.concatenate_arrays[ElementType: Copyable, a_size: Int,"
             " b_size: Int](a: Array[ElementType, a_size], b: Array[ElementType,"
@@ -95,7 +95,7 @@ def _assert_range_in_bounds(start_index: Int, count: Int, size: Int):
         count: The number of elements in the range.
         size: The logical number of available elements.
     """
-    with Zone(
+    with FineZone(
         function_name=(
             "_utils._assert_range_in_bounds(start_index: Int, count: Int, size:"
             " Int)"

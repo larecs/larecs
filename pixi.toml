@@ -17,6 +17,7 @@ preview = ["pixi-build"]
 
 [tasks]
 performance-check = "python scripts/check_performance.py"
+zone-overhead = "python scripts/zone_overhead.py"
 core-benchmarks = "mojo run -I src benchmark/core_smoke.mojo"
 spatial-benchmarks = "mojo run -I src benchmark/spatial_smoke.mojo"
 spatial-performance-check = "python scripts/check_spatial_performance.py"
@@ -36,7 +37,7 @@ plots = { cmd = "cd benchmark/plots && pixi run plots" }
 
 [dependencies]
 mojo = ">=1.0.0,<1.1.0"
-mojo-tracy = ">=1.1.0,<2"
+mojo-tracy = ">=1.3.0,<2"
 max = ">=26.5.0,<27"
 
 [feature.test.dependencies]

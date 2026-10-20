@@ -1,4 +1,4 @@
-from tracy import Zone
+from ._zones import FineZone
 
 
 @fieldwise_init
@@ -39,7 +39,7 @@ struct InternalError(Equatable, ImplicitlyCopyable, Writable):
         Args:
             writer: The writer to write to.
         """
-        with Zone(
+        with FineZone(
             function_name="InternalError.write_to(mut writer: Some[Writer])"
         ):
             writer.write("InternalError.", self.variant_name, ": ", self.msg)

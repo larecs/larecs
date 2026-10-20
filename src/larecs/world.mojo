@@ -8,7 +8,7 @@ from std.sys import has_accelerator
 from std.os import abort
 from .execution import ThreadedExecutionConfig
 
-from tracy import Zone
+from ._zones import FineZone
 
 from max.gpu.host import DeviceContext
 
@@ -96,7 +96,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
             execution_config: Scheduling policy; kernels remain sequential unless
                 explicitly invoked with ``threaded=True``.
         """
-        with Zone(function_name="World.__init__()"):
+        with FineZone(function_name="World.__init__()"):
             self.storage = Self.HostStorage()
             self._threaded_config = execution_config.copy()
             self._execution_active = False
@@ -262,7 +262,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         Returns:
             The number of entities in the world.
         """
-        with Zone(function_name="World.__len__(out size: Int)"):
+        with FineZone(function_name="World.__len__(out size: Int)"):
             size = 0
             for archetype in self.storage._archetypes:
                 size += len(archetype)
@@ -284,7 +284,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
         Returns:
             A bitmask filter representing the query result.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "World.filter[filter: Filter]() ->"
                 " BitMaskFilter[len(filter._exclude) > 0 or"

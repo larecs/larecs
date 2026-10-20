@@ -9,6 +9,7 @@ from max.gpu.host import DeviceBuffer, DeviceContext, DevicePointer
 from std.sys import size_of
 
 from tracy import Zone
+from ._zones import FineZone
 
 from .component import ComponentType, ComponentManager
 from .debug_utils import debug_warn
@@ -99,7 +100,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             device_context: The device context to allocate columns on.
             length: The number of rows each column should be sized for.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "DeviceComponentStorage.__init__(var device_context:"
                 " DeviceContext, length: Int)"
@@ -119,7 +120,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         Args:
             copy: The device storage to copy.
         """
-        with Zone(
+        with FineZone(
             function_name="DeviceComponentStorage.__init__(*, copy: Self)"
         ):
             self._columns = Self.Columns(fill=None)
@@ -231,7 +232,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         Returns:
             ``True`` when the component has an initialized device column.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "DeviceComponentStorage.has_component[T: ComponentType]()"
             )
@@ -243,7 +244,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             return Bool(self._columns[id])
 
     def _create_column[T: ComponentType](mut self) raises:
-        with Zone(
+        with FineZone(
             function_name=(
                 "DeviceComponentStorage._create_column[T: ComponentType]()"
             )
@@ -257,7 +258,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
     def _copy_column[
         T: ComponentType
     ](mut self, src: DeviceBuffer[DType.uint8]) raises:
-        with Zone(
+        with FineZone(
             function_name=(
                 "DeviceComponentStorage._copy_column[T: ComponentType](src:"
                 " DeviceBuffer[DType.uint8])"
@@ -386,7 +387,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: If allocating or growing the device buffer fails.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "DeviceComponentStorage.ensure_column[T:"
                 " ComponentType](length: Int)"
@@ -564,7 +565,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         Raises:
             Error: If the component's column is not initialized.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "DeviceComponentStorage.get_device_ptr[T: ComponentType]()"
             )
@@ -612,7 +613,7 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
         Args:
             device_context: The device context to allocate buffers on.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "DeviceResourceStorage.__init__(var device_context:"
                 " DeviceContext)"
@@ -706,7 +707,7 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
         Returns:
             A device pointer to the uploaded resource's bytes.
         """
-        with Zone(
+        with FineZone(
             function_name=(
                 "DeviceResourceStorage.get_device_ptr[T: ResourceType]()"
             )
