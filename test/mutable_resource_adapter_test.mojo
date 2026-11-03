@@ -3,6 +3,13 @@
 
 """Mutable adapted resources on the device, compared with host execution."""
 
+from fixtures.finalization import (
+    pair_world,
+    write_pair,
+    check_pair,
+    seed_pair,
+    preserve_pair,
+)
 from std.sys import has_accelerator
 from std.testing import assert_equal, assert_true, assert_raises, TestSuite
 from larecs import World, SystemContext, Filter
@@ -185,5 +192,57 @@ def test_device_selection() raises:
         _skip("test_device_selection")
 
 
+def test_device_all_finalizers_run_after_error() raises:
+    """Publishes both outputs and retains the first of two finalizer failures.
+
+    Raises:
+        Error: If device publication, finalization, or cleanup differs.
+    """
+    comptime if has_accelerator():
+        var world = pair_world(32)
+        world.reuse_device_copies(True)
+        var context = SystemContext(world)
+        for run in range(2):
+            with assert_raises(
+                contains="Scatter capacity exceeded: 31 dropped"
+            ):
+                context.run[write_pair, on_device=True]()
+            check_pair(world, 32, run + 1)
+        with context.add_entities(Int32(7), count=8) as selection:
+            with assert_raises(contains="Scatter capacity exceeded: 7 dropped"):
+                selection.run[write_pair, on_device=True]()
+        check_pair(world, 8, 3)
+    else:
+        _skip("test_device_all_finalizers_run_after_error")
+
+
+def test_device_empty_finalizers_run_after_error() raises:
+    """Empty device runs complete all adapters without launching device work.
+
+    Raises:
+        Error: If empty completion skips a finalizer or changes the first error.
+    """
+    comptime if has_accelerator():
+        var world = pair_world(0)
+        seed_pair(world)
+        var context = SystemContext(world)
+        with assert_raises(contains="Scatter capacity exceeded: 31 dropped"):
+            context.run[preserve_pair, on_device=True]()
+        check_pair(world, 32, 1)
+        assert_equal(world._last_device_upload.bytes, 0)
+        var selection = context._empty_selection()
+        with assert_raises(contains="Scatter capacity exceeded: 31 dropped"):
+            selection.run[preserve_pair, on_device=True]()
+        selection^.release()
+        check_pair(world, 32, 2)
+    else:
+        _skip("test_device_empty_finalizers_run_after_error")
+
+
 def main() raises:
+    """Runs the mutable adapted resource regression suite.
+
+    Raises:
+        Error: If a test assertion or resource operation fails.
+    """
     TestSuite.discover_tests[__functions_in_module()]().run()

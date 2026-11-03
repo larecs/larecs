@@ -618,8 +618,9 @@ trait ResourceAdapter:
 
         Called once per successful mutable invocation on either target, after
         all kernel work completed and device outputs were published, including
-        invocations without matching rows. Raising reports an error but keeps
-        published outputs.
+        invocations without matching rows. Every required finalizer runs even
+        when another finalizer raises. Raising keeps published outputs; the
+        invocation reports the first finalizer error after all finalizers finish.
 
         Parameters:
             access: `WRITE` or `READ_WRITE`.

@@ -1,5 +1,13 @@
 """Mutable adapted resources on sequential and threaded host execution."""
 
+from fixtures.finalization import (
+    pair_world,
+    write_pair,
+    check_pair,
+    seed_pair,
+    preserve_pair,
+    pair_spec,
+)
 from std.reflection import reflect
 from std.testing import (
     assert_equal,
@@ -543,5 +551,75 @@ def test_invocation_cleanup() raises:
     assert_equal(len(world.resources._leases), 0)
 
 
+def test_all_finalizers_run_after_error() raises:
+    """Retains the first failure while completing later sequential/threaded output.
+
+    Raises:
+        Error: If either finalizer is skipped, repeated, or masks the first error.
+    """
+    comptime for mode in range(2):
+        comptime threaded = mode == 1
+        var world = pair_world(32)
+        var context = SystemContext(world)
+        for run in range(2):
+            with assert_raises(
+                contains="Scatter capacity exceeded: 31 dropped"
+            ):
+                context.run[write_pair, threaded=threaded]()
+            check_pair(world, 32, run + 1)
+        # Reuse after a failure also verifies that invocation leases ended.
+        with context.add_entities(Int32(7), count=8) as selection:
+            with assert_raises(contains="Scatter capacity exceeded: 7 dropped"):
+                selection.run[write_pair, threaded=threaded]()
+        check_pair(world, 8, 3)
+
+
+def test_closure_finalizers_run_after_error() raises:
+    """The value-taking host entry point also completes all adapters once.
+
+    Raises:
+        Error: If closure finalization or first-error propagation differs.
+    """
+    var world = pair_world(32)
+    var context = SystemContext(world)
+    var calls = 0
+
+    def write(
+        rows: KernelContext[Filter().read[Int32](), pair_spec]
+    ) {mut calls}:
+        """Writes both grids and records invocation count.
+
+        Args:
+            rows: Matching inputs and both mutable resource views.
+        """
+        calls += 1
+        write_pair(rows)
+
+    with assert_raises(contains="Scatter capacity exceeded: 31 dropped"):
+        context.run(write)
+    assert_equal(calls, 1)
+    check_pair(world, 32, 1)
+
+
+def test_empty_finalizers_run_after_error() raises:
+    """Empty sequential and threaded runs still complete both preserved outputs.
+
+    Raises:
+        Error: If an empty run skips finalization or changes the first error.
+    """
+    comptime for mode in range(2):
+        var world = pair_world(0)
+        seed_pair(world)
+        var context = SystemContext(world)
+        with assert_raises(contains="Scatter capacity exceeded: 31 dropped"):
+            context.run[preserve_pair, threaded=mode == 1]()
+        check_pair(world, 32, 1)
+
+
 def main() raises:
+    """Runs the mutable adapted resource regression suite.
+
+    Raises:
+        Error: If a test assertion or resource operation fails.
+    """
     TestSuite.discover_tests[__functions_in_module()]().run()

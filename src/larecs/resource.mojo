@@ -947,22 +947,30 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
         self.finalize()
 
     def finalize(mut self) raises:
-        """Completes mutable adapted results after execution and publication.
+        """Completes every mutable adapted result after execution and publication.
 
         Runs once per invocation, after every kernel range or worker finished
-        and staged device outputs were published.
+        and staged device outputs were published. Every finalizer runs even if
+        an earlier adapter fails; the first error is raised after the loop.
 
         Raises:
-            Error: If an adapter reports a result failure; outputs stay published.
+            Error: The first adapter result failure; outputs stay published.
         """
+        var first_error = Optional[Error]()
         comptime for i in range(len(Self.spec)):
             comptime T = Self.spec.ResourceTypes[i]
             comptime if Self._mutable_adapted[T]:
                 comptime assert conforms_to(T, DevicePassableResource)
                 ref source = self._storage[]._get_bound[T]()
-                T.Adapter.finalize[Self.spec.access[T]](
-                    Pointer(to=source).unsafe_bitcast[T.Adapter.Source]()[]
-                )
+                try:
+                    T.Adapter.finalize[Self.spec.access[T]](
+                        Pointer(to=source).unsafe_bitcast[T.Adapter.Source]()[]
+                    )
+                except error:
+                    if not first_error:
+                        first_error = error^
+        if first_error:
+            raise first_error.value()
 
     def validate_device(self, context: DeviceContext) raises:
         """Checks every existing cache's context before any queue work.
