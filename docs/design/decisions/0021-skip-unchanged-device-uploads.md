@@ -7,11 +7,14 @@ status_notes: |
   Resource revisions come from a counter owned by the resource storage, which
   travels with its device copy records. Column revisions are store-local and
   paired with a store incarnation from a zero-based host-storage counter.
-  Larecs expects one host and one device storage per world; host-storage
-  copies get a new storage identity, and device records made for another
-  identity are discarded. The non-advancing component accessor is
-  `world.storage.read[T](entity)`, next to `get`. Device tests pass on NVIDIA
-  A100 and Apple M4; AMD is compile-checked only. Amends the unconditional-upload rule of
+  Fresh host storages and copies allocate distinct shared identity tokens;
+  moves preserve identity. Device storage retains the token while its records
+  exist, preventing address reuse even after host replacement. Construction
+  needs no global counter or lock, and records for another token are discarded.
+  The non-advancing component accessor is `world.storage.read[T](entity)`, next
+  to `get`. Device tests pass on NVIDIA A100 and Apple M4; the storage replacement
+  and mutable row access regressions run on Apple M4 (Metal). AMD is
+  compile-checked only. Amends the unconditional-upload rule of
   decisions 0002 and 0018 for worlds that opt in; eager write-back is unchanged.
 ---
 
@@ -88,7 +91,7 @@ The following conservatively advance revisions:
 | Item | Advancing operations |
 | --- | --- |
 | Resource | `add`, `set` and insert-on-`set`, whole-instance replacement, any `get` through mutable storage, and host or threaded runs declaring `write` or `read_write`. `remove` drops the device copy. Any later resource write access for host runs, such as the partitioned write proposed in decision 0020, advances it too. |
-| Component column of a store | Host, threaded, and selection runs writing `T`, for the stores they matched; mutable entity access (`get`, mutable query items) for the accessed types of that store. |
+| Component column of a store | Host, threaded, and selection runs writing `T`, for the stores they matched; mutable entity access (`get`, row `get`/`unsafe_get`, including rows returned by batch replacement) for the accessed types of that store. |
 | All columns of a store | Structural changes, spatial reordering, and partition moves that change row positions; creation of a store, including reuse of a reclaimed index. |
 
 New non-advancing accessors mirror the access mode names:
