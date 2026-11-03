@@ -1642,7 +1642,6 @@ struct Archetype[
                 idx,
             )
 
-    @__unsafe_nested_origins_read_only
     @always_inline
     def get_component[
         T: ComponentType
@@ -1659,7 +1658,8 @@ struct Archetype[
             LarecsError: If the component is not present.
 
         Returns:
-            A reference to the component.
+            A reference to the component. Mutable access advances its device
+            revision; immutable access preserves cached copies.
         """
         with Zone(
             function_name=(
@@ -1668,6 +1668,13 @@ struct Archetype[
         ):
             _assert_index_in_bounds(entity_idx, self._storage._length)
 
+            comptime if origin_of(self).mut:
+                # Ref-polymorphic methods require an explicit mutable pointer
+                # after the compile-time origin check.
+                ref storage = Pointer(to=self._storage).unsafe_mut_cast[
+                    True
+                ]()[]
+                storage._touch_column(storage.component_manager.get_id[T]())
             return self._storage.get_component_ptr[T]()[
                 unsafe_offset=entity_idx
             ]

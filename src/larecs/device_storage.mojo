@@ -7,6 +7,7 @@ resources for a kernel invocation.
 
 from max.gpu.host import DeviceBuffer, DeviceContext, DevicePointer
 from std.sys import size_of
+from std.memory import ArcPointer
 
 from tracy import Zone
 
@@ -80,7 +81,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
     """
     var _reuse: Bool
     """Whether device runs may skip uploading unchanged segments."""
-    var _host_id: UInt64
+    var _host_id: Optional[ArcPointer[UInt8]]
     """Identity of the host storage the records describe."""
     var _max_grid_dim: Int
     """Maximum number of blocks a kernel launch on this device should use.
@@ -111,7 +112,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             self._length = length
             self._records = Self._empty_records()
             self._reuse = False
-            self._host_id = 0
+            self._host_id = None
 
     def __init__(out self, *, copy: Self):
         """Copies the device storage from another instance.
@@ -128,7 +129,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             self._max_grid_dim = copy._max_grid_dim
             self._records = Self._empty_records()
             self._reuse = copy._reuse
-            self._host_id = copy._host_id
+            self._host_id = None
 
             comptime for i in range(len(Self.ComponentTypes)):
                 comptime T = Self.ComponentTypes[i]
@@ -183,15 +184,18 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         for i in range(len(self._records)):
             self._records[i].clear()
 
-    def _check_host(mut self, host_id: UInt64):
+    def _check_host(mut self, host_id: ArcPointer[UInt8]):
         """Discards all records if they describe a different host storage.
 
         Args:
             host_id: Identity of the world's current host storage.
         """
-        if self._host_id != host_id:
+        if (
+            self._host_id is None
+            or self._host_id.unsafe_value().unsafe_ptr() != host_id.unsafe_ptr()
+        ):
             self._invalidate_records()
-            self._host_id = host_id
+            self._host_id = host_id.copy()
 
     def _take_records[T: ComponentType](mut self) -> List[_Segment]:
         """Removes and returns the records of one column before queueing work.
