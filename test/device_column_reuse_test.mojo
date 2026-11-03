@@ -194,7 +194,9 @@ def test_storage_copies_get_a_new_identity() raises:
     var world = _world()
     _ = world.storage.add_entity(Int32(0))
     var copied = world.copy()
-    assert_true(copied.storage._id != world.storage._id)
+    assert_true(
+        copied.storage._id.unsafe_ptr() != world.storage._id.unsafe_ptr()
+    )
     for index in range(len(world.storage._archetypes)):
         assert_true(world.storage._archetypes[index]._storage._incarnation != 0)
 
@@ -474,9 +476,9 @@ def test_selection_segments() raises:
 
         assert_equal(_run_selected(world, store), selected)
         assert_equal(_run_selected(world, store), 0)
-        # A write to an unselected row conservatively changes the store.
+        # A write to an unselected row changes only that column's revision.
         world.storage.set(Entity(4), Float32(1))
-        assert_equal(_run_selected(world, store), selected)
+        assert_equal(_run_selected(world, store), 3 * size_of[Float32]())
         assert_equal(world.storage.read[Int32](Entity(1)), 3)
         assert_equal(world.storage.read[Int32](Entity(4)), 0)
         assert_equal(world.storage.read[Int32](Entity(5)), 3)
@@ -502,6 +504,133 @@ def test_world_copies_upload_columns_again() raises:
         # A copy replacing the host storage has a new identity.
         world.storage = world.storage.copy()
         assert_equal(_run(world), full)
+        assert_equal(_run(world), 0)
+
+
+def test_fresh_and_sibling_storage_identities() raises:
+    """Distinguishes fresh storages and sibling copies with equal revisions.
+
+    Raises:
+        Error: If independent storage lifecycles share an identity.
+    """
+    var first = _world()
+    var second = _world()
+    var left = first.storage.copy()
+    var right = first.storage.copy()
+    assert_true(
+        first.storage._id.unsafe_ptr() != second.storage._id.unsafe_ptr()
+    )
+    assert_true(left._id.unsafe_ptr() != right._id.unsafe_ptr())
+    assert_true(left._id.unsafe_ptr() != first.storage._id.unsafe_ptr())
+    left.set(Entity(1), Float32(4))
+    right.set(Entity(1), Float32(7))
+    assert_equal(
+        left._archetypes[1]._storage._column_revision(1),
+        right._archetypes[1]._storage._column_revision(1),
+    )
+
+
+def test_replacement_row_access_revisions() raises:
+    """Tracks mutable row getters while preserving read-only queries.
+
+    Raises:
+        Error: If a getter misses invalidation or read-only access invalidates.
+    """
+    var world = _world()
+    var before = world.storage._archetypes[1]._storage._column_revision(1)
+    for row in world.storage.query[Filter().include[Float32]()]():
+        _ = row.get[Float32]()
+        _ = row.unsafe_get[Float32]()
+    assert_equal(
+        world.storage._archetypes[1]._storage._column_revision(1), before
+    )
+    for row in world.storage.replace[Int32]().by[
+        filter=Filter().include[Int32, Float32]()
+    ](Int32(2)):
+        row.unsafe_get[Float32]() = 4
+    assert_true(
+        world.storage._archetypes[1]._storage._column_revision(1) > before
+    )
+    before = world.storage._archetypes[1]._storage._column_revision(1)
+    var ints = world.storage._archetypes[1]._storage._column_revision(0)
+    var accessor = world.storage._archetypes[1].get_row_accessor[
+        Filter().include[Float32]()
+    ](0)
+    accessor.get[Float32]() = 8
+    assert_true(
+        world.storage._archetypes[1]._storage._column_revision(1) > before
+    )
+    assert_equal(
+        world.storage._archetypes[1]._storage._column_revision(0), ints
+    )
+    before = world.storage._archetypes[1]._storage._column_revision(1)
+    var iterator = world.storage.add_entities(Int32(0), Float32(1), count=1)
+    for row in iterator^:
+        row.unsafe_get[Float32]() = 7
+    assert_true(
+        world.storage._archetypes[1]._storage._column_revision(1) > before
+    )
+
+
+def test_fresh_storage_replacement_refreshes_columns() raises:
+    """Replaces an uploaded storage with equal-revision fresh contents.
+
+    Raises:
+        Error: If the device reads the previous storage's column.
+    """
+    comptime if has_accelerator():
+        var world = _world()
+        var other = TestWorld.HostStorage()
+        for _ in range(rows):
+            _ = other.add_entity(Int32(0), Float32(7))
+        world.reuse_device_copies(True)
+        _ = _run(world)
+        world.storage = other^
+        assert_true(_run(world) > 0)
+        _check_ints(world, 7)
+        assert_equal(_run(world), 0)
+
+
+def test_sibling_storage_replacement_refreshes_columns() raises:
+    """Replaces sibling copies whose revisions match but float values differ.
+
+    Raises:
+        Error: If a sibling's cached values survive replacement.
+    """
+    comptime if has_accelerator():
+        var world = _world()
+        var left = world.storage.copy()
+        var right = world.storage.copy()
+        for i in range(1, rows + 1):
+            left.set(Entity(i), Float32(4))
+            right.set(Entity(i), Float32(7))
+        world.reuse_device_copies(True)
+        world.storage = left^
+        _ = _run(world)
+        world.storage = right^
+        assert_true(_run(world) > 0)
+        _check_ints(world, 7)
+        assert_equal(_run(world), 0)
+
+
+def test_replacement_iterator_refreshes_other_column() raises:
+    """Uploads edits to B through rows returned by a same-archetype A replacement.
+
+    Raises:
+        Error: If the next device run reads the previous B values.
+    """
+    comptime if has_accelerator():
+        var world = _world()
+        world.reuse_device_copies(True)
+        _ = _run(world)
+        for row in world.storage.replace[Int32]().by[
+            filter=Filter().include[Int32, Float32]()
+        ](Int32(2)):
+            row.unsafe_get[Float32]() = 4
+        assert_equal(
+            _run(world), rows * (size_of[Int32]() + size_of[Float32]())
+        )
+        _check_ints(world, 6)
         assert_equal(_run(world), 0)
 
 

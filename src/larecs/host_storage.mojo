@@ -34,6 +34,7 @@ from .types import ComponentId
 from ._utils import concatenate_arrays, assert_unreachable
 
 from std.sys import size_of
+from std.memory import ArcPointer
 
 from tracy import Zone
 
@@ -194,11 +195,12 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     var _archetype_map: BitMaskGraph[-1]
     """Graph mapping component masks to canonical logical staging indices."""
 
-    var _id: UInt64
-    """Identity of this storage; copies get a different one (decision 0021).
+    var _id: ArcPointer[UInt8]
+    """Allocation identity of this storage (decision 0021).
 
-    Device column records only match the storage identity they were made
-    with, so a copy replacing `world.storage` never matches old records.
+    Fresh instances and copies allocate distinct tokens. Device storage retains
+    the token while records can reference it, preventing allocator address reuse.
+    Moves preserve it; no process-global counter or construction lock is needed.
     """
     var _clock: UInt64
     """Last issued store incarnation (decision 0021)."""
@@ -222,7 +224,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             self._archetype_map = BitMaskGraph[-1](0)
             self._archetypes = [Self.Archetype()]
             self._locks = LockManager()
-            self._id = 0
+            self._id = ArcPointer(UInt8(0))
             self._clock = 0
             self._stamp_store(0)
 
@@ -245,7 +247,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         self._entity_locations = copy._entity_locations.copy()
         self._archetypes = copy._archetypes.copy()
         self._archetype_map = copy._archetype_map.copy()
-        self._id = copy._id + 1
+        self._id = ArcPointer(UInt8(0))
         self._clock = copy._clock
 
     @always_inline
@@ -1048,9 +1050,6 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 )
 
             self._mark_spatial_write[T](entity)
-            self._archetypes.unsafe_get(
-                entity_loc.archetype_index
-            )._storage._touch_column(Self.component_manager.get_id[T]())
             return self._archetypes.unsafe_get(
                 entity_loc.archetype_index
             ).get_component[T](entity_loc.entity_index)
