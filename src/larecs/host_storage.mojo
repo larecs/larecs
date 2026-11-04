@@ -1718,6 +1718,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         var entity_loc = self._entity_locations[entity.get_id()]
         var old_archetype_idx = entity_loc.archetype_index
         var old_mask = self._archetypes[old_archetype_idx].get_mask().copy()
+        var migration = _ComponentMigration(
+            old_mask, BitMask(runtime_remove_ids), BitMask(runtime_add_ids)
+        )
 
         comptime if rem_size:
             var remove_mask = BitMask(runtime_remove_ids)
@@ -1779,15 +1782,15 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             Pointer(to=old_archetype._storage).as_unsafe_any_origin(),
             1,
             entity_loc.entity_index,
+            excluded_components=migration.removed | migration.replaced,
         )
         comptime for i in range(add_size):
             comptime T = Ts[i]
             new_archetype.init_components[T](new_row, add_components[i].copy())
 
-        var destination_mask = new_archetype.get_mask().copy()
         var swapped = (
             old_archetype.unsafe_remove_after_moving_shared_components(
-                entity_loc.entity_index, destination_mask
+                entity_loc.entity_index, migration.retained
             )
         )
         if swapped:

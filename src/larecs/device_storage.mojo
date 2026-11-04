@@ -595,8 +595,8 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             Error: If the range is invalid or the transfer fails.
         """
         comptime id = Self.component_manager.get_id[T]()
-        var count = length if length >= 0 else self._length - offset
-        if offset < 0 or count < 0 or count > self._length - offset:
+        var count = length if length >= 0 else self._lengths[id] - offset
+        if offset < 0 or count < 0 or count > self._lengths[id] - offset:
             raise Error("Invalid staged component download range")
         frame.download(
             self._columns[id]

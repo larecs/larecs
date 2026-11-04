@@ -126,7 +126,7 @@ def measure[mode: Int](mut world: ManyWorld) raises:
         for batch in range(8):
             var start = perf_counter_ns()
             for _ in range(iterations):
-                context.run[increment, on_gpu=(mode == 3)]()
+                context.run[increment, on_device=(mode == 3)]()
             var elapsed = perf_counter_ns() - start
             if batch > 0:
                 print(mode, Float64(elapsed) / Float64(iterations))

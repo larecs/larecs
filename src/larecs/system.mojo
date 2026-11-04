@@ -1880,9 +1880,9 @@ struct SystemContext[
                         device_storage._device_context, frame
                     )
                     var matched_ranges = List[EntityRange](
-                        capacity=len(matching_archetypes._archetype_indices)
+                        capacity=len(matching_archetypes._archetype_indices[])
                     )
-                    for index in matching_archetypes._archetype_indices:
+                    for index in matching_archetypes._archetype_indices[]:
                         matched_ranges.append(
                             EntityRange(
                                 index,
