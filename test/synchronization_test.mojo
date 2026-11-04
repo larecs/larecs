@@ -134,7 +134,7 @@ def test_shared_reads_and_exclusive_writes() raises:
 
 def _raise_with_guard[
     T: Movable & Deinitable, origin: Origin
-](view: SyncView[True, T, origin]) raises:
+](view: SyncView[True, T, origin]) raises where origin.mut:
     """Raises while an acquired guard is live.
 
     Parameters:

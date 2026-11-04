@@ -79,6 +79,35 @@ def get_random_1_true_bitmasks(size: Int, out vals: List[BitMask]):
 # ------ functions ------
 
 
+def check_mask_boundary[N: Int]() raises where N >= 8 and N.is_power_of_two():
+    """Checks boundary bits in a generic constrained mask.
+
+    Parameters:
+        N: Power-of-two bit count of at least eight.
+
+    Raises:
+        Error: If a boundary bit or set-bit count is incorrect.
+    """
+    var mask = _BitMask[N](0, N - 1)
+    assert_equal(mask.total_bits_set(), 2)
+    assert_true(mask.get(0))
+    assert_true(mask.get(N - 1))
+    var indices = mask.get_indices()
+    assert_equal(len(indices), 2)
+    assert_equal(indices.__next__(), 0)
+    assert_equal(indices.__next__(), N - 1)
+
+
+def test_bitmask_size_boundaries() raises:
+    """Exercises the minimum and a larger-than-default mask.
+
+    Raises:
+        Error: If a supported boundary size behaves incorrectly.
+    """
+    check_mask_boundary[8]()
+    check_mask_boundary[512]()
+
+
 def test_bit_mask() raises:
     var mask = BitMask(1, 2, 13, 27)
 
