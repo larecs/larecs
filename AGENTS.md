@@ -18,8 +18,9 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 Use the `pr-description` skill to write or revise a description; `.github/pull_request_template.md` holds the skeleton.
 
 - Open with the problem or motivation in one or two sentences, then the change.
-- Describe what callers observe: new or renamed APIs, opt-in flags, newly rejected inputs, and preserved invariants. Add implementation details only where reviewers need them to understand the behavior.
-- Use bullets, or a table mapping issues to changes, only when the PR has several independent parts.
+- Under `## Features`, list each implemented feature as a bullet with a short description of what callers observe: opt-in flags, newly rejected inputs, preserved invariants. Add implementation details only where reviewers need them to understand the behavior.
+- Under `## API changes`, list each changed user-facing API with a short reason.
+- Delete template sections that would be empty. When a PR closes several issues, a table mapping issues to changes may replace the feature list.
 - For breaking changes, add a `## Breaking change` section that states what callers must change and links the design decision records that document it.
 - End with one `Closes #N` line per resolved issue.
 - Never include validation: test runs or counts, hardware, sanitizer or doctest results, CI or review-bot status, or what remains untested.
