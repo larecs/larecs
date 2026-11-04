@@ -96,8 +96,19 @@ is consumed or explicitly released inside the block.
 > An empty selection is still locked and follows the same rule.
 
 The lower-level `HostStorage.add_entities` remains available for setup code,
-but its mutation-result iterator workflow is deprecated for system logic. Use
-a selection kernel instead of iterating mutation results.
+and returns `iteration.LockedEntityRange` (also named by the
+`HostStorage.Iterator` type alias). It borrows storage and its lock manager,
+records exact bounded batch rows, and supports `len`, `Bool`, iteration, and
+mutable `unsafe_get` access. Copies share membership metadata but retain
+independent cursor positions and structural locks; moves transfer the existing
+lock. Exhaustion, including an empty result, retains the lock until destruction.
+Use `SystemContext.add_entities` and a selection kernel for system logic; a
+storage range has no `.run`, `.add`, `.remove`, or `.release` method.
+
+The beta concrete return type `LockedWorldEntityIterator` was renamed to
+`LockedEntityRange`; explicit `HostStorage.Iterator` specializations use
+`has_ranges=True` instead of `has_start_indices=True`. Inferred storage loops
+need no change. See [decision 0022](../../design/decisions/0022-locked-storage-ranges.md).
 
 ## Batch removal
 

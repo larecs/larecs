@@ -274,4 +274,5 @@ captures, disjoint offsets, empty ranges, and exclusion/exclusive filters.
 The [focused comparison](../../src/guide/benchmarks.md#shared-host-execution-comparison)
 records paired baseline/current measurements and their limitations.
 This implements the existing execution contract without changing the API;
-batch mutation consolidation and query iterator migration remain on the roadmap.
+the storage range and query migration is specified by
+[decision 0022](0022-locked-storage-ranges.md).

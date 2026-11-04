@@ -53,6 +53,11 @@
 
 ### Changed
 
+- Replace mutation-result start-index iteration with bounded `LockedEntityRange`
+  storage adapters, preserving read-only queries, independent cursor/lock copies,
+  and shared immutable membership metadata. Use `SystemContext` selections for
+  batch kernel execution; explicit iterator specializations use `has_ranges`.
+
 - Stage high-level device transfers in owned buffers and publish downloads only
   after successful completion. Drain failures; reject further execution if
   completion cannot be confirmed. Reject resource changes during active leases.
