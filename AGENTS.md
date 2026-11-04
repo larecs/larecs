@@ -13,6 +13,11 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 - **Archetypes**: Efficient storage for entities with the same component composition
 - **Queries**: Fast iteration over entities matching specific criteria
 
+## Pull Request Descriptions
+
+- Keep PR bodies focused on the problem, behavior changes, relevant implementation details, and validation.
+- Do not add PR metadata to body text: stack or base relationships, branch names, commit hashes or counts, review-range instructions, or narratives about what other PRs supply. Use the hosting platform's metadata fields or stack tooling for those details.
+
 ## Build/Test Commands
 
 - Run all tests: `pixi run tests test`
