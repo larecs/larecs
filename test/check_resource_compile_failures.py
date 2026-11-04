@@ -2,8 +2,9 @@
 
 Fixtures use .mojo.in so mogo-tester never discovers invalid Mojo programs.
 Emit LLVM IR to test compilation without depending on the system linker.
-Each fixture must compile with add replaced by set (which permits repeated
-types), then fail with the specific add diagnostic in its original form.
+Resource-add fixtures must compile with add replaced by set (which permits
+repeated types), then fail with the specific add diagnostic in their original
+form. Shared type-list fixtures also require a positive compilation control.
 """
 
 from pathlib import Path
@@ -46,6 +47,59 @@ class ResourceCompileFailures(unittest.TestCase):
                         if reject:
                             self.assertNotEqual(result.returncode, 0, result.stderr)
                             self.assertIn(DIAGNOSTIC, result.stderr)
+                        else:
+                            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_type_list_constraints(self):
+        """Check shared constraints with a valid control for every rejection."""
+        cases = [
+            (
+                "type_list_component_ids.mojo.in", {"@TYPES@": "Int, Float32"},
+                "@TYPES@", "Int, Float32, Int",
+                "Duplicate component types in get_id_arr are not allowed",
+            ),
+            (
+                "type_list_component_ids.mojo.in", {"@TYPES@": "Int, Float32"},
+                "@TYPES@", "Int, String", "Component type not in component manager",
+            ),
+            (
+                "type_list_gpu.mojo.in",
+                {"@PAYLOAD@": "Int32", "@FILTER@": "Filter().include[Value]()",
+                 "@RESOURCES@": "Resources[]()",
+                 "@CHECK@": "constrain_device_safe_components[Value]()",
+                 "@DIAGNOSTIC@": "DeviceComponentType"},
+                "@PAYLOAD@", "String", "DeviceComponentType",
+            ),
+            (
+                "type_list_gpu.mojo.in",
+                {"@PAYLOAD@": "Int32", "@FILTER@": "Filter().include[Int32]()",
+                 "@RESOURCES@": "Resources[Value]()",
+                 "@CHECK@": "constrain_device_safe_resources[Value]()",
+                 "@DIAGNOSTIC@": "DeviceResourceType"},
+                "@PAYLOAD@", "String", "DeviceResourceType",
+            ),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "fixture.mojo"
+            output = Path(directory) / "fixture.ll"
+            for fixture, replacements, key, invalid, diagnostic in cases:
+                for reject in (False, True):
+                    with self.subTest(
+                        fixture=fixture, diagnostic=diagnostic, reject=reject,
+                    ):
+                        code = (ROOT / "test/compile_fail" / fixture).read_text()
+                        for token, value in replacements.items():
+                            replacement = invalid if reject and token == key else value
+                            code = code.replace(token, replacement)
+                        source.write_text(code)
+                        result = subprocess.run(
+                            ["mojo", "build", "--emit", "llvm", "-I",
+                             str(ROOT / "src"), str(source), "-o", str(output)],
+                            capture_output=True, text=True, timeout=120,
+                        )
+                        if reject:
+                            self.assertNotEqual(result.returncode, 0, result.stderr)
+                            self.assertIn(diagnostic, result.stderr)
                         else:
                             self.assertEqual(result.returncode, 0, result.stderr)
 
