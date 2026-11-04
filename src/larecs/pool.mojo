@@ -17,10 +17,18 @@ struct EntityPool(Copyable, Movable, Sized):
     """EntityPool is an implementation using implicit linked lists.
 
     Implements https:#skypjack.github.io/2019-05-06-ecs-baf-part-3/
+
+    Per-ID generations survive reset. Recycling or resetting advances the
+    affected generations modulo 2**32; an ancient handle can alias a new one
+    after 2**32 advances of its ID. Handles are local to a pool, and copying a
+    pool creates an independent snapshot with the same handles and history.
+    Copying takes O(high-water mark) time and storage, including retained IDs.
     """
 
     var _entities: List[Entity]
-    """Entity storage and free-list links for recycled IDs."""
+    """Generation history and free-list links, retained across resets."""
+    var _length: Int
+    """Active prefix length, including the reserved zero entity."""
     var _next: EntityId
     """Next recycled entity ID or fresh allocation index."""
     var _available: Int
@@ -32,6 +40,7 @@ struct EntityPool(Copyable, Movable, Sized):
         with Zone(function_name="EntityPool.__init__()"):
             self._entities = List[Entity]()
             self._entities.append(Entity(0, UInt32(UInt16.MAX)))
+            self._length = 1
             self._next = 0
             self._available = 0
 
@@ -55,10 +64,22 @@ struct EntityPool(Copyable, Movable, Sized):
 
     @always_inline
     def _get_new(mut self, out entity: Entity):
-        """Allocates and returns a new entity. For internal use."""
+        """Allocates an ID, preserving its retained generation if reused.
+
+        Returns:
+            The acquired entity. For internal use.
+        """
         with Zone(function_name="EntityPool._get_new(out entity: Entity)"):
-            entity = Entity(EntityId(len(self._entities)))
-            self._entities.append(entity)
+            if self._length < len(self._entities):
+                entity = Entity(
+                    EntityId(self._length),
+                    self._entities[self._length]._generation,
+                )
+                self._entities[self._length] = entity
+            else:
+                entity = Entity(EntityId(self._length))
+                self._entities.append(entity)
+            self._length += 1
 
     @always_inline
     def recycle(mut self, entity: Entity) raises InternalError:
@@ -73,7 +94,7 @@ struct EntityPool(Copyable, Movable, Sized):
         with Zone(function_name="EntityPool.recycle(entity: Entity)"):
             if entity.get_id() == 0:
                 raise InternalError.mutation_of_zero_entity
-            check_bounds(entity.get_id(), len(self._entities))
+            check_bounds(entity.get_id(), self._length)
 
             self._entities[entity.get_id()]._generation += 1
 
@@ -84,9 +105,19 @@ struct EntityPool(Copyable, Movable, Sized):
 
     @always_inline
     def reset(mut self):
-        """Recycles all entities. Does NOT free the reserved memory."""
+        """Invalidates all issued handles and resets allocation to ID 1.
+
+        Advances generations for the active prefix, including recycled IDs,
+        and retains all per-ID history and reserved memory for reuse. Length,
+        capacity, and available counts become zero; reserved ID 0 is unchanged.
+        Reset takes O(capacity()) time; subsequent allocation remains amortized
+        O(1) and reuses storage up to the previous high-water mark. Generations
+        wrap modulo 2**32, so handles cannot remain unique indefinitely.
+        """
         with Zone(function_name="EntityPool.reset()"):
-            self._entities.shrink(1)
+            for i in range(1, self._length):
+                self._entities[i]._generation += 1
+            self._length = 1
             self._next = 0
             self._available = 0
 
@@ -99,12 +130,12 @@ struct EntityPool(Copyable, Movable, Sized):
 
         Returns:
             True if `entity`'s generation matches the pool's current generation for its ID.
-            False if `entity`'s ID is out of the range ever handed out by this pool,
-            e.g. because it stems from a different pool or was never a valid entity.
+            False if `entity`'s ID is outside the current allocation range,
+            including IDs not yet reissued after reset.
         """
         with Zone(function_name="EntityPool.is_alive(entity: Entity)"):
             var id = entity.get_id()
-            if id < 0 or id >= len(self._entities):
+            if id < 0 or id >= self._length:
                 return False
             return entity._generation == self._entities[id]._generation
 
@@ -116,17 +147,17 @@ struct EntityPool(Copyable, Movable, Sized):
             The number of entities currently in use.
         """
         with Zone(function_name="EntityPool.__len__()"):
-            return len(self._entities) - 1 - self._available
+            return self._length - 1 - self._available
 
     @always_inline
     def capacity(self) -> Int:
         """Returns the current capacity (used and recycled entities).
 
         Returns:
-            The total number of entities allocated so far, used or recycled.
+            The number of entities allocated since reset, used or recycled.
         """
         with Zone(function_name="EntityPool.capacity()"):
-            return len(self._entities) - 1
+            return self._length - 1
 
     @always_inline
     def available(self) -> Int:
