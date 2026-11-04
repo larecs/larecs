@@ -82,6 +82,12 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 - Always consider vectorization opportunities
 - Update benchmarks when making performance changes
 
+## Issue Writing
+
+- Keep issue titles, bodies, and comments focused on Larecs. Never mention other projects unless the developer explicitly requests it.
+- Never include local filesystem paths in issues, including pasted logs or command output. Use repository links or symbol names to identify code.
+- Manage prioritization and scheduling through issue metadata, such as milestone assignments and priority fields or labels. Keep priority levels, deferral status, and release scheduling out of issue titles, bodies, and comments.
+
 ## Known issues
 
 ### GPU tests must not be compiled with `-g` (Apple Metal compiler crash)
