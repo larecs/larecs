@@ -311,7 +311,18 @@ struct ResourceStorage(Copyable, Movable, Sized):
 
         Raises:
             Error: If a resource already exists, is leased, or storage is unusable.
+
+        Constraints:
+            Ts must contain each resource type at most once.
         """
+
+        comptime for i in range(len(Ts)):
+            comptime for j in range(i):
+                comptime assert Ts[i] != Ts[j], (
+                    "ResourceStorage.add requires unique resource types; pass"
+                    " only one value of each type (use set to replace a"
+                    " resource)."
+                )
 
         with Zone(
             function_name=(
