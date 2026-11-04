@@ -28,6 +28,7 @@ and link the relevant decision.
 | ECS-17 | Kernel synchronization exposes the same host/device access operations and contention semantics: nonblocking scoped shared-read/exclusive-write guards, stable fine-grained collection domains, and 32-bit scalar atomics with explicit ordering. Protection identity and references remain valid throughout execution; unsupported backend guarantees fail clearly. | [Decision 0016](decisions/0016-kernel-memory-synchronization.md). Standalone scalar and single-value primitives in `src/larecs/sync.mojo`; CPU concurrency and confinement checks in `test/synchronization_test.mojo` and `test/check_synchronization_contracts.py`. Dedicated kernel bindings, collection domains, and hardware GPU validation are pending; Apple initially supports relaxed scalars plus acquire loads and release stores only. Current mutable resources/captures do not gain synchronization from this requirement. |
 | ECS-18 | Threaded host execution is explicit, synchronous, and caller-confined, with immutable world configuration bounding shared-runtime worker tasks. Eligibility is validated even on whole-range sequential fallback: only nonraising thin kernels, pointer-free accessed components, and explicit read-only plain resources or concurrent-readable resource views are admitted. Captures, mutable resources, conflicting device selection, reentrant execution, and active-world lifecycle changes are rejected. Preparation completes before writes, and all workers join before bindings and structural guards are released. | [Decision 0019](decisions/0019-threaded-host-execution.md), `test/threaded_execution_test.mojo`, `test/check_threaded_contracts.py`. Experimental pending macOS arm64 validation. |
 | ECS-19 | Device copy reuse is an experimental per-world opt-in, off by default; disabled worlds transfer exactly as before. Every resource carries a revision from a per-storage increasing counter, conservatively advanced by `add`, `set`, insert-on-`set`, `get` through mutable storage, host runs declaring `write` or `read_write`, and successful device runs writing it; `read` does not advance it. Every (component type, physical store) carries a revision advanced by `storage.get`, `set`, `apply`, kernel runs writing the type, and every row change of the store; stores carry incarnations that are never reused, including for reclaimed indices. With reuse enabled, a device run skips preparing and uploading a resource whose device copy matches its revision, while validation and leases still run, and skips each column segment whose store, incarnation, revision, rows, and offset match the column's last transfer. Failed invocations leave touched copies unknown; removal, disabling, and world copies discard records. Mutations through escaped references or raw pointers require `invalidate_device[T]()` or `invalidate_device_copies()`. | [Decision 0021](decisions/0021-skip-unchanged-device-uploads.md), `test/device_copy_reuse_test.mojo`, `test/device_column_reuse_test.mojo`. Device tests are compile-checked only until run on a supported GPU. |
+| ECS-20 | Ordinary and selected kernel invocation select an explicit compile-time `ExecutionBackend`, defaulting to `HOST`. `DEVICE` never falls back and raises when compilation support or a working device context is unavailable, even for empty matches. Value-taking callables and threaded execution require `HOST`; thin kernels support both targets. | [Decision 0022](decisions/0022-explicit-execution-backend.md), `test/execution_backend_test.mojo`, `test/check_execution_backend_contracts.py` |
 
 ## Implementation status
 
@@ -44,11 +45,11 @@ adapter-owned allocations instead of copying owners. See
 [adapter integration](../../test/resource_adapter_test.mojo) and
 [raw representation regressions](../../test/resource_test.mojo).
 
-Execution APIs use `on_device`, `DeviceComponentType`, `DeviceResourceType`,
+Execution APIs use `backend=ExecutionBackend.HOST/DEVICE`, `DeviceComponentType`, `DeviceResourceType`,
 and `constrain_device_safe_*` under
-[decision 0015](decisions/0015-host-device-execution-terminology.md). These beta
-renames replace the former GPU-named APIs without changing ECS-05 or ECS-08
-through ECS-10 or adding accelerator backends.
+[decision 0022](decisions/0022-explicit-execution-backend.md) and the retained
+terminology renames from [decision 0015](decisions/0015-host-device-execution-terminology.md).
+These beta changes add no accelerator backends.
 
 Performance and safety apply across these requirements: preserve valid
 component lifetimes and entity locations after structural changes, avoid

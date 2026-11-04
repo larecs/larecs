@@ -1,7 +1,7 @@
 ---
 id: "0015"
 title: "Host/device execution terminology and beta API renames"
-status: accepted
+status: superseded by 0022
 ---
 
 # Decision 0015: Host/device execution terminology and beta API renames
@@ -12,6 +12,9 @@ The execution API describes host storage and device transfers, but its names
 previously tied those roles to CPU/GPU hardware. The library is in beta, and
 device execution remains experimental under decision 0002. Future accelerators
 could fill the device role without being GPUs.
+
+Superseded by [decision 0022](0022-explicit-execution-backend.md) for backend
+selection and unavailable-device behavior; all other terminology renames remain.
 
 ## Decision
 

@@ -12,7 +12,7 @@ from std.reflection import reflect_fn
 
 from max.gpu.host import DevicePointer
 from max.algorithm import parallelize
-from .execution import _ExecutionGuard
+from .execution import _ExecutionGuard, ExecutionBackend
 from .lock import LockGuard
 from .sync import AtomicValue
 from .resource_representation import _plain_device_value
@@ -819,7 +819,7 @@ struct EntitySelection[
             KernelContext[filter, required_resources, capture_spec]
         ) thin -> None,
         *Bindings: CaptureBindingType,
-        on_device: Bool = False,
+        backend: ExecutionBackend = ExecutionBackend.HOST,
         threaded: Bool = False,
     ](mut self, *bindings: *Bindings) raises:
         """Runs a thin host or device kernel on selected rows matching ``filter``.
@@ -830,7 +830,7 @@ struct EntitySelection[
             capture_spec: Explicit read-only and mutable capture slots.
             KernelFunc: Thin kernel function to invoke.
             Bindings: Inferred explicit capture binding types.
-            on_device: Whether to pack and execute matching rows on the device.
+            backend: Compile-time target, HOST by default; DEVICE never falls back.
             threaded: Opt into experimental synchronous host chunk execution.
 
         Args:
@@ -843,8 +843,9 @@ struct EntitySelection[
                 counts, or context sizes overflow; context preparation fails;
                 or device execution fails.
         """
+        _validate_backend[backend]()
         comptime assert not (
-            threaded and on_device
+            threaded and backend == ExecutionBackend.DEVICE
         ), "Threaded and device execution are mutually exclusive"
         comptime if threaded:
             comptime assert (
@@ -855,9 +856,11 @@ struct EntitySelection[
             ](self._world[], self._ranges)
             return
         self._world[]._check_execution()
-        _validate_resource_spec[required_resources, on_device]()
+        _validate_resource_spec[
+            required_resources, backend == ExecutionBackend.DEVICE
+        ]()
         var host_captures = _bind_captures[capture_spec](*bindings)
-        comptime if not has_accelerator() or not on_device:
+        comptime if backend == ExecutionBackend.HOST:
             var resource_binding = _bind_host_resources[required_resources](
                 self._world[].resources
             )
@@ -890,7 +893,7 @@ struct EntitySelection[
                     )
                 )
             resource_binding.release()
-        else:
+        elif has_accelerator():
             var matching_ranges = List[EntityRange]()
             var total_length = 0
             comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
@@ -907,13 +910,13 @@ struct EntitySelection[
             comptime assert constrain_device_safe_components[
                 *filter._include.ComponentTypes
             ](), (
-                "EntitySelection.run(..., on_device=True) requires every"
-                " accessed component type to be device-safe."
+                "EntitySelection.run(..., backend=ExecutionBackend.DEVICE)"
+                " requires every accessed component type to be device-safe."
             )
             if not self._world[]._device_storage:
                 raise Error(
-                    "EntitySelection.run(..., on_device=True) requires a"
-                    " working device context."
+                    "EntitySelection.run(..., backend=ExecutionBackend.DEVICE)"
+                    " requires a working device context."
                 )
 
             # Required resources and explicit bindings remain validated even
@@ -1023,11 +1026,9 @@ struct EntitySelection[
             KernelContext[filter, required_resources, capture_spec]
         ) -> None,
         *Bindings: CaptureBindingType,
-        on_device: Bool = False,
+        backend: ExecutionBackend = ExecutionBackend.HOST,
         threaded: Bool = False,
-    ](
-        mut self, kernel_func: KernelFunc, *bindings: *Bindings
-    ) raises where not on_device:
+    ](mut self, kernel_func: KernelFunc, *bindings: *Bindings) raises:
         """Runs a value-taking host closure on selected matching rows.
 
         Parameters:
@@ -1036,7 +1037,7 @@ struct EntitySelection[
             capture_spec: Explicit read-only and mutable capture slots.
             KernelFunc: Inferred unified closure type.
             Bindings: Inferred explicit capture binding types.
-            on_device: Must remain false; lexical device captures are unsupported.
+            backend: Must be HOST; value-taking device callables are unsupported.
             threaded: Must remain false; threaded kernels must be thin.
 
         Args:
@@ -1046,12 +1047,18 @@ struct EntitySelection[
         Raises:
             Error: If explicit bindings or required resources are invalid.
         """
+        comptime assert (
+            backend == ExecutionBackend.HOST
+        ), "Value-taking kernel callables require ExecutionBackend.HOST"
+        _validate_backend[backend]()
         comptime assert not threaded, (
             "Threaded execution requires a thin kernel; lexical closures are"
             " unsupported"
         )
         self._world[]._check_execution()
-        _validate_resource_spec[required_resources, on_device]()
+        _validate_resource_spec[
+            required_resources, backend == ExecutionBackend.DEVICE
+        ]()
         var host_captures = _bind_captures[capture_spec](*bindings)
         var resource_binding = _bind_host_resources[required_resources](
             self._world[].resources
@@ -1692,7 +1699,7 @@ struct SystemContext[
             KernelContext[filter, required_resources, capture_spec]
         ) thin -> None,
         *Bindings: CaptureBindingType,
-        on_device: Bool = False,
+        backend: ExecutionBackend = ExecutionBackend.HOST,
         threaded: Bool = False,
     ](mut self, *bindings: *Bindings) raises:
         """Runs a kernel over component rows matching ``filter``.
@@ -1700,8 +1707,8 @@ struct SystemContext[
         On the GPU, zero matching rows are a no-op: no columns or resource
         buffers are prepared, no transfers are queued, and no kernel is
         launched. The world's device storage and all required resources are
-        still validated, in that order. Without accelerator support,
-        ``on_device=True`` retains the CPU fallback behavior.
+        still validated, in that order. Selecting DEVICE without accelerator
+        support raises an error, including for empty matches.
 
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
@@ -1710,7 +1717,7 @@ struct SystemContext[
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
-            on_device: Whether to execute the kernel against device storage.
+            backend: Compile-time target, HOST by default; DEVICE never falls back.
             threaded: Opt into experimental synchronous host chunk execution.
 
         Args:
@@ -1727,12 +1734,13 @@ struct SystemContext[
             function_name=String(
                 t"SystemContext.run[filter: Filter, required_resources:"
                 t" Resources, //, KernelFunc:"
-                t" {reflect_fn[KernelFunc].display_name()} , *, on_device:"
-                t" Bool]()"
+                t" {reflect_fn[KernelFunc].display_name()} , *, backend:"
+                t" ExecutionBackend]()"
             )
         ):
+            _validate_backend[backend]()
             comptime assert not (
-                threaded and on_device
+                threaded and backend == ExecutionBackend.DEVICE
             ), "Threaded and device execution are mutually exclusive"
             comptime if threaded:
                 comptime assert (
@@ -1743,9 +1751,11 @@ struct SystemContext[
                 ](self.world[], List[EntityRange]())
                 return
             self.world[]._check_execution()
-            _validate_resource_spec[required_resources, on_device]()
+            _validate_resource_spec[
+                required_resources, backend == ExecutionBackend.DEVICE
+            ]()
             var host_captures = _bind_captures[capture_spec](*bindings)
-            comptime if not has_accelerator() or not on_device:
+            comptime if backend == ExecutionBackend.HOST:
                 var resource_binding = _bind_host_resources[required_resources](
                     self.world[].resources
                 )
@@ -1789,7 +1799,7 @@ struct SystemContext[
                         )
                     )
                 resource_binding.release()
-            else:
+            elif has_accelerator():
                 var length = 0
                 comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
                 comptime exclude_mask = filter.get_exclude_mask[*Self.WorldTs]()
@@ -1802,7 +1812,7 @@ struct SystemContext[
                 for ref archetype in matching_archetypes.copy():
                     length += len(archetype)
 
-                # `on_device=True` moves every accessed component and resource
+                # Device execution moves every accessed component and resource
                 # across the host/device boundary as raw bytes (see
                 # `DeviceComponentStorage`/`DeviceResourceStorage`): the
                 # destination is never constructed through `T`'s copy
@@ -1811,26 +1821,27 @@ struct SystemContext[
                 # logic) would be silently corrupted or leaked by that copy,
                 # so reject it here at compile time rather than at the
                 # `DeviceBuffer` call sites below where the failure would be
-                # far less legible. Host execution (`on_device=False`) is
+                # far less legible. Host execution is
                 # unaffected -- it never takes this branch.
                 comptime assert constrain_device_safe_components[
                     *filter._include.ComponentTypes
                 ](), (
-                    "SystemContext.run(..., on_device=True) requires every"
-                    " accessed component type to be device-safe (conform to"
-                    " DeviceComponentType, i.e. TrivialRegisterPassable) for"
-                    " raw byte transfer between host and device."
+                    "SystemContext.run(..., backend=ExecutionBackend.DEVICE)"
+                    " requires every accessed component type to be device-safe"
+                    " (conform to DeviceComponentType, i.e."
+                    " TrivialRegisterPassable) for raw byte transfer between"
+                    " host and device."
                 )
 
                 if not self.world[]._device_storage:
                     raise Error(
-                        "SystemContext.run(..., on_device=True) requires a"
-                        " working device context, but this world's"
-                        " device storage never initialized -- either no"
-                        " accelerator is available, or `DeviceContext()`"
-                        " construction failed when the world was created."
-                        " Run with on_device=False to execute on the host"
-                        " instead."
+                        "SystemContext.run(...,"
+                        " backend=ExecutionBackend.DEVICE) requires a working"
+                        " device context, but this world's device storage never"
+                        " initialized -- either no accelerator is available, or"
+                        " `DeviceContext()` construction failed when the world"
+                        " was created. Run with backend=ExecutionBackend.HOST"
+                        " to execute on the host instead."
                     )
 
                 # No component columns exist for an unmatched filter. Validate
@@ -1982,11 +1993,9 @@ struct SystemContext[
             KernelContext[filter, required_resources, capture_spec]
         ) -> None,
         *Bindings: CaptureBindingType,
-        on_device: Bool = False,
+        backend: ExecutionBackend = ExecutionBackend.HOST,
         threaded: Bool = False,
-    ](
-        mut self, kernel_func: KernelFunc, *bindings: *Bindings
-    ) raises where not on_device:
+    ](mut self, kernel_func: KernelFunc, *bindings: *Bindings) raises:
         """Runs a kernel closure over component rows matching ``filter``.
 
         Parameters:
@@ -1996,7 +2005,7 @@ struct SystemContext[
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
-            on_device: Whether to execute the kernel against device storage.
+            backend: Must be HOST; value-taking device callables are unsupported.
             threaded: Must remain false; threaded kernels must be thin.
 
         Args:
@@ -2017,16 +2026,22 @@ struct SystemContext[
             function_name=(
                 "SystemContext.run[filter: Filter, required_resources:"
                 " Resources, //, KernelFunc: def(KernelContext[filter,"
-                " required_resources]) -> None, *, on_device:"
-                " Bool](kernel_func: KernelFunc)"
+                " required_resources]) -> None, *, backend:"
+                " ExecutionBackend](kernel_func: KernelFunc)"
             )
         ):
+            comptime assert (
+                backend == ExecutionBackend.HOST
+            ), "Value-taking kernel callables require ExecutionBackend.HOST"
+            _validate_backend[backend]()
             comptime assert not threaded, (
                 "Threaded execution requires a thin kernel; lexical closures"
                 " are unsupported"
             )
             self.world[]._check_execution()
-            _validate_resource_spec[required_resources, on_device]()
+            _validate_resource_spec[
+                required_resources, backend == ExecutionBackend.DEVICE
+            ]()
             var host_captures = _bind_captures[capture_spec](*bindings)
             var resource_binding = _bind_host_resources[required_resources](
                 self.world[].resources
@@ -2067,3 +2082,19 @@ struct SystemContext[
                     )
                 )
             resource_binding.release()
+
+
+def _validate_backend[backend: ExecutionBackend]() raises:
+    """Rejects invalid choices and unavailable compile-time device support.
+
+    Parameters:
+        backend: Explicit compile-time execution target.
+
+    Raises:
+        Error: If DEVICE is selected without accelerator compilation support.
+    """
+    comptime assert (
+        backend == ExecutionBackend.HOST or backend == ExecutionBackend.DEVICE
+    ), "Invalid execution backend"
+    comptime if backend == ExecutionBackend.DEVICE and not has_accelerator():
+        raise Error("ExecutionBackend.DEVICE requires accelerator support")

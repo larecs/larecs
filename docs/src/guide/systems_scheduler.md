@@ -33,6 +33,7 @@ system and is not registered with the scheduler.
 
 ```mojo {doctest="guide_systems_scheduler" global=true}
 from larecs import (
+    ExecutionBackend,
     World,
     System,
     SystemContext,
@@ -270,7 +271,7 @@ read resources must also be plain values; heap-backed resources use read-only
 `KernelView` adapters, bound once on the caller and shared until join. Unaccessed
 owning components do not prevent threading. Mutable resources (including the
 legacy `Resources[T]()` default), explicit captures, lexical closures, and
-`threaded=True` with `on_device=True` are rejected even on fallback.
+`threaded=True` with `backend=ExecutionBackend.DEVICE` are rejected even on fallback.
 
 Every explicitly threaded call acquires an additional structural lock, including
 whole-range fallback and calls on an already locked selection. Exhausting the
@@ -354,9 +355,11 @@ The slot index is compile-time; two slots may have the same value type.
 
 ```mojo {doctest="guide_gpu_captures" global=true}
 from larecs import (
+    ExecutionBackend,
     World, SystemContext, KernelContext, Filter,
     Captures, ReadCapture, MutCapture, read_capture, mut_capture,
 )
+from std.sys import has_accelerator
 from std.gpu import global_idx
 from std.sys.info import is_gpu
 from std.testing import assert_equal
@@ -386,12 +389,14 @@ def main() raises:
     Raises:
         Error: If setup, execution, or a result check fails.
     """
+    comptime if not has_accelerator():
+        return
     var world = World[Int32]()
     var entity = world.storage.add_entity(Int32(4))
     var factor: Int32 = 3
     var processed: Int32 = 0
     var context = SystemContext(world)
-    context.run[scale, on_device=True](
+    context.run[scale, backend=ExecutionBackend.DEVICE](
         read_capture(factor), mut_capture(processed)
     )
     assert_equal(world.storage.get[Int32](entity), 12)
@@ -428,16 +433,32 @@ or once for the device launch gives the same total.
 
 The **host** is the CPU running the system and managing ECS storage; the
 **device** is the GPU accelerator running the launched kernel. Host/device
-describes their execution and memory roles. The target option is named
-`on_device` in the current API.
+describes their execution and memory roles. Import the target enum with
+`from larecs import ExecutionBackend` and select `backend=ExecutionBackend.HOST`
+or `backend=ExecutionBackend.DEVICE`.
 
 The `SystemContext.run` call used by `Move` executes its kernel on the host by
-default. Pass `on_device=True` to run a compatible kernel on an accelerator. The
-same kernel function works on both targets unchanged; see the
+default. Pass `backend=ExecutionBackend.DEVICE` to run a compatible kernel on an
+accelerator. The same kernel function works on both targets unchanged; see the
 {{< api SystemContext.run >}} and {{< api KernelContext >}} API docs for
 details. Device execution requires an available accelerator and the corresponding
-Mojo GPU toolchain. On systems without one, `on_device=True` kernels fall back to
-host execution.
+Mojo GPU toolchain. Selecting `DEVICE` raises an error when accelerator compilation
+support or a working world device context is unavailable, including for empty
+matches. There is no automatic backend selection or host fallback.
+
+`backend` is a compile-time parameter on both `SystemContext.run` and
+`EntitySelection.run`. This specializes kernel compilation and transfer checks
+for the chosen target. Runtime choices require an explicit branch calling each
+specialization. Thin compile-time kernels support both targets; value-taking
+callables (including lexical closures) require `HOST`, checked at compile time.
+`threaded=True` requires `HOST` and a thin kernel.
+
+Migrate `on_device=True` (formerly `on_gpu=True`) to
+`backend=ExecutionBackend.DEVICE`, and `on_device=False` / `on_gpu=False` to
+`backend=ExecutionBackend.HOST` or omit the parameter for the host default.
+Boolean parameters are removed without compatibility aliases. Applications
+that previously relied on the no-accelerator fallback must choose `HOST`
+explicitly when device support is unavailable.
 
 Required resources use the same `context.resources.get[T]()` API on the device.
 Resource transfer constraints, shared-write safety, and the non-capturing

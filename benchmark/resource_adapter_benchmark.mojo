@@ -12,6 +12,7 @@ from std.time import perf_counter_ns
 from std.testing import assert_equal
 from std.sys import has_accelerator
 from larecs import (
+    ExecutionBackend,
     BufferResource,
     World,
     SystemContext,
@@ -55,14 +56,22 @@ def adapter[device: Bool, growing: Bool]() raises:
     for _ in world.storage.add_entities(Int32(0), count=512):
         pass
     var context = SystemContext(world)
-    context.run[adapted, on_device=device]()
+    context.run[
+        adapted,
+        backend=(ExecutionBackend.DEVICE if device else ExecutionBackend.HOST),
+    ]()
     var start = perf_counter_ns()
     for i in range(iterations):
         ref source = world.resources.get[Samples]()
         source.samples[0] = Int32(1 + i % 2)
         comptime if growing:
             source.samples.append(1)
-        context.run[adapted, on_device=device]()
+        context.run[
+            adapted,
+            backend=(
+                ExecutionBackend.DEVICE if device else ExecutionBackend.HOST
+            ),
+        ]()
     var elapsed = Float64(perf_counter_ns() - start) / Float64(iterations)
     check(world, Int32(1 + iterations + iterations // 2))
     assert_equal(
@@ -100,13 +109,13 @@ def repeated[reuse: Bool]() raises:
         pass
     world.reuse_device_copies(reuse)
     var context = SystemContext(world)
-    context.run[written, on_device=True]()
+    context.run[written, backend=ExecutionBackend.DEVICE]()
     var bytes = 0
     var start = perf_counter_ns()
     for i in range(updates):
         world.resources.get[Samples]().samples[0] = Int32(i)
         for _ in range(runs):
-            context.run[written, on_device=True]()
+            context.run[written, backend=ExecutionBackend.DEVICE]()
             bytes += world._last_device_upload.bytes
     var elapsed = Float64(perf_counter_ns() - start) / Float64(updates)
     check(world, Int32(updates - 1))

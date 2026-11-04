@@ -25,6 +25,7 @@ keyed by their runtime type name.
 
 ```mojo {doctest="guide_resources" global=true}
 from larecs import (
+    ExecutionBackend,
     World,
     Entity,
     SystemContext,
@@ -219,11 +220,14 @@ Host kernels may also capture surrounding values and access resources through
 `context.run(kernel)`. See [Capturing host kernels](../systems_scheduler#capturing-host-kernels)
 for an example. Device entry points use the non-capturing `context.run[kernel]()` form.
 
-To run this same kernel on a device, replace its host `run` call with:
+Import `ExecutionBackend` from `larecs` and replace the host `run` call with:
 
 ```mojo
-    context.run[move_with_time, on_device=True]()
+    context.run[move_with_time, backend=ExecutionBackend.DEVICE]()
 ```
+
+Host execution is the default. DEVICE requires a working accelerator and raises
+when unavailable, including for empty matches; it never falls back to HOST.
 
 For device execution, components must conform to `TrivialRegisterPassable`.
 Ordinary resources need a supported pointer-free representation with trivial
@@ -254,7 +258,7 @@ the original source type and receives its read-only `ReadBuffer` view on both
 backends:
 
 ```mojo
-from larecs import BufferResource, Filter, KernelContext, Resources, SystemContext, World
+from larecs import ExecutionBackend, BufferResource, Filter, KernelContext, Resources, SystemContext, World
 
 comptime Samples = BufferResource[DType.int32]
 comptime required = Resources().read[Samples]()
@@ -270,7 +274,7 @@ def main() raises:
     _ = world.storage.add_entities(Int32(1), count=37)
     var context = SystemContext(world)
     context.run[add_sample]()
-    context.run[add_sample, on_device=True]()
+    context.run[add_sample, backend=ExecutionBackend.DEVICE]()
     world.resources.get[Samples]().samples[0] = 9
     context.run[add_sample]()
 ```
@@ -310,6 +314,7 @@ provide interpolation, coordinate lookup, or other read-only operations.
 from std.sys import has_accelerator
 from std.testing import assert_equal
 from larecs import (
+    ExecutionBackend,
     DevicePassableResource,
     ResourceAdapter,
     ResourceDeviceCache,
@@ -472,7 +477,7 @@ def main() raises:
     assert_equal(world.storage.get[Int32](entity), 15)
 
     comptime if has_accelerator():
-        context.run[add_grid_sample, on_device=True]()
+        context.run[add_grid_sample, backend=ExecutionBackend.DEVICE]()
         assert_equal(world.storage.get[Int32](entity), 20)
         assert_equal(world.resources.get[Grid]().values[3], 5)
 
@@ -547,7 +552,7 @@ but perform no device allocation, upload, or launch.
 
 ## Reusing unchanged device copies (experimental)
 
-By default every `on_device=True` run uploads all resources and readable
+By default every `backend=ExecutionBackend.DEVICE` run uploads all resources and readable
 component columns it declares, even if they did not change. Worlds that call
 `world.reuse_device_copies(True)` skip uploads of data that is unchanged since
 its device copy was made. For adapted resources this skips the whole

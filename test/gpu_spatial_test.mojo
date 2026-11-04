@@ -6,6 +6,7 @@
 from std.sys import has_accelerator
 from std.testing import assert_equal, assert_false, TestSuite
 from larecs import (
+    ExecutionBackend,
     World,
     Filter,
     SpatialClassifier,
@@ -86,10 +87,20 @@ def _check_execution[on_device: Bool, selected: Bool = False]() raises:
     var context = SystemContext(world)
     comptime if selected:
         var selection = context._select[Filter().include[Payload]()]()
-        selection.run[update, on_device=on_device]()
+        selection.run[
+            update,
+            backend=(
+                ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+            ),
+        ]()
         selection^.release()
     else:
-        context.run[update, on_device=on_device]()
+        context.run[
+            update,
+            backend=(
+                ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+            ),
+        ]()
     # Read through queries so the test cannot mask missing copy-back invalidation.
     for row in context.world[].storage.query[
         Filter().read[Position, Payload]()
@@ -101,10 +112,20 @@ def _check_execution[on_device: Bool, selected: Bool = False]() raises:
     assert_equal(context.world[].storage._archetypes[index].get_entity(0), a)
     comptime if selected:
         var selection = context._select[Filter().include[Payload]()]()
-        selection.run[update, on_device=on_device]()
+        selection.run[
+            update,
+            backend=(
+                ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+            ),
+        ]()
         selection^.release()
     else:
-        context.run[update, on_device=on_device]()
+        context.run[
+            update,
+            backend=(
+                ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+            ),
+        ]()
     assert_equal(context.world[].storage.get[Position](a).value, 3)
     assert_equal(context.world[].storage.get[Payload](a).value, 32)
     assert_equal(context.world[].storage.get[Position](b).value, 1)
@@ -171,10 +192,20 @@ def _check_partition_execution[on_device: Bool, selected: Bool]() raises:
                 UInt64(1 if frame == 0 else 9)
             )
             assert_equal(len(selection), 300)
-            selection.run[update, on_device=on_device]()
+            selection.run[
+                update,
+                backend=(
+                    ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+                ),
+            ]()
             selection^.release()
         else:
-            context.run[update, on_device=on_device]()
+            context.run[
+                update,
+                backend=(
+                    ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+                ),
+            ]()
         for row in context.world[].storage.query[
             Filter().read[Position, Payload]()
         ]():

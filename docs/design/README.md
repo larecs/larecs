@@ -26,12 +26,13 @@ decision record before changing an established behavior:
 | [0012](decisions/0012-deferred-spatial-maintenance.md) | Accepted | Deferred dirty classification, conservative invalidation, and full-rebuild fallback |
 | [0013](decisions/0013-cluster-local-partition-blocks.md) | Superseded by 0014 | Opt-in bounded partition blocks, staging, reclamation, and exact cluster selections |
 | [0014](decisions/0014-growable-cluster-stores.md) | Accepted | One growable store per logical cluster without a chunk-size limit |
-| [0015](decisions/0015-host-device-execution-terminology.md) | Accepted | Host/device execution terminology and beta API renames |
+| [0015](decisions/0015-host-device-execution-terminology.md) | Superseded by 0022 | Host/device execution terminology and beta API renames |
 | [0016](decisions/0016-kernel-memory-synchronization.md) | Accepted; partially implemented | Common CPU/GPU API using 32-bit atomics and nonblocking reader/writer guards |
 | [0017](decisions/0017-deferred-kernel-access.md) | Proposed | Common host/device scoped operations with executor-managed access retries |
 | [0018](decisions/0018-portable-resource-adapters.md) | Accepted | Source-declared automatic registration, stateless read-only adapters, and invocation-owned transfer lifetimes |
 | [0019](decisions/0019-threaded-host-execution.md) | Accepted; experimental | Opt-in host chunks, unchanged sequential fallback, and shared read-only kernel views |
 | [0021](decisions/0021-skip-unchanged-device-uploads.md) | Accepted; experimental | Opt-in revision-tracked device copies that skip unchanged uploads |
+| [0022](decisions/0022-explicit-execution-backend.md) | Accepted | Compile-time explicit host/device targets without automatic fallback |
 
 ## Research evidence
 
@@ -59,10 +60,11 @@ the [Mojo GPU package terminology](https://docs.modular.com/mojo/std/gpu/).
 
 Keep **CPU** and **GPU** when identifying hardware, GPU thread/grid facilities,
 toolchain requirements, hardware validation, or processor-specific performance
-evidence. Larecs APIs use `on_device`, `DeviceComponentType`,
+evidence. Larecs APIs use `backend=ExecutionBackend.HOST/DEVICE`, `DeviceComponentType`,
 `DeviceResourceType`, `constrain_device_safe_components`, and
-`constrain_device_safe_resources`; see [decision 0015](decisions/0015-host-device-execution-terminology.md)
-for the beta migration. Preserve exact diagnostics, upstream names (`is_gpu()`,
+`constrain_device_safe_resources`; see [decision 0022](decisions/0022-explicit-execution-backend.md)
+for target selection and [decision 0015](decisions/0015-host-device-execution-terminology.md)
+for the retained beta terminology migration. Preserve exact diagnostics, upstream names (`is_gpu()`,
 `std.gpu`, and `max.gpu.host`), hardware test filenames, and benchmark result
 identifiers. Terminology clarifications do not change execution behavior or
 imply support for additional accelerator backends.

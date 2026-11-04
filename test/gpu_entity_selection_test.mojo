@@ -10,6 +10,7 @@ from std.gpu import global_idx
 from std.sys.info import is_gpu
 
 from larecs import (
+    ExecutionBackend,
     Captures,
     Entity,
     EntityRange,
@@ -96,12 +97,12 @@ def test_gpu_selection_packs_nonzero_ranges_and_reuses_storage() raises:
         var context = SystemContext(world)
 
         var first = context.add_entities(Position(1.0), count=4)
-        first.run[add_one, on_device=True]()
-        first.run[add_one, on_device=True]()
+        first.run[add_one, backend=ExecutionBackend.DEVICE]()
+        first.run[add_one, backend=ExecutionBackend.DEVICE]()
         first^.release()
 
         var second = context.add_entities(Position(10.0), Tag(1), count=2)
-        second.run[add_one, on_device=True]()
+        second.run[add_one, backend=ExecutionBackend.DEVICE]()
         second^.release()
 
         assert_equal(world.storage.get[Position](untouched).value, 100.0)
@@ -130,7 +131,7 @@ def test_gpu_selection_preserves_resources_captures_and_write_only() raises:
         var selection = context.add_entities(Position(2.0), Tag(0), count=3)
         var amount: Float32 = 4.0
         var processed: Int32 = 0
-        selection.run[update_with_bindings, on_device=True](
+        selection.run[update_with_bindings, backend=ExecutionBackend.DEVICE](
             read_capture(amount), mut_capture(processed)
         )
         selection^.release()
@@ -160,7 +161,7 @@ def test_gpu_selection_packs_disjoint_ranges_across_archetypes() raises:
         selection._ranges.append(EntityRange(1, 1, 1))
         selection._ranges.append(EntityRange(1, 3, 1))
         selection._ranges.append(EntityRange(2, 0, 1))
-        selection.run[add_one, on_device=True]()
+        selection.run[add_one, backend=ExecutionBackend.DEVICE]()
         selection^.release()
 
         for i in range(5):

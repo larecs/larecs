@@ -42,7 +42,7 @@ separate. Selections contain list indices only, never table pointers.
 
 from std.benchmark import keep
 from std.time import perf_counter_ns
-from larecs import World, Filter, KernelContext, SystemContext
+from larecs import ExecutionBackend, World, Filter, KernelContext, SystemContext
 from larecs.bitmask import BitMask
 
 
@@ -126,7 +126,13 @@ def measure[mode: Int](mut world: ManyWorld) raises:
         for batch in range(8):
             var start = perf_counter_ns()
             for _ in range(iterations):
-                context.run[increment, on_device=(mode == 3)]()
+                context.run[
+                    increment,
+                    backend=(
+                        ExecutionBackend.DEVICE if mode
+                        == 3 else ExecutionBackend.HOST
+                    ),
+                ]()
             var elapsed = perf_counter_ns() - start
             if batch > 0:
                 print(mode, Float64(elapsed) / Float64(iterations))

@@ -6,6 +6,7 @@ from std.sys import has_accelerator
 from std.testing import *
 
 from larecs import (
+    ExecutionBackend,
     Filter,
     KernelContext,
     Resources,
@@ -64,19 +65,19 @@ def check_empty_lifecycle[filter: Filter]() raises:
     var context = SystemContext(world)
 
     # Neither readable nor write-only columns should be initialized.
-    context.run[touch[filter], on_device=True]()
+    context.run[touch[filter], backend=ExecutionBackend.DEVICE]()
     assert_false(world._device_storage[].has_component[Float32]())
     assert_equal(world.resources.get[Marker]().value, 7)
 
     var excluded = world.storage.add_entity(Float32(3), Int32(1))
-    context.run[touch[filter], on_device=True]()
+    context.run[touch[filter], backend=ExecutionBackend.DEVICE]()
     world._device_storage[].synchronize()
     assert_false(world._device_storage[].has_component[Float32]())
     assert_equal(world.storage.get[Float32](excluded), 3.0)
     assert_equal(world.resources.get[Marker]().value, 7)
 
     var matching = world.storage.add_entity(Float32(2))
-    context.run[touch[filter], on_device=True]()
+    context.run[touch[filter], backend=ExecutionBackend.DEVICE]()
     assert_true(world._device_storage[].has_component[Float32]())
     assert_equal(world.resources.get[Marker]().value, 42)
     comptime if filter.writes[Float32]:
@@ -89,12 +90,12 @@ def check_empty_lifecycle[filter: Filter]() raises:
     world.resources.get[Marker]().value = 7
     # Repeat with a previously allocated column and an empty archetype.
     for _ in range(2):
-        context.run[touch[filter], on_device=True]()
+        context.run[touch[filter], backend=ExecutionBackend.DEVICE]()
         world._device_storage[].synchronize()
         assert_equal(world.resources.get[Marker]().value, 7)
 
     _ = world.storage.add_entity(Float32(5))
-    context.run[touch[filter], on_device=True]()
+    context.run[touch[filter], backend=ExecutionBackend.DEVICE]()
     assert_equal(world.resources.get[Marker]().value, 42)
 
 
@@ -145,7 +146,7 @@ def test_gpu_fresh_empty_float_world() raises:
         return
     var world = World[Float32]()
     var context = SystemContext(world)
-    context.run[include_float, on_device=True]()
+    context.run[include_float, backend=ExecutionBackend.DEVICE]()
     assert_false(world._device_storage[].has_component[Float32]())
 
 
@@ -162,7 +163,9 @@ def test_gpu_empty_run_validates_resources_and_device() raises:
     var context = SystemContext(world)
     var raised = False
     try:
-        context.run[touch[Filter().include[Float32]()], on_device=True]()
+        context.run[
+            touch[Filter().include[Float32]()], backend=ExecutionBackend.DEVICE
+        ]()
     except e:
         raised = True
         assert_equal(
@@ -176,7 +179,9 @@ def test_gpu_empty_run_validates_resources_and_device() raises:
     assert_equal(world.resources.get[Marker]().value, 7)
 
     world.resources.add(Required(42))
-    context.run[touch[Filter().include[Float32]()], on_device=True]()
+    context.run[
+        touch[Filter().include[Float32]()], backend=ExecutionBackend.DEVICE
+    ]()
     world._device_storage[].synchronize()
     assert_equal(world.resources.get[Marker]().value, 7)
 
@@ -184,7 +189,9 @@ def test_gpu_empty_run_validates_resources_and_device() raises:
     world.resources.remove[Required]()
     raised = False
     try:
-        context.run[touch[Filter().include[Float32]()], on_device=True]()
+        context.run[
+            touch[Filter().include[Float32]()], backend=ExecutionBackend.DEVICE
+        ]()
     except e:
         raised = True
         assert_true("working device context" in String(e))

@@ -4,6 +4,7 @@
 from std.testing import *
 from std.sys import has_accelerator
 from larecs import (
+    ExecutionBackend,
     World,
     SystemContext,
     KernelContext,
@@ -58,7 +59,7 @@ def test_portable_buffer_host_device_host() raises:
     var context = SystemContext(world)
     context.run[sample_kernel]()
     comptime if has_accelerator():
-        context.run[sample_kernel, on_device=True]()
+        context.run[sample_kernel, backend=ExecutionBackend.DEVICE]()
     else:
         context.run[sample_kernel]()
     context.run[sample_kernel]()
@@ -291,7 +292,10 @@ def _run_grid[device: Bool](mut world: World[Int32]) raises:
         Error: If execution fails.
     """
     var context = SystemContext(world)
-    context.run[grid_kernel, on_device=device]()
+    context.run[
+        grid_kernel,
+        backend=(ExecutionBackend.DEVICE if device else ExecutionBackend.HOST),
+    ]()
 
 
 def _check_grid_updates[device: Bool]() raises:
@@ -383,7 +387,7 @@ def test_validation_and_leases() raises:
         context.run[grid_kernel]()
     comptime if has_accelerator():
         with assert_raises():
-            context.run[grid_kernel, on_device=True]()
+            context.run[grid_kernel, backend=ExecutionBackend.DEVICE]()
     assert_equal(len(world.resources._device_cache), 0)
     world.resources.set(Grid([Int32(1)], 1, 1, 0))
     var escaped = Pointer[ResourceStorage, MutUntrackedOrigin](
@@ -404,7 +408,7 @@ def test_validation_and_leases() raises:
     binding.release()
     assert_equal(world.resources.get[Grid]().samples[0], 1)
     comptime if has_accelerator():
-        context.run[grid_kernel, on_device=True]()
+        context.run[grid_kernel, backend=ExecutionBackend.DEVICE]()
     assert_equal(len(world.resources._device_cache), 0)
 
 
@@ -469,7 +473,7 @@ def test_selected_portable_views() raises:
     selection._ranges.append(EntityRange(1, 1, 1))
     selection._ranges.append(EntityRange(1, 4, 1))
     comptime if has_accelerator():
-        selection.run[sample_kernel, on_device=True]()
+        selection.run[sample_kernel, backend=ExecutionBackend.DEVICE]()
     else:
         selection.run[sample_kernel]()
     selection^.release()
@@ -527,14 +531,14 @@ def test_unknown_completion_poisoning() raises:
         with assert_raises():
             context.run[empty]()
         with assert_raises():
-            context.run[empty, on_device=True]()
+            context.run[empty, backend=ExecutionBackend.DEVICE]()
         # Replacing a public container cannot repair an unknown device queue.
         world.resources = ResourceStorage()
         assert_false(world.resources._poisoned)
         with assert_raises():
             context.run[empty]()
         with assert_raises():
-            context.run[empty, on_device=True]()
+            context.run[empty, backend=ExecutionBackend.DEVICE]()
         var selection = context._empty_selection()
         with assert_raises():
             selection.run[empty]()
@@ -624,7 +628,7 @@ def test_floating_point_samples() raises:
     var context = SystemContext(world)
     context.run[float_sample_kernel]()
     comptime if has_accelerator():
-        context.run[float_sample_kernel, on_device=True]()
+        context.run[float_sample_kernel, backend=ExecutionBackend.DEVICE]()
     else:
         context.run[float_sample_kernel]()
     context.run[float_sample_kernel]()

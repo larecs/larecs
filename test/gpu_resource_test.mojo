@@ -11,6 +11,7 @@ from std.sys.info import is_gpu
 from std.testing import *
 
 from larecs import (
+    ExecutionBackend,
     World,
     SystemContext,
     KernelContext,
@@ -47,7 +48,7 @@ def test_kernel_context_required_resources_on_device() raises:
     _ = world.storage.add_entities(Int32(1), count=5)
 
     var context = SystemContext(world)
-    context.run[scale_entities, on_device=True]()
+    context.run[scale_entities, backend=ExecutionBackend.DEVICE]()
 
     var total: Int32 = 0
     for entity in world.storage.query[Filter().include[Int32]()]():
@@ -83,7 +84,7 @@ def test_kernel_context_resource_mutation_is_copied_back_to_host() raises:
     _ = world.storage.add_entities(Int32(1), count=5)
 
     var context = SystemContext(world)
-    context.run[overwrite_scale, on_device=True]()
+    context.run[overwrite_scale, backend=ExecutionBackend.DEVICE]()
 
     assert_equal(world.resources.get[Scale]().value, 42)
 
@@ -128,7 +129,7 @@ def test_gpu_kernel_local_captures() raises:
     # More than one block, with a partially populated final block.
     _ = world.storage.add_entities(Int32(2), count=37)
     var context = SystemContext(world)
-    context.run[update_with_local_captures, on_device=True]()
+    context.run[update_with_local_captures, backend=ExecutionBackend.DEVICE]()
     for entity in world.storage.query[Filter().include[Int32]()]():
         assert_equal(entity.get[Int32](), 7)
 
