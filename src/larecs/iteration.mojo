@@ -750,30 +750,8 @@ struct _WorldEntityIterator[
                 "_WorldEntityIterator.__next__(out accessor: Self.Element)"
             )
         ):
-            while not self._entity_iterator:
-                if not self._archetype_iterator:
-                    raise StopIteration()
-
-                var start_idx: Int
-                comptime if Self.has_start_indices:
-                    start_idx = self._start_indices[][
-                        self._current_archetype_index
-                    ]
-                else:
-                    start_idx = 0
-
-                self._current_archetype_index += 1
-
-                var untracked_archetype_ptr = Pointer(
-                    to=self._archetype_iterator.__next__()
-                ).unsafe_origin_cast[
-                    UntrackedOrigin[mut=Self.archetype_list_mutability]
-                ]()
-
-                self._entity_iterator = Self._UnsafeArchetypeEntityIterator(
-                    untracked_archetype_ptr[],
-                    start_idx,
-                )
+            if not self._entity_iterator:
+                self._advance_archetype()
 
             accessor = {
                 self._entity_iterator.archetype.unsafe_origin_cast[
@@ -781,6 +759,40 @@ struct _WorldEntityIterator[
                 ]()[],
                 self._entity_iterator.__next__()._index_in_archetype,
             }
+
+    @no_inline
+    def _advance_archetype(mut self) raises StopIteration:
+        """Skips empty row ranges when the current archetype is exhausted.
+
+        Keep this boundary traversal outside the per-row iteration path so its
+        loop does not inhibit optimization of ordinary component iteration.
+        Selection ordinals still advance for every empty or exhausted range.
+
+        Raises:
+            StopIteration: If no selected archetype has rows remaining.
+        """
+        while not self._entity_iterator:
+            if not self._archetype_iterator:
+                raise StopIteration()
+
+            var start_idx: Int
+            comptime if Self.has_start_indices:
+                start_idx = self._start_indices[][self._current_archetype_index]
+            else:
+                start_idx = 0
+
+            self._current_archetype_index += 1
+
+            var untracked_archetype_ptr = Pointer(
+                to=self._archetype_iterator.__next__()
+            ).unsafe_origin_cast[
+                UntrackedOrigin[mut=Self.archetype_list_mutability]
+            ]()
+
+            self._entity_iterator = Self._UnsafeArchetypeEntityIterator(
+                untracked_archetype_ptr[],
+                start_idx,
+            )
 
     def __len__(self, out size: Int):
         """
