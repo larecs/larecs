@@ -1694,6 +1694,12 @@ struct SystemContext[
     ](mut self, *bindings: *Bindings) raises:
         """Runs a kernel over component rows matching ``filter``.
 
+        On the GPU, zero matching rows are a no-op: no columns or resource
+        buffers are prepared, no transfers are queued, and no kernel is
+        launched. The world's device storage and all required resources are
+        still validated, in that order. Without accelerator support,
+        ``on_device=True`` retains the CPU fallback behavior.
+
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
             required_resources: Compile-time resources the kernel may access.
