@@ -612,3 +612,12 @@ existing compiler caches and no competing builds. These are recorded build costs
 not comparable cold-compilation measurements.
 Linux resource timings and cold compilation remain unmeasured. These focused
 manual cases do not enlarge the normal PR performance matrix.
+
+## Storage range migration
+
+The [#170 comparison](../../design/research/entity-range-migration.md) uses the
+current selection and migration drivers against PR212, including the 100k-row
+ordinary host path and 65,536-row whole-archetype batches. Concurrent sibling
+builds overlapped every sample, so these results support no controlled
+regression or speedup claim. Query/range metadata sharing is checked directly
+in the cursor regression tests.

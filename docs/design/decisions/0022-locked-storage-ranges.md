@@ -64,3 +64,5 @@ No new entity ordering, lock bypass, or selection copying is introduced.
 - `benchmark/core_smoke.mojo`, `benchmark/entity_selection_benchmark.mojo`, and
   `benchmark/migration_benchmark.mojo`: query, ordinary execution, exact selection,
   and whole-archetype mutation workloads.
+- [Migration measurements](../research/entity-range-migration.md): paired PR212
+  diagnostic samples and explicit concurrent-build limitations.
