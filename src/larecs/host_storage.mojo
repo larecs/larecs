@@ -5,7 +5,11 @@ component data for a world, along with `Replacer` for atomically replacing
 an entity's components.
 """
 
-from .archetype import Archetype, MutArchetypeRowAccessor
+from .archetype import (
+    Archetype,
+    MutArchetypeRowAccessor,
+    _retained_component_mask,
+)
 from .bitmask import BitMask
 from .debug_utils import debug_warn
 from .component import (
@@ -77,6 +81,43 @@ def _sort_entity_ranges(mut ranges: List[EntityRange]):
         for index in range(len(ranges)):
             ranges[index] = scratch[index]
         width *= 2
+
+
+struct _ComponentMigration:
+    """Partition a structural change before touching initialized storage.
+
+    Removed values exclude replacements; both remain initialized in the source
+    until destruction. Only retained values may be moved to the destination.
+    """
+
+    var retained: BitMask
+    """Source values transferred without destruction."""
+    var removed: BitMask
+    """Source values destroyed without a replacement."""
+    var replaced: BitMask
+    """Source values destroyed before installing new values of the same type."""
+    var added: BitMask
+    """New component types requiring initialization."""
+    var missing: BitMask
+    """Requested removals absent from the source."""
+    var overlap: BitMask
+    """Requested additions that illegally overlap retained values."""
+
+    @always_inline
+    def __init__(out self, source: BitMask, remove: BitMask, add: BitMask):
+        """Compute lifecycle sets and validation failures for a source mask.
+
+        Args:
+            source: Components present in the source archetype or filter.
+            remove: Requested removals, including types supplied again.
+            add: Requested new values, including replacements.
+        """
+        self.retained = _retained_component_mask(source, source | add, remove)
+        self.removed = source & remove & ~add
+        self.replaced = source & remove & add
+        self.added = add & ~source
+        self.missing = remove & ~source
+        self.overlap = self.retained & add
 
 
 struct HostStorage[*ComponentTypes: ComponentType](Copyable):
@@ -1522,53 +1563,39 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             var entity_loc = self._entity_locations[entity.get_id()]
 
             var old_archetype_idx = entity_loc.archetype_index
-            ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
-            var old_archetype_mask = old_archetype.get_mask()
+            ref old_archetype_before = self._archetypes.unsafe_get(
+                old_archetype_idx
+            )
+            var old_archetype_mask = old_archetype_before.get_mask()
 
-            var runtime_add_ids = materialize[add_ids]()
-            var runtime_remove_ids = materialize[remove_ids]()
-
+            var migration = _ComponentMigration(
+                old_archetype_mask,
+                BitMask(materialize[remove_ids]()),
+                BitMask(materialize[add_ids]()),
+            )
             comptime if rem_size:
-                var remove_mask = BitMask(runtime_remove_ids)
-                if not old_archetype_mask.contains(remove_mask):
+                if migration.missing != BitMask():
                     raise LarecsError(
                         ComponentError.missing_components_on_remove.with_components(
-                            remove_mask & ~old_archetype_mask
+                            migration.missing
                         )
                     )
-
             comptime if add_size:
-                var compare_mask = old_archetype_mask
-
-                comptime if rem_size:
-                    compare_mask.set(runtime_remove_ids, False)
-                var add_mask = BitMask(runtime_add_ids)
-                if compare_mask.contains_any(add_mask):
+                if migration.overlap != BitMask():
                     raise LarecsError(
                         ComponentError.existing_components_on_add.with_components(
-                            compare_mask & add_mask
+                            migration.overlap
                         )
                     )
 
-            comptime ComponentIdsType = Array[ComponentId, add_size + rem_size]
-            comptime assert 0 <= add_size + rem_size
-
-            var component_ids: ComponentIdsType
-            comptime if add_size and rem_size:
-                comptime concatenated = concatenate_arrays(remove_ids, add_ids)
-                component_ids = materialize[concatenated]()
-            elif Bool(add_size) and not rem_size:
-                component_ids = rebind_var[ComponentIdsType](runtime_add_ids^)
-            elif not add_size and Bool(rem_size):
-                component_ids = rebind_var[ComponentIdsType](
-                    runtime_remove_ids^
-                )
-            else:
+            comptime if not add_size and not rem_size:
                 return
+            comptime component_ids = concatenate_arrays(remove_ids, add_ids)
 
             var index_in_old_archetype = entity_loc.entity_index
             var new_archetype_idx = self._get_archetype_index(
-                component_ids, old_archetype.get_node_index()
+                materialize[component_ids](),
+                old_archetype_before.get_node_index(),
             )
             ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
 
@@ -1596,7 +1623,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 Pointer(to=old_archetype._storage).as_unsafe_any_origin(),
                 1,
                 index_in_old_archetype,
-                excluded_components=BitMask(materialize[remove_ids]()),
+                excluded_components=migration.removed | migration.replaced,
             )
 
             new_archetype.init_components[*Ts](
@@ -1605,12 +1632,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
             # Only retained values were moved; removed/replaced values are
             # still initialized and must be destroyed during swap removal.
-            var retained_mask = new_archetype.get_mask() & ~BitMask(
-                materialize[remove_ids]()
-            )
             var swapped = (
                 old_archetype.unsafe_remove_after_moving_shared_components(
-                    index_in_old_archetype, retained_mask
+                    index_in_old_archetype, migration.retained
                 )
             )
             if swapped:
@@ -1988,20 +2012,17 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             comptime add_size = len(Ts)
             comptime add_ids = Self.component_manager.get_id_arr[*Ts]()
 
-            comptime ComponentIdsType = Array[ComponentId, add_size + rem_size]
-            comptime assert 0 <= add_size + rem_size
-
             # Note:
             #    This operation can never map multiple archetypes onto one, due to the requirement that components to add
             #    must be excluded in the query. Therefore, we can apply the transformation to each matching archetype
             #    individually without checking for edge cases where multiple archetypes get merged into one.
             #    This also enables potential parallelization optimizations.
 
-            var runtime_add_ids = materialize[add_ids]()
-            var runtime_remove_ids = materialize[remove_ids]()
-
-            var add_mask = BitMask(runtime_add_ids)
-            var remove_mask = BitMask(runtime_remove_ids)
+            var add_mask = BitMask(materialize[add_ids]())
+            var remove_mask = BitMask(materialize[remove_ids]())
+            var filter_migration = _ComponentMigration(
+                filter.include_mask, remove_mask, add_mask
+            )
 
             comptime if add_size:
                 # If the filter could match archetypes that already have at least one of the components, raise an error
@@ -2020,24 +2041,22 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     for archetype in self._get_archetype_iterator(
                         filter.include_mask, filter.exclude_mask
                     ):
-                        var archetype_mask = archetype.get_mask()
-
-                        comptime if rem_size:
-                            archetype_mask.set(runtime_remove_ids, False)
-
-                        if archetype and archetype_mask.contains_any(add_mask):
+                        var migration = _ComponentMigration(
+                            archetype.get_mask(), remove_mask, add_mask
+                        )
+                        if archetype and migration.overlap != BitMask():
                             raise LarecsError(
                                 ComponentError.existing_components_on_add_query.with_components(
-                                    archetype_mask & add_mask
+                                    migration.overlap
                                 )
                             )
 
             comptime if rem_size:
                 # If the filter could match archetypes that don't have all of the components, raise an error
-                if not filter.include_mask.contains(remove_mask):
+                if filter_migration.missing != BitMask():
                     raise LarecsError(
                         ComponentError.missing_components_on_remove_query.with_components(
-                            remove_mask & ~filter.include_mask
+                            filter_migration.missing
                         )
                     )
 
@@ -2049,17 +2068,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                             )
                         )
 
-            var component_ids: ComponentIdsType
-            comptime if add_size and rem_size:
-                comptime concatenated = concatenate_arrays(remove_ids, add_ids)
-                component_ids = materialize[concatenated]()
-            elif Bool(add_size) and not rem_size:
-                component_ids = rebind_var[ComponentIdsType](runtime_add_ids^)
-            elif not add_size and Bool(rem_size):
-                component_ids = rebind_var[ComponentIdsType](
-                    runtime_remove_ids^
-                )
-            else:
+            comptime component_ids = concatenate_arrays(remove_ids, add_ids)
+            comptime if not add_size and not rem_size:
                 # Nothing to do. Just return empty iterator.
                 try:
                     iterator = {
@@ -2100,7 +2110,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     ].archetype_index
                     var new_archetype_idx = self._get_archetype_index[
                         add_size + rem_size
-                    ](component_ids, old_node_index)
+                    ](materialize[component_ids](), old_node_index)
 
                     # We need to update the pointer to the old archetype, because the `self._archetypes` list may have been
                     # resized during the call to `_get_archetype_index`.
@@ -2114,6 +2124,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
                     # TODO: Optimization: If `new_archetype` is empty we can just shallow-copy the _ComponentTable of `old_archetype` to `new_archetype` and reinit `old_archetype`.
 
+                    var migration = _ComponentMigration(
+                        old_archetype.get_mask(), remove_mask, add_mask
+                    )
                     var old_archetype_size = len(old_archetype)
                     if old_node_index == new_archetype.get_node_index():
                         arch_start_idcs.append(0)
@@ -2137,7 +2150,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     var arch_start_idx = (
                         new_archetype.unsafe_move_all_from_archetype(
                             old_archetype_unsafe,
-                            excluded_components=remove_mask,
+                            excluded_components=migration.removed
+                            | migration.replaced,
                         )
                     )
                     if new_archetype_idx not in changed_archetype_idcs:
