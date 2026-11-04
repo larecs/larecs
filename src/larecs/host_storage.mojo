@@ -1596,16 +1596,21 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 Pointer(to=old_archetype._storage).as_unsafe_any_origin(),
                 1,
                 index_in_old_archetype,
+                excluded_components=BitMask(materialize[remove_ids]()),
             )
 
             new_archetype.init_components[*Ts](
                 index_in_new_archetype, *add_components^
             )
 
-            var new_archetype_mask = new_archetype.get_mask().copy()
+            # Only retained values were moved; removed/replaced values are
+            # still initialized and must be destroyed during swap removal.
+            var retained_mask = new_archetype.get_mask() & ~BitMask(
+                materialize[remove_ids]()
+            )
             var swapped = (
                 old_archetype.unsafe_remove_after_moving_shared_components(
-                    index_in_old_archetype, new_archetype_mask
+                    index_in_old_archetype, retained_mask
                 )
             )
             if swapped:
@@ -2131,7 +2136,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     ).as_unsafe_any_origin()
                     var arch_start_idx = (
                         new_archetype.unsafe_move_all_from_archetype(
-                            old_archetype_unsafe
+                            old_archetype_unsafe,
+                            excluded_components=remove_mask,
                         )
                     )
                     if new_archetype_idx not in changed_archetype_idcs:
