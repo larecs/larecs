@@ -62,7 +62,7 @@ limits the timing conclusion even though the diagnostic gate completed.
 
 ## Focused validation
 
-- Twelve iterator runtime regressions and five compiler rejection/control pairs
+- Thirteen iterator runtime regressions and five compiler rejection/control pairs
   cover tracked origins, read-only queries, noncopyable/scoped selections,
   shared metadata, independent cursors/locks, and exceptional cleanup.
 - Twenty-four world tests and twenty-one selection tests cover low-level batch
@@ -75,3 +75,12 @@ limits the timing conclusion even though the diagnostic gate completed.
 - API documentation, the satellites example, and the migrated GPU benchmark
   compile. A separate runtime probe verifies every initialized orbital row;
   the full orbital arithmetic benchmark was not timed.
+
+The full sanitizer run exposed a physical-store aggregation case: three source
+clusters appended to one destination, but the first bounded implementation
+reported only 11 of 33 changed rows. Extend the existing destination range for
+every subsequent source append. The corrected thirteen-test iterator suite
+passes with sanitizers, including multiple physical sources, a pre-existing
+destination prefix, copied cursors, and post-mutation maintenance. The existing
+heap-backed partition bulk add/replace/remove regression also passes in the
+focused optimized probe.

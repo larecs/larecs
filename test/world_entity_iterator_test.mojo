@@ -8,6 +8,8 @@ from std.testing import (
     TestSuite,
 )
 
+from larecs import World, SpatialClassifier
+from larecs.entity import EntityAccessor
 from larecs.host_storage import HostStorage
 from larecs.iteration import _ArchetypeIterator, _EntityRangeCursor
 from larecs.bitmask import BitMask
@@ -381,6 +383,61 @@ def test_batch_range_error_and_empty_release() raises:
     for _ in copy^:
         pass
     assert_false(storage.is_locked())
+
+
+@fieldwise_init
+struct RangeClusterPolicy(SpatialClassifier):
+    """Groups integer rows into separate physical stores."""
+
+    comptime Accessor = EntityAccessor[Filter().read[Int]()]
+
+    def classify(self, row: Self.Accessor) -> UInt64:
+        """Returns the row's cluster key.
+
+        Args:
+            row: Integer classifier input.
+
+        Returns:
+            The exact integer cluster key.
+        """
+        return UInt64(row.get[Int]())
+
+
+def test_batch_ranges_coalesce_multiple_physical_sources() raises:
+    """Counts every appended cluster segment while excluding destination rows.
+
+    Raises:
+        Error: If membership, lock ownership, or payload checks fail.
+    """
+    var world = World[Int, Float32]()
+    for i in range(6):
+        _ = world.storage.add_entity(i % 3)
+    world.register_spatial_classifier[Filter().read[Int]()](
+        RangeClusterPolicy(), partitioned=True
+    )
+    world.maintain_spatial()
+    var control = world.storage.add_entity(9, Float32(7))
+    var changed = world.storage.add[
+        Float32, filter=Filter().include[Int]().exclude[Float32]()
+    ](Float32(1))
+    assert_equal(len(changed), 6)
+    var copied = changed.copy()
+    var count = 0
+    for row in copied^:
+        assert_equal(row.unsafe_get[Float32](), Float32(1))
+        assert_true(row.get_entity() != control)
+        count += 1
+    assert_equal(count, 6)
+    assert_true(world.storage.is_locked())
+    assert_equal(len(changed), 6)
+    for _ in changed^:
+        pass
+    assert_false(world.storage.is_locked())
+    assert_equal(world.storage.get[Float32](control), Float32(7))
+    world.maintain_spatial()
+    assert_equal(
+        len(world.storage.query[Filter().include[Int, Float32]()]()), 7
+    )
 
 
 def main() raises:

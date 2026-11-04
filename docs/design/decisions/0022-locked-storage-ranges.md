@@ -21,6 +21,8 @@ remain read-only and filter-typed. Low-level mutation results retain mutable
 objects and do not offer selection mutation or execution methods.
 
 Batch membership uses bounded `EntityRange` triples captured after mutation.
+When several physical source stores append to the same destination, extend its
+recorded count for every appended segment while excluding its existing prefix.
 Queries share an immutable sequence of matching populated store indices and
 traverse whole stores without allocating range triples. Cursor copies share
 immutable membership metadata, preserve their current position, and acquire

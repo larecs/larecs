@@ -2174,6 +2174,18 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                             )
                         )
                         changed_archetype_idcs.append(new_archetype_idx)
+                    else:
+                        # Physical cluster stores can share one logical source
+                        # node and append into the same destination store.
+                        for range_index in range(len(changed_archetype_idcs)):
+                            if (
+                                changed_archetype_idcs[range_index]
+                                == new_archetype_idx
+                            ):
+                                changed_ranges[
+                                    range_index
+                                ].row_count += old_archetype_size
+                                break
 
                     # These rows were just appended by
                     # `unsafe_move_all_from_archetype` and hold uninitialized
