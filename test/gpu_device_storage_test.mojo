@@ -123,6 +123,185 @@ def test_copy_to_host_pointer_overload_rejects_out_of_bounds_range() raises:
         assert_true(raised)
 
 
+def check_independent_columns[reverse: Bool]() raises:
+    """Checks independent growth, valid ranges, and deep copies in either order.
+
+    Parameters:
+        reverse: Whether the wider column is uploaded first.
+
+    Raises:
+        Error: If a device operation or assertion fails.
+    """
+    comptime if has_accelerator():
+        var storage = DeviceComponentStorage[Float32, Float64, UInt8](
+            DeviceContext(), 0
+        )
+        var narrow: List[Float32] = [1, 2]
+        var wide: List[Float64] = [10, 20, 30, 40]
+        comptime if reverse:
+            storage.copy_from_host[Float64](Span(wide))
+            storage.copy_from_host[Float32](Span(narrow))
+        else:
+            storage.copy_from_host[Float32](Span(narrow))
+            storage.copy_from_host[Float64](Span(wide))
+
+        var result = storage.copy_to_host[Float32]()
+        assert_equal(len(result), 2)
+        assert_equal(result[0], 1)
+        assert_equal(result[1], 2)
+        var wide_result = storage.copy_to_host[Float64]()
+        assert_equal(len(wide_result), 4)
+        for i in range(4):
+            assert_equal(wide_result[i], wide[i])
+
+        var copied = storage.copy()
+        assert_true(copied.has_component[Float32]())
+        assert_true(copied.has_component[Float64]())
+        assert_false(copied.has_component[UInt8]())
+        var copied_narrow = copied.copy_to_host[Float32]()
+        var copied_wide = copied.copy_to_host[Float64]()
+        assert_equal(len(copied_narrow), 2)
+        assert_equal(len(copied_wide), 4)
+        for i in range(2):
+            assert_equal(copied_narrow[i], narrow[i])
+        for i in range(4):
+            assert_equal(copied_wide[i], wide[i])
+
+        var tail = List[Float32](unsafe_uninit_length=1)
+        storage.copy_to_host[Float32](
+            tail.unsafe_ptr().unsafe_origin_cast[MutUntrackedOrigin](), offset=1
+        )
+        storage.synchronize()
+        assert_equal(tail[0], 2)
+        with assert_raises():
+            storage.copy_to_host[Float32](
+                tail.unsafe_ptr().unsafe_origin_cast[MutUntrackedOrigin](),
+                offset=2,
+                length=1,
+            )
+        with assert_raises():
+            storage.copy_to_host[Float32](
+                tail.unsafe_ptr().unsafe_origin_cast[MutUntrackedOrigin](),
+                offset=3,
+            )
+        # An empty range at the logical end is valid.
+        storage.copy_to_host[Float32](
+            tail.unsafe_ptr().unsafe_origin_cast[MutUntrackedOrigin](), offset=2
+        )
+
+        # Growing the smaller column must preserve its prefix and leave the
+        # other column's valid range alone.
+        var append: List[Float32] = [3, 4, 5]
+        storage.copy_from_host[Float32](Span(append), offset=2)
+        var replacement: List[Float32] = [9]
+        storage.copy_from_host[Float32](Span(replacement))
+        storage.copy_from_host[Float32](Span(replacement), offset=3)
+        storage.ensure_column[Float32](1)
+        result = storage.copy_to_host[Float32]()
+        assert_equal(len(result), 5)
+        assert_equal(result[0], 9)
+        assert_equal(result[1], 2)
+        assert_equal(result[2], 3)
+        assert_equal(result[3], 9)
+        assert_equal(result[4], 5)
+        wide_result = storage.copy_to_host[Float64]()
+        assert_equal(len(wide_result), 4)
+        for i in range(4):
+            assert_equal(wide_result[i], wide[i])
+        copied_narrow = copied.copy_to_host[Float32]()
+        assert_equal(len(copied_narrow), 2)
+        assert_equal(copied_narrow[0], 1)
+        assert_equal(copied_narrow[1], 2)
+        var grown_copy = storage.copy()
+        copied_narrow = grown_copy.copy_to_host[Float32]()
+        assert_equal(len(copied_narrow), 5)
+        for i in range(5):
+            assert_equal(copied_narrow[i], result[i])
+        copied_wide = grown_copy.copy_to_host[Float64]()
+        assert_equal(len(copied_wide), 4)
+        for i in range(4):
+            assert_equal(copied_wide[i], wide[i])
+
+
+def test_columns_grow_narrow_first() raises:
+    """Checks growing the wider column after a smaller narrow column.
+
+    Raises:
+        Error: If a device operation or assertion fails.
+    """
+    check_independent_columns[False]()
+
+
+def test_columns_grow_wide_first() raises:
+    """Checks initializing a narrow column after a larger wide column.
+
+    Raises:
+        Error: If a device operation or assertion fails.
+    """
+    check_independent_columns[True]()
+
+
+def test_initial_capacity_does_not_expose_unwritten_rows() raises:
+    """Checks valid bounds and copies when allocation exceeds valid data.
+
+    Raises:
+        Error: If a device operation or assertion fails.
+    """
+    comptime if has_accelerator():
+        var storage = DeviceComponentStorage[Float32, Float64](
+            DeviceContext(), 8
+        )
+        var empty = List[Float32]()
+        storage.copy_from_host[Float32](Span(empty))
+        assert_false(storage.has_component[Float32]())
+        var missing = storage.copy_to_host[Float32]()
+        assert_equal(len(missing), 0)
+        var data: List[Float32] = [1, 2]
+        storage.copy_from_host[Float32](Span(data))
+        var result = storage.copy_to_host[Float32]()
+        assert_equal(len(result), 2)
+        var copied = storage.copy()
+        assert_true(copied.has_component[Float32]())
+        result = copied.copy_to_host[Float32]()
+        assert_equal(len(result), 2)
+        assert_equal(result[0], 1)
+        assert_equal(result[1], 2)
+        with assert_raises():
+            storage.copy_to_host[Float32](
+                data.unsafe_ptr().unsafe_origin_cast[MutUntrackedOrigin](),
+                offset=2,
+                length=1,
+            )
+        with assert_raises():
+            storage.copy_from_host[Float32](Span(data), offset=-1)
+        with assert_raises():
+            storage.copy_from_host[Float32](Span(data), offset=3)
+        with assert_raises():
+            storage.ensure_column[Float32](-1)
+        result = storage.copy_to_host[Float32]()
+        assert_equal(len(result), 2)
+
+        # Ensured columns are promises of kernel output, even without upload.
+        storage.ensure_column[Float64](0)
+        assert_true(storage.has_component[Float64]())
+        var empty_copy = storage.copy()
+        assert_true(empty_copy.has_component[Float64]())
+        var empty_result = empty_copy.copy_to_host[Float64]()
+        assert_equal(len(empty_result), 0)
+
+        var zero_capacity = DeviceComponentStorage[Float32](DeviceContext(), 0)
+        zero_capacity.ensure_column[Float32](0)
+        var zero_copy = zero_capacity.copy()
+        assert_true(zero_copy.has_component[Float32]())
+        var zero_result = zero_copy.copy_to_host[Float32]()
+        assert_equal(len(zero_result), 0)
+        zero_capacity.copy_from_host[Float32](Span(data))
+        zero_result = zero_capacity.copy_to_host[Float32]()
+        assert_equal(len(zero_result), 2)
+        assert_equal(zero_result[0], 1)
+        assert_equal(zero_result[1], 2)
+
+
 comptime functions = __functions_in_module()
 
 
