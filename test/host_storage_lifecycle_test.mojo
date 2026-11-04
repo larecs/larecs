@@ -763,6 +763,131 @@ def test_host_storage_replace_owning_strings() raises:
         assert_equal(storage.get[String](entity), old_payload)
 
 
+def test_host_storage_add_overlap_preserves_rows() raises:
+    """Reject partial and full overlap without changing stored rows.
+
+    Raises:
+        Error: If overlap validation or a storage invariant fails.
+    """
+    comptime for partial in range(2):
+        var storage = HostStorage[Int, Float64]()
+        var entity = storage.add_entity(Int(7))
+        var neighbor = storage.add_entity(Int(11))
+        var location = storage._entity_locations[entity.get_id()]
+        var archetype_count = len(storage._archetypes)
+
+        with assert_raises(
+            contains=ComponentError.existing_components_on_add.msg()
+        ):
+            comptime if partial:
+                storage.add(entity, Int(9), Float64(2))
+            else:
+                storage.add(entity, Int(9))
+
+        assert_equal(len(storage._archetypes), archetype_count)
+        assert_equal(len(storage._entity_pool), 2)
+        assert_equal(len(storage.query[Filter()]()), 2)
+        assert_equal(len(storage.query[Filter().include[Float64]()]()), 0)
+        assert_equal(storage.get[Int](entity), 7)
+        assert_equal(storage.get[Int](neighbor), 11)
+        assert_equal(
+            storage._entity_locations[entity.get_id()].archetype_index,
+            location.archetype_index,
+        )
+        assert_equal(
+            storage._entity_locations[entity.get_id()].entity_index,
+            location.entity_index,
+        )
+
+        # A disjoint add and a swap removal must still use the original row.
+        storage.add(entity, Float64(2))
+        assert_equal(storage.get[Int](entity), 7)
+        assert_equal(storage.get[Float64](entity), 2)
+        storage.remove_entity(entity)
+        assert_equal(storage.get[Int](neighbor), 11)
+        storage.remove_entity(neighbor)
+        assert_equal(len(storage.query[Filter()]()), 0)
+
+
+def test_host_storage_replace_overlap_uses_retained_components() raises:
+    """Subtract removed types before checking partial or full overlap.
+
+    Raises:
+        Error: If replacement validation or stored values are incorrect.
+    """
+    comptime for partial in range(2):
+        var storage = HostStorage[Int, Float64, Bool]()
+        var entity = storage.add_entity(Int(7), Float64(2))
+        var location = storage._entity_locations[entity.get_id()]
+        var archetype_count = len(storage._archetypes)
+
+        with assert_raises(
+            contains=ComponentError.existing_components_on_add.msg()
+        ):
+            comptime if partial:
+                storage.replace[Float64]().by(Int(9), Float64(3), entity=entity)
+            else:
+                storage.replace[Float64]().by(Int(9), entity=entity)
+
+        assert_equal(len(storage._archetypes), archetype_count)
+        assert_equal(len(storage._entity_pool), 1)
+        assert_equal(len(storage.query[Filter()]()), 1)
+        assert_equal(storage.get[Int](entity), 7)
+        assert_equal(storage.get[Float64](entity), 2)
+        assert_equal(
+            storage._entity_locations[entity.get_id()].archetype_index,
+            location.archetype_index,
+        )
+        assert_equal(
+            storage._entity_locations[entity.get_id()].entity_index,
+            location.entity_index,
+        )
+
+        # Re-adding a removed type is legal, including with a new type.
+        storage.replace[Int]().by(Int(9), Bool(True), entity=entity)
+        assert_equal(storage.get[Int](entity), 9)
+        assert_equal(storage.get[Float64](entity), 2)
+        assert_true(storage.get[Bool](entity))
+        assert_equal(len(storage.query[Filter()]()), 1)
+        storage.remove_entity(entity)
+        assert_equal(len(storage.query[Filter()]()), 0)
+
+
+def test_host_storage_rejected_overlap_preserves_lifecycles() raises:
+    """Rejected adds and replacements must not touch retained ownership.
+
+    Raises:
+        Error: If rejection moves, copies, or destroys a retained component.
+    """
+    var counters = LifecycleCounters()
+    var storage = HostStorage[TrackedComponent, Int, Float64, Bool]()
+    var entity = storage.add_entity(counters.component(), Int(7), Bool(True))
+    var base_copies = counters.copy_counter()
+    var base_moves = counters.move_counter()
+    var base_dels = counters.del_counter()
+
+    with assert_raises(
+        contains=ComponentError.existing_components_on_add.msg()
+    ):
+        storage.add(entity, Int(9), Float64(2))
+    with assert_raises(
+        contains=ComponentError.existing_components_on_add.msg()
+    ):
+        storage.replace[Bool]().by(Int(9), Float64(2), entity=entity)
+
+    assert_equal(counters.copy_counter(), base_copies)
+    assert_equal(counters.move_counter(), base_moves)
+    assert_equal(counters.del_counter(), base_dels)
+    assert_equal(storage.get[Int](entity), 7)
+    assert_true(storage.get[Bool](entity))
+    assert_true(storage.has[TrackedComponent](entity))
+    storage.remove_entity(entity)
+    assert_equal(counters.del_counter() - base_dels, 1)
+    assert_equal(len(storage.query[Filter()]()), 0)
+    _ = storage^
+    assert_equal(counters.del_counter() - base_dels, 1)
+
+
 comptime functions = __functions_in_module()
 
 

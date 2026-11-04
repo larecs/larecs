@@ -1543,7 +1543,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 comptime if rem_size:
                     compare_mask.set(runtime_remove_ids, False)
                 var add_mask = BitMask(runtime_add_ids)
-                if compare_mask.contains(add_mask):
+                if compare_mask.contains_any(add_mask):
                     raise LarecsError(
                         ComponentError.existing_components_on_add.with_components(
                             compare_mask & add_mask
