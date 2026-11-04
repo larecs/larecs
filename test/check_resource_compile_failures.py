@@ -75,8 +75,8 @@ class ResourceCompileFailures(unittest.TestCase):
                 {"@PAYLOAD@": "Int32", "@FILTER@": "Filter().include[Int32]()",
                  "@RESOURCES@": "Resources[Value]()",
                  "@CHECK@": "constrain_device_safe_resources[Value]()",
-                 "@DIAGNOSTIC@": "DeviceResourceType"},
-                "@PAYLOAD@", "String", "DeviceResourceType",
+                 "@DIAGNOSTIC@": "Device resources require pointer-free trivial plain values"},
+                "@PAYLOAD@", "String", "Device resources require pointer-free trivial plain values",
             ),
         ]
         with tempfile.TemporaryDirectory() as directory:

@@ -8,7 +8,7 @@ from std.testing import *
 from std.memory import alloc, dealloc, Layout, Allocation
 
 from larecs.host_storage import HostStorage
-from larecs import World, SpatialClassifier
+from larecs import World, SpatialClassifier, SystemContext, Components
 from larecs.entity import EntityAccessor
 from larecs.entity import Entity
 from larecs.filter import Filter
@@ -943,6 +943,32 @@ def test_host_storage_single_batch_migration_roundtrip() raises:
             assert_false(storage.has[Bool](entity))
             storage.remove_entity(entity)
         assert_equal(len(storage.query[Filter()]()), 0)
+
+
+def test_selection_replacement_uses_migration_lifecycle() raises:
+    """Destroy replaced values when exact selections change archetype.
+
+    Raises:
+        Error: If selected mutation or a lifecycle assertion fails.
+    """
+    var old = LifecycleCounters()
+    var replacement = LifecycleCounters()
+    var world = World[TrackedComponent, Int]()
+    var context = SystemContext(world)
+    var selection = context.add_entities(old.component(), count=2)
+    var baseline = old.del_counter()
+    selection.replace[remove=Components[TrackedComponent]()](
+        replacement.component(), Int(7)
+    )
+    assert_equal(old.del_counter() - baseline, 2)
+    assert_equal(len(selection), 2)
+    selection^.release()
+    for row in world.storage.query[Filter().include[Int]()]():
+        assert_equal(row.get[Int](), 7)
+    _ = context^
+    _ = world^
+    assert_equal(old.del_counter(), old.copy_counter() + 1)
+    assert_equal(replacement.del_counter(), replacement.copy_counter() + 1)
 
 
 comptime functions = __functions_in_module()
