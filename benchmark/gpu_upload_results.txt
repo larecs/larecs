@@ -1,0 +1,69 @@
+Issue #203 GPU column reservation measurements
+
+Hardware: Apple M4, 10 GPU cores, 16 GB unified memory; Mojo 1.0.0 ed45d567.
+Baseline source: ee57f806749bba70ece40b82cf539796e0011b77.
+
+Command:
+  pixi run mojo run --lld-path /usr/bin/ld -DASSERT=all -I src benchmark/gpu_upload_benchmark.mojo
+
+Method: 65,536 Float32 rows, 1/2/4/8 distinct matching archetypes, one
+read/write kernel. JIT warmup precedes measurement. Twenty cold calls reset
+only DeviceComponentStorage, reusing the same DeviceContext; twenty repeated
+calls retain columns. Times include synchronous upload, launch and download.
+The baseline was measured before implementation. A second baseline run used
+an external copy of src with device_storage.mojo and system.mojo restored
+verbatim from ee57f80; no checkout or test infrastructure was changed.
+The storage-only probes on baseline omit reserve_column calls and start with
+capacity=0, allocations=0. The system timing loop is identical in both builds.
+
+Representative same-context runs (ns/call; not statistical confidence bounds):
+  archetypes   baseline cold   reserved cold   baseline warm   reserved warm
+  1                   511900          313850          517600          300400
+  2                   604300          349050          439850          290100
+  4                   970050          355500          535200          328700
+  8                  2062650          455150          540700          453500
+
+Cold column observations (allocations / prefix device-copy bytes):
+  archetypes   baseline         reserved
+  1            1 /      0       1 / 0
+  2            2 / 131072       1 / 0
+  4            4 / 393216       1 / 0
+  8            8 / 917504       1 / 0
+All fixed-size cases retain exactly 262144 capacity bytes in both versions.
+Repeated same-size uploads require zero additional allocations/prefix copies.
+
+Increasing workload probe: synchronized full-column uploads of 1..65 rows.
+                         baseline       reserved
+  allocations                  65              8
+  prefix device-copy bytes   8320            508
+  final capacity bytes        260            512
+  elapsed ns             15885000        4290000
+
+Counts are inferred from observed buffer capacities at upload boundaries and
+the valid prefix length copied by each growth, not GPU allocator telemetry.
+No production instrumentation was added. Memory numbers are buffer capacity,
+not physical heap high-water marks. Doubling can retain almost twice the peak
+requested row capacity, and growth temporarily holds old and new buffers;
+capacity remains retained after smaller calls, as before. The fixed-total
+cold case requires no extra retained space. Host scheduling and GPU frequency
+make these short timings noisy; the deterministic allocation/copy reduction
+is the primary result. Apple unified memory also limits generalization to
+discrete GPUs.
+
+Validation (all without -g):
+  pixi run mojo run --lld-path /usr/bin/ld -DASSERT=all -I src test/<file>.mojo
+  gpu_device_storage_test.mojo: 9 passed
+  gpu_archetype_test.mojo: 3 passed
+  gpu_component_access_test.mojo: 3 passed
+  gpu_resource_test.mojo: 2 passed
+  gpu_empty_run_test.mojo: 5 passed
+  Total: 22 passed, 0 failed, 0 skipped.
+
+  pixi run mojo format src/larecs/device_storage.mojo src/larecs/system.mojo test/gpu_device_storage_test.mojo test/gpu_archetype_test.mojo benchmark/gpu_upload_benchmark.mojo
+  git diff --check
+
+The standard test runner's known SDK linker failure was avoided using the
+provided direct-test fallback. ASan was not retried: this environment already
+has known JIT runtime/native ASan symbol failures and GPU files carry
+SKIP_ASAN. The compiler offers address/thread sanitizers, not UBSan; no
+sanitizer validation is claimed. ASSERT=all regression checks did run.

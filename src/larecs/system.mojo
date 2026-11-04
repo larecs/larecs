@@ -293,7 +293,10 @@ def _stage_device_columns[
         comptime id = ComponentManager[*WorldTs].get_id[T]()
         var previous = device._take_records[T]()
         var current = List[_Segment]()
-        device.ensure_column[T](total)
+        comptime if filter.reads[T]:
+            device.reserve_column[T](total)
+        else:
+            device.ensure_column[T](total)
         var offset = 0
         for k in range(len(ranges)):
             var rows = ranges[k]
