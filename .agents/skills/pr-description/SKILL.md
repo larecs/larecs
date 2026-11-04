@@ -10,12 +10,13 @@ If the repository's `AGENTS.md` (or `CLAUDE.md`) has PR description rules, or `.
 ## Write
 
 1. Read what the PR changes: `gh pr diff N` (or `git diff BASE...HEAD`), the linked issues, and any design decision records (ADRs) the diff adds or changes.
-2. Write the opening: what was wrong or missing, then what the PR changes. One or two sentences each.
-3. Under `## Features`, list each implemented feature as a bullet with a short description of what callers observe: opt-in flags, newly rejected inputs, preserved invariants. Add implementation details only where reviewers need them to understand the behavior. When the PR closes several issues, an `| Issues | Changes |` table may replace the list.
+2. Write the title: a concise summary of the work in sentence case, such as "Add opt-in threaded host execution". Do not use Conventional Commits form (`feat(scope): ...`).
+3. Write the opening: what was wrong or missing, then what the PR changes. One or two sentences each.
+4. Under `## Features`, list each implemented feature as a bullet with a short description of what callers observe: opt-in flags, newly rejected inputs, preserved invariants. Add implementation details only where reviewers need them to understand the behavior. When the PR closes several issues, an `| Issues | Changes |` table may replace the list.
    Under `## API changes`, list each changed user-facing API in backticks with a short reason. Delete sections that would be empty.
-4. If callers must change code, add `## Breaking change`: the old and new spelling or contract, and full GitHub links to the ADRs that document it (relative links do not resolve in PR bodies).
-5. Add one `Closes #N` line per resolved issue.
-6. Apply with `gh pr create --body-file FILE` or `gh pr edit N --body-file FILE`.
+5. If callers must change code, add `## Breaking change`: the old and new spelling or contract, and full GitHub links to the ADRs that document it (relative links do not resolve in PR bodies).
+6. Add one `Closes #N` line per resolved issue.
+7. Apply with `gh pr create --title TITLE --body-file FILE` or `gh pr edit N --title TITLE --body-file FILE`.
 
 ## Check before publishing
 

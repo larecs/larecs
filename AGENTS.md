@@ -17,6 +17,7 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 
 Use the `pr-description` skill to write or revise a description; `.github/pull_request_template.md` holds the skeleton.
 
+- Title the PR with a concise summary of the work in sentence case, such as "Add opt-in threaded host execution". Do not use Conventional Commits form for PR titles.
 - Open with the problem or motivation in one or two sentences, then the change.
 - Under `## Features`, list each implemented feature as a bullet with a short description of what callers observe: opt-in flags, newly rejected inputs, preserved invariants. Add implementation details only where reviewers need them to understand the behavior.
 - Under `## API changes`, list each changed user-facing API with a short reason.
