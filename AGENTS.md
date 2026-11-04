@@ -15,8 +15,18 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 
 ## Pull Request Descriptions
 
-- Keep PR bodies focused on the problem, behavior changes, relevant implementation details, and validation.
-- Do not add PR metadata to body text: stack or base relationships, branch names, commit hashes or counts, review-range instructions, or narratives about what other PRs supply. Use the hosting platform's metadata fields or stack tooling for those details.
+Use the `pr-description` skill to write or revise a description; `.github/pull_request_template.md` holds the skeleton.
+
+- Open with the problem or motivation in one or two sentences, then the change.
+- Describe what callers observe: new or renamed APIs, opt-in flags, newly rejected inputs, and preserved invariants. Add implementation details only where reviewers need them to understand the behavior.
+- Use bullets, or a table mapping issues to changes, only when the PR has several independent parts.
+- For breaking changes, add a `## Breaking change` section that states what callers must change and links the design decision records that document it.
+- End with one `Closes #N` line per resolved issue.
+- Never include validation: test runs or counts, hardware, sanitizer or doctest results, CI or review-bot status, or what remains untested.
+- Never include benchmark results unless the developer explicitly asks for them.
+- Never include PR metadata: stack or base relationships, branch names, commit hashes or counts, review ranges or walkthroughs, or narratives about what other PRs supply. Use the hosting platform's metadata fields or stack tooling.
+- Never include commit or process history, follow-up or roadmap work, or AI attribution.
+- The Issue Writing rules on other projects and local filesystem paths apply to PR titles and bodies too.
 
 ## Build/Test Commands
 
