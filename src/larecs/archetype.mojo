@@ -36,6 +36,24 @@ from ._utils import (
 )
 from .error import LarecsError, ComponentError
 
+
+@always_inline
+def _retained_component_mask(
+    source: BitMask, destination: BitMask, excluded: BitMask
+) -> BitMask:
+    """Select initialized source values that may be moved without destruction.
+
+    Args:
+        source: Components initialized in the source rows.
+        destination: Components present in the destination archetype.
+        excluded: Removed or replaced components that must stay in the source.
+
+    Returns:
+        Shared components whose ownership transfers to the destination.
+    """
+    return source & destination & ~excluded
+
+
 comptime DEFAULT_CAPACITY = 32
 """Default capacity of an archetype."""
 
@@ -1264,13 +1282,14 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             if count == 0:
                 return
 
+            var retained = _retained_component_mask(
+                source[]._active_component_mask,
+                self._active_component_mask,
+                excluded_components,
+            )
             comptime for id in range(len(Self.ComponentTypes)):
                 comptime T = Self.ComponentTypes[id]
-                if (
-                    not excluded_components.get(id)
-                    and self.has_components[T]()
-                    and source[].has_components[T]()
-                ):
+                if retained.get(id):
                     try:
                         unsafe_uninit_move_n[overlapping=False](
                             dest=self.get_component_ptr[T]()
@@ -2118,13 +2137,14 @@ struct Archetype[
 
             # Shared source values were moved and are now uninitialized. Only
             # destroy initialized components absent from destination or excluded.
+            var retained = _retained_component_mask(
+                source_archetype.get_mask(),
+                self.get_mask(),
+                excluded_components,
+            )
+            var initialized = source_archetype.get_mask() & ~retained
             comptime for id in range(len(Self.ComponentTypes)):
-                if source_archetype._storage._active_component_mask.get(
-                    id
-                ) and (
-                    excluded_components.get(id)
-                    or not self._storage._active_component_mask.get(id)
-                ):
+                if initialized.get(id):
                     source_archetype._storage._columns[id].clear_values(count)
 
             source_archetype._storage._length = 0

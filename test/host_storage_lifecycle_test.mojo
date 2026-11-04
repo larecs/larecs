@@ -888,6 +888,63 @@ def test_host_storage_rejected_overlap_preserves_lifecycles() raises:
     assert_equal(counters.del_counter() - base_dels, 1)
 
 
+def test_host_storage_single_batch_migration_roundtrip() raises:
+    """Keep identity and values through the same single and batch transitions.
+
+    Exercise retained, removed, replaced and added sets together, append to an
+    occupied destination, replace in place, and return to the original mask.
+
+    Raises:
+        Error: If structural operations, locations, or payload checks fail.
+    """
+    comptime for batch in range(2):
+        var storage = HostStorage[Int, String, Float64, Bool]()
+        var destination = storage.add_entity(Int(99), String("existing"), True)
+        var entities = List[Entity]()
+        for i in range(5):
+            entities.append(storage.add_entity(i, String(i), Float64(i)))
+        comptime if batch:
+            var count = 0
+            for entity in storage.replace[String, Float64]().by[
+                filter=Filter().include[Int, String, Float64]()
+            ](String("replacement"), True):
+                assert_equal(storage.get[Int](entity), count)
+                count += 1
+            assert_equal(count, 5)
+        else:
+            for entity in entities:
+                storage.replace[String, Float64]().by(
+                    String("replacement"), True, entity=entity
+                )
+        for i in range(5):
+            assert_equal(storage.get[Int](entities[i]), i)
+            assert_equal(storage.get[String](entities[i]), "replacement")
+            assert_true(storage.has[Bool](entities[i]))
+            assert_false(storage.has[Float64](entities[i]))
+        assert_equal(storage.get[String](destination), "existing")
+        storage.remove_entity(destination)
+        comptime if batch:
+            _ = storage.replace[String]().by[
+                filter=Filter().include[Int, String, Bool]()
+            ](String("in place"))
+            _ = storage.replace[Bool]().by[
+                filter=Filter().include[Int, String, Bool]()
+            ](Float64(7))
+        else:
+            for entity in entities:
+                storage.replace[String]().by(String("in place"), entity=entity)
+                storage.replace[Bool]().by(Float64(7), entity=entity)
+        assert_equal(len(storage.query[Filter()]()), 5)
+        for i in range(5):
+            var entity = entities[i]
+            assert_equal(storage.get[Int](entity), i)
+            assert_equal(storage.get[String](entity), "in place")
+            assert_equal(storage.get[Float64](entity), 7)
+            assert_false(storage.has[Bool](entity))
+            storage.remove_entity(entity)
+        assert_equal(len(storage.query[Filter()]()), 0)
+
+
 comptime functions = __functions_in_module()
 
 
