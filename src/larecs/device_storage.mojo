@@ -440,28 +440,48 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             if length < 0:
                 raise Error("Column length must be nonnegative")
 
-            var capacity_bytes = (
-                max(self._initial_capacity, length) * size_of[T]()
-            )
-            if self._columns[id] is None:
-                self._create_column[T](capacity_bytes)
-            elif len(self._columns[id].unsafe_value()) < capacity_bytes:
-                var old_buffer = self._columns[id].unsafe_value()
-                var new_buffer = self._device_context.enqueue_create_buffer[
-                    DType.uint8
-                ](capacity_bytes)
-                var valid_bytes = self._lengths[id] * size_of[T]()
-                if valid_bytes > 0:
-                    new_buffer.create_sub_buffer[DType.uint8](
-                        0, valid_bytes
-                    ).enqueue_copy_from(
-                        old_buffer.create_sub_buffer[DType.uint8](
-                            0, valid_bytes
-                        )
-                    )
-                self._columns[id] = {new_buffer^}
-
+            self.reserve_column[T](length)
             self._lengths[id] = max(self._lengths[id], length)
+
+    def reserve_column[T: ComponentType](mut self, length: Int) raises:
+        """Reserves device capacity without publishing unwritten logical rows.
+
+        Existing valid rows survive growth. A new column allocates at least
+        the initial capacity or requested rows; subsequent growth doubles
+        byte capacity unless the request is larger. Smaller requests retain
+        both capacity and valid length. Use ``ensure_column`` instead when
+        promising output rows that a kernel will write.
+
+        Parameters:
+            T: The component type whose capacity to reserve.
+
+        Args:
+            length: The minimum row capacity, which must be nonnegative.
+
+        Raises:
+            Error: If length is negative or device allocation or copying fails.
+        """
+        comptime id = Self.component_manager.get_id[T]()
+        if length < 0:
+            raise Error("Column capacity must be nonnegative")
+
+        var capacity_bytes = max(self._initial_capacity, length) * size_of[T]()
+        if self._columns[id] is None:
+            self._create_column[T](capacity_bytes)
+        elif len(self._columns[id].unsafe_value()) < capacity_bytes:
+            var old_buffer = self._columns[id].unsafe_value()
+            capacity_bytes = max(capacity_bytes, 2 * len(old_buffer))
+            var new_buffer = self._device_context.enqueue_create_buffer[
+                DType.uint8
+            ](capacity_bytes)
+            var valid_bytes = self._lengths[id] * size_of[T]()
+            if valid_bytes > 0:
+                new_buffer.create_sub_buffer[DType.uint8](
+                    0, valid_bytes
+                ).enqueue_copy_from(
+                    old_buffer.create_sub_buffer[DType.uint8](0, valid_bytes)
+                )
+            self._columns[id] = {new_buffer^}
 
     def copy_from_host[
         mut: Bool, origin: Origin[mut=mut], //, T: ComponentType
@@ -499,9 +519,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
                 return
 
             var old_length = self._lengths[id]
-            self.ensure_column[T](len(data) + offset)
-            # Publish appended rows only after their upload succeeds.
-            self._lengths[id] = old_length
+            self.reserve_column[T](len(data) + offset)
 
             var sub_buffer = (
                 self._columns[id]

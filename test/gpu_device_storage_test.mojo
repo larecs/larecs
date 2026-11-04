@@ -302,6 +302,108 @@ def test_initial_capacity_does_not_expose_unwritten_rows() raises:
         assert_equal(zero_result[1], 2)
 
 
+def test_reservation_keeps_rows_private_and_columns_independent() raises:
+    """Checks reservation, gaps, valid prefixes, and copies of empty columns.
+
+    Raises:
+        Error: If a device operation or assertion fails.
+    """
+    comptime if has_accelerator():
+        var storage = DeviceComponentStorage[Float32, Float64](
+            DeviceContext(), 8
+        )
+        storage.reserve_column[Float32](2)
+        assert_equal(len(storage._columns[0].unsafe_value()), 8 * 4)
+        assert_false(storage.has_component[Float64]())
+        var result = storage.copy_to_host[Float32]()
+        assert_equal(len(result), 0)
+        var data: List[Float32] = [1, 2]
+        with assert_raises():
+            storage.copy_from_host[Float32](Span(data), offset=1)
+        with assert_raises():
+            storage.copy_to_host[Float32](
+                data.unsafe_ptr().unsafe_origin_cast[MutUntrackedOrigin](),
+                length=1,
+            )
+        var copied = storage.copy()
+        result = copied.copy_to_host[Float32]()
+        assert_equal(len(result), 0)
+        assert_true(copied.has_component[Float32]())
+        storage.copy_from_host[Float32](Span(data))
+        storage.reserve_column[Float32](9)
+        assert_equal(len(storage._columns[0].unsafe_value()), 16 * 4)
+        result = storage.copy_to_host[Float32]()
+        assert_equal(len(result), 2)
+        assert_equal(result[0], 1)
+        assert_equal(result[1], 2)
+        with assert_raises():
+            storage.copy_from_host[Float32](Span(data), offset=3)
+        with assert_raises():
+            storage.reserve_column[Float64](-1)
+        assert_false(storage.has_component[Float64]())
+        storage.reserve_column[Float64](0)
+        result = copied.copy_to_host[Float32]()
+        assert_equal(len(result), 0)
+        assert_equal(storage._lengths[1], 0)
+
+
+def test_incremental_uploads_amortize_growth_and_retain_suffixes() raises:
+    """Checks logarithmic allocation count and all rows after prefix copying.
+
+    Raises:
+        Error: If a device operation or assertion fails.
+    """
+    comptime if has_accelerator():
+        var storage = DeviceComponentStorage[Float32](DeviceContext(), 0)
+        var capacity = 0
+        var allocations = 0
+        for i in range(65):
+            var data: List[Float32] = [Float32(i)]
+            storage.copy_from_host[Float32](Span(data), offset=i)
+            var next_capacity = len(storage._columns[0].unsafe_value())
+            if next_capacity != capacity:
+                allocations += 1
+            capacity = next_capacity
+        assert_equal(allocations, 8)
+        assert_equal(capacity, 128 * 4)
+        var replacement: List[Float32] = [99]
+        storage.copy_from_host[Float32](Span(replacement))
+        storage.reserve_column[Float32](1)
+        storage.ensure_column[Float32](1)
+        assert_equal(len(storage._columns[0].unsafe_value()), capacity)
+        var result = storage.copy_to_host[Float32]()
+        assert_equal(len(result), 65)
+        assert_equal(result[0], 99)
+        for i in range(1, 65):
+            assert_equal(result[i], Float32(i))
+
+
+def test_full_reservation_prevents_segment_reallocation() raises:
+    """Checks stable capacity during flattened uploads and output promises.
+
+    Raises:
+        Error: If a device operation or assertion fails.
+    """
+    comptime if has_accelerator():
+        var storage = DeviceComponentStorage[Float32](DeviceContext(), 0)
+        storage.reserve_column[Float32](32)
+        var pointer = storage.get_device_ptr[Float32]()
+        for i in range(8):
+            var data: List[Float32] = [Float32(i), 2, 3, 4]
+            storage.copy_from_host[Float32](Span(data), offset=i * 4)
+            assert_equal(storage.get_device_ptr[Float32](), pointer)
+            assert_equal(len(storage._columns[0].unsafe_value()), 32 * 4)
+            assert_equal(storage._lengths[0], (i + 1) * 4)
+        # ensure_column deliberately publishes output rows. Fill them on the
+        # device before downloading, just as a write-only kernel must do.
+        storage.ensure_column[Float32](33)
+        storage._columns[0].unsafe_value().enqueue_fill(0)
+        var result = storage.copy_to_host[Float32]()
+        assert_equal(len(result), 33)
+        for value in result:
+            assert_equal(value, 0)
+
+
 comptime functions = __functions_in_module()
 
 
