@@ -68,7 +68,7 @@ explanation, navigation, or precision.
 | G11 | `docs/site/layouts/shortcodes/api.html` | API URLs are manufactured by replacing dots with `#` under a hard-coded `/larecs/larecs/` prefix, and every link opens a new tab. This cannot validate canonical exports or module-qualified targets and is tied to one deployment path. Resolve symbols through a generated symbol map; use ordinary same-tab links. Actual target coverage requires a successful site build. |
 | G12 | `modo.yaml`, doctest runner | `strict: false` permits documentation warnings. The runner excludes eight named source-doctest files and succeeds when the generated directory/files are missing. Some exclusions name removed `Query` examples. Inventory current extracted tests, distinguish compile failures from generator limitations, and fail CI on unexpectedly missing examples. Introduce strict coverage incrementally after existing warnings are fixed. |
 | G13 | `mojo doc` diagnostics | JSON generation succeeds but warns about `indices` in `_TypeChecks._name_indices` and `data` in `DeviceComponentStorage.copy_to_host`. Both are `out` results documented under Args. Use the compiler-supported result documentation form and retain the actual behavior description. |
-| G14 | Local site build | `pixi run build-docs` fails on this Apple Silicon environment with `OSError: [Errno 86] Bad CPU type in executable` for pymodo's `modo_macos`. This blocks generated-link, layout, and extracted-doctest verification here; it does not establish that the Linux publishing job fails. Make native macOS generation reproducible or document a verified generation environment. |
+| G14 | Local site build | `pixi run build-docs` fails on this Apple Silicon environment with `OSError: [Errno 86] Bad CPU type in executable` for pymodo's `modo_macos`. This blocks generated-link, layout, and extracted-doctest verification here; it does not establish that the Linux publishing job fails. Make native macOS generation reproducible or document a verified generation environment. Resolved: see [Workflow proof](#workflow-proof-221). |
 | G15 | Version and status boundaries | Beta breaking changes, experimental threading/device-copy reuse, unfinished synchronization bindings, and historical decisions need a single navigable status and migration reference. An accepted design must not be presented as proof that every capability is implemented or hardware-validated. |
 
 ## Proposed navigation and page content
@@ -264,3 +264,41 @@ architecture error in G14. Rendered layout, exact generated API targets,
 site-wide link completeness and all extracted examples therefore still need a
 successful generator run. No figures have been copied or public pages rewritten
 as part of this proposal.
+
+## Workflow proof (#221)
+
+The first slice connects `examples/particles/movement.mojo`, the
+[Your first simulation](src/start/first_simulation.md) tutorial, the
+`SystemContext.run` reference, and the host-execution figure
+(`docs/figures/host-execution.typ`).
+
+- **Local generation (G14).** pymodo 0.11.13 ships only an x86_64 macOS binary.
+  `scripts/docs.py` now builds the same Modo release natively with the Go
+  toolchain of the docs environment on Apple Silicon. `pixi run build-docs`
+  then runs `mojo doc`, Modo, all 14 guide doctests plus the example program,
+  and Hugo successfully on macOS 27 (arm64). Linux keeps the bundled binary.
+- **Examples.** Hugo mounts `examples/` as assets; the `example` shortcode
+  renders marked regions and the complete program, and fails the build on a
+  missing file or region. `scripts/run_doctests.sh` runs the example programs
+  and now fails when extracted doctests are missing (part of G12).
+- **Reference rendering (G10).** Overload summaries, descriptions, and
+  contracts render visibly with a Constraints section. The `declaration`
+  shortcode removes `mojo doc`'s `where (eq ...)` clauses and self-restating
+  parameter types, keeping the exact declaration collapsed. Overloads get
+  `#name-<index>` anchors. The duplicated `fn def` prefix is gone.
+- **Figures.** Typst 0.15 with `--ignore-system-fonts` produces a
+  byte-identical SVG on repeated runs (`pixi run figures`).
+
+Modo is viable for the rewrite, with these limitations to work around rather
+than replace it:
+
+- Go templates have no string functions, so signature cleanup runs in Hugo.
+- `[name]` inside inline code is parsed as a cross reference, and references
+  inside `Constraints:` are not resolved.
+- Parameter types in the Parameters list still show `mojo doc`'s verbose
+  self-referential forms (for example `Filter[filter._include, ...]`).
+- Docstring doctests still need complete `def main()` programs (G12).
+- Images under `docs/src` are not copied to the site; figures live in
+  `docs/site/static/images/`.
+
+`mojo doc` remains the signature source and Hugo the site generator.
