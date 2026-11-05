@@ -14,7 +14,7 @@ CASES = {
         "var owner = Synchronized[UInt32](0)\nvar view = owner.read_view()\n_ = view.try_write()",
         "Synchronized view is read-only",
     ),
-    "invalid_scalar": ("var owner = AtomicValue[UInt64](0)", "Atomics require UInt32 or Int32"),
+    "invalid_scalar": ("var owner = AtomicValue[UInt64](0)", "invalid bindings for 'AtomicValue'"),
     "invalid_load_order": (
         "var owner = AtomicValue[UInt32](0)\nvar view = owner.read_view()\n_ = view.load[Ordering.RELEASE]()",
         "Invalid atomic load ordering",

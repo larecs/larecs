@@ -13,19 +13,6 @@ comptime _writer = UInt32(0x80000000)
 comptime _max_readers = UInt32(0x7FFFFFFF)
 
 
-@always_inline
-def _validate_type[T: Movable & Deinitable]():
-    """Checks the initial atomic scalar types.
-
-    Parameters:
-        T: Scalar type, restricted to UInt32 or Int32.
-
-    Constraints:
-        T must be UInt32 or Int32.
-    """
-    comptime assert T == UInt32 or T == Int32, "Atomics require UInt32 or Int32"
-
-
 @fieldwise_init
 struct CompareExchangeResult[T: ImplicitlyCopyable & Deinitable](
     Copyable, Movable
@@ -44,7 +31,9 @@ struct CompareExchangeResult[T: ImplicitlyCopyable & Deinitable](
 
 struct AtomicView[
     writable: Bool, T: ImplicitlyCopyable & Deinitable, origin: Origin
-](Copyable, Movable):
+](Copyable, Movable) where (T == UInt32 or T == Int32) and (
+    not writable or origin.mut
+):
     """Atomic-only access to borrowed target-local scalar storage.
 
     Parameters:
@@ -84,10 +73,6 @@ struct AtomicView[
                 kept live and accessed only atomically while this view exists.
                 Writable views require a mutable pointer origin.
         """
-        _validate_type[Self.T]()
-        comptime assert (
-            not Self.writable or Self.origin.mut
-        ), "Atomic view is read-only"
         self._pointer = unsafe_pointer
 
     @always_inline
@@ -103,7 +88,6 @@ struct AtomicView[
         Constraints:
             Ordering must be relaxed or acquire.
         """
-        _validate_type[Self.T]()
         comptime assert (
             ordering == Ordering.RELAXED or ordering == Ordering.ACQUIRE
         ), "Invalid atomic load ordering"
@@ -127,7 +111,6 @@ struct AtomicView[
         Constraints:
             The view must allow updates; ordering is relaxed or release.
         """
-        _validate_type[Self.T]()
         comptime assert (
             Self.writable and Self.origin.mut
         ), "Atomic view is read-only"
@@ -161,7 +144,6 @@ struct AtomicView[
         Constraints:
             The view must allow updates and ordering must be a supported RMW order.
         """
-        _validate_type[Self.T]()
         _validate_target_order[ordering]()
         comptime assert (
             Self.writable and Self.origin.mut
@@ -204,7 +186,6 @@ struct AtomicView[
         Constraints:
             The view must allow updates and ordering must be a supported RMW order.
         """
-        _validate_type[Self.T]()
         _validate_target_order[ordering]()
         comptime assert (
             Self.writable and Self.origin.mut
@@ -279,7 +260,9 @@ def _validate_rmw_order[ordering: Ordering]():
     ), "Invalid atomic update ordering"
 
 
-struct AtomicValue[T: ImplicitlyCopyable & Deinitable](Movable):
+struct AtomicValue[T: ImplicitlyCopyable & Deinitable](Movable) where (
+    T == UInt32 or T == Int32
+):
     """Owns a noncopyable atomic scalar without exposing ordinary references.
 
     Parameters:
@@ -297,7 +280,6 @@ struct AtomicValue[T: ImplicitlyCopyable & Deinitable](Movable):
         Constraints:
             T must be UInt32 or Int32.
         """
-        _validate_type[Self.T]()
         self._value = value.copy()
 
     def read_view(ref self) -> AtomicView[False, Self.T, origin_of(self)]:
@@ -438,7 +420,7 @@ struct TryAccess[Guard: Movable & Deinitable](Movable):
 
 struct SyncView[writable: Bool, T: Movable & Deinitable, origin: Origin](
     Copyable, Movable
-):
+) where (not writable or origin.mut):
     """Borrowed access capability sharing one reader/writer protection identity.
 
     Parameters:
@@ -488,9 +470,6 @@ struct SyncView[writable: Bool, T: Movable & Deinitable, origin: Origin](
         Constraints:
             Writable views require a mutable payload origin.
         """
-        comptime assert (
-            not Self.writable or Self.origin.mut
-        ), "Synchronized view is read-only"
         self._payload = unsafe_payload
         self._state = unsafe_state
 
