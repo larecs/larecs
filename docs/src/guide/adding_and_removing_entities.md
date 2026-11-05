@@ -127,6 +127,9 @@ can be done with {{< api HostStorage.remove_entities remove_entities >}} as foll
 More on queries can be found in the chapter [Queries and iteration](../queries_iteration).
 
 > [!Tip]
-> Adding and removing many components in one go is significantly
-> more efficient than adding and removing components
-> one by one.
+> Prefer the batch operations when you add or remove many entities.
+> `add_entities` looks up the target archetype once and grows its columns
+> once for the whole batch, while `add_entity` repeats both steps per entity.
+> `remove_entities` clears each matching archetype as a whole instead of
+> removing its rows one at a time. How much this saves depends on the batch
+> size and on the component types.
