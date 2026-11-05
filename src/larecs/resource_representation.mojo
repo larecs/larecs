@@ -7,6 +7,19 @@ from std.memory import (
 )
 
 
+trait PlainValue:
+    """Declares that a trivial type stores only plain numeric values.
+
+    Conform when reflection cannot inspect a pointer-free representation,
+    such as a `StaticTuple` or `InlineArray` field of scalars. The declaring
+    author guarantees that no field, at any depth, holds a pointer, reference,
+    or handle; Larecs cannot verify this. Declared types must still be
+    trivially copyable, movable, and deletable.
+    """
+
+    pass
+
+
 def _plain_device_value[T: AnyType]() -> Bool:
     """Checks pointer-free, trivial value representation recursively.
 
@@ -14,8 +27,9 @@ def _plain_device_value[T: AnyType]() -> Bool:
         T: The candidate type, including nested field types.
 
     Returns:
-        True for numeric values and trivial aggregates of supported values.
-        Owning containers, pointers, and opaque representations are rejected.
+        True for numeric values, declared `PlainValue` types, and trivial
+        aggregates of supported values. Owning containers, pointers, and
+        undeclared opaque representations are rejected.
     """
     comptime if not conforms_to(T, Copyable):
         return False
@@ -27,6 +41,8 @@ def _plain_device_value[T: AnyType]() -> Bool:
             and is_trivially_movable[T]()
         ):
             return False
+        elif conforms_to(T, PlainValue):
+            return True
         elif not reflect[T].is_struct():
             return False
         elif T == Bool or reflect[T].name().startswith("SIMD["):

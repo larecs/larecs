@@ -1,10 +1,10 @@
 ---
-id: "0022"
+id: "0024"
 title: "Locked storage ranges and independent cursors"
 status: accepted
 ---
 
-# Decision 0022: Locked storage ranges and independent cursors
+# Decision 0024: Locked storage ranges and independent cursors
 
 ## Context
 

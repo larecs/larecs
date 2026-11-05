@@ -275,4 +275,4 @@ The [focused comparison](../../src/guide/benchmarks.md#shared-host-execution-com
 records paired baseline/current measurements and their limitations.
 This implements the existing execution contract without changing the API;
 the storage range and query migration is specified by
-[decision 0022](0022-locked-storage-ranges.md).
+[decision 0022](0024-locked-storage-ranges.md).
