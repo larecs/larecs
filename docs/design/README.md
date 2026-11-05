@@ -35,6 +35,7 @@ decision record before changing an established behavior:
 | [0021](decisions/0021-skip-unchanged-device-uploads.md) | Accepted; experimental | Opt-in revision-tracked device copies that skip unchanged uploads |
 | [0022](decisions/0022-mutable-adapted-resources.md) | Accepted; experimental | Access-selected adapter views, opt-in mutation capabilities, and once-per-invocation preparation and finalization |
 | [0023](decisions/0023-explicit-execution-backend.md) | Accepted | Compile-time explicit host/device targets without automatic fallback |
+| [0024](decisions/0024-locked-storage-ranges.md) | Accepted | Locked storage ranges, bounded batch membership, and independent shared-metadata cursors |
 
 ## Research evidence
 

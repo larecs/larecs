@@ -29,7 +29,7 @@ from .graph import BitMaskGraph
 from .lock import LockManager
 from .pool import EntityPool
 from .iteration import (
-    LockedWorldEntityIterator,
+    LockedEntityRange,
     _ArchetypeIterator,
 )
 from .filter import Filter, BitMaskFilter
@@ -153,16 +153,16 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         lock_origin: MutOrigin,
         *,
         row_filter: Filter = Filter(),
-        has_start_indices: Bool = False,
-    ] = LockedWorldEntityIterator[
+        has_ranges: Bool = False,
+    ] = LockedEntityRange[
         archetype_origin,
         lock_origin,
         *Self.ComponentTypes,
         row_filter=row_filter,
-        has_start_indices=has_start_indices,
+        has_ranges=has_ranges,
     ]
     """
-    Primary entity iterator type comptime for mask-based HostStorage queries.
+    Locked storage range type for queries and low-level batch results.
 
     These iterators are copyable. Each copy preserves its source's current
     traversal position and acquires a distinct structural-change lock that is
@@ -177,7 +177,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             accessors are created with, if any. Only `query` passes this;
             other callers leave it at the default, so their accessors only
             support `unsafe_get`/`has`.
-        has_start_indices: Enables iteration from specific entity ranges (batch ops).
+        has_ranges: Enables exact bounded ranges for low-level batch results.
     """
 
     comptime ArchetypeIterator[
@@ -689,7 +689,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """Adds a batch of [..entity.Entity Entities].
@@ -736,7 +736,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: If `count` is negative.
 
         Returns:
-            An iterator to the new or recycled [..entity.Entity Entities].
+            A `LockedEntityRange` over exactly the new or recycled entity rows.
 
         """
         with Zone(
@@ -763,7 +763,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                             has_exclude_mask=False,
                         ](Pointer(to=self._archetypes), []),
                         Pointer(to=self._locks),
-                        {[]},
+                        [],
                     }
                     return
                 except _:
@@ -807,7 +807,11 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                         has_exclude_mask=False,
                     ](Pointer(to=self._archetypes), [archetype_index]),
                     Pointer(to=self._locks),
-                    {[first_index_in_archetype]},
+                    [
+                        EntityRange(
+                            archetype_index, first_index_in_archetype, count
+                        )
+                    ],
                 }
             except _:
                 raise LarecsError(WorldError.out_of_locks)
@@ -1227,7 +1231,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """
@@ -1279,7 +1283,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 components to add.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
         with Zone(
             function_name=(
@@ -1310,7 +1314,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """Adds components to all entities matching a compile-time filter.
@@ -1328,7 +1332,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 entity already carrying an added component.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
         with Zone(
             function_name=(
@@ -1377,7 +1381,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """
@@ -1419,7 +1423,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             Error: when called with a filter that could match entities that don't have all of the components to remove.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
 
         with Zone(
@@ -1454,7 +1458,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """Removes components from entities matching a compile-time filter.
@@ -1469,7 +1473,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 entity missing a removed component.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
         with Zone(
             function_name=(
@@ -1972,7 +1976,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """
@@ -1989,7 +1993,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             add_components: The components to add.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
 
         Raises:
             LarecsError: when called with a filter that could match existing entities that already have at least one of the
@@ -2080,7 +2084,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                             Pointer(to=self._archetypes), List[Int]()
                         ),
                         Pointer(to=self._locks),
-                        List[Int](),
+                        List[EntityRange](),
                     }
                 except _:
                     raise LarecsError(WorldError.out_of_locks)
@@ -2090,7 +2094,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             self.invalidate_spatial()
 
             comptime _2kb_of_UInt_or_Int = (1024 * 2) // size_of[UInt]()
-            var arch_start_idcs = List[Int](
+            var changed_ranges = List[EntityRange](
                 capacity=min(len(self._archetypes), _2kb_of_UInt_or_Int)
             )
             var changed_archetype_idcs = List[Int](
@@ -2132,7 +2136,11 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     )
                     var old_archetype_size = len(old_archetype)
                     if old_node_index == new_archetype.get_node_index():
-                        arch_start_idcs.append(0)
+                        changed_ranges.append(
+                            EntityRange(
+                                old_archetype_idx, 0, old_archetype_size
+                            )
+                        )
                         changed_archetype_idcs.append(old_archetype_idx)
 
                         # The archetype did not change, so these rows
@@ -2158,8 +2166,26 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                         )
                     )
                     if new_archetype_idx not in changed_archetype_idcs:
-                        arch_start_idcs.append(arch_start_idx)
+                        changed_ranges.append(
+                            EntityRange(
+                                new_archetype_idx,
+                                arch_start_idx,
+                                old_archetype_size,
+                            )
+                        )
                         changed_archetype_idcs.append(new_archetype_idx)
+                    else:
+                        # Physical cluster stores can share one logical source
+                        # node and append into the same destination store.
+                        for range_index in range(len(changed_archetype_idcs)):
+                            if (
+                                changed_archetype_idcs[range_index]
+                                == new_archetype_idx
+                            ):
+                                changed_ranges[
+                                    range_index
+                                ].row_count += old_archetype_size
+                                break
 
                     # These rows were just appended by
                     # `unsafe_move_all_from_archetype` and hold uninitialized
@@ -2191,7 +2217,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                         Pointer(to=self._archetypes), changed_archetype_idcs^
                     ),
                     Pointer(to=self._locks),
-                    arch_start_idcs^,
+                    changed_ranges^,
                 }
             except _:
                 raise LarecsError(WorldError.out_of_locks)
@@ -2436,59 +2462,6 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     #                     len(archetype[]), closure
     #                 )
 
-    def _get_entity_iterator[
-        has_exclude_mask: Bool = False, has_start_indices: Bool = False
-    ](
-        mut self,
-        include_mask: BitMask,
-        exclude_mask: StaticOptional[BitMask, has_exclude_mask],
-        var start_indices: StaticOptional[List[Int], has_start_indices] = None,
-        out iterator: Self.Iterator[
-            origin_of(self._archetypes),
-            origin_of(self._locks),
-            has_start_indices=has_start_indices,
-        ],
-    ) raises LarecsError:
-        """
-        Creates an iterator over all [..entity.Entity Entities] that have / do not have the components in the provided masks.
-
-        Parameters:
-            has_exclude_mask: Whether an exclude_mask is provided.
-            has_start_indices: Whether start_indices are provided.
-
-
-        Args:
-            include_mask:   The mask of components to include.
-            exclude_mask:   The mask of components to exclude.
-            start_indices: The start indices of the iterator. See [..iteration._WorldEntityIterator].
-        """
-        with Zone(
-            function_name=(
-                "HostStorage._get_entity_iterator[has_exclude_mask: Bool,"
-                " has_start_indices: Bool](include_mask: BitMask, exclude_mask:"
-                " StaticOptional[BitMask, has_exclude_mask], var start_indices:"
-                " StaticOptional[List[Int], has_start_indices], out iterator:"
-                " Self.Iterator)"
-            )
-        ):
-            try:
-                iterator = Self.Iterator[
-                    origin_of(self._archetypes),
-                    origin_of(self._locks),
-                    has_start_indices=has_start_indices,
-                ](
-                    Pointer(to=self._archetypes),
-                    BitMaskFilter(
-                        include_mask,
-                        exclude_mask.copy(),
-                    ),
-                    Pointer(to=self._locks),
-                    start_indices^,
-                )
-            except _:
-                raise LarecsError(UnknownError())
-
-    @always_inline
     def _get_archetype_iterator[
         has_exclude_mask: Bool = False
     ](
@@ -2754,7 +2727,7 @@ struct Replacer[
         out iterator: Self.HostStorage.Iterator[
             origin_of(self._storage[]._archetypes),
             origin_of(self._storage[]._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """
@@ -2773,7 +2746,7 @@ struct Replacer[
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
         with Zone(
             function_name=(
@@ -2795,7 +2768,7 @@ struct Replacer[
         out iterator: Self.HostStorage.Iterator[
             origin_of(self._storage[]._archetypes),
             origin_of(self._storage[]._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """
@@ -2814,7 +2787,7 @@ struct Replacer[
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
 
         with Zone(
@@ -2842,7 +2815,7 @@ struct Replacer[
         out iterator: Self.HostStorage.Iterator[
             origin_of(self._storage[]._archetypes),
             origin_of(self._storage[]._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """Replaces components on entities matching a compile-time filter.
@@ -2860,7 +2833,7 @@ struct Replacer[
                 satisfy the component replacement constraints.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
         with Zone(
             function_name=(

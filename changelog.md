@@ -67,6 +67,10 @@
 
 ### Changed
 
+- Replace mutation-result start-index iteration with bounded `LockedEntityRange`
+  storage adapters, preserving read-only queries, independent cursor/lock copies,
+  and shared immutable membership metadata. Use `SystemContext` selections for
+  batch kernel execution; explicit iterator specializations use `has_ranges`.
 - Replace `on_device` (formerly `on_gpu`) boolean kernel target flags with the
   compile-time `backend=ExecutionBackend.HOST/DEVICE` enum on ordinary and selected
   execution. Host remains the default; unavailable device execution now raises

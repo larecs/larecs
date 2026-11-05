@@ -1,6 +1,7 @@
 from std.testing import *
 
 from larecs.world import World
+from larecs.system import SystemContext, KernelContext
 from larecs.error import ComponentError
 from larecs.entity import Entity
 from larecs.component import ComponentType
@@ -34,15 +35,35 @@ def test_add_entities() raises:
     var pos = Position(1.0, 2.0)
     var vel = Velocity(0.1, 0.2)
     var i = 0
-    for entity in world.storage.add_entities(pos, vel, count=23):
-        assert_equal(entity.unsafe_get[Position]().x, pos.x)
-        assert_equal(entity.unsafe_get[Position]().y, pos.y)
-        assert_equal(entity.unsafe_get[Velocity]().dx, vel.dx)
-        assert_equal(entity.unsafe_get[Velocity]().dy, vel.dy)
-        assert_false(entity.has[FlexibleComponent[0]]())
-        assert_false(entity.has[FlexibleComponent[1]]())
-        assert_false(entity.has[FlexibleComponent[2]]())
-        i += 1
+    var context = SystemContext(world)
+    var created = context.add_entities(pos, vel, count=23)
+
+    var valid = True
+
+    def validate(
+        rows: KernelContext[
+            Filter()
+            .include[Position, Velocity]()
+            .exclude[
+                FlexibleComponent[0], FlexibleComponent[1], FlexibleComponent[2]
+            ]()
+        ],
+    ) {mut i, mut valid}:
+        """Checks the newly created rows through selected kernel execution.
+
+        Args:
+            rows: Newly created position and velocity rows.
+        """
+        for entity in rows:
+            valid = valid and entity.get[Position]().x == 1.0
+            valid = valid and entity.get[Position]().y == 2.0
+            valid = valid and entity.get[Velocity]().dx == 0.1
+            valid = valid and entity.get[Velocity]().dy == 0.2
+            i += 1
+
+    created.run(validate)
+    created^.release()
+    assert_true(valid)
     assert_equal(i, 23)
 
     i = 0
