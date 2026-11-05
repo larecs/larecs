@@ -29,8 +29,9 @@ decision record before changing an established behavior:
 | [0015](decisions/0015-host-device-execution-terminology.md) | Accepted | Host/device execution terminology and beta API renames |
 | [0016](decisions/0016-kernel-memory-synchronization.md) | Accepted; partially implemented | Common CPU/GPU API using 32-bit atomics and nonblocking reader/writer guards |
 | [0017](decisions/0017-deferred-kernel-access.md) | Proposed | Common host/device scoped operations with executor-managed access retries |
-| [0018](decisions/0018-portable-resource-adapters.md) | Accepted | Source-declared automatic registration, stateless read-only adapters, and invocation-owned transfer lifetimes |
-| [0019](decisions/0019-threaded-host-execution.md) | Accepted; experimental | Opt-in host chunks, unchanged sequential fallback, and shared read-only kernel views |
+| [0018](decisions/0018-portable-resource-adapters.md) | Superseded by 0020 | Source-declared automatic registration, stateless read-only adapters, and invocation-owned transfer lifetimes |
+| [0019](decisions/0019-threaded-host-execution.md) | Superseded by 0020 | Opt-in host chunks, unchanged sequential fallback, and shared read-only kernel views |
+| [0020](decisions/0020-declared-plain-values.md) | Accepted; threaded execution remains experimental | Author-declared opaque plain values for threaded components and ordinary resources |
 
 ## Research evidence
 

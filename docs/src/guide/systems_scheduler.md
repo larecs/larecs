@@ -266,7 +266,10 @@ or worker settings change; cross-chunk dependencies require a later run.
 report the configured worker-task budget.
 
 The initial engine accepts nonraising thin kernels, pointer-free plain-value
-accessed components, and explicit `Resources().read[T]()` resources. Ordinary
+accessed components, and explicit `Resources().read[T]()` resources.
+Reflection cannot inspect `StaticTuple` or `InlineArray` storage, so a type
+holding such a field of scalars must conform to `PlainValue` to declare that it
+holds no pointers; Larecs trusts the declaration. Ordinary
 read resources must also be plain values; heap-backed resources use read-only
 `KernelView` adapters, bound once on the caller and shared until join. Unaccessed
 owning components do not prevent threading. Mutable resources (including the
