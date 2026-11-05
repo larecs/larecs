@@ -8,7 +8,8 @@
 
 #set page(width: auto, height: auto, margin: 4pt, fill: white)
 
-#let sans = "New Computer Modern"
+// Inter (docs/figures/fonts) matches the system sans stack the site uses.
+#let sans = "Inter"
 #let mono = "DejaVu Sans Mono"
 
 #let colors = (
