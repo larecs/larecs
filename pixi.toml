@@ -31,6 +31,7 @@ watch-docs = { cmd = "cd scripts && pixi run watch-docs", default-environment = 
 serve-docs = { cmd = "cd scripts && pixi run serve-docs", default-environment = "default" }
 
 satellites = { cmd = "cd examples/satellites && pixi run satellites" }
+scatter-example = "mojo run -I src examples/scatter_resource.mojo"
 plots = { cmd = "cd benchmark/plots && pixi run plots" }
 
 [dependencies]

@@ -23,7 +23,6 @@ from larecs.resource import constrain_device_safe_resources
 struct Samples(DevicePassableResource):
     """Owns current host samples and grid metadata."""
 
-    comptime KernelView = SamplesView
     comptime Adapter = SamplesAdapter
     var values: List[Int32]
     var width: Int
@@ -51,7 +50,7 @@ struct SamplesAdapter(ResourceAdapter):
     """Stateless adapter using current dimensions and cached sample capacity."""
 
     comptime Source = Samples
-    comptime View = SamplesView
+    comptime View[mut: Bool] = SamplesView
 
     @staticmethod
     def validate(source: Self.Source) raises:
@@ -71,7 +70,7 @@ struct SamplesAdapter(ResourceAdapter):
             raise Error("Grid dimensions must match sample count")
 
     @staticmethod
-    def bind_host(source: Self.Source) raises -> Self.View:
+    def bind_host(source: Self.Source) raises -> Self.View[False]:
         """Borrows immutable samples from the validated host owner.
 
         Args:
@@ -94,7 +93,7 @@ struct SamplesAdapter(ResourceAdapter):
     @staticmethod
     def prepare_device(
         source: Self.Source, mut cache: ResourceDeviceCache
-    ) raises -> Self.View:
+    ) raises -> Self.View[False]:
         """Uploads current samples and returns the same descriptor type.
 
         Args:
