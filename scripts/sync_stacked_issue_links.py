@@ -103,6 +103,7 @@ class Project:
         self.token = token
         self.movable = set(movable)
         self.target = target
+        self.field = field
         data = self._lookup(owner, number, field)
         project = data["organization"]["projectV2"]
         self.id = project["id"]
@@ -155,16 +156,17 @@ class Project:
             dry_run: Report the change without making it.
         """
         data = graphql(
-            """query($id: ID!) { node(id: $id) { ... on Issue {
+            """query($id: ID!, $field: String!) { node(id: $id) { ... on Issue {
               projectItems(first: 20) { nodes {
                 id project { id }
-                fieldValueByName(name: "Status") {
+                fieldValueByName(name: $field) {
                   ... on ProjectV2ItemFieldSingleSelectValue { name }
                 }
               } }
             } } }""",
             token=self.token,
             id=issue_id,
+            field=self.field,
         )
         items = [
             item
@@ -317,7 +319,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY"))
     parser.add_argument("--pr", type=int, help="process only this pull request")
-    parser.add_argument("--lookback-hours", type=float, default=3.0)
+    parser.add_argument(
+        "--lookback-hours",
+        type=float,
+        default=24.0,
+        help="how far back a full scan looks for merged pull requests",
+    )
     parser.add_argument("--project-owner", default="larecs")
     parser.add_argument("--project-number", type=int, default=1)
     parser.add_argument("--status-field", default="Status")
@@ -361,10 +368,10 @@ def main() -> None:
             continue
         print(f"PR #{pr['number']} ({pr['state'].lower()}, base {pr['baseRefName']})")
         for number in numbers:
-            target = issue(args.repo, number)
-            if target is None or target["state"] != "open":
-                continue
             try:
+                target = issue(args.repo, number)
+                if target is None or target["state"] != "open":
+                    continue
                 if pr["state"] == "MERGED":
                     # A reopen after an automatic close wins, unless the pull
                     # request's description or code changed afterwards while it

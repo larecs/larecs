@@ -19,6 +19,12 @@ on:
         description: Report changes without making them
         type: boolean
         default: false
+      lookback-hours:
+        description: >-
+          How far back to look for merged pull requests; raise it to recover
+          merges missed while scans were paused or failing
+        type: number
+        default: 24
   # Immediate updates for branches that contain this file.
   pull_request:
     types: [opened, edited, reopened, closed]
@@ -57,8 +63,10 @@ jobs:
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           DRY_RUN: ${{ inputs.dry-run }}
+          LOOKBACK_HOURS: ${{ inputs.lookback-hours }}
         run: |
           args=(--repo "$GITHUB_REPOSITORY")
           if [ -n "$PR_NUMBER" ]; then args+=(--pr "$PR_NUMBER"); fi
           if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          if [ -n "$LOOKBACK_HOURS" ]; then args+=(--lookback-hours "$LOOKBACK_HOURS"); fi
           python3 scripts/sync_stacked_issue_links.py "${args[@]}"
