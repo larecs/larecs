@@ -17,9 +17,11 @@ lock ownership, ordinary queries, and low-level `HostStorage` operations.
 [Decision 0001](design/decisions/0001-locked-entity-selections.md) is the
 behavioral contract.
 
-- [ ] Share CPU execution plumbing for ordinary and selected ranges, including
+- [x] Share CPU execution plumbing for ordinary and selected ranges, including
   capture and resource binding. Keep full-world range discovery lazy and rerun
-  ordinary system/query tests after the refactor.
+  ordinary system/query tests after the refactor. Shared resource binding and
+  bounded context setup are covered by `test/cpu_execution_test.mojo`; CPU
+  paths discover ranges without allocating matching-range metadata.
 - [ ] Share batch mutation internals while preserving the whole-archetype bulk
   fast path and exact partial-row behavior. Avoid routing large batches through
   per-entity movement.

@@ -141,12 +141,6 @@ Use the `pr-description` skill to write or revise a description; `.github/pull_r
 - Always consider vectorization opportunities
 - Update benchmarks when making performance changes
 
-## Issue Writing
-
-- Keep issue titles, bodies, and comments focused on Larecs. Never mention other projects unless the developer explicitly requests it.
-- Never include local filesystem paths in issues, including pasted logs or command output. Use repository links or symbol names to identify code.
-- Manage prioritization and scheduling through issue metadata, such as milestone assignments and priority fields or labels. Keep priority levels, deferral status, and release scheduling out of issue titles, bodies, and comments.
-
 ## Building and Using Benchmarks
 
 - Add or update representative benchmarks when changing storage, queries,
@@ -196,6 +190,12 @@ Use the `pr-description` skill to write or revise a description; `.github/pull_r
   cases, timing boundaries, sampling, or baseline selection. Record hardware,
   compiler version, method, and limitations with performance claims; keep
   unmeasured application benefits and remaining work explicit in the roadmap.
+
+## Issue Writing
+
+- Keep issue titles, bodies, and comments focused on Larecs. Never mention other projects unless the developer explicitly requests it.
+- Never include local filesystem paths in issues, including pasted logs or command output. Use repository links or symbol names to identify code.
+- Manage prioritization and scheduling through issue metadata, such as milestone assignments and priority fields or labels. Keep priority levels, deferral status, and release scheduling out of issue titles, bodies, and comments.
 
 ## Known issues
 
