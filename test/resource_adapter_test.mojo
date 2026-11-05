@@ -82,7 +82,6 @@ struct Grid(DevicePassableResource):
     """Host owner used to test current scientific configuration and replacement.
     """
 
-    comptime KernelView = GridView
     comptime Adapter = GridAdapter
     var samples: List[Int32]
     var width: Int
@@ -118,7 +117,7 @@ struct GridAdapter(ResourceAdapter):
     """Stateless adapter validating dimensions before queueing any work."""
 
     comptime Source = Grid
-    comptime View = GridView
+    comptime View[mut: Bool] = GridView
 
     @staticmethod
     def validate(source: Self.Source) raises:
@@ -141,7 +140,7 @@ struct GridAdapter(ResourceAdapter):
             raise Error("Grid sample count mismatch")
 
     @staticmethod
-    def bind_host(source: Self.Source) raises -> Self.View:
+    def bind_host(source: Self.Source) raises -> Self.View[False]:
         """Builds the current host descriptor.
 
         Args:
@@ -165,7 +164,7 @@ struct GridAdapter(ResourceAdapter):
     @staticmethod
     def prepare_device(
         source: Self.Source, mut cache: ResourceDeviceCache
-    ) raises -> Self.View:
+    ) raises -> Self.View[False]:
         """Uploads samples and optionally fails after enqueue for cleanup testing.
 
         Args:
@@ -188,7 +187,6 @@ struct GridAdapter(ResourceAdapter):
 struct OtherGrid(DevicePassableResource):
     """A distinct source deliberately sharing GridView."""
 
-    comptime KernelView = GridView
     comptime Adapter = OtherGridAdapter
     var grid: Grid
 
@@ -197,7 +195,7 @@ struct OtherGridAdapter(ResourceAdapter):
     """Forwards preparation while preserving separate source identity."""
 
     comptime Source = OtherGrid
-    comptime View = GridView
+    comptime View[mut: Bool] = GridView
 
     @staticmethod
     def validate(source: Self.Source) raises:
@@ -212,7 +210,7 @@ struct OtherGridAdapter(ResourceAdapter):
         GridAdapter.validate(source.grid)
 
     @staticmethod
-    def bind_host(source: Self.Source) raises -> Self.View:
+    def bind_host(source: Self.Source) raises -> Self.View[False]:
         """Borrows the wrapped host grid.
 
         Args:
@@ -229,7 +227,7 @@ struct OtherGridAdapter(ResourceAdapter):
     @staticmethod
     def prepare_device(
         source: Self.Source, mut cache: ResourceDeviceCache
-    ) raises -> Self.View:
+    ) raises -> Self.View[False]:
         """Uploads the wrapped grid in its separate source cache.
 
         Args:

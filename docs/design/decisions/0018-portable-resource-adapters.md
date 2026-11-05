@@ -1,15 +1,20 @@
 ---
 id: "0018"
 title: "Portable resource adapters"
-status: accepted
+status: superseded by 0020
 status_notes: |
   Implemented for read-only contiguous buffers and trivial descriptors.
   Automatic registration, source-oriented getters, source leases, cache reuse,
   and staged transfers are verified on Mojo 1.0.0 and Apple M4.
-  Extends decision 0002; writable adapted resources remain deferred.
+  Extends decision 0002. Decision 0022 extends the read-only access rules
+  below with opt-in mutable views; `KernelView` is now an alias for
+  `View[False]`.
 ---
 
 # Decision 0018: Portable resource adapters
+
+Superseded by [decision 0020](0020-declared-plain-values.md), which revises
+ordinary resource eligibility and retains the remaining adapter contract.
 
 ## Context
 

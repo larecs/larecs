@@ -137,6 +137,7 @@ Exports:
  - spatial.morton_key_3d
  - execution.ExecutionBackend
  - execution.ThreadedExecutionConfig
+ - resource_representation.PlainValue
  - world.World
 """
 from .world import World
@@ -180,6 +181,7 @@ from .sync import (
 
 from .resource_adapter import (
     DevicePassableResource,
+    ResourceAccess,
     ResourceAdapter,
     ResourceDeviceCache,
     ReadBuffer,
@@ -187,3 +189,4 @@ from .resource_adapter import (
 )
 
 from .execution import ExecutionBackend, ThreadedExecutionConfig
+from .resource_representation import PlainValue

@@ -122,7 +122,6 @@ def host_read_offset(
 struct Flaky(DevicePassableResource):
     """Adapted resource whose preparation can fail after its upload."""
 
-    comptime KernelView = ReadBuffer[DType.int32]
     comptime Adapter = FlakyAdapter
     var samples: List[Int32]
     var fail: Bool
@@ -142,7 +141,7 @@ struct FlakyAdapter(ResourceAdapter):
     """Uploads samples, then optionally raises."""
 
     comptime Source = Flaky
-    comptime View = ReadBuffer[DType.int32]
+    comptime View[mut: Bool] = ReadBuffer[DType.int32]
 
     @staticmethod
     def validate(source: Self.Source) raises:
@@ -154,7 +153,7 @@ struct FlakyAdapter(ResourceAdapter):
         pass
 
     @staticmethod
-    def bind_host(source: Self.Source) raises -> Self.View:
+    def bind_host(source: Self.Source) raises -> Self.View[False]:
         """Borrows host samples.
 
         Args:
@@ -173,7 +172,7 @@ struct FlakyAdapter(ResourceAdapter):
     @staticmethod
     def prepare_device(
         source: Self.Source, mut cache: ResourceDeviceCache
-    ) raises -> Self.View:
+    ) raises -> Self.View[False]:
         """Uploads samples and raises afterwards if requested.
 
         Args:
