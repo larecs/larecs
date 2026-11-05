@@ -8,6 +8,7 @@ component iteration, for seven independently timed batches after warmup.
 
 from std.benchmark import keep
 from std.time import perf_counter_ns
+from std.testing import assert_equal
 from larecs import Filter, KernelContext, SystemContext, World
 
 
@@ -79,6 +80,17 @@ def measure[archetypes: Int, rows: Int, use_closure: Bool]() raises:
         keep(world)
         if batch > 0:
             print(archetypes, rows, use_closure, Float64(elapsed) / iterations)
+
+    var count = 0
+    var checksum = 0
+    for entity in world.storage.query[FILTER]():
+        var value = entity.get[Value]().value
+        assert_equal(value, 8 * iterations)
+        checksum += value
+        count += 1
+    assert_equal(count, archetypes * rows)
+    assert_equal(checksum, archetypes * rows * 8 * iterations)
+    keep(checksum)
 
 
 def main() raises:
