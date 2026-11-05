@@ -55,7 +55,8 @@ To let VSCode and the language server know of Larecs🌲, include it as follows:
 Refer to the [API docs](https://larecs.github.io/larecs/) for details
 on how to use Larecs🌲.
 
-For contributors, [the design record](docs/design/README.md) collects the ECS
+To contribute, start with the [contributing guide](CONTRIBUTING.md).
+[The design record](docs/design/README.md) collects the ECS
 requirements, architecture, and accepted decisions. Start there before changing
 behavior; it also explains how to propose or supersede a decision. The
 [roadmap](docs/roadmap.md) tracks upcoming work by priority, and the
