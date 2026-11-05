@@ -254,8 +254,10 @@ def last_activity(repo: str, number: int) -> str:
     """Returns when a pull request last changed its description or code.
 
     Considers the title and body edit time (or creation time if never
-    edited), the head commit's commit time, and the latest force push, which
-    can replace commits without a newer commit time.
+    edited), when the current head commit reached GitHub, and the latest
+    force push. A commit's own date says when it was made, not when it was
+    pushed, so the push time is taken from the earliest check suite created
+    for the head commit; the commit date is the fallback when it has none.
 
     Args:
         repo: Repository as `owner/name`.
@@ -270,6 +272,7 @@ def last_activity(repo: str, number: int) -> str:
           repository(owner: $owner, name: $name) { pullRequest(number: $number) {
             createdAt
             lastEditedAt
+            headRefOid
             commits(last: 1) { nodes { commit { committedDate } } }
             timelineItems(itemTypes: [HEAD_REF_FORCE_PUSHED_EVENT], last: 1) {
               nodes { ... on HeadRefForcePushedEvent { createdAt } }
@@ -280,9 +283,18 @@ def last_activity(repo: str, number: int) -> str:
         name=name,
         number=number,
     )["repository"]["pullRequest"]
+    suites = json.loads(
+        gh(
+            "api", f"repos/{repo}/commits/{pr['headRefOid']}/check-suites?per_page=100",
+            "--jq", "[.check_suites[].created_at]",
+        )
+    )
+    pushed = min(suites) if suites else None
     times = [pr["lastEditedAt"] or pr["createdAt"]]
-    times += [node["commit"]["committedDate"] for node in pr["commits"]["nodes"]]
     times += [node["createdAt"] for node in pr["timelineItems"]["nodes"]]
+    times += [pushed] if pushed else [
+        node["commit"]["committedDate"] for node in pr["commits"]["nodes"]
+    ]
     latest = max(datetime.fromisoformat(time).astimezone(timezone.utc) for time in times)
     return latest.strftime("%Y-%m-%dT%H:%M:%SZ")
 
