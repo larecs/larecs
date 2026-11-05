@@ -365,9 +365,15 @@ def main() -> None:
             project_token,
         )
     except subprocess.CalledProcessError as error:
+        if project_token:
+            hint = (
+                "PROJECT_TOKEN was rejected; it needs organization Projects read"
+                f" and write access for {args.project_owner}"
+            )
+        else:
+            hint = "set PROJECT_TOKEN to update statuses"
         print(
-            "warning: project not accessible; set PROJECT_TOKEN to update statuses:"
-            f" {error.stderr.strip()}",
+            f"::warning::project not accessible; {hint}: {error.stderr.strip()}",
             file=sys.stderr,
         )
 
