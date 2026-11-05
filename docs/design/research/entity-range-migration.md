@@ -6,13 +6,14 @@ shared query membership, independent cursors, and the existing mutation engines.
 
 ## Performance assessment
 
-On 2026-11-04, compare PR212's `8d805882487dd5091a78829396d746b103893b97`
+On 2026-11-04, compared PR212's `8d805882487dd5091a78829396d746b103893b97`
 with implementation `7d4e1afb1967001a592fb6e3aade200d8d3aa3b9` on an Apple M4,
 macOS 27.0.1 (26A434), Mojo 1.0.0
-(`ed45d567`). Both libraries use the same current checked-in
+(`ed45d567`). Both libraries used identical
 `benchmark/entity_selection_benchmark.mojo` and `benchmark/migration_benchmark.mojo`
-drivers. Export baseline sources with `git archive`; build each driver once
-against each library with `mojo build -I <library-src> -I benchmark`, without
+drivers from `7d4e1af`. Baseline sources were exported with `git archive`; each
+driver was built once against each library with
+`mojo build -I <library-src> -I benchmark`, without
 debug information, sanitizers, or tracing. Compilation is excluded from operation
 timings; no cold compilation cost was measured.
 
@@ -105,3 +106,32 @@ revision `8d80588` in
 `global=true`, causing Modo to emit removed `fn` syntax. PR212 contains the same
 block. API JSON generation and the three guides affected by this migration passed;
 this failure is not reported as a successful complete documentation build.
+
+## Parent integration
+
+Merged parent publication `73ba92f` normally, retaining ADR0022 and the physical
+source-count correction. It supplies the shared host-safe `global_idx` probe,
+the real `main`/`global=true` threaded doctest, and benchmark result checks.
+The migration and dispatch drivers now validate final values and row counts;
+the iterator driver includes the Value bit in every populated archetype.
+The earlier diagnostic samples above predate those added driver checks and do
+not establish performance for the corrected parent publication. Integration
+checks use the corrected drivers for compilation and correctness only.
+
+Post-merge checks on 2026-11-05, on the M4:
+
+- `pixi run tests --parallel 1 test/world_entity_iterator_test.mojo test/gpu_empty_run_test.mojo`:
+  all five compiler rejection/control pairs, 13 iterator sanitizer tests, and six
+  host/Metal empty-run tests pass. The GPU file retains `SKIP_ASAN` and
+  `SKIP_DEBUG`; those six results are not sanitizer coverage.
+- `pixi run mojo run -I src test/partitioned_spatial_test.mojo`: all nine spatial
+  tests pass in an optimized build, including heap-backed bulk mutations.
+- API JSON generation and the extracted threaded guide with `-DASSERT=all` pass
+  with the parent doctest fix included.
+- The corrected CPU dispatch, iterator selection, and migration benchmark
+  binaries build and run their final row/value assertions. The iterator driver
+  validates all 512 rows after host and actual Metal dispatch. These runs are
+  correctness checks; benchmark output supplies no new timing claim.
+
+These focused integration checks supplement the interrupted full-suite attempt
+recorded above.

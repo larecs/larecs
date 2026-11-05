@@ -13,8 +13,8 @@ buffer (512 bytes for these 64 indices); it now retains the existing Arc
 with zero new selection allocations and no copied indices. Construction now
 allocates an Arc owner plus its List buffer. Bounded reservation avoids List
 growth for up to 256 candidates on this 64-bit host; sparse queries can
-reserve up to two KiB they do not use. Explicit start-index Lists retain
-their existing copy behavior; they are not GPU selection lists.
+reserve up to two KiB they do not use. Low-level batch cursors share bounded
+EntityRange metadata across copies; they are not GPU selection lists.
 
 Mask caching evaluation: not retained. Matching costs one linear scan of
 retained archetypes. A cache would require a
@@ -25,7 +25,7 @@ occupancy checks. Caching populated tables alone is invalid after refill.
 These costs and borrow/API changes are outside the cursor ownership refactor.
 A cache prototype was not benchmarked, so no claim is made that caching
 could not improve query-heavy CPU workloads. Public API redesign remains
-separate. Selections contain list indices only, never table pointers.
+separate. Query selections contain store indices, never table pointers.
 """
 
 from std.benchmark import keep
