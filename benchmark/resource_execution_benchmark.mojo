@@ -1,6 +1,7 @@
-"""Fixed complete resource invocations against identical base/current drivers.
+"""Fixed complete resource invocations with matched base/current workloads.
 
-The unflagged driver builds against base and current sources identically.
+Bases predating ExecutionBackend need the call-spelling adaptation documented
+in docs/src/guide/benchmarks.md; keep all workload and timing code identical.
 Construction and final checks are excluded; transfers and synchronization are
 included.
 """
