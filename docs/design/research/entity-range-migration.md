@@ -1,7 +1,7 @@
 # Storage range migration evidence
 
 The #170 migration replaces start-index mutation iterators with bounded storage
-ranges under [decision 0022](../decisions/0022-locked-storage-ranges.md), retaining
+ranges under [decision 0022](../decisions/0024-locked-storage-ranges.md), retaining
 shared query membership, independent cursors, and the existing mutation engines.
 
 ## Performance assessment

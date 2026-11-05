@@ -12,9 +12,9 @@ status_notes: |
   exist, preventing address reuse even after host replacement. Construction
   needs no global counter or lock, and records for another token are discarded.
   The non-advancing component accessor is `world.storage.read[T](entity)`, next
-  to `get`. Device column tests, including storage
-  replacement and mutable row access regressions, run on Apple M4 (Metal).
-  Amends the unconditional-upload rule of
+  to `get`. Device tests pass on NVIDIA A100 and Apple M4; the storage replacement
+  and mutable row access regressions run on Apple M4 (Metal). AMD is
+  compile-checked only. Amends the unconditional-upload rule of
   decisions 0002 and 0018 for worlds that opt in; eager write-back is unchanged.
 ---
 
