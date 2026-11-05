@@ -32,6 +32,7 @@ decision record before changing an established behavior:
 | [0018](decisions/0018-portable-resource-adapters.md) | Superseded by 0020 | Source-declared automatic registration, stateless read-only adapters, and invocation-owned transfer lifetimes |
 | [0019](decisions/0019-threaded-host-execution.md) | Superseded by 0020 | Opt-in host chunks, unchanged sequential fallback, and shared read-only kernel views |
 | [0020](decisions/0020-declared-plain-values.md) | Accepted; threaded execution remains experimental | Author-declared opaque plain values for threaded components and ordinary resources |
+| [0021](decisions/0021-skip-unchanged-device-uploads.md) | Accepted; experimental | Opt-in revision-tracked device copies that skip unchanged uploads |
 
 ## Research evidence
 
@@ -44,6 +45,10 @@ decision record before changing an established behavior:
 - [Apple GPU publication ordering](research/apple-gpu-publication-ordering.md)
   explains the Apple restrictions and records M4 correctness and performance
   measurements for acquire loads and release stores.
+- [Reference invalidation probe](research/reference-invalidation-probe.mojo)
+  shows that Mojo 1.0.0 accepts writes through a reference after a later
+  `mut self` call on its origin, motivating decision 0021's explicit
+  invalidation rule.
   Research notes do not establish accepted requirements.
 
 ## Execution terminology

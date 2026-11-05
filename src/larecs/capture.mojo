@@ -218,7 +218,7 @@ struct DeviceCaptureStorage[captures: Captures]:
         mut self,
         device: DeviceContext,
         host: CaptureAccessor[Self.captures],
-        frame: _TransferFrame,
+        mut frame: _TransferFrame,
     ) raises:
         """Uploads each bound host value into its own device allocation.
 

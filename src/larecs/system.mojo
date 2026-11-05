@@ -26,6 +26,7 @@ from .entity import EntityRange
 from .error import LarecsError, WorldError
 from .component import (
     ComponentType,
+    ComponentManager,
     Components,
     constrain_device_safe_components,
 )
@@ -41,6 +42,7 @@ from .resource import (
     _validate_resource_spec,
 )
 from .resource_adapter import DevicePassableResource, _TransferFrame
+from .device_storage import _Segment
 from .gpu_launch import BLOCK_SIZE, gpu_grid_dim
 from .capture import (
     Captures,
@@ -222,7 +224,14 @@ def _host_kernel_context[
     Returns:
         A context with component pointers offset to the range start and local
         row numbering. Its untracked references must not escape execution.
+        Revisions of the written columns of the store advance (decision 0021).
     """
+    comptime for i in range(len(filter)):
+        comptime T = filter._include.ComponentTypes[i]
+        comptime if filter.writes[T]:
+            archetype._storage._touch_column(
+                ComponentManager[*WorldTs].get_id[T]()
+            )
     var columns = KernelContext[
         filter, required_resources, capture_spec
     ].Columns(uninitialized=True)
@@ -240,6 +249,120 @@ def _host_kernel_context[
         length=Int32(row_count),
         thread_count=1,
     )
+
+
+def _stage_device_columns[
+    filter: Filter, *WorldTs: ComponentType
+](
+    mut world: World[*WorldTs],
+    ranges: List[EntityRange],
+    total: Int,
+    mut frame: _TransferFrame,
+) raises -> List[List[_Segment]]:
+    """Uploads the readable columns of matched ranges, skipping unchanged segments.
+
+    Ranges are packed at increasing offsets in the given order. With device
+    copy reuse enabled, a readable segment is skipped only if the column's
+    previous record at the same position matches its store, incarnation,
+    revision, row range, and offset (decision 0021). The records of every
+    accessed column are removed before any work is queued.
+
+    Parameters:
+        filter: Kernel component access declarations.
+        WorldTs: Component types declared by the world.
+
+    Args:
+        world: World whose device storage is initialized.
+        ranges: Nonempty matched store ranges in packing order.
+        total: Sum of the range row counts.
+        frame: Invocation staging owner.
+
+    Raises:
+        Error: If allocation or transfer fails.
+
+    Returns:
+        Per filter position, the segments the column will hold after a
+        successful run; empty while reuse is disabled.
+    """
+    ref device = world._device_storage.unsafe_value()
+    device._check_host(world.storage._id)
+    comptime column_count = len(filter)
+    var records = List[List[_Segment]](capacity=column_count)
+    comptime for i in range(len(filter)):
+        comptime T = filter._include.ComponentTypes[i]
+        comptime id = ComponentManager[*WorldTs].get_id[T]()
+        var previous = device._take_records[T]()
+        var current = List[_Segment]()
+        device.ensure_column[T](total)
+        var offset = 0
+        for k in range(len(ranges)):
+            var rows = ranges[k]
+            ref store = world.storage._archetypes.unsafe_get(
+                rows.archetype_index
+            )
+            var skip = False
+            if device._reuse:
+                var segment = _Segment(
+                    rows.archetype_index,
+                    store._storage._incarnation,
+                    store._storage._column_revision(id),
+                    rows.first_row,
+                    rows.row_count,
+                    offset,
+                )
+                skip = (
+                    segment.incarnation != 0
+                    and k < len(previous)
+                    and previous[k] == segment
+                )
+                current.append(segment)
+            comptime if filter.reads[T]:
+                if not skip:
+                    device.stage_from_host[T](
+                        frame,
+                        Span(
+                            unsafe_ptr=store._storage.get_component_ptr[
+                                T
+                            ]().unsafe_offset(rows.first_row),
+                            length=rows.row_count,
+                        ),
+                        offset=offset,
+                    )
+            offset += rows.row_count
+        records.append(current^)
+    return records^
+
+
+def _commit_device_columns[
+    filter: Filter, *WorldTs: ComponentType
+](mut world: World[*WorldTs], var records: List[List[_Segment]]):
+    """Records device column contents after successful publication.
+
+    Advances the revision of every written column in each matched store,
+    since publication changed its host values, then stamps the segments.
+
+    Parameters:
+        filter: Kernel component access declarations.
+        WorldTs: Component types declared by the world.
+
+    Args:
+        world: World whose device storage is initialized.
+        records: Segments returned by `_stage_device_columns`.
+    """
+    ref device = world._device_storage.unsafe_value()
+    comptime for i in range(len(filter)):
+        comptime T = filter._include.ComponentTypes[i]
+        comptime id = ComponentManager[*WorldTs].get_id[T]()
+        comptime if filter.writes[T]:
+            for segment in records[i]:
+                world.storage._archetypes.unsafe_get(
+                    segment.store
+                )._storage._touch_column(id)
+            for ref segment in records[i]:
+                segment.revision = world.storage._archetypes.unsafe_get(
+                    segment.store
+                )._storage._column_revision(id)
+        device._restore_records[T](records[i].copy())
 
 
 def _validate_threaded_spec[
@@ -819,31 +942,14 @@ struct EntitySelection[
                 var resource_pointers = resource_binding.bind_device(
                     device_storage._device_context, frame
                 )
+                var column_records = _stage_device_columns[filter](
+                    self._world[], matching_ranges, total_length, frame
+                )
                 var kernel_columns = HostKernelContext[
                     filter, required_resources, capture_spec
                 ].Columns(uninitialized=True)
                 comptime for i in range(len(filter)):
                     comptime T = filter._include.ComponentTypes[i]
-                    comptime if filter.reads[T]:
-                        var packed_offset = 0
-                        for selected_range in matching_ranges:
-                            ref archetype = (
-                                self._world[].storage._archetypes.unsafe_get(
-                                    selected_range.archetype_index
-                                )
-                            )
-                            var source = Span(
-                                unsafe_ptr=archetype._storage.get_component_ptr[
-                                    T
-                                ]().unsafe_offset(selected_range.first_row),
-                                length=selected_range.row_count,
-                            )
-                            device_storage.stage_from_host[T](
-                                frame, source, offset=packed_offset
-                            )
-                            packed_offset += selected_range.row_count
-                    else:
-                        device_storage.ensure_column[T](total_length)
                     kernel_columns[i] = device_storage.get_device_ptr[T]()
 
                 var grid_dim = gpu_grid_dim(
@@ -892,6 +998,8 @@ struct EntitySelection[
                 device_captures.copy_back(host_captures, frame)
                 device_storage.synchronize()
                 frame.publish()
+                resource_binding.commit_device()
+                _commit_device_columns[filter](self._world[], column_records^)
             except error:
                 _drain_failed_device(
                     self._world[].resources,
@@ -901,6 +1009,7 @@ struct EntitySelection[
                 )
             finally:
                 resource_binding.release()
+                self._world[]._last_device_upload = frame.uploaded.copy()
 
     def run[
         filter: Filter,
@@ -1761,35 +1870,29 @@ struct SystemContext[
                     var resource_pointers = resource_binding.bind_device(
                         device_storage._device_context, frame
                     )
+                    var matched_ranges = List[EntityRange](
+                        capacity=len(matching_archetypes._archetype_indices)
+                    )
+                    for index in matching_archetypes._archetype_indices:
+                        matched_ranges.append(
+                            EntityRange(
+                                index,
+                                0,
+                                len(
+                                    self.world[].storage._archetypes.unsafe_get(
+                                        index
+                                    )
+                                ),
+                            )
+                        )
+                    var column_records = _stage_device_columns[filter](
+                        self.world[], matched_ranges, length, frame
+                    )
                     var kernel_columns = HostKernelContext[
                         filter, required_resources, capture_spec
                     ].Columns(uninitialized=True)
                     comptime for i in range(len(filter)):
                         comptime T = filter._include.ComponentTypes[i]
-                        comptime if filter.reads[T]:
-                            # A filter can match multiple archetypes; each is a
-                            # separate homogeneous host range that must land at
-                            # its own offset in the flat device column,
-                            # matching how the download loop below reads them
-                            # back. Uploading every archetype at the default
-                            # `offset=0` would overwrite each archetype with
-                            # the next, corrupting every column but the last.
-                            var offset = 0
-                            for ref archetype in matching_archetypes.copy():
-                                device_storage.stage_from_host[T](
-                                    frame,
-                                    archetype._storage.get_component_span[T](),
-                                    offset=offset,
-                                )
-                                offset += len(archetype)
-                        else:
-                            # `T` is write-only for this kernel: its prior
-                            # value is never read, so there is nothing to
-                            # upload. The column still needs to exist and be
-                            # sized for `length`, since the kernel writes
-                            # through it and the download loop below reads the
-                            # result back.
-                            device_storage.ensure_column[T](length)
                         kernel_columns[i] = device_storage.get_device_ptr[T]()
                     var grid_dim = gpu_grid_dim(
                         length, device_storage._max_grid_dim
@@ -1846,6 +1949,10 @@ struct SystemContext[
                     device_captures.copy_back(host_captures, frame)
                     device_storage.synchronize()
                     frame.publish()
+                    resource_binding.commit_device()
+                    _commit_device_columns[filter](
+                        self.world[], column_records^
+                    )
                 except error:
                     _drain_failed_device(
                         self.world[].resources,
@@ -1855,6 +1962,7 @@ struct SystemContext[
                     )
                 finally:
                     resource_binding.release()
+                    self.world[]._last_device_upload = frame.uploaded.copy()
 
     def run[
         filter: Filter,

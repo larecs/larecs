@@ -3,6 +3,10 @@
 Construction and final checks are excluded. Source edits, host growth, validation,
 leases, GPU allocation/upload, component output transfers and synchronization
 are included. Only the first sample is read; all 4,096 initial samples are uploaded.
+
+`repeated` times 13 unchanged device runs per update, as in Tree-D's per-direction
+leaf-layer kernel, with and without device copy reuse (decision 0021), and
+reports uploaded bytes per update.
 """
 from std.time import perf_counter_ns
 from std.testing import assert_equal
@@ -68,6 +72,47 @@ def adapter[device: Bool, growing: Bool]() raises:
     print("adapter", device, growing, elapsed)
 
 
+def written(rows: KernelContext[Filter().write[Int32](), required]):
+    """Writes the first sample to every row without reading components.
+
+    Args:
+        rows: Write-only rows and portable sample view.
+    """
+    var value = rows.resources.get[Samples]()[0]
+    for entity in rows:
+        entity.set(value)
+
+
+def repeated[reuse: Bool]() raises:
+    """Times updates of 13 unchanged device runs over a 16 MiB resource.
+
+    Parameters:
+        reuse: Whether the world reuses unchanged device copies.
+
+    Raises:
+        Error: If execution or checks fail.
+    """
+    comptime updates = 10
+    comptime runs = 13
+    var world = World[Int32]()
+    world.resources.add(Samples(List[Int32](length=1 << 22, fill=3)))
+    for _ in world.storage.add_entities(Int32(0), count=512):
+        pass
+    world.reuse_device_copies(reuse)
+    var context = SystemContext(world)
+    context.run[written, on_device=True]()
+    var bytes = 0
+    var start = perf_counter_ns()
+    for i in range(updates):
+        world.resources.get[Samples]().samples[0] = Int32(i)
+        for _ in range(runs):
+            context.run[written, on_device=True]()
+            bytes += world._last_device_upload.bytes
+    var elapsed = Float64(perf_counter_ns() - start) / Float64(updates)
+    check(world, Int32(updates - 1))
+    print("repeated", reuse, elapsed, bytes // updates)
+
+
 def main() raises:
     """Reports bounded mean nanoseconds per complete invocation.
 
@@ -79,3 +124,5 @@ def main() raises:
     comptime if has_accelerator():
         adapter[True, False]()
         adapter[True, True]()
+        repeated[False]()
+        repeated[True]()
