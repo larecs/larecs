@@ -5,7 +5,8 @@ stacked pull request, this script does what the link would do:
 
 - While the pull request is open, it moves each referenced open issue in the
   project to "In progress" if the issue is still in an earlier status.
-- When the pull request is merged, it closes each referenced open issue.
+- When the pull request is merged, it closes each referenced open issue,
+  unless someone reopened the issue after an earlier automatic close.
 
 It uses the `gh` CLI. `GH_TOKEN` needs issue write access; `PROJECT_TOKEN`, if
 set, is used for the project and needs organization project write access.
@@ -218,6 +219,31 @@ def issue(repo: str, number: int) -> dict | None:
     return {"id": data["node_id"], "state": data["state"]}
 
 
+def reopened_after_automatic_close(repo: str, number: int, bot: str) -> bool:
+    """Returns whether an issue was reopened after its last automatic close.
+
+    Args:
+        repo: Repository as `owner/name`.
+        number: Issue number.
+        bot: Login of the account that closes issues automatically.
+
+    Returns:
+        True if a `reopened` event follows the latest `closed` event by `bot`.
+    """
+    events = json.loads(
+        gh("api", "--paginate", "--slurp", f"repos/{repo}/issues/{number}/events")
+    )
+    last_close = None
+    reopened = False
+    for event in (event for page in events for event in page):
+        if event["event"] == "closed" and (event.get("actor") or {}).get("login") == bot:
+            last_close = event["created_at"]
+            reopened = False
+        elif event["event"] == "reopened" and last_close is not None:
+            reopened = True
+    return reopened
+
+
 def pull_requests(repo: str, number: int | None, lookback: timedelta) -> list[dict]:
     """Returns the pull requests to process.
 
@@ -256,6 +282,11 @@ def main() -> None:
     parser.add_argument("--status-field", default="Status")
     parser.add_argument("--target-status", default="In progress")
     parser.add_argument("--movable-status", action="append", default=None)
+    parser.add_argument(
+        "--bot-login",
+        default="github-actions[bot]",
+        help="account whose closes count as automatic",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     if not args.repo:
@@ -294,6 +325,9 @@ def main() -> None:
                 continue
             try:
                 if pr["state"] == "MERGED":
+                    if reopened_after_automatic_close(args.repo, number, args.bot_login):
+                        print(f"#{number}: reopened after an automatic close; kept open")
+                        continue
                     print(f"#{number}: closing")
                     if not args.dry_run:
                         gh(

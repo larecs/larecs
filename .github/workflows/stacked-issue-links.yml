@@ -3,6 +3,7 @@ name: Sync stacked PR issues
 # GitHub links `Closes #N` only for pull requests into the default branch.
 # For stacked pull requests, this marks referenced issues "In progress" in the
 # project while the pull request is open, and closes them when it is merged.
+# An issue reopened after an automatic close stays open.
 # See scripts/sync_stacked_issue_links.py.
 
 on:
