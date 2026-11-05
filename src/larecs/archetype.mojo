@@ -147,7 +147,7 @@ struct ArchetypeRowAccessor[
             A reference to the component of the entity.
 
         Constraints:
-            `T` must be included by the [..filter.Filter] this accessor
+            `T` must be included by the `Filter` this accessor
             was created with (e.g. via `HostStorage.query`'s
             `Filter.include`). Every archetype an accessor with that
             filter can be created for is guaranteed to carry `T`, so

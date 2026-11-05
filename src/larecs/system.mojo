@@ -1723,26 +1723,70 @@ struct SystemContext[
         backend: ExecutionBackend = ExecutionBackend.HOST,
         threaded: Bool = False,
     ](mut self, *bindings: *Bindings) raises:
-        """Runs a kernel over component rows matching ``filter``.
+        """Runs a kernel function for every entity matching its filter.
 
-        On the GPU, zero matching rows are a no-op: no columns or resource
-        buffers are prepared, no transfers are queued, and no kernel is
-        launched. The world's device storage and all required resources are
-        still validated, in that order. Selecting DEVICE without accelerator
-        support raises an error, including for empty matches.
+        Common call forms, for a kernel function `move` that takes a
+        `KernelContext`:
+
+        - `context.run[move]()`: run on the host, sequentially.
+        - `context.run[move, threaded=True]()`: run on the host in
+          concurrent chunks (experimental).
+        - `context.run[move, backend=ExecutionBackend.DEVICE]()`: run on an
+          accelerator (experimental).
+        - `context.run[move](read_capture(x), mut_capture(y))`: pass
+          host-local values to a kernel that declares captures.
+
+        `filter`, `required_resources`, and `capture_spec` are inferred from
+        the kernel's `KernelContext` parameter. The tutorial
+        [Your first simulation](../../start/first_simulation) shows a complete
+        program.
+
+        Execution: The call returns after all kernel work has finished.
+
+        - Host: `KernelFunc` is called once per non-empty physical store
+          matching `filter`, one store after the other. Each
+          `KernelContext` iterates that store's rows; row indices are local
+          to the context.
+        - Threaded host: each matching store is split into chunks, and
+          chunks may run concurrently on the world's
+          `ThreadedExecutionConfig`. With one worker or fewer matching rows
+          than `min_parallel_rows`, the stores run sequentially.
+        - Device: one launch covers all matching rows. Accessed columns and
+          resources are uploaded first; written columns, read-write
+          resources, and mutable captures are copied back before `run`
+          returns. DEVICE never falls back to HOST.
+
+        Access: `include` grants read-write component access, `read`
+        read-only, and `write` set-only access; `required_resources`
+        declares resource access the same way. Undeclared components and
+        resources are rejected at compile time.
+
+        Empty matches: no kernel call happens. With DEVICE, the device
+        storage and required resources are still validated, in that order,
+        and a missing accelerator still raises.
+
+        This overload takes a thin kernel function. Use the overload taking
+        `kernel_func` to run a closure that captures host-local values
+        lexically; that one supports only sequential host execution.
 
         Parameters:
-            filter: Compile-time component inclusion and exclusion constraints.
-            required_resources: Compile-time resources the kernel may access.
+            filter: Components a row must have or lack, and how the kernel
+                accesses them.
+            required_resources: Resources the kernel may access, and how.
             capture_spec: Ordered read-only and mutable host-local capture slots.
-            KernelFunc: The kernel specialized for ``filter`` and
-                ``required_resources``.
+            KernelFunc: The kernel function, specialized for ``filter``,
+                ``required_resources``, and ``capture_spec``.
             Bindings: The inferred types of the supplied capture bindings.
-            backend: Compile-time target, HOST by default; DEVICE never falls back.
-            threaded: Opt into experimental synchronous host chunk execution.
+            backend: Execution target, HOST by default.
+            threaded: Run host chunks concurrently (experimental).
 
         Args:
-            bindings: Explicit read-only and mutable bindings in declared slot order.
+            bindings: Read-only and mutable capture bindings, in the slot
+                order of ``capture_spec``.
+
+        Constraints:
+            `threaded` requires HOST and no capture bindings. DEVICE requires
+            device-safe component and resource types.
 
         Raises:
             Error: If the world is unusable or already executing; bindings or
@@ -2021,31 +2065,40 @@ struct SystemContext[
         backend: ExecutionBackend = ExecutionBackend.HOST,
         threaded: Bool = False,
     ](mut self, kernel_func: KernelFunc, *bindings: *Bindings) raises:
-        """Runs a kernel closure over component rows matching ``filter``.
+        """Runs a kernel closure for every entity matching its filter.
+
+        Common call form: `context.run(move_by)`, where `move_by` is a nested
+        function that takes a `KernelContext` and captures host-local values
+        with a capture list such as `{imm step}`.
+
+        This overload runs sequentially on the host, exactly like the host
+        path of the kernel-function overload: one call per non-empty
+        matching physical store, returning after the last call. Captures
+        may borrow host-local values with `imm` or `mut`; resource and
+        component access work as in the kernel-function overload.
 
         Parameters:
-            filter: Compile-time component inclusion and exclusion constraints.
-            required_resources: Compile-time resources the kernel may access.
+            filter: Components a row must have or lack, and how the kernel
+                accesses them.
+            required_resources: Resources the kernel may access, and how.
             capture_spec: Ordered read-only and mutable host-local capture slots.
-            KernelFunc: The kernel specialized for ``filter`` and
-                ``required_resources``.
+            KernelFunc: The closure type, specialized for ``filter``,
+                ``required_resources``, and ``capture_spec``.
             Bindings: The inferred types of the supplied capture bindings.
-            backend: Must be HOST; value-taking device callables are unsupported.
-            threaded: Must remain false; threaded kernels must be thin.
+            backend: Must be HOST.
+            threaded: Must be False.
 
         Args:
-            kernel_func: The kernel closure to run once per matching
-                archetype. Its context iterates over that archetype's matching
-                rows.
-            bindings: Explicit read-only and mutable bindings in declared slot order.
+            kernel_func: The closure to call once per matching physical store.
+            bindings: Read-only and mutable capture bindings, in the slot
+                order of ``capture_spec``.
 
-        Note:
-            Captures may borrow host-local values with ``imm`` or ``mut``.
-            Resource access uses the same API as the non-capturing overload.
-            This overload executes synchronously on the host only.
+        Constraints:
+            `backend` must be HOST and `threaded` must be False.
 
         Raises:
-            Error: If a required resource is missing.
+            Error: If the world is unusable or already executing, a capture
+                binding is invalid, or a required resource is missing.
         """
         with Zone(
             function_name=(
