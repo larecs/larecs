@@ -192,3 +192,9 @@ lifecycle methods, and the system calls `run` from there. The system is the
 scheduled unit of application logic; the kernel is the function it delegates
 filtered component processing to. See
 [Systems and the scheduler](../systems_scheduler) for the complete pattern.
+
+With [partitioned spatial storage](spatial_clustering.md#cluster-local-partition-blocks),
+ordinary queries traverse all matching blocks and staging rows. Logical
+archetype composition and query membership stay the same; row indices name a
+physical store and are not stable identifiers. Query locks and independent copy
+cursors apply across block boundaries too.

@@ -51,6 +51,11 @@ CPU-only lexical closure overload and GPU transfer type restrictions are gaps
 to resolve or reject explicitly, not evidence that every CPU callable already
 runs on a GPU.
 
+[Decision 0013](0013-cluster-local-partition-blocks.md) extends host placement
+with opt-in partition blocks. Packing and scattering traverse each matching
+physical block/range through these same transfer boundaries; logical component
+filters and exact selected membership remain unchanged.
+
 ## Evidence
 
 The implementation is in `src/larecs/system.mojo`,
