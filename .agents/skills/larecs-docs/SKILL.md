@@ -74,7 +74,12 @@ Every visible snippet compiles and runs.
 Verify with `pixi run build-docs`: it runs `mojo doc`, Modo, the extracted
 doctests and example programs, and Hugo, and works on Linux and Apple Silicon
 (Modo is built natively there). Check the rendered HTML in
-`docs/site/public/`; `pixi run serve-docs` serves the site locally.
+`docs/site/public/`; `pixi run serve-docs` serves the site locally. Pull
+requests from repository branches deploy a preview to
+`https://larecs.github.io/larecs/pr-preview/pr-<number>/`
+(`.github/workflows/publish.yml`). Internal links must follow `baseURL`
+(`relURL`, relative paths, or `/images/...` through the theme) so they stay
+inside the preview.
 
 ## Pages, links, and figures
 

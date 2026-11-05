@@ -31,8 +31,15 @@ measurement method.
 Follow the documentation conventions in
 [`.agents/skills/larecs-docs/SKILL.md`](.agents/skills/larecs-docs/SKILL.md):
 page kinds and navigation, the particle running example, voice, compiled
-doctest examples, API links, figures, and docstrings. Build the site and its doctests with
-`pixi run build-docs`.
+doctest examples, API links, figures, and docstrings. Build the site and its
+doctests with `pixi run build-docs`.
+
+Pull requests from branches of this repository that touch documentation
+sources (`docs/`, `src/`, `examples/`, or the docs tooling) get a preview at
+`https://larecs.github.io/larecs/pr-preview/pr-<number>/`. A bot comment links
+it after each push, and the preview is removed when the pull request closes.
+Pull requests from forks build the docs without a preview; download the
+`public` workflow artifact to inspect them.
 
 ## Commit and review
 
