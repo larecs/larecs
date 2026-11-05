@@ -1,7 +1,7 @@
 ---
 id: "0019"
 title: "Threaded host execution"
-status: accepted
+status: superseded by 0020
 status_notes: |
   Experimental implementation adopted. Linux correctness and concurrency are
   validated; macOS arm64 correctness, concurrency, and performance remain pending.
@@ -10,6 +10,9 @@ status_notes: |
 ---
 
 # Decision 0019: Threaded host execution
+
+Superseded by [decision 0020](0020-declared-plain-values.md), which revises
+plain-value eligibility and retains the remaining execution contract.
 
 ## Context
 
