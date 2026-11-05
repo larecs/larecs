@@ -61,9 +61,12 @@ struct Velocity(Copyable, Movable):
     var dy: Float64
 ```
 
-A resource must conform to `ResourceType` (`Copyable & Deinitable`). The
-example also conforms to `TrivialRegisterPassable` so it can be used by the
-device kernel path described below; host-only resources do not need that trait.
+A resource must conform to `ResourceType` (`Copyable & Deinitable`).
+`SelectedEntities` owns a `List`, which sequential host kernels accept.
+Device and threaded kernels check a resource's representation rather than a
+declared trait: `Time` and `Temperature` both qualify because they hold only a
+`Float64`. `Time` additionally declares `TrivialRegisterPassable`, which these
+checks do not require.
 
 ## Adding and accessing resources
 
@@ -151,10 +154,12 @@ For example, `set` can explicitly recreate a missing resource:
     assert_equal(world.resources.get[Temperature]().temperature, 25.0)
 ```
 
-In contrast to components, resources can
-be "complex" types with heap-allocated memory,
-as demonstrated above with `SelectedEntities`.
-We can use them to store arbitrary amounts of data.
+Like components, resources can own heap memory, as `SelectedEntities` does
+with its `List`. A world holds at most one value per resource type, so a
+resource suits data of any size that the whole simulation shares. Owning
+resources work in sequential host kernels; threaded and device kernels need
+a pointer-free value or an adapter, as described in
+[Using resources in kernels](#using-resources-in-kernels).
 
 ```mojo {doctest="guide_resources" global=true}
     # Create entities and add them to the selected entities

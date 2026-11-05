@@ -214,25 +214,31 @@ The result should look something like this:
 
 ## Limitations
 
-### Component type requirements differ between host and device execution
+### Type requirements differ by execution target
 
-Any `Copyable & Deinitable` struct can be used as a component for host
-(host-only) execution -- this is no longer restricted to trivial/POD types.
+Any `Copyable & Deinitable` struct can be a component or a resource,
+including one that owns heap memory. Kernels add requirements for the
+components and resources they access:
 
-Components accessed by a system that runs its kernel on a device
-(`SystemContext.run(..., backend=ExecutionBackend.DEVICE)`) are subject to a stricter
-constraint: device transfer moves component columns between host and device
-buffers via a raw byte copy that never runs a type's copy constructor or
-destructor, so such components must additionally be
-`TrivialRegisterPassable` (bitwise-copyable, with no heap-allocated state
-and no custom copy/move/destroy logic -- the same requirement applies to
-resources read by a device kernel). Using a type with heap-allocated memory in
-a component accessed on the device will corrupt or leak that memory.
+| Execution | Accessed components | Accessed resources |
+| --- | --- | --- |
+| Sequential host (default) | No further requirement | No further requirement |
+| Threaded host (experimental) | Pointer-free values with trivial copy, move, and destruction | Read-only pointer-free values, or `DevicePassableResource` adapters |
+| Device (experimental) | `TrivialRegisterPassable` | Pointer-free values (read or read-write), or `DevicePassableResource` adapters |
 
-Heap-allocated (non-trivial) components for host-only use are permitted by
-the type system, but are a comparatively new and lightly-exercised path
-compared to trivial components; as with resources, using heap-allocated
-data in the ECS should generally be avoided unless you need it.
+Device execution copies component columns as raw bytes and never runs a
+type's copy constructor or destructor, so it requires the
+`TrivialRegisterPassable` declaration. Resources are checked by their
+representation instead: numeric values, `Bool`, and structs built only from
+such values qualify without declaring `TrivialRegisterPassable`. A resource
+that owns data, such as a `List`, can still reach threaded and device kernels
+through an adapter like `BufferResource`, which exposes a read-only view. A
+kernel that accesses an ineligible type fails to compile. See the
+[resources guide](https://larecs.github.io/larecs/guide/resources/) for
+details.
+
+Heap-owning components are a newer and less exercised path than plain-value
+components. Prefer plain values unless you need owned data.
 
 ## Roadmap
 
