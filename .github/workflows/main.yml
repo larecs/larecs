@@ -62,8 +62,23 @@ jobs:
 
       - name: Run tests
         run: |
-          pixi run tests test
+          pixi run -e test python -m unittest discover -s test -p ci_memory_test.py
+          # Large sanitizer builds ran concurrently when earlier runners shut
+          # down. Bound concurrency and stream evidence even if artifact upload
+          # cannot run after another host shutdown.
+          pixi run -e test python scripts/monitor_ci_memory.py \
+            --output output/memory/tests.jsonl -- \
+            bash test/run_tests.sh --parallel 2 test
           pixi run test-resource-compile-failures
+
+      - name: Upload memory diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: memory-${{ matrix.os }}-${{ github.run_attempt }}
+          path: output/memory/
+          retention-days: 30
+          if-no-files-found: ignore
 
       # The complete test command includes the bounded core/spatial gate.
       # Retain reports and diagnostics even when it rejects a regression.
