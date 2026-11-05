@@ -207,7 +207,15 @@ complete application benefits remain unmeasured.
   tests for local hardware runs. Require accelerator availability so skipped
   device paths cannot report successful hardware coverage.
 - [ ] Add built-in event-system support.
-- [ ] Add parallel execution where ownership and mutation rules permit it.
+- [ ] Complete macOS arm64 correctness, actual-concurrency, and performance
+  validation for experimental threaded host execution under
+  [decision 0019](design/decisions/0019-threaded-host-execution.md). The opt-in
+  engine, immutable worker configuration, exact range chunking, resource
+  contracts, and Linux validation are implemented. Measure representative
+  application kernels, selection/partition overhead, and chunk-size sensitivity
+  before claiming portable speedups or production support. Keep the manual
+  threaded benchmark outside the bounded PR timing suite until compilation and
+  sampling costs are measured on both platforms.
 - [ ] Improve system control APIs, including a way for systems to stop execution.
 - [ ] Revisit value unpacking in queries when Mojo supports the needed form.
 - [ ] Add a tabular overview of typical ECS operation costs to the

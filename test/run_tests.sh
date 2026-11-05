@@ -51,8 +51,12 @@ done
 run_performance=false
 run_synchronization_contracts=false
 run_resource_contracts=false
+run_threaded_contracts=false
 larecs_test_directory="$(cd "$(dirname "$0")" && pwd)"
 for test_path in "${test_args[@]}"; do
+    if [ "${test_path##*/}" = "threaded_execution_test.mojo" ]; then
+        run_threaded_contracts=true
+    fi
     if [ "${test_path##*/}" = "resource_adapter_test.mojo" ]; then
         run_resource_contracts=true
     fi
@@ -63,6 +67,7 @@ for test_path in "${test_args[@]}"; do
         [ "$(cd "$test_path" && pwd)" = "$larecs_test_directory" ]; then
         run_performance=true
         run_resource_contracts=true
+        run_threaded_contracts=true
         run_synchronization_contracts=true
         bash "$larecs_test_directory/check_spatial_filters.sh"
         break
@@ -71,6 +76,11 @@ done
 
 if "$run_synchronization_contracts"; then
     python "$larecs_test_directory/check_synchronization_contracts.py"
+fi
+
+if "$run_threaded_contracts"; then
+    python -m unittest discover -s "$larecs_test_directory" -p threaded_cpu_capacity_test.py
+    python "$larecs_test_directory/check_threaded_contracts.py"
 fi
 
 if "$run_resource_contracts"; then
