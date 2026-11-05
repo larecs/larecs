@@ -30,6 +30,7 @@ profiling = { cmd = "mojo run -I src -Xlinker -L\"$CONDA_PREFIX/lib\" -Xlinker -
 build-docs = { cmd = "cd scripts && pixi run build-docs", default-environment = "default" }
 watch-docs = { cmd = "cd scripts && pixi run watch-docs", default-environment = "default" }
 serve-docs = { cmd = "cd scripts && pixi run serve-docs", default-environment = "default" }
+figures = { cmd = "cd scripts && pixi run figures", default-environment = "default" }
 
 satellites = { cmd = "cd examples/satellites && pixi run satellites" }
 scatter-example = "mojo run -I src examples/scatter_resource.mojo"
