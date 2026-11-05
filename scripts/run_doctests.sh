@@ -54,16 +54,21 @@ known_unsupported_doctests=(
     "larecs_scheduler_Scheduler_scheduler_test.mojo"
 )
 
+# Documentation example programs. Guide pages show excerpts of these files
+# (see the `example` shortcode in docs/site/layouts/shortcodes), so each one
+# must compile and run like an extracted doctest.
+example_dir="examples/particles"
+
 if [ ! -d "$doctest_dir" ]; then
-    echo "No $doctest_dir directory -- run 'modo build'/'modo test' first. Nothing to run."
-    exit 0
+    echo "error: no $doctest_dir directory -- run 'modo build' or 'modo test' first." >&2
+    exit 1
 fi
 
 mapfile -t all_doctest_files < <(find "$doctest_dir" -name '*.mojo' | sort)
 
 if [ "${#all_doctest_files[@]}" -eq 0 ]; then
-    echo "No doctest files found under $doctest_dir -- nothing to run."
-    exit 0
+    echo "error: no doctest files found under $doctest_dir." >&2
+    exit 1
 fi
 
 doctest_files=()
@@ -93,6 +98,9 @@ if [ "${#skipped_files[@]}" -gt 0 ]; then
     done
     echo
 fi
+
+mapfile -t example_files < <(find "$example_dir" -name '*.mojo' | sort)
+doctest_files+=("${example_files[@]}")
 
 if [ "${#doctest_files[@]}" -eq 0 ]; then
     echo "No supported doctest files left to run -- nothing to run."

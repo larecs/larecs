@@ -66,6 +66,10 @@ Use the `pr-description` skill to write or revise a description; `.github/pull_r
   add or update representative benchmarks. Read the
   [benchmark methodology](docs/src/guide/benchmarks.md#benchmark-methodology) and
   relevant workload sections before changing benchmarks or reporting performance.
+- Before writing, restructuring, or reviewing guide pages, the README, API
+  docstrings, or docs navigation, read the `larecs-docs` skill at
+  `.agents/skills/larecs-docs/SKILL.md`, together with the global
+  `writing-docs` skill when available.
 
 ## Issue Writing
 

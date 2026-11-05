@@ -5,17 +5,48 @@ on:
     branches:
       - main
   pull_request:
+    # `closed` removes the PR's preview; the build is skipped for it.
+    types: [opened, reopened, synchronize, closed]
 
 permissions: {}
 
+env:
+  # Previews are served from https://larecs.github.io/larecs/pr-preview/pr-<number>/.
+  PREVIEW_UMBRELLA: pr-preview
+
 jobs:
-  publish:
-    name: Publish API docs
+  changes:
+    name: Detect documentation changes
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     permissions:
-      # Only the deploy step (push to a fresh, orphan-history gh-pages
-      # branch) needs write access; everything else here only reads.
-      contents: write
+      pull-requests: read
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - name: Filter changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            docs:
+              - 'docs/**'
+              - 'src/**'
+              - 'examples/**'
+              - 'README.md'
+              - 'modo.yaml'
+              - 'scripts/docs.py'
+              - 'scripts/run_doctests.sh'
+              - 'scripts/pixi.toml'
+              - 'scripts/pixi.lock'
+              - '.github/workflows/publish.yml'
+
+  publish:
+    name: Build API docs
+    if: ${{ github.event.action != 'closed' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     defaults:
       run:
@@ -44,6 +75,11 @@ jobs:
           mkdir -p docs/src/guide/images
           cp benchmark/plots/results/aos_benchmark.svg docs/src/guide/images/
 
+      - name: Use the preview base URL for pull requests
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          echo "HUGO_BASEURL=https://larecs.github.io/larecs/${PREVIEW_UMBRELLA}/pr-${{ github.event.number }}/" >> "$GITHUB_ENV"
+
       - name: Build docs # Includes 'mojo doc', 'modo build', doctests via mogo-tester, and 'hugo -s docs/site'
         run: |
           pixi install --locked
@@ -64,12 +100,83 @@ jobs:
         with:
           name: public
           path: docs/site/public
+          include-hidden-files: true
 
-      - name: Deploy to GitHub Pages
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: crazy-max/ghaction-github-pages@v4
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: publish
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Main and preview deployments push to the same branch; run them one at a time.
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    steps:
+      - name: Download HTML artifacts
+        uses: actions/download-artifact@v4
         with:
-          target_branch: gh-pages
-          build_dir: docs/site/public
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: public
+          path: public
+      - name: Deploy, keeping PR previews
+        uses: JamesIves/github-pages-deploy-action@v4.9.0
+        with:
+          branch: gh-pages
+          folder: public
+          clean-exclude: ${{ env.PREVIEW_UMBRELLA }}/
+          force: false
+
+  preview:
+    name: Deploy PR preview
+    needs: [changes, publish]
+    # Fork PRs get a read-only token, so they build docs but get no preview.
+    if: >-
+      ${{ github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && needs.changes.outputs.docs == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    steps:
+      - name: Checkout Larecs
+        uses: actions/checkout@v6
+      - name: Download HTML artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: public
+          path: public
+      - name: Deploy preview
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          source-dir: public
+          umbrella-dir: ${{ env.PREVIEW_UMBRELLA }}
+          action: deploy
+
+  remove-preview:
+    name: Remove PR preview
+    # Runs for every closed repository PR: a preview may exist from an earlier
+    # push even if the final diff no longer touches documentation.
+    if: >-
+      ${{ github.event_name == 'pull_request'
+      && github.event.action == 'closed'
+      && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    steps:
+      - name: Checkout Larecs
+        uses: actions/checkout@v6
+      - name: Remove preview
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          umbrella-dir: ${{ env.PREVIEW_UMBRELLA }}
+          action: remove

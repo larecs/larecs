@@ -1,3 +1,25 @@
+/* Inter, self-hosted (static/fonts, SIL OFL); figures use the same font. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/InterVariable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/InterVariable-Italic.woff2") format("woff2");
+}
+
+html,
+:host {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
 /* paragraph line height */
 .content :where(p):not(:where([class~=not-prose], [class~=not-prose] *)) {
   margin-top: 0.66rem;

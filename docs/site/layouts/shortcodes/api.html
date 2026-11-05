@@ -1,5 +1,9 @@
+{{- /*
+Links an API symbol: {{< api Type.method label >}}.
+The link follows the site's baseURL, so it also works in PR previews.
+*/ -}}
 {{- $text := .Get 0 -}}
-{{- $link := (replace $text "." "#") -}}
-{{- if .Get 1 -}}
-    {{- $text = .Get 1 -}}
-{{- end -}}<a href="/larecs/larecs/{{ $link }}" target="_blank"><code>{{ $text }}</code></a>
+{{- $link := replace $text "." "#" -}}
+{{- with .Get 1 -}}{{- $text = . -}}{{- end -}}
+<a href="{{ printf "larecs/%s" $link | relURL }}"><code>{{ $text }}</code></a>
+{{- /* keep output on one line */ -}}

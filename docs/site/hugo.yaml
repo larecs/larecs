@@ -10,9 +10,26 @@ markup:
 module:
   imports:
     - path: github.com/imfing/hextra
+  mounts:
+    # Hugo replaces its default mounts once any mount is declared.
+    - source: content
+      target: content
+    - source: static
+      target: static
+    - source: layouts
+      target: layouts
+    - source: assets
+      target: assets
+    # Documentation example programs, rendered by the `example` shortcode.
+    - source: ../../examples
+      target: assets/examples
 
 menu:
   main:
+    - identifier: start
+      name: Get started
+      pageRef: /start
+      weight: 0
     - identifier: guide
       name: User guide
       pageRef: /guide
