@@ -1,4 +1,4 @@
-"""Device-side (GPU) storage for components and resources.
+"""Device-side storage for components and resources.
 
 Provides `DeviceComponentStorage`, which mirrors a set of component columns
 on the device, and `DeviceResourceStorage`, which uploads individual
@@ -13,20 +13,6 @@ from tracy import Zone
 from .component import ComponentType, ComponentManager
 from .debug_utils import debug_warn
 from .resource import ResourceType, Resources
-
-
-@fieldwise_init
-struct DeviceComponentType:
-    """Describes the on-device layout of a component type."""
-
-    var dtype: DType
-    """The scalar data type used to represent the component's bytes."""
-    var dtype_size: Int
-    """The size of `dtype`, in bytes."""
-    var size: Int
-    """The size of the component type, in bytes."""
-    var padding: Int
-    """Extra bytes appended to `size` to satisfy alignment requirements."""
 
 
 struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):

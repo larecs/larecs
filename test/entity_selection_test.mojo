@@ -54,7 +54,7 @@ struct Visits(ResourceType):
 
 
 comptime selected_cpu_bindings = Captures[MutCapture[Int]]()
-"""Mutable count copied back from a selected CPU thin kernel."""
+"""Mutable count copied back from a selected host thin kernel."""
 
 
 def increment_selected(
@@ -268,7 +268,7 @@ def test_internal_authorization_rejects_wrong_owner_and_conflict() raises:
 
 
 def test_selected_cpu_execution_is_bounded_reusable_and_filtered() raises:
-    """CPU kernels visit only selected matching rows across repeated calls.
+    """Host kernels visit only selected matching rows across repeated calls.
 
     Raises:
         Error: If execution or an assertion fails.
@@ -288,7 +288,7 @@ def test_selected_cpu_execution_is_bounded_reusable_and_filtered() raises:
     def add_ten(
         kernel_context: KernelContext[Filter().include[Counter]()],
     ) {mut lexical_visits}:
-        """Adds ten through a lexical CPU closure.
+        """Adds ten through a lexical host closure.
 
         Args:
             kernel_context: Selected counter rows.

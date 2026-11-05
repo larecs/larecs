@@ -62,7 +62,7 @@ blocks release all column and ID allocations, become tombstones, and are reused
 at subsequent boundaries; trailing tombstones are removed. Graph-owned indices
 never move or recycle. Empty staging stores release row allocations too.
 
-Ordinary queries, bulk mutations, CPU calls, and GPU packing/scattering traverse
+Ordinary queries, bulk mutations, host calls, and device packing/scattering traverse
 physical stores through the existing mask and bounded-range machinery. Bulk
 mutation snapshots each physical source, retains whole-store typed transfers,
 and coalesces repeated destination result ranges. Partial selection mutation
@@ -82,7 +82,7 @@ membership rules. Low-level raw writes still require explicit invalidation.
 ## Rationale
 
 Reusing dense stores preserves typed component lifetimes, query cursor copies,
-CPU binding, and GPU range packing without a second component access engine.
+host binding, and device range packing without a second component access engine.
 Canonical staging storage avoids invoking user classifiers while values are
 being initialized or structurally changed, and preserves contiguous batch
 creation and whole-store transfer fast paths. Small initial allocations limit
@@ -93,7 +93,7 @@ row allocations when keys change, while stable slots protect graph references.
 
 This is a choice of physical placement, not a universal performance improvement.
 Sparse clusters require many allocations and per-block metadata, and ordinary
-scans/CPU calls pay per-block traversal/binding cost. Structural-heavy frames
+scans/host calls pay per-block traversal/binding cost. Structural-heavy frames
 still classify all eligible rows and can temporarily hold both staging and
 partition allocations. Movement may include unchanged rows during local
 compaction; it is not strictly one transfer per changed key.
@@ -107,9 +107,9 @@ O(1) lookup promise. Empty interior slots and list capacities retain high-water
 metadata, even after their payload allocations are reclaimed. Temporary key,
 directory, candidate, and selection metadata is not resident memory or RSS.
 
-Multiple classifiers, asynchronous GPU execution, device-resident partitions,
-heap-backed GPU transfers, spatial neighborhood indexing, and automatic
-maintenance remain outside this decision. The existing CPU/GPU transfer and lock
+Multiple classifiers, asynchronous device execution, device-resident partitions,
+heap-backed device transfers, spatial neighborhood indexing, and automatic
+maintenance remain outside this decision. The existing host/device transfer and lock
 rules remain unchanged. No `Cluster` component is introduced.
 
 ## Evidence
@@ -122,7 +122,7 @@ rules remain unchanged. No `Cluster` component is introduced.
   multi-block placement, heap payloads, lifetimes, identity repair, reclamation,
   copied state, registration, errors/retries, exact selections, and bulk results.
 - [`gpu_spatial_test.mojo`](../../../test/gpu_spatial_test.mojo): same ordinary
-  and selected kernel on CPU/GPU, multi-block packing/scattering, dirty
+  and selected kernel on host/device, multi-block packing/scattering, dirty
   copy-back, and subsequent placement.
 - [`partitioned_spatial.mojo`](../../../benchmark/partitioned_spatial.mojo) and
   [benchmark guide](../../src/guide/benchmarks.md): same-driver paired controls,

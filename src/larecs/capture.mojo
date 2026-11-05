@@ -1,4 +1,4 @@
-"""Explicit bindings of CPU-local values for synchronous CPU/GPU kernels."""
+"""Explicit bindings of host-local values for synchronous host/device kernels."""
 
 from std.memory import is_trivially_copyable, is_trivially_deletable
 from std.sys import size_of
@@ -24,7 +24,7 @@ struct ReadCapture[T: Copyable](CaptureSpec):
 
 
 struct MutCapture[T: Copyable](CaptureSpec):
-    """Declares a mutable capture slot copied back after GPU execution.
+    """Declares a mutable capture slot copied back after device execution.
 
     Parameters:
         T: The captured value type.
@@ -94,14 +94,14 @@ struct CaptureBinding[mut: Bool, //, T: Copyable, origin: Origin[mut=mut]](
 def read_capture[
     T: Copyable, origin: ImmOrigin
 ](ref[origin] value: T) -> CaptureBinding[T, origin]:
-    """Binds a CPU-local value for read-only kernel access.
+    """Binds a host-local value for read-only kernel access.
 
     Parameters:
         T: The captured value type.
-        origin: The inferred borrow origin of the CPU-local value.
+        origin: The inferred borrow origin of the host-local value.
 
     Args:
-        value: The value to borrow and upload on GPU execution.
+        value: The value to borrow and upload on device execution.
 
     Returns:
         A read-only binding borrowing value.
@@ -112,14 +112,14 @@ def read_capture[
 def mut_capture[
     T: Copyable, origin: MutOrigin
 ](ref[origin] value: T) -> CaptureBinding[T, origin]:
-    """Binds a CPU-local value for kernel mutation and GPU copy-back.
+    """Binds a host-local value for kernel mutation and device copy-back.
 
     Parameters:
         T: The captured value type.
-        origin: The inferred borrow origin of the CPU-local value.
+        origin: The inferred borrow origin of the host-local value.
 
     Args:
-        value: The value to borrow, upload, and overwrite after GPU execution.
+        value: The value to borrow, upload, and overwrite after device execution.
 
     Returns:
         A mutable binding borrowing value.
@@ -166,14 +166,14 @@ struct CaptureAccessor[captures: Captures](Copyable):
 def _bind_captures[
     captures: Captures, *Bindings: CaptureBindingType
 ](*bindings: *Bindings) -> CaptureAccessor[captures]:
-    """Checks host bindings and constructs an accessor for synchronous CPU use.
+    """Checks host bindings and constructs an accessor for synchronous host use.
 
     Parameters:
         captures: The kernel's declared slots.
         Bindings: The supplied host binding types.
 
     Args:
-        bindings: Borrows of the CPU-local values in slot order.
+        bindings: Borrows of the host-local values in slot order.
 
     Returns:
         An accessor retaining the bindings' addresses for this invocation.
@@ -216,13 +216,13 @@ struct DeviceCaptureStorage[captures: Captures]:
 
         Args:
             device: The device queue used for the kernel invocation.
-            host: Addresses of the borrowed CPU-local values.
+            host: Addresses of the borrowed host-local values.
 
         Raises:
             Error: If allocating or uploading a capture fails.
 
         Constraints:
-            GPU captures must be trivially copyable and trivially deletable.
+            Device captures must be trivially copyable and trivially deletable.
             Values must not contain pointers to host-only memory.
         """
         self._buffers = {fill = None}
@@ -231,7 +231,7 @@ struct DeviceCaptureStorage[captures: Captures]:
             comptime assert (
                 is_trivially_copyable[T]() and is_trivially_deletable[T]()
             ), (
-                "GPU captures require plain values without owned heap"
+                "Device captures require plain values without owned heap"
                 " allocations"
             )
             self._buffers[i] = device.enqueue_create_buffer[DType.uint8](
@@ -243,7 +243,7 @@ struct DeviceCaptureStorage[captures: Captures]:
                 )
 
     def copy_back(self, host: CaptureAccessor[Self.captures]) raises:
-        """Queues downloads of mutable captures to their original CPU locals.
+        """Queues downloads of mutable captures to their original host locals.
 
         Args:
             host: Addresses retained by the invocation's host bindings.

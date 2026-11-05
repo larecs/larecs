@@ -17,10 +17,10 @@ lock ownership, ordinary queries, and low-level `HostStorage` operations.
 [Decision 0001](design/decisions/0001-locked-entity-selections.md) is the
 behavioral contract.
 
-- [x] Share CPU execution plumbing for ordinary and selected ranges, including
+- [x] Share host execution plumbing for ordinary and selected ranges, including
   capture and resource binding. Keep full-world range discovery lazy and rerun
   ordinary system/query tests after the refactor. Shared resource binding and
-  bounded context setup are covered by `test/cpu_execution_test.mojo`; CPU
+  bounded context setup are covered by `test/cpu_execution_test.mojo`; host
   paths discover ranges without allocating matching-range metadata.
 - [ ] Share batch mutation internals while preserving the whole-archetype bulk
   fast path and exact partial-row behavior. Avoid routing large batches through
@@ -37,9 +37,9 @@ behavioral contract.
 
 ### Measure selection and ordinary-path performance
 
-`benchmark/entity_selection_benchmark.mojo` already covers full-world CPU
+`benchmark/entity_selection_benchmark.mojo` already covers full-world host
 execution, small contiguous and disjoint selections in a 100k-entity world,
-selected mutation chains, and a selected GPU case.
+selected mutation chains, and a selected device case.
 
 - [ ] Run matching workloads before and after the internal refactor, including
   ordinary full-world execution and large whole-archetype batch benchmarks.
@@ -51,18 +51,18 @@ selected mutation chains, and a selected GPU case.
   from tests or benchmarks skipped because hardware is unavailable.
 - [ ] Investigate material regressions before closing the selection migration.
 
-### Support heap-backed GPU resources
+### Support heap-backed device resources
 
-The current GPU resource path copies raw bytes and does not encode host heap
+The current device resource path copies raw bytes and does not encode host heap
 ownership for the device. Keep existing type restrictions until a safe transfer
 model is implemented. See [decision 0002](design/decisions/0002-gpu-system-execution.md).
 
 - [ ] Decide and document ownership, encoding, lifetime, synchronization, and
-  copy-back for heap-backed GPU resources.
+  copy-back for heap-backed device resources.
 - [ ] Implement and test `TileTensor` compatibility under that model.
 - [ ] Resolve `Dict` compatibility and any `DevicePassable` conversion needed;
   ensure unsupported types fail clearly.
-- [ ] Update GPU resource guides after API and hardware tests pass. Preserve the
+- [ ] Update device resource guides after API and hardware tests pass. Preserve the
   documented `ResourceStorage.get` `UnsafeAnyOrigin` contract unless Mojo can
   express the ownership relationship.
 
@@ -76,19 +76,19 @@ defines the bounded CPU gate and per-run evidence.
 - [ ] Add disjoint selections, more component widths, and additional structural
   mutation patterns after measuring combined compilation and execution cost
   on Linux and macOS; keep the normal PR check near one minute per runner.
-- [ ] Measure larger working sets and GPU execution on dedicated hardware.
+- [ ] Measure larger working sets and device execution on dedicated hardware.
 - [ ] Evaluate smaller thresholds using repeated shared-runner noise evidence.
 - [ ] Add long-term trend storage if cumulative small regressions justify the
   operational cost; per-run artifacts initially retain evidence for 30 days.
 
-### Close remaining CPU/GPU kernel portability gaps
+### Close remaining host/device kernel portability gaps
 
 [ECS-10](design/requirements.md) requires one kernel implementation usable on
-both targets. The current CPU-only lexical closure form and GPU transfer limits
+both targets. The current host-only lexical closure form and device transfer limits
 leave gaps beyond the heap-backed resource work above.
 
-- [ ] Define how CPU-local closure values or an equivalent explicit binding
-  reach GPU kernels without requiring a second kernel body.
+- [ ] Define how host-local closure values or an equivalent explicit binding
+  reach device kernels without requiring a second kernel body.
 - [ ] Compile and execute the same representative kernels on CPU and actual
   GPU hardware; document type restrictions and remaining gaps.
 
@@ -131,39 +131,39 @@ complete application benefits remain unmeasured.
   other boundaries, absence of implicit
   maintenance after writes or kernel/system completion, nontrivial component
   lifetimes, classifier failures, lock rejection,
-  and CPU/GPU execution and copy-back after maintenance. Add public guides when
+  and host/device execution and copy-back after maintenance. Add public guides when
   the API is implemented.
 - [x] Compare small uniform, dense, sparse, and mobile cell workloads against
   scrambled rows, including maintenance cadences; run bounded same-runner
   base-versus-PR performance checks on every full CI test run.
 - [x] Defer and deduplicate classifier-input invalidations across reference access,
-  CPU/selected execution, structural changes, and GPU copy-back. Preserve locks,
+  host/selected execution, structural changes, and device copy-back. Preserve locks,
   identities, eligibility, error retries, and component lifetimes; compare against
   explicit full scans in `benchmark/dirty_spatial.mojo`.
 - [ ] Evaluate finer structural invalidation and avoid whole-capacity key scratch
   copying on sparse passes if measured application costs justify the complexity.
 - [x] Compare partitioned storage with deferred row reordering using uniform,
   dense, singleton sparse, and moving synthetic cell workloads; include all
-  maintenance costs, ordinary query/CPU scan throughput, capacity-derived memory,
+  maintenance costs, ordinary query/host scan throughput, capacity-derived memory,
   allocation counts, occupancy, and maintenance cadence in the benchmark guide.
 - [ ] Repeat the historical macOS bounded-block comparisons with growable stores.
-- [ ] Measure complete application spatial workloads, process/peak memory, GPU
+- [ ] Measure complete application spatial workloads, process/peak memory, device
   timing, additional component widths, and structural-heavy maintenance.
   Synthetic cell-frame results do not establish application benefit.
 - [ ] Define overlapping-filter behavior before supporting multiple registered
   clustering functions; preserve one physical row order per archetype.
 - [x] Adopt opt-in [partitioned storage](design/decisions/0006-partitioned-spatial-archetype-storage.md)
   with growable cluster stores, staging, swap-removal, reclamation, exact selections,
-  and ordinary/batch/CPU/GPU integration under decision 0014.
+  and ordinary/batch/host/device integration under decision 0014.
 - [ ] Evaluate persistent cluster directories, growth/shrink policies,
   and high-water metadata reclamation if measured workload costs justify them.
 
 ### Other features
 
 - [ ] Add CI that executes GPU tests on actual accelerator hardware. Deferred
-  until a suitable free or sponsored runner is available; retain existing GPU
+  until a suitable free or sponsored runner is available; retain existing device
   tests for local hardware runs. Require accelerator availability so skipped
-  GPU paths cannot report successful hardware coverage.
+  device paths cannot report successful hardware coverage.
 - [ ] Add built-in event-system support.
 - [ ] Add parallel execution where ownership and mutation rules permit it.
 - [ ] Improve system control APIs, including a way for systems to stop execution.

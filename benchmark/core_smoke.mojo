@@ -23,7 +23,7 @@ def increment(context: KernelContext[Filter().include[Value]()]):
     """Increments each matched row once.
 
     Args:
-        context: Writable value rows for the current CPU invocation.
+        context: Writable value rows for the current host invocation.
     """
     for entity in context:
         entity.get[Value]().value += 1
@@ -94,7 +94,7 @@ def measure_reads[query: Bool](rows: Int) raises:
 
 
 def measure_execution(rows: Int) raises:
-    """Measures ordinary full-world CPU dispatch and row updates.
+    """Measures ordinary full-world host dispatch and row updates.
 
     Args:
         rows: Number of value rows in the world.
