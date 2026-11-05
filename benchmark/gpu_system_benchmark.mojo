@@ -26,6 +26,8 @@ from std.benchmark import (
 from std.math import rsqrt
 from std.sys import has_accelerator
 
+from max.gpu.host import DeviceAttribute
+
 from custom_benchmark import DefaultBench
 
 from larecs import Entity, Filter, KernelContext, SystemContext, World
@@ -70,6 +72,20 @@ comptime GRAVITATIONAL_PARAMETER: Float32 = 1.0
 
 comptime SOFTENING: Float32 = 1e-3
 """Softening term keeping the force finite at the origin."""
+
+comptime DEVICE_GRID_CAP = -1
+"""Grid cap setting that keeps the cap the device storage derived itself."""
+
+comptime UNCAPPED_GRID = 0
+"""Grid cap setting that launches one thread per row."""
+
+comptime CAPPED_BLOCKS_PER_MULTIPROCESSOR = 4
+"""Blocks per multiprocessor launched by the forced-cap benchmark entries.
+
+A fixed cap that applies even on devices such as Apple GPUs, which do not
+report the thread limit `max_resident_blocks` needs. Rows above the cap are
+covered by the grid-stride loop.
+"""
 
 comptime FLOPS_PER_STEP = 18
 """Floating point operations one integration step performs per entity.
@@ -179,7 +195,39 @@ def _run_once[steps: Int, on_device: Bool](mut world: WorldType) raises:
     context.run[integrate_orbit[steps], on_device=on_device]()
 
 
-def _benchmark[steps: Int, on_device: Bool](mut bencher: Bencher):
+def _set_grid_cap[grid_cap: Int](mut world: WorldType) raises:
+    """Overrides the launch grid cap of the world's device storage.
+
+    Parameters:
+        grid_cap: `DEVICE_GRID_CAP` keeps the device-derived cap,
+            `UNCAPPED_GRID` disables it, and a positive value launches at
+            most that many blocks per multiprocessor.
+
+    Args:
+        world: The world whose device storage is adjusted.
+
+    Raises:
+        Error: If the multiprocessor count cannot be queried.
+    """
+    comptime if grid_cap == DEVICE_GRID_CAP:
+        return
+    if not world._device_storage:
+        return
+    ref device_storage = world._device_storage.value()
+    comptime if grid_cap == UNCAPPED_GRID:
+        device_storage._max_grid_dim = UNCAPPED_GRID
+    else:
+        device_storage._max_grid_dim = (
+            device_storage._device_context.get_attribute(
+                DeviceAttribute.MULTIPROCESSOR_COUNT
+            )
+            * grid_cap
+        )
+
+
+def _benchmark[
+    steps: Int, on_device: Bool, grid_cap: Int = DEVICE_GRID_CAP
+](mut bencher: Bencher):
     """Benchmarks one launch of the integration kernel.
 
     A warm-up launch runs before measurement. On the device path the first
@@ -190,6 +238,7 @@ def _benchmark[steps: Int, on_device: Bool](mut bencher: Bencher):
     Parameters:
         steps: The number of integration steps per entity.
         on_device: Whether to execute against device storage.
+        grid_cap: The launch grid cap setting, see `_set_grid_cap`.
 
     Args:
         bencher: The benchmark driver.
@@ -197,6 +246,7 @@ def _benchmark[steps: Int, on_device: Bool](mut bencher: Bencher):
     var world = WorldType()
     var probe = Entity()
     try:
+        _set_grid_cap[grid_cap](world)
         probe = _populate(world)
         _run_once[steps, on_device](world)
     except e:
@@ -214,13 +264,14 @@ def _benchmark[steps: Int, on_device: Bool](mut bencher: Bencher):
 
 
 def _register[
-    steps: Int, on_device: Bool
+    steps: Int, on_device: Bool, grid_cap: Int = DEVICE_GRID_CAP
 ](mut bench: Bench, label: String, iterations: Optional[Int] = None) raises:
     """Registers one point of the arithmetic intensity sweep.
 
     Parameters:
         steps: The number of integration steps per entity.
         on_device: Whether to execute against device storage.
+        grid_cap: The launch grid cap setting, see `_set_grid_cap`.
 
     Args:
         bench: The benchmark driver to register on.
@@ -233,7 +284,7 @@ def _register[
         Error: If the driver rejects the registration.
     """
     bench.bench_function(
-        _benchmark[steps, on_device],
+        _benchmark[steps, on_device, grid_cap],
         BenchId(label),
         [
             ThroughputMeasure(
@@ -265,7 +316,9 @@ def run_all_gpu_system_benchmarks(mut bench: Bench) raises:
     execution target. The first point is memory-bound and measures little
     beyond host/device transfer cost; the last is deeply compute-bound and
     measures the kernel itself. The device entries are registered only when an
-    accelerator is present, so the suite still runs without one.
+    accelerator is present, so the suite still runs without one. At both ends
+    of the sweep, the device path is also measured uncapped and with a forced
+    grid cap, so the cap's effect is visible on every device.
 
     Args:
         bench: The benchmark driver to register on.
@@ -285,6 +338,18 @@ def run_all_gpu_system_benchmarks(mut bench: Bench) raises:
         _register[8, True](bench, "system gpu, 8 steps")
         _register[64, True](bench, "system gpu, 64 steps")
         _register[512, True](bench, "system gpu, 512 steps (compute bound)")
+        _register[1, True, UNCAPPED_GRID](
+            bench, "system gpu, 1 step, uncapped grid"
+        )
+        _register[1, True, CAPPED_BLOCKS_PER_MULTIPROCESSOR](
+            bench, "system gpu, 1 step, 4 blocks per multiprocessor"
+        )
+        _register[512, True, UNCAPPED_GRID](
+            bench, "system gpu, 512 steps, uncapped grid"
+        )
+        _register[512, True, CAPPED_BLOCKS_PER_MULTIPROCESSOR](
+            bench, "system gpu, 512 steps, 4 blocks per multiprocessor"
+        )
 
 
 def main() raises:

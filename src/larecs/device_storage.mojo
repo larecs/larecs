@@ -12,6 +12,7 @@ from tracy import Zone
 
 from .component import ComponentType, ComponentManager
 from .debug_utils import debug_warn
+from .gpu_launch import max_resident_blocks
 from .resource import ResourceType, Resources
 
 
@@ -32,6 +33,11 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
     var _columns: Self.Columns
     var _length: Int
     var _device_context: DeviceContext
+    var _max_grid_dim: Int
+    """Maximum number of blocks a kernel launch on this device should use.
+
+    ``0`` if the device does not report the attributes needed to compute it.
+    """
 
     def __init__(
         out self,
@@ -51,6 +57,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             )
         ):
             self._columns = Self.Columns(fill=None)
+            self._max_grid_dim = max_resident_blocks(device_context)
             self._device_context = device_context^
             self._length = length
 
@@ -66,6 +73,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             self._columns = Self.Columns(fill=None)
             self._device_context = copy._device_context
             self._length = copy._length
+            self._max_grid_dim = copy._max_grid_dim
 
             comptime for i in range(len(Self.ComponentTypes)):
                 comptime T = Self.ComponentTypes[i]
