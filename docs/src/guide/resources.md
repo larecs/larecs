@@ -217,9 +217,16 @@ kernel. Concurrent reads need no special handling. Writes from GPU threads must
 be synchronized or otherwise made race-free; in particular, do not update a
 shared resource once per entity without an atomic or reduction strategy.
 Writing per-entity results to components and reducing them in a separate step
-is often simpler. Also avoid target-dependent side effects outside the entity
-loop: the host calls the kernel once per matching archetype, while the device
-processes all matching rows in one launch.
+is often simpler. Keep side effects inside the entity loop, because the
+number of kernel calls depends on the execution target:
+
+- Sequential host: one call per non-empty matching physical store. With
+  [spatial partitioning](../spatial_clustering#growable-cluster-local-partitions),
+  one archetype can have several physical stores. `EntitySelection.run` calls
+  the kernel once per selected row range instead.
+- Threaded host: one call per kernel chunk; each store or selected range is
+  split into chunks that may run concurrently.
+- Device: one launch covers all matching rows.
 
 Host kernels may also capture surrounding values and access resources through
 `context.run(kernel)`. See [Capturing host kernels](../systems_scheduler#capturing-host-kernels)
@@ -284,8 +291,11 @@ def main() raises:
     context.run[add_sample]()
 ```
 
-Device execution requires a working accelerator. Samples are uploaded every
-invocation; device allocation capacity is reused. The host source remains
+Device execution requires a working accelerator. By default, the samples are
+uploaded on every device run; worlds that
+[reuse unchanged device copies](#reusing-unchanged-device-copies-experimental)
+skip the upload while the source is unchanged. Device allocation capacity is
+reused. The host source remains
 unchanged by device view access. `ReadBuffer` has `len` and bounds-checked
 indexing; empty buffers have length zero and must not be indexed.
 
