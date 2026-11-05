@@ -29,6 +29,7 @@ separate. Selections contain list indices only, never table pointers.
 """
 
 from std.benchmark import keep
+from std.sys import has_accelerator
 from std.time import perf_counter_ns
 from std.testing import assert_equal
 from larecs import ExecutionBackend, World, Filter, KernelContext, SystemContext
@@ -143,7 +144,7 @@ def measure[mode: Int](mut world: ManyWorld) raises:
 
 
 def main() raises:
-    """Runs all four benchmark modes against the same initialized world.
+    """Runs host modes and the supported device mode on one initialized world.
 
     Raises:
         Error: If setup or a benchmark operation fails.
@@ -151,4 +152,5 @@ def main() raises:
     var world = ManyWorld()
     populate(world)
     comptime for mode in range(4):
-        measure[mode](world)
+        comptime if mode < 3 or has_accelerator():
+            measure[mode](world)
