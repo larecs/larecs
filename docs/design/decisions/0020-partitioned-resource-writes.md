@@ -19,10 +19,11 @@ row writes into a shared, spatially indexed resource. Tree-D's
 into a 1 m grid of fixed-capacity ring buffers (`LeafDistribution`), touching all
 cells within its crown radius; the leaf-layer kernel then reads the grid.
 
-Threading that kernel under decision 0019 fails on three counts:
+At the time of this investigation, threading that kernel under decision 0019
+failed on three counts:
 
-1. **Writable resources are rejected.** The grid is the kernel's output, so it
-   needs write access, which threaded runs refuse.
+1. **Writable resources were rejected.** The grid is the kernel's output, so it
+   needed write access, which the initial threaded implementation refused.
 2. **Unspecified chunk order breaks reproducibility.** Even with atomic cell
    counters (decision 0016), concurrent chunks would append to a cell in
    scheduling order. The ring buffer keeps insertion order, the ray integral
@@ -32,8 +33,25 @@ Threading that kernel under decision 0019 fails on three counts:
    be deterministic, but one grid holds 16 samples × 4 floats per square metre
    (4.3 GB for a 4.1 km plot), so a copy per worker is unaffordable.
 
-Tree-D's leaf-layer kernel now runs threaded (bitwise identical to sequential),
-which leaves the grid fill as the serial remainder of a light update; see
+The blanket writable-resource blocker is superseded by mutable adapted
+resources in [PR #191](https://github.com/larecs/larecs/pull/191) /
+[decision 0022](https://github.com/larecs/larecs/blob/84d0c28f49f3ca5cc2fc4060b06ddcdc41d3af1a/docs/design/decisions/0022-mutable-adapted-resources.md).
+That contract admits concurrent mutation as an adapter capability, with safe
+operations supplied by the resource through synchronization or disjoint writes.
+It does not promise sequential insertion order or ring-buffer overwrite
+survivors. The restrictions above describe the original investigation baseline,
+not a reason to bypass the mutable-adapter contract.
+
+This proposal remains unaccepted and unimplemented.
+[Issue #210](https://github.com/larecs/larecs/issues/210) tracks workload
+contracts, representative comparisons, and reconciliation with decision 0022,
+including whether a separate public access mode is justified. Sequential
+equivalence is a requirement of this motivating workload, not a library-wide
+determinism requirement.
+
+Tree-D's leaf-layer kernel in this investigation runs threaded (bitwise
+identical to sequential), which leaves the grid fill as the serial remainder
+of a light update; see
 [Evidence](#evidence).
 
 ## Decision
@@ -122,7 +140,7 @@ Neither changes the result; both reduce the scan overhead.
 
 | Alternative | Deterministic | Extra memory | Notes |
 | --- | --- | --- | --- |
-| Partitioned writes (this proposal) | Yes, equals sequential | None | Host only; per-row scan or binning pass |
+| Partitioned writes (this proposal) | Yes, equals sequential | Partition metadata; optional row bins | Host only; per-row scan or binning pass |
 | Atomic scatter through decision 0016 bindings | No: insertion order depends on scheduling | None | Also works on the device; needs tolerance-based validation and overflow policy |
 | Per-worker private resources, ordered merge | Yes with chunk-ordered merge | One copy per worker | Infeasible for large grids |
 | Gather by cell (iterate cells, look up covering rows) | Yes | Spatial index | Cells are not entities; needs a separate index and kernel shape |
@@ -151,11 +169,13 @@ These are independent of partitioned writes and smaller in scope:
 
 ## Rationale
 
-Partitioning the output, rather than the rows, is the only option here that
-preserves sequential results without atomics or extra memory. Re-scanning rows
-is cheap next to the per-element work of typical scatter kernels, and binning
-removes most of it. The sequential fallback is exactly today's kernel, so
-adopting the access mode cannot change single-threaded behavior.
+Partitioning the output, rather than the rows, can preserve sequential results
+without atomics or a full resource copy per worker. Re-scanning rows adds work;
+optional binning trades additional memory and preparation for fewer visits.
+Whether this is beneficial depends on footprint sizes, clearing costs, and
+downstream work; the prototype below does not establish a general advantage.
+The proposed whole-source fallback must preserve sequential scatter semantics,
+including initialization and finalization under the mutable-adapter contract.
 
 ## Consequences
 
