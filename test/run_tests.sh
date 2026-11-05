@@ -69,6 +69,7 @@ for test_path in "${test_args[@]}"; do
         run_resource_contracts=true
         run_threaded_contracts=true
         run_synchronization_contracts=true
+        python "$larecs_test_directory/check_struct_constraints.py"
         bash "$larecs_test_directory/check_spatial_filters.sh"
         break
     fi

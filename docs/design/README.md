@@ -52,6 +52,9 @@ decision record before changing an established behavior:
   invalidation rule.
   Research notes do not establish accepted requirements.
 
+- [Struct constraint audit](research/struct-constraints.md) records Mojo 1.0
+  declaration invariants, compiler proof limitations, and intentional exclusions.
+
 ## Execution terminology
 
 Use **host** and **device** for execution roles, memory ownership, capture
