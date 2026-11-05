@@ -61,6 +61,7 @@ def _bench_maintenance[mobile: Bool](mut bencher: Bencher):
                         positions[unsafe_offset=i] = (
                             ROW_COUNT - 1
                         ) // 16 - positions[unsafe_offset=i]
+                world.invalidate_spatial()
                 world.maintain_spatial()
                 keep(world.storage._archetypes[index].get_entity(0))
             except err:

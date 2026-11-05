@@ -576,8 +576,16 @@ def test_spatial_maintenance_preserves_component_lifetimes() raises:
     moves = counters.move_counter()
     world.maintain_spatial()
     assert_equal(counters.move_counter(), moves)
-    for row in range(3):
-        assert_equal(world.storage.get[Int](entities[row]), row)
+    # Change two of three identities so this exercises the sparse dirty path.
+    world.storage.set(entities[0], 2)
+    world.storage.set(entities[2], 0)
+    world.maintain_spatial()
+    assert_equal(counters.copy_counter(), copies)
+    assert_equal(counters.del_counter(), deletes)
+    assert_true(counters.move_counter() > moves)
+    assert_equal(world.storage.get[Int](entities[0]), 2)
+    assert_equal(world.storage.get[Int](entities[1]), 1)
+    assert_equal(world.storage.get[Int](entities[2]), 0)
     _ = world^
     assert_equal(counters.del_counter() - deletes, 3)
 

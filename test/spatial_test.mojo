@@ -1,4 +1,4 @@
-"""Spatial registration, full-scan maintenance, and coordinate helpers."""
+"""Spatial registration, deferred maintenance, and coordinate helpers."""
 
 from std.testing import (
     assert_equal,
@@ -9,6 +9,7 @@ from std.testing import (
 )
 from larecs import (
     World,
+    MutArchetypeRowAccessor,
     Filter,
     SpatialClassifier,
     grid_cell,
@@ -208,8 +209,8 @@ def reverse_positions(context: KernelContext[Filter().include[Position]()]):
         entity.get[Position]().x = -entity.get[Position]().x
 
 
-def test_full_scans_and_no_implicit_maintenance() raises:
-    """Every explicit pass rescans ordered rows; writes and kernels do not.
+def test_dirty_classification_and_no_implicit_maintenance() raises:
+    """Clean boundaries skip classification; writes and kernels only invalidate.
 
     Raises:
         Error: If setup, maintenance, or an assertion fails.
@@ -228,16 +229,16 @@ def test_full_scans_and_no_implicit_maintenance() raises:
     world.maintain_spatial()
     assert_equal(calls, 2)
     world.maintain_spatial()
-    assert_equal(calls, 4)
+    assert_equal(calls, 2)
     var index = world.storage._entity_locations[a.get_id()].archetype_index
     assert_equal(world.storage._archetypes[index].get_entity(0), b)
     world.storage.get[Position](a).x = 5
     var context = SystemContext(world)
     context.run[reverse_positions]()
-    assert_equal(calls, 4)
+    assert_equal(calls, 2)
     assert_equal(context.world[].storage._archetypes[index].get_entity(0), b)
     context.world[].maintain_spatial()
-    assert_equal(calls, 6)
+    assert_equal(calls, 4)
     assert_equal(context.world[].storage._archetypes[index].get_entity(0), a)
 
 
@@ -419,6 +420,299 @@ def test_full_unsigned_key_order() raises:
         assert_equal(row.get[UInt64](), expected[index])
         index += 1
     assert_equal(index, len(expected))
+
+
+def test_repeated_reference_writes_final_values_and_unrelated_access() raises:
+    """Repeated writes deduplicate and classify only final eligible inputs.
+
+    Raises:
+        Error: If setup, maintenance, or validation fails.
+    """
+    var world = World[Position, Payload, Excluded]()
+    var calls = 0
+    var a = world.storage.add_entity(Position(0), Payload([10]))
+    var b = world.storage.add_entity(Position(1), Payload([20]))
+    var excluded = world.storage.add_entity(Position(1048576), Excluded())
+    world.register_spatial_classifier[spatial_filter](
+        RecordingPolicy(
+            Pointer(to=calls).unsafe_origin_cast[MutUntrackedOrigin]()
+        )
+    )
+    world.maintain_spatial()
+    assert_equal(calls, 2)
+    world.storage.get[Payload](a).values[0] = 11
+    world.storage.get[Position](excluded).x = 1048577
+    world.maintain_spatial()
+    assert_equal(calls, 2)
+    world.storage.get[Position](a).x = 1048576  # Intermediate invalid value.
+    world.storage.set(a, Position(3))
+    world.storage.set(a, Position(2), Payload([12]))
+    assert_equal(calls, 2)
+    world.maintain_spatial()
+    assert_equal(calls, 3)
+    var index = world.storage._entity_locations[a.get_id()].archetype_index
+    assert_equal(world.storage._archetypes[index].get_entity(0), b)
+    assert_equal(world.storage.get[Payload](a).values[0], 12)
+    world.maintain_spatial()
+    assert_equal(calls, 3)
+    # Even read use of a mutable input reference conservatively invalidates.
+    _ = world.storage.get[Position](a).x
+    world.maintain_spatial()
+    assert_equal(calls, 4)
+
+
+def test_structural_eligibility_recycling_and_selected_creation() raises:
+    """Structural rebuilds cover new identities, eligibility, and exact selections.
+
+    Raises:
+        Error: If setup, maintenance, or validation fails.
+    """
+    var world = World[Position, Payload, Excluded]()
+    var calls = 0
+    var a = world.storage.add_entity(Position(2), Payload([2]))
+    var b = world.storage.add_entity(Position(3), Excluded())
+    world.register_spatial_classifier[spatial_filter](
+        RecordingPolicy(
+            Pointer(to=calls).unsafe_origin_cast[MutUntrackedOrigin]()
+        )
+    )
+    world.maintain_spatial()
+    assert_equal(calls, 1)
+    world.storage.get[Position](a).x = 4
+    world.storage.remove_entity(a)
+    var replacement = world.storage.add_entity(Position(0), Payload([9]))
+    assert_equal(a.get_id(), replacement.get_id())
+    assert_true(a != replacement)
+    world.storage.remove[Excluded](b)
+    world.maintain_spatial()
+    assert_equal(calls, 3)
+    assert_equal(world.storage.get[Payload](replacement).values[0], 9)
+    with assert_raises():
+        world.storage.mark_spatial_dirty(a)
+    world.storage.add(b, Excluded())
+    world.maintain_spatial()
+    assert_equal(calls, 4)
+    var context = SystemContext(world)
+    var selected = context.add_entities(Position(5), count=2)
+    selected.run[reverse_positions]()
+    selected^.release()
+    context.world[].maintain_spatial()
+    assert_equal(calls, 7)
+    context.world[].maintain_spatial()
+    assert_equal(calls, 7)
+
+
+def test_dirty_failure_retry_and_copied_pending_state() raises:
+    """Failed dirty callbacks preserve keys and marks, including in copied worlds.
+
+    Raises:
+        Error: If setup, maintenance, or validation fails.
+    """
+    var world = World[Position, Payload, Excluded]()
+    var calls = 0
+    var a = world.storage.add_entity(Position(0))
+    var b = world.storage.add_entity(Position(1), Payload([1]))
+    var untouched = world.storage.add_entity(Position(2))
+    world.register_spatial_classifier[spatial_filter](
+        RecordingPolicy(
+            Pointer(to=calls).unsafe_origin_cast[MutUntrackedOrigin]()
+        )
+    )
+    world.maintain_spatial()
+    assert_equal(calls, 3)
+    var unchanged_key = world.storage._spatial_keys[untouched.get_id()]
+    var index = world.storage._entity_locations[a.get_id()].archetype_index
+    world.storage.set(a, Position(3))
+    world.storage.set(b, Position(1048576))
+    with assert_raises():
+        world.maintain_spatial()
+    assert_false(world.storage.is_locked())
+    assert_false(world.storage._spatial_full)
+    assert_equal(calls, 5)
+    assert_equal(world.storage._spatial_keys[a.get_id()], morton_key_3d(0, 0))
+    assert_equal(world.storage._spatial_keys[b.get_id()], morton_key_3d(1, 0))
+    assert_equal(world.storage._spatial_keys[untouched.get_id()], unchanged_key)
+    assert_equal(world.storage._archetypes[index].get_entity(0), a)
+    assert_equal(len(world.storage._spatial_dirty), 2)
+    world.storage.set(b, Position(2))
+    var copied = world.copy()
+    copied.maintain_spatial()
+    assert_equal(calls, 7)  # Only two dirty identities, not the untouched one.
+    assert_equal(
+        copied.storage._spatial_keys[untouched.get_id()], unchanged_key
+    )
+    assert_false(copied.storage._spatial_marked[a.get_id()])
+    assert_false(copied.storage._spatial_marked[b.get_id()])
+    assert_equal(copied.storage._archetypes[index].get_entity(0), untouched)
+    assert_equal(world.storage._archetypes[index].get_entity(0), a)
+    assert_true(world.storage._spatial_marked[a.get_id()])
+    assert_true(world.storage._spatial_marked[b.get_id()])
+    assert_equal(len(copied.storage._spatial_dirty), 0)
+    assert_equal(len(world.storage._spatial_dirty), 2)
+    world.maintain_spatial()
+    assert_equal(calls, 9)
+    assert_equal(world.storage._spatial_keys[untouched.get_id()], unchanged_key)
+    assert_false(world.storage._spatial_marked[a.get_id()])
+    assert_false(world.storage._spatial_marked[b.get_id()])
+    assert_equal(world.storage._archetypes[index].get_entity(0), untouched)
+    assert_equal(len(world.storage._spatial_dirty), 0)
+    var before = calls
+    world.maintain_spatial()
+    assert_equal(calls, before)
+
+
+def test_explicit_raw_write_invalidation_and_key_rebuild() raises:
+    """Untracked writes can mark one identity or request a complete rebuild.
+
+    Raises:
+        Error: If setup, maintenance, or validation fails.
+    """
+    var world = World[Position, Excluded]()
+    var calls = 0
+    var a = world.storage.add_entity(Position(0))
+    var b = world.storage.add_entity(Position(1))
+    world.register_spatial_classifier[spatial_filter](
+        RecordingPolicy(
+            Pointer(to=calls).unsafe_origin_cast[MutUntrackedOrigin]()
+        )
+    )
+    world.maintain_spatial()
+    var index = world.storage._entity_locations[a.get_id()].archetype_index
+    world.storage._archetypes[index]._storage.get_component_ptr[Position]()[
+        unsafe_offset=0
+    ].x = 3
+    world.storage.mark_spatial_dirty(a)
+    world.storage.mark_spatial_dirty(a)
+    world.maintain_spatial()
+    assert_equal(calls, 3)
+    assert_equal(world.storage._archetypes[index].get_entity(0), b)
+    world.invalidate_spatial()
+    assert_equal(calls, 3)
+    world.maintain_spatial()
+    assert_equal(calls, 5)
+
+
+def read_positions(kernel: KernelContext[Filter().read[Position]()]):
+    """Declares immutable access to classifier inputs.
+
+    Args:
+        kernel: Read-only matching rows.
+    """
+    for entity in kernel:
+        _ = entity.get[Position]().x
+
+
+def test_readonly_kernels_and_exact_selected_writes() raises:
+    """Only matching potential writes invalidate, including lexical CPU kernels.
+
+    Raises:
+        Error: If setup, maintenance, or validation fails.
+    """
+    var world = World[Position, Payload, Excluded]()
+    var calls = 0
+    _ = world.storage.add_entity(Position(0), Payload([0]))
+    _ = world.storage.add_entity(Position(1))
+    world.register_spatial_classifier[spatial_filter](
+        RecordingPolicy(
+            Pointer(to=calls).unsafe_origin_cast[MutUntrackedOrigin]()
+        )
+    )
+    world.maintain_spatial()
+    var context = SystemContext(world)
+
+    var observed = 0
+    context.run[read_positions]()
+    context.world[].maintain_spatial()
+    assert_equal(calls, 2)
+    var selected = context._select[Filter().include[Payload]()]()
+    selected.run[reverse_positions]()
+    selected^.release()
+    context.world[].maintain_spatial()
+    assert_equal(calls, 3)
+    var selected_again = context._select[Filter().include[Payload]()]()
+
+    def lexical_write(
+        kernel: KernelContext[Filter().include[Position]().read[Payload]()],
+    ) {mut observed}:
+        """Writes through a reference in a selected lexical CPU kernel.
+
+        Args:
+            kernel: Exact selected position range.
+        """
+        for entity in kernel:
+            entity.get[Position]().x = 2
+            observed += 1
+
+    selected_again.run(lexical_write)
+    selected_again^.release()
+    context.world[].maintain_spatial()
+    assert_equal(calls, 4)
+
+
+def test_bulk_selected_replacement_and_apply_invalidation() raises:
+    """All structural mutation engines and untyped reference callbacks rebuild keys.
+
+    Raises:
+        Error: If mutation, maintenance, or validation fails.
+    """
+    var world = World[Position, Payload, Excluded]()
+    var calls = 0
+    var a = world.storage.add_entity(Position(0), Payload([0]))
+    _ = world.storage.add_entity(Position(1), Payload([1]))
+    _ = world.storage.add_entity(Position(2), Excluded())
+    world.register_spatial_classifier[spatial_filter](
+        RecordingPolicy(
+            Pointer(to=calls).unsafe_origin_cast[MutUntrackedOrigin]()
+        )
+    )
+    world.maintain_spatial()
+    var added = world.storage.add[
+        Excluded, filter=Filter().include[Position]().exclude[Excluded]()
+    ](Excluded())
+    _ = added^
+    world.maintain_spatial()
+    assert_equal(calls, 2)
+    var removed = world.storage.remove[
+        Excluded, filter=Filter().include[Excluded]()
+    ]()
+    _ = removed^
+    world.maintain_spatial()
+    assert_equal(calls, 5)
+    world.storage.replace[Position]().by(Position(3), entity=a)
+    world.maintain_spatial()
+    assert_equal(calls, 8)
+    var context = SystemContext(world)
+    var selected = context._select[Filter().include[Payload]()]()
+    selected.add(Excluded())
+    selected^.release()
+    context.world[].maintain_spatial()
+    assert_equal(calls, 9)
+    var selected_excluded = context._select[Filter().include[Excluded]()]()
+    selected_excluded.remove[Excluded]()
+    selected_excluded^.release()
+    context.world[].maintain_spatial()
+    assert_equal(calls, 12)
+    _ = context^
+
+    def update_row(accessor: MutArchetypeRowAccessor) raises:
+        """Mutates a component through the low-level apply accessor.
+
+        Args:
+            accessor: Current matching row.
+
+        Raises:
+            Error: If component access fails.
+        """
+        accessor.unsafe_get[Position]().x = 0
+
+    world.storage.apply[filter=Filter().include[Position]()](update_row)
+    world.maintain_spatial()
+    assert_equal(calls, 15)
+    world.storage.remove_entities[Filter().include[Position]()]()
+    world.maintain_spatial()
+    world.maintain_spatial()
+    assert_equal(calls, 15)
+    assert_equal(len(world), 0)
 
 
 def main() raises:

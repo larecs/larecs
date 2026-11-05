@@ -528,6 +528,11 @@ struct EntitySelection[
             )
             comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
             for selected_range in self._ranges:
+                self._world[].storage._mark_spatial_range[filter](
+                    selected_range.archetype_index,
+                    selected_range.first_row,
+                    selected_range.row_count,
+                )
                 ref archetype = self._world[].storage._archetypes.unsafe_get(
                     selected_range.archetype_index
                 )
@@ -657,6 +662,11 @@ struct EntitySelection[
                 comptime if filter.writes[T]:
                     var packed_offset = 0
                     for selected_range in matching_ranges:
+                        self._world[].storage._mark_spatial_range[filter](
+                            selected_range.archetype_index,
+                            selected_range.first_row,
+                            selected_range.row_count,
+                        )
                         ref archetype = (
                             self._world[].storage._archetypes.unsafe_get(
                                 selected_range.archetype_index
@@ -713,6 +723,11 @@ struct EntitySelection[
         )
         comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
         for selected_range in self._ranges:
+            self._world[].storage._mark_spatial_range[filter](
+                selected_range.archetype_index,
+                selected_range.first_row,
+                selected_range.row_count,
+            )
             ref archetype = self._world[].storage._archetypes.unsafe_get(
                 selected_range.archetype_index
             )
@@ -1265,6 +1280,17 @@ struct SystemContext[
                 # index instead of retaining the list buffer across callbacks.
                 var archetype_count = len(self.world[].storage._archetypes)
                 for index in range(archetype_count):
+                    if (
+                        self.world[].storage._spatial_enabled
+                        and bitmask_filter.matches(
+                            self.world[].storage._archetypes[index].get_mask()
+                        )
+                    ):
+                        self.world[].storage._mark_spatial_range[filter](
+                            index,
+                            0,
+                            len(self.world[].storage._archetypes[index]),
+                        )
                     ref archetype = self.world[].storage._archetypes.unsafe_get(
                         index
                     )
@@ -1433,6 +1459,19 @@ struct SystemContext[
                         comptime if filter.writes[T]:
                             var offset = 0
                             for ref archetype in matching_archetypes.copy():
+                                if (
+                                    self.world[].storage._spatial_enabled
+                                    and not self.world[].storage._spatial_full
+                                    and self.world[].storage._spatial_inputs.get(
+                                        Self.World.HostStorage.component_manager.get_id[
+                                            T
+                                        ]()
+                                    )
+                                ):
+                                    for row in range(len(archetype)):
+                                        self.world[].storage._enqueue_spatial_dirty(
+                                            archetype.get_entity(row)
+                                        )
                                 device_storage.copy_to_host[T](
                                     archetype._storage.get_component_ptr[T](),
                                     offset=offset,
@@ -1512,6 +1551,15 @@ struct SystemContext[
             # index instead of retaining the list buffer across callbacks.
             var archetype_count = len(self.world[].storage._archetypes)
             for index in range(archetype_count):
+                if (
+                    self.world[].storage._spatial_enabled
+                    and bitmask_filter.matches(
+                        self.world[].storage._archetypes[index].get_mask()
+                    )
+                ):
+                    self.world[].storage._mark_spatial_range[filter](
+                        index, 0, len(self.world[].storage._archetypes[index])
+                    )
                 ref archetype = self.world[].storage._archetypes.unsafe_get(
                     index
                 )

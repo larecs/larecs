@@ -159,6 +159,19 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     var _locks: LockManager
     """Lock manager guarding mutation during active iteration."""
 
+    var _spatial_enabled: Bool
+    """Whether spatial invalidation is active."""
+    var _spatial_inputs: BitMask
+    """Classifier input components requiring invalidation on mutable access."""
+    var _spatial_full: Bool
+    """Whether the next boundary must rebuild all keys."""
+    var _spatial_dirty: List[Entity]
+    """Deduplicated full identities with potentially changed inputs."""
+    var _spatial_marked: List[Bool]
+    """Sparse membership indexed by entity ID, rebuilt after structural changes."""
+    var _spatial_keys: List[UInt64]
+    """Committed classifier keys, independent of current row locations."""
+
     var _entity_pool: EntityPool  # Pool for entities.
     """Pool used to allocate and recycle entity IDs."""
     var _entity_locations: List[EntityLocation]
@@ -183,10 +196,101 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         with Zone(function_name="HostStorage.__init__()"):
             self._entity_locations = [EntityLocation(0, 0)]
             self._entity_pool = EntityPool()
+            self._spatial_enabled = False
+            self._spatial_inputs = BitMask()
+            self._spatial_full = False
+            self._spatial_dirty = List[Entity]()
+            self._spatial_marked = List[Bool]()
+            self._spatial_keys = List[UInt64]()
 
             self._archetype_map = BitMaskGraph[-1](0)
             self._archetypes = [Self.Archetype()]
             self._locks = LockManager()
+
+    def invalidate_spatial(mut self):
+        """Requests a full key rebuild at the next explicit boundary.
+
+        Use after untracked raw-pointer writes or external policy changes.
+        This only invalidates metadata; it never classifies or moves rows.
+        """
+        if self._spatial_enabled:
+            self._spatial_full = True
+
+    def mark_spatial_dirty(mut self, entity: Entity) raises LarecsError:
+        """Marks a live identity for deferred classification.
+
+        Args:
+            entity: Entity whose classifier inputs may have changed.
+
+        Raises:
+            LarecsError: If the entity is not alive.
+        """
+        self.assert_alive(entity)
+        if self._spatial_enabled and not self._spatial_full:
+            self._enqueue_spatial_dirty(entity)
+
+    @always_inline
+    def _enqueue_spatial_dirty(mut self, entity: Entity):
+        """Deduplicates a current identity without storing a row location.
+
+        Args:
+            entity: Live entity; membership capacity matches the last rebuild.
+        """
+        var id = Int(entity.get_id())
+        if not self._spatial_marked[id]:
+            self._spatial_marked[id] = True
+            self._spatial_dirty.append(entity)
+
+    @always_inline
+    def _mark_spatial_write[*Ts: ComponentType](mut self, entity: Entity):
+        """Conservatively invalidates mutable access to classifier inputs.
+
+        Parameters:
+            Ts: Potentially written component types.
+
+        Args:
+            entity: Valid current entity identity.
+        """
+        if not self._spatial_enabled or self._spatial_full:
+            return
+        comptime for i in range(len(Ts)):
+            if self._spatial_inputs.get(Self.component_manager.get_id[Ts[i]]()):
+                self._enqueue_spatial_dirty(entity)
+                return
+
+    @always_inline
+    def _mark_spatial_range[
+        filter: Filter
+    ](mut self, archetype_index: Int, first_row: Int, row_count: Int):
+        """Invalidates a bounded execution range before potential writes.
+
+        Parameters:
+            filter: Kernel access declaration.
+
+        Args:
+            archetype_index: Current matching archetype.
+            first_row: First selected row.
+            row_count: Number of selected rows.
+        """
+        if not self._spatial_enabled or self._spatial_full:
+            return
+        comptime kernel_mask = filter.get_bitmask_filter[*Self.ComponentTypes]()
+        if not kernel_mask.matches(
+            self._archetypes[archetype_index].get_mask()
+        ):
+            return
+        var overlaps = False
+        comptime for i in range(len(filter)):
+            comptime T = filter._include.ComponentTypes[i]
+            comptime if filter.writes[T]:
+                overlaps |= self._spatial_inputs.get(
+                    Self.component_manager.get_id[T]()
+                )
+        if overlaps:
+            for row in range(first_row, first_row + row_count):
+                self._enqueue_spatial_dirty(
+                    self._archetypes[archetype_index].get_entity(row)
+                )
 
     @staticmethod
     def filter[
@@ -398,6 +502,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             ](), "Duplicate component types in add_entity are not allowed."
 
             self._assert_unlocked()
+            self.invalidate_spatial()
 
             comptime component_count = len(Ts)
 
@@ -519,6 +624,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     raise LarecsError(WorldError.out_of_locks)
 
             self._assert_unlocked()
+            self.invalidate_spatial()
 
             comptime component_count = len(Ts)
 
@@ -574,6 +680,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             )
         ):
             debug_assert(count > 0, "Count must be positive.")
+            self.invalidate_spatial()
             ref archetype = self._archetypes.unsafe_get(archetype_index)
             var arch_start_idx = archetype.extend(count, self._entity_pool)
             var entities_size = (
@@ -613,6 +720,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: If the world is locked or the entity does not exist.
         """
         self._assert_unlocked()
+        self.invalidate_spatial()
         self.assert_alive(entity)
 
         with Zone(function_name="HostStorage.remove_entity(entity: Entity)"):
@@ -699,6 +807,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: If the world is locked.
         """
         self._assert_unlocked()
+        self.invalidate_spatial()
 
         with Zone(
             function_name="HostStorage.remove_entities(query: QueryInfo)"
@@ -813,7 +922,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: If the entity is not alive or does not have the component.
 
         Returns:
-            A reference to the component value.
+            A mutable reference to the component value. Access to a registered
+            classifier input conservatively invalidates this entity even when
+            the reference is used only to read. Do not retain it across maintenance.
         """
         comptime assert Self.component_manager.contains_components[
             T
@@ -833,6 +944,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     )
                 )
 
+            self._mark_spatial_write[T](entity)
             return self._archetypes.unsafe_get(
                 entity_loc.archetype_index
             ).get_component[T](entity_loc.entity_index)
@@ -868,6 +980,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             self._archetypes.unsafe_get(
                 entity_loc.archetype_index
             ).set_components[T](entity_loc.entity_index, component^)
+            self._mark_spatial_write[T](entity)
 
     @always_inline
     def set[
@@ -905,6 +1018,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             self._archetypes.unsafe_get(
                 entity_loc.archetype_index
             ).set_components[*Ts](entity_loc.entity_index, *components^)
+            self._mark_spatial_write[*Ts](entity)
 
     def add[
         *Ts: ComponentType
@@ -1292,6 +1406,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             comptime add_ids = Self.component_manager.get_id_arr[*Ts]()
 
             self._assert_unlocked()
+            self.invalidate_spatial()
             self.assert_alive(entity)
 
             # Reserve space for the possibility that a new archetype gets created
@@ -1455,6 +1570,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             *Ts
         ](), "Duplicate component types in add are not allowed."
         self._assert_selection_authorized(manager_address, lock)
+        self.invalidate_spatial()
         self.assert_alive(entity)
 
         comptime add_size = len(Ts)
@@ -1596,6 +1712,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             *Ts
         ](), "Duplicate component types in add are not allowed."
         self._assert_selection_authorized(manager_address, lock)
+        self.invalidate_spatial()
         result_ranges = List[EntityRange]()
 
         comptime add_size = len(Ts)
@@ -1841,6 +1958,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 return
 
             self._assert_unlocked()
+            self.invalidate_spatial()
 
             comptime _2kb_of_UInt_or_Int = (1024 * 2) // size_of[UInt]()
             var arch_start_idcs = List[Int](
@@ -2016,6 +2134,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             )
         ):
             self._assert_unlocked()
+            self.invalidate_spatial()
 
             with self._locked():
                 for ref archetype in Self.ArchetypeIterator(

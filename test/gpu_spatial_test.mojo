@@ -65,11 +65,12 @@ def update(context: KernelContext[Filter().include[Position, Payload]()]):
         entity.get[Payload]().value += 1
 
 
-def _check_execution[on_gpu: Bool]() raises:
+def _check_execution[on_gpu: Bool, selected: Bool = False]() raises:
     """Maintains rows before and after execution and checks copied-back values.
 
     Parameters:
         on_gpu: Whether to run on the actual accelerator.
+        selected: Whether to execute through an exact selection.
 
     Raises:
         Error: If execution, maintenance, or validation fails.
@@ -77,25 +78,42 @@ def _check_execution[on_gpu: Bool]() raises:
     var world = World[Position, Payload]()
     var a = world.storage.add_entity(Position(3), Payload(30))
     var b = world.storage.add_entity(Position(1), Payload(10))
+    var untouched = world.storage.add_entity(Position(0))
     world.register_spatial_classifier[spatial_filter](Policy())
     world.maintain_spatial()
     var index = world.storage._entity_locations[a.get_id()].archetype_index
     assert_equal(world.storage._archetypes[index].get_entity(0), b)
     var context = SystemContext(world)
-    context.run[update, on_gpu=on_gpu]()
-    assert_equal(context.world[].storage.get[Position](a).value, 7)
-    assert_equal(context.world[].storage.get[Payload](a).value, 31)
-    assert_equal(context.world[].storage.get[Position](b).value, 9)
-    assert_equal(context.world[].storage.get[Payload](b).value, 11)
-    # Copy-back/kernel completion does not reorder; explicit maintenance does.
+    comptime if selected:
+        var selection = context._select[Filter().include[Payload]()]()
+        selection.run[update, on_gpu=on_gpu]()
+        selection^.release()
+    else:
+        context.run[update, on_gpu=on_gpu]()
+    # Read through queries so the test cannot mask missing copy-back invalidation.
+    for row in context.world[].storage.query[
+        Filter().read[Position, Payload]()
+    ]():
+        var expected = Int32(7 if row.get_entity() == a else 9)
+        assert_equal(row.get[Position]().value, expected)
     assert_equal(context.world[].storage._archetypes[index].get_entity(0), b)
     context.world[].maintain_spatial()
     assert_equal(context.world[].storage._archetypes[index].get_entity(0), a)
-    context.run[update, on_gpu=on_gpu]()
+    comptime if selected:
+        var selection = context._select[Filter().include[Payload]()]()
+        selection.run[update, on_gpu=on_gpu]()
+        selection^.release()
+    else:
+        context.run[update, on_gpu=on_gpu]()
     assert_equal(context.world[].storage.get[Position](a).value, 3)
     assert_equal(context.world[].storage.get[Payload](a).value, 32)
     assert_equal(context.world[].storage.get[Position](b).value, 1)
     assert_equal(context.world[].storage.get[Payload](b).value, 12)
+    for row in context.world[].storage.query[
+        Filter().read[Position]().exclude[Payload]()
+    ]():
+        assert_equal(row.get_entity(), untouched)
+        assert_equal(row.get[Position]().value, Int32(0))
     assert_false(context.world[].storage.is_locked())
 
 
@@ -106,6 +124,7 @@ def test_cpu_execution_after_spatial_maintenance() raises:
         Error: If validation fails.
     """
     _check_execution[False]()
+    _check_execution[False, True]()
 
 
 def test_gpu_execution_after_spatial_maintenance() raises:
@@ -123,6 +142,7 @@ def test_gpu_execution_after_spatial_maintenance() raises:
             print("SKIP: spatial GPU execution; no working device")
             return
         _check_execution[True]()
+        _check_execution[True, True]()
         print("Executed spatial maintenance integration on actual GPU")
 
 

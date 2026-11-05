@@ -1,11 +1,15 @@
 ---
 id: "0010"
 title: "Owned spatial classifiers and explicit maintenance"
-status: accepted
+status: superseded by 0012
 status_notes: One host classifier per world; small synthetic workload comparisons implemented; complete application benefit remains unmeasured.
 ---
 
 # Decision 0010: Owned spatial classifiers and explicit maintenance
+
+The full-scan-only maintenance contract below is historical. [Decision 0012](0012-deferred-spatial-maintenance.md)
+retains the classifier, filter, ownership, key ordering, lock, and typed movement
+rules and replaces unconditional classification with deferred invalidation.
 
 ## Context
 

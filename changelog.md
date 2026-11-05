@@ -24,6 +24,12 @@
 
 ### Changed
 
+- Defer spatial classification until explicit maintenance, deduplicating dirty
+  entity identities across mutable input references, setters, CPU kernels,
+  selected execution, and GPU copy-back. Clean boundaries skip work; structural
+  changes request full rebuilds. Add explicit entity marking/full invalidation
+  for raw writes and preserve cached keys and pending work after classifier errors.
+
 - Share CPU resource binding and bounded kernel context setup across ordinary
   and selected execution, with lazy matching-range discovery and no temporary
   CPU range metadata.
