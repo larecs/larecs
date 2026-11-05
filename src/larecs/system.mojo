@@ -1751,10 +1751,12 @@ struct SystemContext[
           chunks may run concurrently on the world's
           `ThreadedExecutionConfig`. With one worker or fewer matching rows
           than `min_parallel_rows`, the stores run sequentially.
-        - Device: one launch covers all matching rows. Accessed columns and
-          resources are uploaded first; written columns, read-write
-          resources, and mutable captures are copied back before `run`
-          returns. DEVICE never falls back to HOST.
+        - Device: one launch covers all matching rows. Readable columns and
+          resources are uploaded when the device copy is not current;
+          write-only columns are not uploaded, so the kernel must set them
+          for every row. Written columns, read-write resources, and mutable
+          captures are copied back before `run` returns. DEVICE never falls
+          back to HOST.
 
         Access: `include` grants read-write component access, `read`
         read-only, and `write` set-only access; `required_resources`
