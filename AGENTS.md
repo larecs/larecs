@@ -13,6 +13,27 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
 - **Archetypes**: Efficient storage for entities with the same component composition
 - **Queries**: Fast iteration over entities matching specific criteria
 
+## Issues and Branches
+
+- Before starting a task, find its issue: search open issues with
+  `gh issue list --state open --search "<keywords>"` and check the sub-issues of
+  related parent issues. Tell the developer which issue you are working on. If
+  none fits, ask whether to create one (use the `issue-description` skill), and
+  start without an issue only when the developer says so.
+- Work on a branch linked to the issue. Create it with
+  `gh issue develop <N> --name <branch> --base <base> --checkout`, where `<base>`
+  is `main` or, for stacked work, the branch the work builds on. When an issue
+  exists, create the work branch only this way, not with `git switch -c`,
+  `git checkout -b`, or `git branch`.
+- If tooling already started you on its own branch, such as a managed worktree,
+  create the linked branch with `gh issue develop` without `--checkout`, then
+  run `git fetch origin <branch>` and `git switch <branch>` before your first
+  commit.
+- Confirm the link with `gh issue develop --list <N>`. A branch links to one
+  issue; when a PR resolves further issues, add their `Closes #N` lines and tell
+  the developer which ones need a manual Development link, because GitHub only
+  links closing keywords for PRs into `main`.
+
 ## Pull Request Descriptions
 
 Use the `pr-description` skill to write or revise a description; `.github/pull_request_template.md` holds the skeleton.
