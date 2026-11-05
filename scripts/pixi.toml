@@ -17,3 +17,6 @@ hugo = ">0.148.0,<=0.148.2"
 [pypi-dependencies]
 perfetto = ">=0.16.0, <0.17"
 pymodo = ">=0.11.13, <0.12"
+
+[target.osx-arm64.dependencies]
+go = ">=1.27.3,<2"

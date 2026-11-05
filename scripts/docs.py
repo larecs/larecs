@@ -1,7 +1,11 @@
 import argparse
 import asyncio
+import os
+import platform
 import re
+import subprocess
 import sys
+from importlib.metadata import version
 from pathlib import Path
 
 # modo does not set a nonzero exit code when one of its pre-run, pre-build,
@@ -88,10 +92,37 @@ def _check(returncode: int, script_error: bool, description: str) -> None:
         sys.exit(returncode or 1)
 
 
+def _modo_executable() -> str:
+    """Returns the Modo executable to run.
+
+    pymodo bundles only an x86_64 macOS binary, which fails with `Bad CPU
+    type in executable` on Apple Silicon without Rosetta. There, the same
+    Modo release is built natively from source with the Go toolchain of the
+    docs environment and cached under `scripts/.pixi/modo/<version>/`.
+
+    Returns:
+        The path or name of the Modo executable.
+    """
+    if sys.platform != "darwin" or platform.machine() != "arm64":
+        return "modo"
+
+    modo_version = version("pymodo")
+    bin_dir = Path(__file__).parent / ".pixi" / "modo" / modo_version
+    executable = bin_dir / "modo"
+    if not executable.exists():
+        print(f"Building Modo v{modo_version} for arm64...", flush=True)
+        subprocess.run(
+            ["go", "install", f"github.com/mlange-42/modo@v{modo_version}"],
+            env=os.environ | {"GOBIN": str(bin_dir), "CGO_ENABLED": "0"},
+            check=True,
+        )
+    return str(executable)
+
+
 async def build_docs(watch=False) -> tuple[int, bool]:
     larecs_dir = Path(__file__).parent.parent
 
-    args = ["modo", "build"]
+    args = [_modo_executable(), "build"]
     if watch:
         args.append("--watch")
 
