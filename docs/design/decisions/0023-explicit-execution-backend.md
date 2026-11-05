@@ -1,10 +1,10 @@
 ---
-id: "0022"
+id: "0023"
 title: "Explicit compile-time execution backend"
 status: accepted
 ---
 
-# Decision 0022: Explicit compile-time execution backend
+# Decision 0023: Explicit compile-time execution backend
 
 ## Context
 
