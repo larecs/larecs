@@ -135,6 +135,7 @@ Exports:
  - spatial.SpatialClassifier
  - spatial.grid_cell
  - spatial.morton_key_3d
+ - execution.ExecutionBackend
  - execution.ThreadedExecutionConfig
  - world.World
 """
@@ -185,4 +186,4 @@ from .resource_adapter import (
     BufferResource,
 )
 
-from .execution import ThreadedExecutionConfig
+from .execution import ExecutionBackend, ThreadedExecutionConfig

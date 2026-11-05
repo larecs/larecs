@@ -20,7 +20,7 @@ comptime ComponentType = Copyable & Deinitable
 comptime DeviceComponentType = TrivialRegisterPassable
 """Trait subset of [.ComponentType] safe for device raw-byte transfer.
 
-`SystemContext.run(..., on_device=True)` moves component columns between host
+`SystemContext.run(..., backend=ExecutionBackend.DEVICE)` moves component columns between host
 and device buffers via a plain byte copy (see
 [..device_storage.DeviceComponentStorage]): the destination never runs
 `T`'s copy constructor or destructor, only `memcpy`s its bytes. That is

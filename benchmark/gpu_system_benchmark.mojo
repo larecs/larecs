@@ -30,7 +30,14 @@ from max.gpu.host import DeviceAttribute
 
 from custom_benchmark import DefaultBench
 
-from larecs import Entity, Filter, KernelContext, SystemContext, World
+from larecs import (
+    ExecutionBackend,
+    Entity,
+    Filter,
+    KernelContext,
+    SystemContext,
+    World,
+)
 
 
 @fieldwise_init
@@ -200,7 +207,12 @@ def _run_once[steps: Int, on_device: Bool](mut world: WorldType) raises:
     var context = ContextType(
         Pointer(to=world).unsafe_origin_cast[MutUntrackedOrigin]()[]
     )
-    context.run[integrate_orbit[steps], on_device=on_device]()
+    context.run[
+        integrate_orbit[steps],
+        backend=(
+            ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+        ),
+    ]()
 
 
 def _set_grid_cap[grid_cap: Int](mut world: WorldType) raises:

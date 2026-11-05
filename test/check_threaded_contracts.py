@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, Captures, ReadCapture, read_capture, mut_capture, ThreadedExecutionConfig
+PRELUDE = """from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter, Resources, Captures, ReadCapture, read_capture, mut_capture, ThreadedExecutionConfig
 
 @fieldwise_init
 struct Owner(Copyable, Movable):
@@ -50,10 +50,10 @@ CASES = {
     "read_write_resource": (thin_program(resources="Resources().read_write[Int32]()"), "Threaded resources require explicit read access"),
     "write_resource": (thin_program(resources="Resources().write[Int32]()"), "Threaded resources require explicit read access"),
     "read_capture": (thin_program(captures="Captures[ReadCapture[Int32]]()"), "Threaded execution does not support captures"),
-    "conflicting_engines": (thin_program(options="threaded=True, on_device=True"), "Threaded and device execution are mutually exclusive"),
+    "conflicting_engines": (thin_program(options="threaded=True, backend=ExecutionBackend.DEVICE"), "Threaded and device execution are mutually exclusive"),
     "selected_component": (thin_program(component="Owner", selected=True), "Threaded components require pointer-free trivial plain values"),
     "selected_resource": (thin_program(resources="Resources[Int32]()", selected=True), "Threaded resources require explicit read access"),
-    "selected_conflict": (thin_program(options="threaded=True, on_device=True", selected=True), "Threaded and device execution are mutually exclusive"),
+    "selected_conflict": (thin_program(options="threaded=True, backend=ExecutionBackend.DEVICE", selected=True), "Threaded and device execution are mutually exclusive"),
 }
 
 for selected in (False, True):
@@ -79,7 +79,7 @@ CASES["move_borrowed_world"] = (
     "use of uninitialized value 'world'",
 )
 
-RUNTIME_PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, ThreadedExecutionConfig, DevicePassableResource, ResourceAdapter, ResourceDeviceCache
+RUNTIME_PRELUDE = """from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter, Resources, ThreadedExecutionConfig, DevicePassableResource, ResourceAdapter, ResourceDeviceCache
 from std.testing import assert_equal, assert_false
 comptime W = World[Int32]
 

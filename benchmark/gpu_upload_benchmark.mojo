@@ -8,7 +8,7 @@ from max.gpu.host import DeviceContext
 from std.sys import has_accelerator, size_of
 from std.time import perf_counter_ns
 from std.testing import assert_equal
-from larecs import World, SystemContext, KernelContext, Filter
+from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter
 from larecs.device_storage import DeviceComponentStorage
 
 
@@ -49,7 +49,7 @@ def run_once(mut world: WorldType) raises:
         Error: If GPU execution fails.
     """
     var context = SystemContext(world)
-    context.run[bump, on_device=True]()
+    context.run[bump, backend=ExecutionBackend.DEVICE]()
 
 
 def sweep[count: Int]() raises:

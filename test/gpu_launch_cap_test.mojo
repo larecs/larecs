@@ -6,7 +6,14 @@
 from std.sys import has_accelerator
 from std.testing import assert_equal, TestSuite
 
-from larecs import Entity, Filter, KernelContext, SystemContext, World
+from larecs import (
+    ExecutionBackend,
+    Entity,
+    Filter,
+    KernelContext,
+    SystemContext,
+    World,
+)
 from larecs.gpu_launch import BLOCK_SIZE
 
 
@@ -83,7 +90,7 @@ def test_capped_system_run_covers_every_row() raises:
         var entities = List[Entity]()
         var world = _capped_world(entities)
         var context = SystemContext(world)
-        context.run[add_one, on_device=True]()
+        context.run[add_one, backend=ExecutionBackend.DEVICE]()
         _assert_each_row_incremented_once(world, entities)
 
 
@@ -98,7 +105,7 @@ def test_capped_selection_run_covers_every_row() raises:
         var world = _capped_world(entities)
         var context = SystemContext(world)
         var selection = context.add_entities(Position(-10.0), count=ROW_COUNT)
-        selection.run[add_one, on_device=True]()
+        selection.run[add_one, backend=ExecutionBackend.DEVICE]()
         selection^.release()
 
         for i in range(len(entities)):

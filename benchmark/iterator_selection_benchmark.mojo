@@ -29,9 +29,10 @@ separate. Query selections contain store indices, never table pointers.
 """
 
 from std.benchmark import keep
+from std.sys import has_accelerator
 from std.time import perf_counter_ns
 from std.testing import assert_equal
-from larecs import World, Filter, KernelContext, SystemContext
+from larecs import ExecutionBackend, World, Filter, KernelContext, SystemContext
 from larecs.bitmask import BitMask
 
 
@@ -116,7 +117,13 @@ def measure[mode: Int](mut world: ManyWorld) raises:
         for batch in range(8):
             var start = perf_counter_ns()
             for _ in range(iterations):
-                context.run[increment, on_device=(mode == 3)]()
+                context.run[
+                    increment,
+                    backend=(
+                        ExecutionBackend.DEVICE if mode
+                        == 3 else ExecutionBackend.HOST
+                    ),
+                ]()
             var elapsed = perf_counter_ns() - start
             if batch > 0:
                 print(mode, Float64(elapsed) / Float64(iterations))
@@ -137,7 +144,7 @@ def measure[mode: Int](mut world: ManyWorld) raises:
 
 
 def main() raises:
-    """Runs all four benchmark modes against the same initialized world.
+    """Runs host modes and the supported device mode on one initialized world.
 
     Raises:
         Error: If setup or a benchmark operation fails.
@@ -145,4 +152,5 @@ def main() raises:
     var world = ManyWorld()
     populate(world)
     comptime for mode in range(4):
-        measure[mode](world)
+        comptime if mode < 3 or has_accelerator():
+            measure[mode](world)
