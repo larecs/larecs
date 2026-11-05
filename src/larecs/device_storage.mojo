@@ -435,12 +435,8 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
     def upload[T: ResourceType](mut self, ref value: T) raises:
         """Copies ``value`` into a freshly allocated device buffer.
 
-        Takes ``value`` by `ref` and copies from it immediately, in the
-        same call -- callers must pass the result of a resource lookup
-        directly (e.g. ``device_resources.upload[T](world.resources.get[T]())``)
-        rather than routing it through a variable that outlives the call,
-        since a `ref` returned by a `raises` accessor is only guaranteed
-        valid for immediate use at its own call site.
+        The host value must remain alive until the queued copy completes.
+        This copies only the value's bytes, not any allocations it points to.
 
         Parameters:
             T: The type of the resource to upload. Must be part of

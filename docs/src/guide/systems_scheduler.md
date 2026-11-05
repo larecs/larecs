@@ -201,6 +201,135 @@ in the kernel's `Resources[Time]()` list. See
 [Resources](../resources#using-resources-in-kernels) for the complete kernel
 API, missing-resource behavior, mutation semantics, and runnable examples.
 
+## Capturing CPU kernels
+
+Pass a closure as an argument to `context.run(kernel)` to borrow surrounding
+values on the CPU. Use `imm` for read-only captures and `mut` for values the
+kernel updates. Capturing kernels may also declare required resources.
+
+```mojo {doctest="guide_cpu_captures" global=true}
+from larecs import World, SystemContext, KernelContext, Filter, Resources, ResourceType
+from std.testing import assert_equal
+
+@fieldwise_init
+struct Offset(ResourceType):
+    var value: Int32
+
+def main() raises:
+    var world = World[Int32]()
+    world.resources.add(Offset(2))
+    var entity = world.storage.add_entity(Int32(4))
+    var factor: Int32 = 3
+    var visits = 0
+
+    def scale_rows(
+        rows: KernelContext[Filter().include[Int32](), Resources[Offset]()]
+    ) {imm factor, mut visits}:
+        """Updates matching rows and counts visits.
+
+        Args:
+            rows: Components and resources available to the kernel.
+        """
+        for row in rows:
+            row.get[Int32]() = row.get[Int32]() * factor + rows.resources.get[Offset]().value
+            visits += 1
+
+    var context = SystemContext(world)
+    context.run(scale_rows)
+    assert_equal(visits, 1)
+    assert_equal(world.storage.get[Int32](entity), 14)
+```
+
+Execution is synchronous: changes to mutable captures are visible after
+`run` returns. The kernel runs once per matching archetype and visits only
+that archetype's rows. Do not structurally modify the world from a captured
+alias while those rows are being processed.
+
+## Passing CPU-local values to a GPU kernel
+
+Declare explicit capture slots with {{< api Captures >}}, using
+{{< api ReadCapture >}} for inputs and {{< api MutCapture >}} for values that
+must be copied back. Bind CPU locals with {{< api read_capture >}} and
+{{< api mut_capture >}} when calling `run`. Inside the kernel,
+`context.captures.get[index]()` returns a reference with the declared access.
+The slot index is compile-time; two slots may have the same value type.
+
+```mojo {doctest="guide_gpu_captures" global=true hide=true}
+# SKIP_ASAN
+# SKIP_DEBUG
+```
+
+```mojo {doctest="guide_gpu_captures" global=true}
+from larecs import (
+    World, SystemContext, KernelContext, Filter,
+    Captures, ReadCapture, MutCapture, read_capture, mut_capture,
+)
+from std.gpu import global_idx
+from std.sys.info import is_gpu
+from std.testing import assert_equal
+
+comptime locals_spec = Captures[ReadCapture[Int32], MutCapture[Int32]]()
+
+def scale(
+    context: KernelContext[Filter().include[Int32](), capture_spec=locals_spec]
+):
+    """Scales components and reports the number of processed entities.
+
+    Args:
+        context: Matching rows and the explicitly bound CPU-local values.
+    """
+    for entity in context:
+        entity.get[Int32]() *= context.captures.get[0]()
+
+    # The output is shared by all threads: only one GPU thread updates it.
+    comptime if is_gpu():
+        if global_idx.x != 0:
+            return
+    context.captures.get[1]() += context.length
+
+def main() raises:
+    """Demonstrates input transfer and synchronous copy-back.
+
+    Raises:
+        Error: If setup, execution, or a result check fails.
+    """
+    var world = World[Int32]()
+    var entity = world.storage.add_entity(Int32(4))
+    var factor: Int32 = 3
+    var processed: Int32 = 0
+    var context = SystemContext(world)
+    context.run[scale, on_gpu=True](
+        read_capture(factor), mut_capture(processed)
+    )
+    assert_equal(world.storage.get[Int32](entity), 12)
+    assert_equal(processed, 1)
+```
+
+Each invocation uploads the current bound values. Mutable slots are shared
+device allocations, and their final values are copied back to the original
+CPU locals before `run` returns. Read-only slots are not downloaded and cannot
+be written through `get`. Empty matches leave captures unchanged. Captures
+need no entry in the world's resource storage and can coexist with required
+resources.
+
+Binding count, value types, and mutability must match the declaration.
+Bindings borrow their locals, so the borrow checker rejects conflicting
+read-only and mutable bindings to the same value. Neither a capture reference
+nor its pointer may escape the kernel invocation.
+
+GPU captures currently support trivially copyable, trivially deletable values,
+such as numbers and plain structs. They copy bytes, not object graphs:
+`List`, `Dict`, host-backed tensors, and pointers to host-only memory cannot
+be transferred this way. `DevicePassable` conversion is not performed for
+capture values. Writes to a mutable capture must use a single writer or
+appropriate synchronization/atomics, just like writes to shared resources.
+
+The same explicit bindings work with CPU kernels, including the closure
+overload. CPU execution borrows the original values directly and calls the
+kernel once per matching archetype; GPU execution processes the matching rows
+in one launch. In the example, adding `context.length` once per CPU archetype
+or once for the GPU launch gives the same total.
+
 ## GPU execution
 
 The `SystemContext.run` call used by `Move` executes its kernel on the CPU by
@@ -215,3 +344,9 @@ Required resources use the same `context.resources.get[T]()` API on the GPU.
 Resource transfer constraints, shared-write safety, and the non-capturing
 kernel requirement are covered in
 [Resources](../resources#using-resources-in-kernels).
+
+Use explicit bindings above to pass CPU-local values to GPU entry points;
+lexical CPU borrows are not transferred automatically. Nested closures **inside**
+a GPU kernel can capture that thread's kernel-local variables with `imm` and
+`mut`. Each thread owns its local values; updating a local capture does not
+update a variable on the host or communicate with other GPU threads.

@@ -93,6 +93,11 @@ main()
 ```
 
 Exports:
+ - capture.Captures
+ - capture.ReadCapture
+ - capture.MutCapture
+ - capture.read_capture
+ - capture.mut_capture
  - archetype.ArchetypeRowAccessor
  - archetype.MutArchetypeRowAccessor
  - component.ComponentManager
@@ -100,6 +105,7 @@ Exports:
  - device_storage.DeviceComponentStorage
  - device_storage.DeviceResourceStorage
  - entity.Entity
+ - entity.EntityAccessor
  - error.ComponentError
  - error.EntityError
  - error.LarecsError
@@ -131,12 +137,21 @@ from .error import (
     EntityError,
     UnknownError,
 )
-from .component import ComponentType
+from .component import ComponentType, Components
 from .types import ComponentId
 from .archetype import MutArchetypeRowAccessor, ArchetypeRowAccessor
 from .resource import Resources, ResourceStorage, ResourceType
 from .entity import Entity
 from .lock import LockGuard, LockManager
 from .filter import Filter, BitMaskFilter
-from .system import System, SystemContext, KernelContext
+from .system import System, SystemContext, KernelContext, EntitySelection
+from .entity import EntityRange
 from .scheduler import Scheduler
+
+from .capture import (
+    Captures,
+    ReadCapture,
+    MutCapture,
+    read_capture,
+    mut_capture,
+)

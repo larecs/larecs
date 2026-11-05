@@ -86,6 +86,19 @@ struct LockManager(Copyable, Movable):
             return not self.locks.is_zero()
 
     @always_inline
+    def owns_only(self, lock: Int) -> Bool:
+        """Returns whether ``lock`` is the manager's sole active lock.
+
+        Args:
+            lock: The lock bit whose sole ownership is checked.
+
+        Returns:
+            True when the bit is active and no other lock bit is active.
+        """
+        with Zone(function_name="LockManager.owns_only(lock: Int)"):
+            return self.locks.get(lock) and self.locks.total_bits_set() == 1
+
+    @always_inline
     def reset(mut self):
         """
         Reset the locks and the pool.
@@ -157,3 +170,20 @@ struct LockGuard[lock_origin: MutOrigin](Copyable, Movable):
                     t"Failed to unlock the lock {self._lock}. This should not"
                     t" happen."
                 )
+
+    @always_inline
+    def authorizes(
+        self, manager: Pointer[LockManager, Self.lock_origin]
+    ) -> Bool:
+        """Checks that this guard is the manager's sole active lock.
+
+        Args:
+            manager: The lock manager requesting structural authorization.
+
+        Returns:
+            True when the manager identity matches and this guard owns its
+            only active lock.
+        """
+        return Int(self._manager) == Int(manager) and manager[].owns_only(
+            self._lock
+        )

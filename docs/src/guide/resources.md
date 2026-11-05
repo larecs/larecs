@@ -91,6 +91,12 @@ The `resources` attribute also allows us to access and change resources via
 Unlike their [component-related counterparts](../changing_entities), these
 operations need no entity argument: a resource is selected only by its type.
 
+`ResourceStorage.get` intentionally returns a reference with `UnsafeAnyOrigin`,
+preserving the mutability of the storage access. It should keep this origin
+until Mojo's origin system can model the ownership relation between the
+resource container and its separately allocated resource values. Tying the
+returned reference to the storage origin is not a suitable interim replacement.
+
 ```mojo {doctest="guide_resources" global=true}
     # Change a resource value via a reference
     world.resources.get[Time]().time = 1.0
@@ -209,9 +215,9 @@ is often simpler. Also avoid target-dependent side effects outside the entity
 loop: the CPU calls the kernel once per matching archetype, while the GPU
 processes all matching rows in one launch.
 
-Kernels that access resources must be non-capturing functions and use the
-`context.run[kernel]()` form shown above. The capturing-closure overload,
-`context.run(kernel)`, does not currently support required resources.
+CPU kernels may also capture surrounding values and access resources through
+`context.run(kernel)`. See [Capturing CPU kernels](../systems_scheduler#capturing-cpu-kernels)
+for an example. GPU entry points use the non-capturing `context.run[kernel]()` form.
 
 To run this same kernel on a GPU, replace its CPU `run` call with:
 
@@ -219,12 +225,18 @@ To run this same kernel on a GPU, replace its CPU `run` call with:
     context.run[move_with_time, on_gpu=True]()
 ```
 
-For GPU execution, every accessed component and required resource must conform
-to `TrivialRegisterPassable`. Larecs transfers the declared resources to the
-device before execution and copies them back afterward, including any kernel
-changes. Resources with heap allocations or other non-trivial state, such as
-`SelectedEntities`, can be used on the host but cannot be passed to a GPU
-kernel.
+For GPU execution, accessed components must conform to
+`TrivialRegisterPassable`; required resources must satisfy
+`is_trivially_movable`. Resources do not need to declare
+`TrivialRegisterPassable` themselves. Larecs copies each resource's bytes to
+the device before execution and back afterward, including kernel changes.
+
+Trivial movability does **not** make host heap allocations accessible to the
+GPU. The transfer does not follow pointers, copy `List` or `Dict` contents,
+or invoke `DevicePassable` encoding. Do not pass host-backed collections or
+host-side `TileTensor` descriptors as resources through this path. They need
+an explicit device representation and transfer support, which this API does
+not yet provide. Heap-backed resources remain supported in CPU kernels.
 
 ## Removing resources
 

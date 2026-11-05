@@ -17,7 +17,7 @@ logic, these operations should generally be performed by a
 [system](../systems_scheduler) through its `SystemContext`.
 
 ```mojo {doctest="guide_add_remove_entities" global=true hide=true}
-from larecs import World, Filter
+from larecs import World, Filter, SystemContext, KernelContext
 
 @fieldwise_init
 struct Position(Copyable, Movable):
@@ -28,6 +28,11 @@ struct Position(Copyable, Movable):
 struct Velocity(Copyable, Movable):
     var dx: Float64
     var dy: Float64
+
+def place_batch(rows: KernelContext[Filter().include[Position]()]):
+    """Places each execution-local row one unit farther along the x axis."""
+    for row in rows:
+        row.get[Position]().x = Float64(row.idx)
 ```
 
 ```mojo {doctest="guide_add_remove_entities" global=true hide=true}
@@ -54,36 +59,45 @@ we can do the following:
 
 ## Batch addition
 
-If we want to create multiple entities at once,
-we can do this in a similar manner via {{< api HostStorage.add_entities add_entities >}}:
+Systems create batches through {{< api SystemContext.add_entities add_entities >}}.
+The result is a movable, noncopyable {{< api EntitySelection >}} containing
+exactly the new rows and owning the world's structural-change lock:
 
 ```mojo {doctest="guide_add_remove_entities" global=true}
-    # Add a batch of 10 entities with given position and velocity
-    _ = world.storage.add_entities(Position(0, 0), Velocity(1, 0), count=10)
+    var context = SystemContext(world)
+    var created = context.add_entities(
+        Position(0, 0), Velocity(1, 0), count=10
+    )
+    created.run[place_batch]()
+    created^.release()
 ```
 
-In contrast to `add_entity`, which creates a single entity,
-`add_entities` returns an iterator over all newly created
-entities. Suppose, we want to place the entities all on
-a line, each one unit apart from the other, we could do this
-as follows:
+Use a `with` block to release the lock automatically, including when an error
+or early return exits the block:
 
 ```mojo {doctest="guide_add_remove_entities" global=true}
-    # Add a batch of 10 entities with given position and velocity, placed on a line
-    var x_position = 0.0
-    for entity in world.storage.add_entities(Position(0, 0), Velocity(1, 0), count=10):
-        entity.unsafe_get[Position]().x = x_position
-        x_position += 1
+    with context.add_entities(Position(0, 0), count=10) as selected:
+        selected.add(Velocity(1, 0))
+        selected.run[place_batch]()
+        selected.run[place_batch]()
+    # The structural lock is released here.
 ```
 
-More information on manipulation of and iteration over entities
-is provided in the upcoming chapters.
+For an existing selection, write `with selection^ as selected:` to transfer
+ownership into the manager. The bound selection cannot escape the block's
+manager. The manager retains the lock until exit, even if the bound selection
+is consumed or explicitly released inside the block.
 
 > [!Note]
-> Iterators block structural changes to the world for their entire lifetime.
-> They may be stored or copied, but every copy acquires and owns a distinct
-> lock. Move an iterator into a loop with `^` when no independent copy is
-> needed, and avoid keeping iterators alive longer than necessary.
+> A selection can run kernels repeatedly. Component-changing methods update
+> its membership in place and retain the same lock; they return nothing.
+> Call `selection^.release()` when finished, or let it be destroyed. While it
+> lives, unrelated creation, deletion, and archetype changes are rejected.
+> An empty selection is still locked and follows the same rule.
+
+The lower-level `HostStorage.add_entities` remains available for setup code,
+but its mutation-result iterator workflow is deprecated for system logic. Use
+a selection kernel instead of iterating mutation results.
 
 ## Batch removal
 
