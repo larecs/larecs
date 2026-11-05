@@ -159,12 +159,12 @@ jobs:
 
   remove-preview:
     name: Remove PR preview
-    needs: changes
+    # Runs for every closed repository PR: a preview may exist from an earlier
+    # push even if the final diff no longer touches documentation.
     if: >-
       ${{ github.event_name == 'pull_request'
       && github.event.action == 'closed'
-      && github.event.pull_request.head.repo.full_name == github.repository
-      && needs.changes.outputs.docs == 'true' }}
+      && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
