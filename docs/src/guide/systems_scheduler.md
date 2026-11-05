@@ -235,8 +235,14 @@ def threaded_example() raises:
     context.run[increment_threaded]()
 ```
 
-```mojo {doctest="guide_threaded_execution" hide=true}
-threaded_example()
+```mojo {doctest="guide_threaded_execution" hide=true global=true}
+def main() raises:
+    """Runs the threaded execution example.
+
+    Raises:
+        Error: If execution fails.
+    """
+    threaded_example()
 ```
 
 `ThreadedExecutionConfig()` defaults to one worker, four target chunks per

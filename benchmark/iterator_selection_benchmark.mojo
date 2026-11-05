@@ -3,20 +3,9 @@
 Build without debug info using --lld-path /usr/bin/ld -I src. Reports seven
 warm batches in ns/operation; setup and first GPU compilation are excluded.
 
-On Apple M4, Mojo 1.0.0 (ed45d567), compared against unchanged ee57f80:
-median of three alternating runs' batch medians, 64 matching archetypes,
-eight rows each (512 rows total):
-
-    mode                         before ns/op    after ns/op
-    0: locked query construction       407.7          190.7
-    1: locked cursor copy               57.9            9.6
-    2: CPU dispatch                    560.0          380.0
-    3: GPU dispatch                2132660.0      2144900.0
-
-GPU end-to-end time is effectively unchanged (0.6% slower in this sample);
-transfers and synchronization dominate. No claim of GPU speedup. Compilation
-wall time was 5.94 s before and 4.59 s after; these single build observations
-are too noisy to establish a compile-time improvement.
+Every populated archetype includes Value. Final checks require all 512 rows
+and the exact accumulated updates, so missing matches cannot look faster.
+Earlier timing samples predate these workload checks and are omitted.
 
 Allocation accounting from ownership paths, not allocator instrumentation:
 a nonempty selection cursor copy previously allocated and copied one List
@@ -28,20 +17,20 @@ reserve up to two KiB they do not use. Explicit start-index Lists retain
 their existing copy behavior; they are not GPU selection lists.
 
 Mask caching evaluation: not retained. Matching costs one linear scan of
-retained archetypes; the bounded allocation change halves measured query
-construction cost without persistent cache state. A cache would require a
+retained archetypes. A cache would require a
 mask registry, updates for both archetype creation paths, and either interior
 mutation or changes to the ref-self internal selection API. It would also
 need independent cache updates after storage/world copies and traversal-time
 occupancy checks. Caching populated tables alone is invalid after refill.
-These costs and borrow/API changes are not justified by the measured GPU
-costs; a cache prototype was not benchmarked, so no claim is made that caching
+These costs and borrow/API changes are outside the cursor ownership refactor.
+A cache prototype was not benchmarked, so no claim is made that caching
 could not improve query-heavy CPU workloads. Public API redesign remains
 separate. Selections contain list indices only, never table pointers.
 """
 
 from std.benchmark import keep
 from std.time import perf_counter_ns
+from std.testing import assert_equal
 from larecs import ExecutionBackend, World, Filter, KernelContext, SystemContext
 from larecs.bitmask import BitMask
 
@@ -83,6 +72,7 @@ def populate(mut world: ManyWorld) raises:
     """
     for combination in range(64):
         var mask = BitMask(0)
+        mask.set[True](0)
         for bit in range(6):
             if combination & (1 << bit):
                 mask.set[True](bit + 1)
@@ -136,6 +126,20 @@ def measure[mode: Int](mut world: ManyWorld) raises:
             var elapsed = perf_counter_ns() - start
             if batch > 0:
                 print(mode, Float64(elapsed) / Float64(iterations))
+
+    var expected = Float32(0)
+    comptime if mode >= 2:
+        expected = Float32((mode - 1) * 8 * iterations)
+    var count = 0
+    var checksum = Float32(0)
+    for entity in world.storage.query[FILTER]():
+        var value = entity.get[Value]().value
+        assert_equal(value, expected)
+        checksum += value
+        count += 1
+    assert_equal(count, 512)
+    assert_equal(checksum, expected * 512)
+    keep(checksum)
 
 
 def main() raises:

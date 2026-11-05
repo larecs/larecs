@@ -3,6 +3,7 @@
 
 from std.gpu import global_idx
 from std.sys import has_accelerator
+from std.sys.info import is_gpu
 from std.testing import *
 
 from larecs import (
@@ -37,10 +38,11 @@ def touch[
     Args:
         context: Component rows and the launch marker resources.
     """
-    if global_idx.x == 0:
-        context.resources.get[Marker]().value = context.resources.get[
-            Required
-        ]().value
+    comptime if is_gpu():
+        if global_idx.x == 0:
+            context.resources.get[Marker]().value = context.resources.get[
+                Required
+            ]().value
     for entity in context:
         comptime if filter.writes[Float32]:
             entity.set[Float32](9.0)
@@ -198,8 +200,26 @@ def test_gpu_empty_run_validates_resources_and_device() raises:
     assert_true(raised)
 
 
+def test_launch_probe_compiles_for_host() raises:
+    """Checks that the launch probe can instantiate without device primitives.
+
+    Raises:
+        Error: If host dispatch fails or changes the device-only marker.
+    """
+    var world = World[Float32]()
+    world.resources.add(Marker(7), Required(42))
+    var entity = world.storage.add_entity(Float32(2))
+    var context = SystemContext(world)
+    context.run[
+        touch[Filter().include[Float32]()], backend=ExecutionBackend.HOST
+    ]()
+    assert_equal(world.storage.get[Float32](entity), 9.0)
+    assert_equal(world.resources.get[Marker]().value, 7)
+
+
 # An explicit list avoids a compiler crash reflecting the generic GPU helper.
 comptime functions = (
+    test_launch_probe_compiles_for_host,
     test_gpu_empty_include_lifecycle,
     test_gpu_empty_read_lifecycle,
     test_gpu_empty_write_lifecycle,

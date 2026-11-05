@@ -5,6 +5,8 @@ benchmark/migration_benchmark.mojo`. Timings exclude setup and compilation.
 """
 
 from std.time import perf_counter_ns
+from std.benchmark import keep
+from std.testing import assert_equal, assert_false
 from larecs.host_storage import HostStorage
 from larecs.entity import Entity
 from larecs.filter import Filter
@@ -55,6 +57,19 @@ def benchmark_migration[batch: Bool](size: Int, repeats: Int) raises:
                 storage.replace[Int]().by(Int(5), entity=entity)
         if cycle:
             elapsed += perf_counter_ns() - start
+    var count = 0
+    for _ in storage.query[Filter().include[Int]()]():
+        count += 1
+    assert_equal(count, size)
+    var checksum = 0
+    for entity in entities:
+        var value = storage.get[Int](entity)
+        assert_equal(value, 5)
+        assert_false(storage.has[Float64](entity))
+        assert_false(storage.has[Bool](entity))
+        checksum += value
+    assert_equal(checksum, size * 5)
+    keep(checksum)
     print(batch, size, Float64(elapsed) / Float64(size * repeats), sep=",")
 
 
