@@ -57,6 +57,13 @@ selected mutation chains, and a selected device case.
   semantics against [decision 0018](design/decisions/0018-portable-resource-adapters.md).
   The read-only contiguous-buffer API is implemented; application compatibility
   and shading performance need application source and measurements.
+- [ ] Migrate Tree-D's leaf-distribution writer from `MutCapture` to a mutable
+  adapted resource under [decision 0022](design/decisions/0022-mutable-adapted-resources.md),
+  and compare its host and device results and timings.
+- [x] Run `test/mutable_resource_adapter_test.mojo` and the scatter example on
+  supported GPUs (Linux and Apple). Both pass on NVIDIA A100 (Linux) and
+  Apple M4.
+- [ ] Run the mutable adapter device tests on an AMD GPU (gfx942).
 
 ### Skip unchanged device uploads
 
@@ -86,8 +93,11 @@ accepted. Implement resources first, then component columns.
   ASAP destruction, inner-reference lifetimes) as the path to automatic device
   copy reuse under decision 0021.
 
-- [ ] Design writable adapted resources and complete-initialization semantics for
-  write-only shared device values before exposing either access path.
+- [ ] Design complete-initialization semantics for write-only ordinary shared
+  device values. Writable adapted resources are implemented under
+  [decision 0022](design/decisions/0022-mutable-adapted-resources.md).
+- [ ] Provide a portable atomic maximum for mutable views; compare-exchange
+  reductions are unavailable on Apple GPUs in Mojo 1.0.
 
 - [ ] Evaluate shared immutable preprocessing/configuration, construction-input
   caching, and explicit adapter overrides only when measured application costs

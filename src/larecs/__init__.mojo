@@ -136,6 +136,7 @@ Exports:
  - spatial.grid_cell
  - spatial.morton_key_3d
  - execution.ThreadedExecutionConfig
+ - resource_representation.PlainValue
  - world.World
 """
 from .world import World
@@ -179,6 +180,7 @@ from .sync import (
 
 from .resource_adapter import (
     DevicePassableResource,
+    ResourceAccess,
     ResourceAdapter,
     ResourceDeviceCache,
     ReadBuffer,
@@ -186,3 +188,4 @@ from .resource_adapter import (
 )
 
 from .execution import ThreadedExecutionConfig
+from .resource_representation import PlainValue
