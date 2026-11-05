@@ -27,6 +27,7 @@ from max.gpu.host import DeviceContext, DevicePointer
 
 from tracy import Zone
 
+from ._type_list import _TypeChecks
 from .unsafe_box import UnsafeBox
 
 comptime ResourceType = Copyable & Deinitable
@@ -173,10 +174,7 @@ struct Resources[
             The index of ``T`` if present; otherwise -1.
         """
         with Zone(function_name="Resources.index_of[T: ResourceType]()"):
-            comptime for i in range(len(Self.ResourceTypes)):
-                comptime if Self.ResourceTypes[i] == T:
-                    return i
-            return -1
+            return _TypeChecks[*Self.ResourceTypes].index_of[T]()
 
     @staticmethod
     def contains[T: ResourceType]() -> Bool:
@@ -324,7 +322,16 @@ struct ResourceStorage(Copyable, Movable, Sized):
 
         Raises:
             Error: If a resource already exists, is leased, or storage is unusable.
+
+        Constraints:
+            Ts must contain each resource type at most once.
         """
+
+        comptime assert _TypeChecks[*Ts].unique(), (
+            "ResourceStorage.add requires unique resource types; pass"
+            " only one value of each type (use set to replace a"
+            " resource)."
+        )
 
         with Zone(
             function_name=(

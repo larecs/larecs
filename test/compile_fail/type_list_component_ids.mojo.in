@@ -1,0 +1,6 @@
+from larecs.component import ComponentManager
+
+
+def main():
+    """Rejects duplicate component IDs or missing component types."""
+    _ = ComponentManager[Int, Float32].get_id_arr[@TYPES@]()

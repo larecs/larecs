@@ -36,6 +36,24 @@ from ._utils import (
 )
 from .error import LarecsError, ComponentError
 
+
+@always_inline
+def _retained_component_mask(
+    source: BitMask, destination: BitMask, excluded: BitMask
+) -> BitMask:
+    """Select initialized source values that may be moved without destruction.
+
+    Args:
+        source: Components initialized in the source rows.
+        destination: Components present in the destination archetype.
+        excluded: Removed or replaced components that must stay in the source.
+
+    Returns:
+        Shared components whose ownership transfers to the destination.
+    """
+    return source & destination & ~excluded
+
+
 comptime DEFAULT_CAPACITY = 32
 """Default capacity of an archetype."""
 
@@ -1230,6 +1248,7 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
         source: Pointer[Self, source_origin],
         count: Int,
         from_idx: Int = 0,
+        excluded_components: BitMask = BitMask(),
     ):
         """Move-initializes shared component columns from another table.
 
@@ -1241,11 +1260,13 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             source: The distinct source table.
             count: The number of rows to move.
             from_idx: The first initialized source row.
+            excluded_components: Components to leave initialized in the source.
 
         Constraints:
             Source and destination must be distinct. Destination rows must be
             uninitialized, and callers must subsequently remove the moved-out
-            source rows without destroying their shared component values.
+            source rows without destroying moved component values. Excluded
+            components remain initialized and must be destroyed by the caller.
         """
         self._touch_rows()
         with Zone(
@@ -1261,9 +1282,14 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             if count == 0:
                 return
 
+            var retained = _retained_component_mask(
+                source[]._active_component_mask,
+                self._active_component_mask,
+                excluded_components,
+            )
             comptime for id in range(len(Self.ComponentTypes)):
                 comptime T = Self.ComponentTypes[id]
-                if self.has_components[T]() and source[].has_components[T]():
+                if retained.get(id):
                     try:
                         unsafe_uninit_move_n[overlapping=False](
                             dest=self.get_component_ptr[T]()
@@ -2045,19 +2071,25 @@ struct Archetype[
     @always_inline
     def unsafe_move_all_from_archetype[
         source_origin: MutOrigin,
-    ](mut self, source: Pointer[Self, source_origin],) -> Int:
+    ](
+        mut self,
+        source: Pointer[Self, source_origin],
+        excluded_components: BitMask = BitMask(),
+    ) -> Int:
         """Moves all entities and shared components from another archetype.
 
         This helper is intended for internal batch migration paths where the
         caller has already proven that source and destination archetypes are
         distinct, but Mojo's alias analysis cannot express that relationship.
-        Components absent from the destination are destroyed in the source.
+        Components absent from the destination or excluded from moving are
+        destroyed in the source.
 
         Parameters:
             source_origin: The origin of the source archetype.
 
         Args:
             source: An unsafe pointer to the source archetype. Must not point to self!
+            excluded_components: Components to destroy instead of moving.
 
         Returns:
             The index of the first newly appended entity.
@@ -2100,14 +2132,19 @@ struct Archetype[
                 start_index,
                 Pointer(to=source_archetype._storage).unsafe_mut_cast[True](),
                 count,
+                excluded_components=excluded_components,
             )
 
             # Shared source values were moved and are now uninitialized. Only
-            # destroy initialized components that are absent from destination.
+            # destroy initialized components absent from destination or excluded.
+            var retained = _retained_component_mask(
+                source_archetype.get_mask(),
+                self.get_mask(),
+                excluded_components,
+            )
+            var initialized = source_archetype.get_mask() & ~retained
             comptime for id in range(len(Self.ComponentTypes)):
-                if source_archetype._storage._active_component_mask.get(
-                    id
-                ) and not self._storage._active_component_mask.get(id):
+                if initialized.get(id):
                     source_archetype._storage._columns[id].clear_values(count)
 
             source_archetype._storage._length = 0

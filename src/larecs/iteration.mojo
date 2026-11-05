@@ -6,9 +6,11 @@ walks the dense component rows seen by a kernel.
 """
 
 from std.gpu import global_idx
+from std.memory import ArcPointer
+from std.math import min
 
 from std.utils.type_functions import ConditionalType
-from std.sys import is_gpu
+from std.sys import is_gpu, size_of
 
 from tracy import Zone
 
@@ -29,7 +31,11 @@ struct _ArchetypeIterator[
     *ComponentTypes: ComponentType,
 ](Boolable, Copyable, Iterator, Movable, Sized):
     """
-    Iterator over non-empty archetypes corresponding to given list of Archetype IDs.
+    Iterator over selected archetype indices with an independent cursor.
+
+    Mask selection includes currently populated tables. Explicit selections
+    retain empty entries so per-archetype start indices keep their ordinals;
+    the world entity iterator skips empty or exhausted row ranges.
 
     Note: For internal use only! Do not expose to users.
 
@@ -42,7 +48,9 @@ struct _ArchetypeIterator[
     comptime Archetype = _Archetype[*Self.ComponentTypes]
     comptime Element = Self.Archetype
     var _archetypes: Pointer[List[Self.Archetype], Self.archetype_origin]
-    var _archetype_indices: List[Int]
+    # Immutable after construction; cursor copies retain the selection owner.
+    # Store indices, never pointers into the resizable archetype list.
+    var _archetype_indices: ArcPointer[List[Int]]
     var _index: Int
 
     def __init__(
@@ -65,7 +73,7 @@ struct _ArchetypeIterator[
             )
         ):
             self._archetypes = archetypes
-            self._archetype_indices = archetype_indices^
+            self._archetype_indices = ArcPointer(archetype_indices^)
             self._index = 0
 
     def __init__(
@@ -74,7 +82,11 @@ struct _ArchetypeIterator[
         var filter: BitMaskFilter[_],
     ):
         """
-        Creates an archetype iterator from a list of archetypes and a query info.
+        Creates an archetype iterator from a list of archetypes and a filter.
+
+        Args:
+            archetypes: A pointer to the world's archetype list.
+            filter: The mask used to select currently populated archetypes.
         """
         with Zone(
             function_name=(
@@ -83,19 +95,24 @@ struct _ArchetypeIterator[
             )
         ):
             self._archetypes = archetypes
-            self._archetype_indices = List[Int]()
+            # Avoid repeated growth for broad queries, while bounding unused
+            # capacity for sparse matches to two KiB.
+            var indices = List[Int](
+                capacity=min(len(self._archetypes[]), 2048 // size_of[Int]())
+            )
             self._index = 0
 
             for i in range(len(self._archetypes[])):
                 ref archetype = self._archetypes[].unsafe_get(i)
                 if archetype and filter.matches(archetype.get_mask()):
-                    self._archetype_indices.append(i)
+                    indices.append(i)
+            self._archetype_indices = ArcPointer(indices^)
 
     @doc_hidden
     @always_inline
     def __init__(out self, *, copy: Self):
         """
-        Copies the iterator state.
+        Copies the cursor position while sharing the immutable selection.
 
         Args:
             copy: The iterator to copy.
@@ -125,7 +142,7 @@ struct _ArchetypeIterator[
     ) raises StopIteration -> ref[
         origin_of(
             self._archetypes[].unsafe_get(
-                self._archetype_indices.unsafe_get(self._index)
+                self._archetype_indices[].unsafe_get(self._index)
             )
         )
     ] Self.Element:
@@ -144,7 +161,7 @@ struct _ArchetypeIterator[
             if not self._has_next():
                 raise StopIteration()
             ref archetype = self._archetypes[].unsafe_get(
-                self._archetype_indices.unsafe_get(self._index)
+                self._archetype_indices[].unsafe_get(self._index)
             )
 
             self._index += 1
@@ -155,7 +172,7 @@ struct _ArchetypeIterator[
         Returns the number of archetypes remaining in the iterator.
         """
         with Zone(function_name="_ArchetypeIterator.__len__()"):
-            return len(self._archetype_indices) - self._index
+            return len(self._archetype_indices[]) - self._index
 
     @always_inline
     def _has_next(self) -> Bool:
@@ -166,7 +183,7 @@ struct _ArchetypeIterator[
             Whether there are more elements to iterate.
         """
         with Zone(function_name="_ArchetypeIterator._has_next()"):
-            return self._index < len(self._archetype_indices)
+            return self._index < len(self._archetype_indices[])
 
     @always_inline
     def __bool__(self) -> Bool:
@@ -734,29 +751,7 @@ struct _WorldEntityIterator[
             )
         ):
             if not self._entity_iterator:
-                if not self._archetype_iterator:
-                    raise StopIteration()
-
-                var start_idx: Int
-                comptime if Self.has_start_indices:
-                    start_idx = self._start_indices[][
-                        self._current_archetype_index
-                    ]
-                else:
-                    start_idx = 0
-
-                self._current_archetype_index += 1
-
-                var untracked_archetype_ptr = Pointer(
-                    to=self._archetype_iterator.__next__()
-                ).unsafe_origin_cast[
-                    UntrackedOrigin[mut=Self.archetype_list_mutability]
-                ]()
-
-                self._entity_iterator = Self._UnsafeArchetypeEntityIterator(
-                    untracked_archetype_ptr[],
-                    start_idx,
-                )
+                self._advance_archetype()
 
             accessor = {
                 self._entity_iterator.archetype.unsafe_origin_cast[
@@ -764,6 +759,40 @@ struct _WorldEntityIterator[
                 ]()[],
                 self._entity_iterator.__next__()._index_in_archetype,
             }
+
+    @no_inline
+    def _advance_archetype(mut self) raises StopIteration:
+        """Skips empty row ranges when the current archetype is exhausted.
+
+        Keep this boundary traversal outside the per-row iteration path so its
+        loop does not inhibit optimization of ordinary component iteration.
+        Selection ordinals still advance for every empty or exhausted range.
+
+        Raises:
+            StopIteration: If no selected archetype has rows remaining.
+        """
+        while not self._entity_iterator:
+            if not self._archetype_iterator:
+                raise StopIteration()
+
+            var start_idx: Int
+            comptime if Self.has_start_indices:
+                start_idx = self._start_indices[][self._current_archetype_index]
+            else:
+                start_idx = 0
+
+            self._current_archetype_index += 1
+
+            var untracked_archetype_ptr = Pointer(
+                to=self._archetype_iterator.__next__()
+            ).unsafe_origin_cast[
+                UntrackedOrigin[mut=Self.archetype_list_mutability]
+            ]()
+
+            self._entity_iterator = Self._UnsafeArchetypeEntityIterator(
+                untracked_archetype_ptr[],
+                start_idx,
+            )
 
     def __len__(self, out size: Int):
         """
@@ -810,7 +839,25 @@ struct _WorldEntityIterator[
             Whether there are more elements to iterate.
         """
         with Zone(function_name="_WorldEntityIterator._has_next()"):
-            return self._entity_iterator or self._archetype_iterator
+            if self._entity_iterator:
+                return True
+            # Preserve selection ordinals even for empty tables or exhausted
+            # per-archetype ranges returned by batch structural changes.
+            for ordinal in range(
+                self._archetype_iterator._index,
+                len(self._archetype_iterator._archetype_indices[]),
+            ):
+                var start = 0
+                comptime if Self.has_start_indices:
+                    start = self._start_indices[][
+                        self._current_archetype_index
+                        + ordinal
+                        - self._archetype_iterator._index
+                    ]
+                var idx = self._archetype_iterator._archetype_indices[][ordinal]
+                if start < len(self._archetype_iterator._archetypes[][idx]):
+                    return True
+            return False
 
     @always_inline
     def __bool__(self) -> Bool:
