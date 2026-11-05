@@ -31,6 +31,48 @@ struct Filter[
     and `EntityAccessor.get`/`set` enforce the declared mode at compile
     time, not just by convention -- see `read` and `write` below.
 
+    Build a filter by chaining `include`, `read`, `write`, `exclude`, and
+    `exclusive`, then call the result, as in
+    `Filter().include[Position].read[Velocity]()`. Each step names a new
+    `Filter` type; the trailing `()` constructs the filter value that queries
+    and kernels take. Without it, the compiler reports
+    `failed to infer parameter '_include'`. Calling every step, as in
+    `Filter().include[Position]().exclude[Velocity]()`, builds the same filter.
+
+    A named filter can be extended, which lets several systems share a base
+    filter:
+
+    ```mojo {doctest="filter_composition" global=true hide=true}
+    from larecs import Filter, World
+    from std.testing import assert_equal
+    ```
+
+    ```mojo {doctest="filter_composition" global=true}
+    @fieldwise_init
+    struct Position(Copyable, Movable):
+        var x: Float64
+        var y: Float64
+
+    @fieldwise_init
+    struct Velocity(Copyable, Movable):
+        var dx: Float64
+        var dy: Float64
+
+    @fieldwise_init
+    struct Frozen(Copyable, Movable):
+        pass
+
+    comptime moving = Filter().include[Position].read[Velocity]()
+    comptime moving_unfrozen = moving.exclude[Frozen]()
+
+    def main() raises:
+        var world = World[Position, Velocity, Frozen]()
+        _ = world.storage.add_entity(Position(0, 0), Velocity(1, 0))
+        _ = world.storage.add_entity(Position(0, 0), Velocity(1, 0), Frozen())
+        assert_equal(len(world.storage.query[moving]()), 2)
+        assert_equal(len(world.storage.query[moving_unfrozen]()), 1)
+    ```
+
     Parameters:
         _include: The component types that must be present.
         _exclude: The component types that must be absent.
@@ -139,7 +181,14 @@ struct Filter[
         Self._read,
         Self._written,
     ]
-    """Returns a Filter that matches only entities with exactly the included components."""
+    """Returns a Filter that matches only entities with exactly the included components.
+
+    `exclusive` discards the component types excluded so far, because an
+    exclusive filter already rejects every component it does not include.
+    `Filter().include[B]().exclude[A]().exclusive()` therefore holds no
+    excluded types, while `Filter().include[B]().exclusive().exclude[A]()`
+    holds `A`; both match only entities whose components are exactly `B`.
+    """
 
     def __len__(self) -> Int:
         """Returns the number of components included by the filter.
@@ -152,13 +201,17 @@ struct Filter[
             return include_length
 
     def includes[T: ComponentType](self) -> Int:
-        """Returns whether a filter includes component ``T``.
+        """Returns the index of component ``T`` among the included types.
+
+        Compare the result with `-1` to test for inclusion. Do not use it as a
+        `Bool`: index `0` is falsy, and the absent result `-1` is truthy.
 
         Parameters:
             T: The component type to search for.
 
         Returns:
-            The component index when ``T`` is included; otherwise ``-1``.
+            The position of ``T`` in the included types, or ``-1`` when the
+            filter does not include ``T``.
         """
         with Zone(function_name="Filter.includes[T: ComponentType]()"):
             comptime for i in range(len(Self._include)):
@@ -169,13 +222,17 @@ struct Filter[
     def excludes[
         T: ComponentType,
     ](self) -> Int:
-        """Returns whether a filter excludes component ``T``.
+        """Returns the index of component ``T`` among the excluded types.
+
+        Compare the result with `-1` to test for exclusion. Do not use it as a
+        `Bool`: index `0` is falsy, and the absent result `-1` is truthy.
 
         Parameters:
             T: The component type to search for.
 
         Returns:
-            The component index when ``T`` is excluded; otherwise ``-1``.
+            The position of ``T`` in the excluded types, or ``-1`` when the
+            filter does not exclude ``T``.
         """
         with Zone(function_name="Filter.excludes[T: ComponentType]()"):
             comptime for i in range(len(Self._exclude)):

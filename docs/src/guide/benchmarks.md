@@ -216,11 +216,14 @@ Further, the total number of entities is varied from 100 to 1 million.
 
 ![AoS-benchmarks](images/aos_benchmark.svg)
 
-Note that the benchmarks run in the Github CI, 
-which uses very powerful hardware.
-Particularly, the processors have 256MB of cache.
-On a laptop or desktop computer with typically much less cache,
-Larecs🌲 will outperform AoS for everything but the smallest setups.
+The documentation workflow (`.github/workflows/publish.yml`) regenerates this
+plot for each published commit on a GitHub-hosted `ubuntu-latest` runner,
+using the Mojo version pinned in `benchmark/plots/pixi.lock`. The workflow
+does not record the runner's CPU or cache sizes, and the hardware behind that
+runner label can change between runs. Read the plot as a comparison on one
+machine, not as a prediction for other hardware. Each run keeps the raw
+results as its `aos-benchmark` artifact. To measure your own machine, run
+`pixi run plots` in `benchmark/plots`.
 
 ## PR-to-PR performance checks
 

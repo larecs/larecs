@@ -53,11 +53,14 @@ def main() raises:
     scheduler.run(1)
 ```
 
-The host path runs the kernel against each matching archetype's homogeneous
-component columns. The device path distributes the same entity loop across GPU
-threads and copies only the component directions declared by the filter. For
-example, `move_filter` uploads both component columns but downloads only the
-modified `Position` column.
+The sequential host path calls the kernel once per non-empty matching
+physical store, and each call iterates that store's component columns. With
+`threaded=True`, each store is split into kernel chunks that may run
+concurrently, one call per chunk. The device path distributes the same entity
+loop across GPU threads in one launch and copies only the component directions
+declared by the filter. For example, `move_filter` uploads both component
+columns, unless the world reuses unchanged device copies, and downloads only
+the modified `Position` column.
 
 In `Move.update`, pass `backend=ExecutionBackend.DEVICE` to run a compatible
 kernel on an available accelerator:

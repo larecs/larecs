@@ -44,14 +44,9 @@ doctest_dir="docs/test"
 # with a `main()` entry point, or the affected src/larecs/*.mojo docstrings
 # are rewritten the same way the guide pages were.
 known_unsupported_doctests=(
-    "larecs_host_storage_HostStorage_add_entity_comps_test.mojo"
-    "larecs_host_storage_HostStorage_add_query_comps_test.mojo"
-    "larecs_host_storage_HostStorage_apply_test.mojo"
-    "larecs_host_storage_HostStorage_remove_query_comps_test.mojo"
     "larecs_iteration_Query_query_init_test.mojo"
     "larecs_iteration_Query_query_without_test.mojo"
     "larecs_readme_test.mojo"
-    "larecs_scheduler_Scheduler_scheduler_test.mojo"
 )
 
 # Documentation example programs. Guide pages show excerpts of these files
