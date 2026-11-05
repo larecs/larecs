@@ -5,8 +5,9 @@ stacked pull request, this script does what the link would do:
 
 - While the pull request is open, it moves each referenced open issue in the
   project to "In progress" if the issue is still in an earlier status.
-- When the pull request is merged, it closes each referenced open issue,
-  unless someone reopened the issue after an earlier automatic close.
+- When the pull request is merged, it closes each referenced open issue.
+  An issue reopened after an earlier automatic close stays open, unless the
+  pull request was edited after the reopen and still references it.
 
 It uses the `gh` CLI. `GH_TOKEN` needs issue write access; `PROJECT_TOKEN`, if
 set, is used for the project and needs organization project write access.
@@ -45,20 +46,21 @@ def gh(*args: str, token: str | None = None) -> str:
     return result.stdout
 
 
-def graphql(query: str, token: str | None = None, **variables: str) -> dict:
+def graphql(query: str, token: str | None = None, **variables: str | int) -> dict:
     """Runs a GraphQL query through `gh api graphql`.
 
     Args:
         query: The GraphQL document.
         token: Token to use instead of the ambient `GH_TOKEN`.
-        **variables: String variables of the query.
+        **variables: Variables of the query; integers are sent as numbers.
 
     Returns:
         The `data` object of the response.
     """
     args = ["api", "graphql", "-f", f"query={query}"]
     for name, value in variables.items():
-        args += ["-f", f"{name}={value}"]
+        flag = "-F" if isinstance(value, int) else "-f"
+        args += [flag, f"{name}={value}"]
     return json.loads(gh(*args, token=token))["data"]
 
 
@@ -219,8 +221,8 @@ def issue(repo: str, number: int) -> dict | None:
     return {"id": data["node_id"], "state": data["state"]}
 
 
-def reopened_after_automatic_close(repo: str, number: int, bot: str) -> bool:
-    """Returns whether an issue was reopened after its last automatic close.
+def reopened_after_automatic_close(repo: str, number: int, bot: str) -> str | None:
+    """Returns when an issue was reopened after its last automatic close.
 
     Args:
         repo: Repository as `owner/name`.
@@ -228,20 +230,45 @@ def reopened_after_automatic_close(repo: str, number: int, bot: str) -> bool:
         bot: Login of the account that closes issues automatically.
 
     Returns:
-        True if a `reopened` event follows the latest `closed` event by `bot`.
+        The time of the latest `reopened` event that follows the latest
+        `closed` event by `bot`, or None if there is none.
     """
     events = json.loads(
         gh("api", "--paginate", "--slurp", f"repos/{repo}/issues/{number}/events")
     )
     last_close = None
-    reopened = False
+    reopened_at = None
     for event in (event for page in events for event in page):
         if event["event"] == "closed" and (event.get("actor") or {}).get("login") == bot:
             last_close = event["created_at"]
-            reopened = False
+            reopened_at = None
         elif event["event"] == "reopened" and last_close is not None:
-            reopened = True
-    return reopened
+            reopened_at = event["created_at"]
+    return reopened_at
+
+
+def last_edited(repo: str, number: int) -> str:
+    """Returns when a pull request's title or body was last changed.
+
+    Args:
+        repo: Repository as `owner/name`.
+        number: Pull request number.
+
+    Returns:
+        The last edit time, or the creation time if it was never edited.
+    """
+    owner, name = repo.split("/")
+    pr = graphql(
+        """query($owner: String!, $name: String!, $number: Int!) {
+          repository(owner: $owner, name: $name) {
+            pullRequest(number: $number) { createdAt lastEditedAt }
+          }
+        }""",
+        owner=owner,
+        name=name,
+        number=number,
+    )["repository"]["pullRequest"]
+    return pr["lastEditedAt"] or pr["createdAt"]
 
 
 def pull_requests(repo: str, number: int | None, lookback: timedelta) -> list[dict]:
@@ -325,7 +352,12 @@ def main() -> None:
                 continue
             try:
                 if pr["state"] == "MERGED":
-                    if reopened_after_automatic_close(args.repo, number, args.bot_login):
+                    # A reopen after an automatic close wins, unless the pull
+                    # request was edited afterwards and still requests the close.
+                    reopened_at = reopened_after_automatic_close(
+                        args.repo, number, args.bot_login
+                    )
+                    if reopened_at and reopened_at > last_edited(args.repo, pr["number"]):
                         print(f"#{number}: reopened after an automatic close; kept open")
                         continue
                     print(f"#{number}: closing")
