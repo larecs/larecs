@@ -375,12 +375,14 @@ def _validate_threaded_spec[
 
     Parameters:
         filter: Accessed components, excluding filter-only exclusions.
-        required_resources: Explicit read-only plain values or adapted sources.
+        required_resources: Explicit read-only plain values or adapted sources;
+            adapted sources may be mutable with concurrent-mutation support.
         capture_spec: Must be empty for threaded kernels.
 
     Constraints:
         Accessed components and ordinary resources must be pointer-free values;
-        resources must be read-only, and explicit captures are unsupported.
+        ordinary resources must be read-only; mutable adapted sources require
+        `supports_concurrent_mutation`; explicit captures are unsupported.
     """
     comptime assert (
         len(capture_spec) == 0
@@ -389,15 +391,16 @@ def _validate_threaded_spec[
         comptime assert _plain_device_value[
             filter._include.ComponentTypes[i]
         ](), "Threaded components require pointer-free trivial plain values"
+    _validate_resource_spec[required_resources, False, True]()
     comptime for i in range(len(required_resources)):
         comptime T = required_resources.ResourceTypes[i]
-        comptime assert (
-            required_resources._mode[T] == 1
-        ), "Threaded resources require explicit read access"
         comptime if not conforms_to(T, DevicePassableResource):
+            comptime assert (
+                required_resources._mode[T] == 1
+            ), "Threaded resources require explicit read access"
             comptime assert _plain_device_value[T](), (
                 "Threaded resources require pointer-free plain values or"
-                " KernelView adapters"
+                " DevicePassableResource adapters"
             )
 
 
@@ -555,6 +558,8 @@ def _run_threaded[
 
         parallelize(worker, workers, workers)
     _ = contexts^
+    # All workers joined: complete shared adapter outputs exactly once.
+    binding.finalize()
     binding.release()
     _ = structural_lock^
     _ = active^
@@ -889,6 +894,7 @@ struct EntitySelection[
                         host_captures,
                     )
                 )
+            resource_binding.finalize()
             resource_binding.release()
         else:
             var matching_ranges = List[EntityRange]()
@@ -925,6 +931,7 @@ struct EntitySelection[
                 self._world[]._device_storage[]._device_context
             )
             if total_length == 0:
+                resource_binding.complete_without_launch()
                 resource_binding.release()
                 return
 
@@ -1003,6 +1010,8 @@ struct EntitySelection[
                 frame.publish()
                 resource_binding.commit_device()
                 _commit_device_columns[filter](self._world[], column_records^)
+                # Outputs are published; adapter failures keep them.
+                resource_binding.finalize()
             except error:
                 _drain_failed_device(
                     self._world[].resources,
@@ -1083,6 +1092,7 @@ struct EntitySelection[
                 )
             )
 
+        resource_binding.finalize()
         resource_binding.release()
 
 
@@ -1155,28 +1165,35 @@ struct ResourceAccessor[resources: Resources](Copyable):
 
     def get[
         T: DevicePassableResource
-    ](self) -> ref[ImmUntrackedOrigin] T.KernelView:
-        """Gets a read-only portable view by its original source type.
+    ](self) -> ref[ImmUntrackedOrigin] T.View[Self.resources._mode[T] != 1]:
+        """Gets the portable view selected by the declared access.
+
+        `read` selects `T.View[False]`; `write` and `read_write` select
+        `T.View[True]`. The descriptor itself is immutable; mutable views
+        write shared backing buffers through their own operations.
 
         Parameters:
             T: The original adapted source type.
 
         Returns:
-            Immutable host-local or device-local KernelView for this invocation.
+            Host-local or device-local view for this invocation.
 
         Constraints:
-            Adapted sources must be declared with read access.
+            T must be declared; mutable access requires adapter support.
         """
         comptime id = Self.resources.index_of[T]()
         comptime assert (
             id != -1
         ), "T must be part of the kernel's required_resources"
         comptime assert (
-            Self.resources._mode[T] == 1
-        ), "DevicePassableResource requires read access on both targets"
+            Self.resources._mode[T] == 1 or T.Adapter.supports_mutation
+        ), (
+            "DevicePassableResource mutable access requires"
+            " Adapter.supports_mutation"
+        )
         return (
             self._pointers[id]
-            .unsafe_bitcast[T.KernelView]()
+            .unsafe_bitcast[T.View[Self.resources._mode[T] != 1]]()
             .unsafe_mut_cast[False]()[]
         )
 
@@ -1190,12 +1207,16 @@ struct ResourceAccessor[resources: Resources](Copyable):
             value: New source value to move into the bound resource.
 
         Constraints:
-            The declaration must permit writing; adapted resources are read only.
+            The declaration must permit writing; adapted sources expose views
+            and cannot be replaced from a kernel.
         """
         comptime id = Self.resources.index_of[T]()
         comptime assert (
             id != -1
         ), "T must be part of the kernel's required_resources"
+        comptime assert not conforms_to(
+            T, DevicePassableResource
+        ), "DevicePassableResource kernels write through views, not set"
         comptime assert (
             Self.resources._mode[T] != 1
         ), "Read resources cannot be set"
@@ -1788,6 +1809,7 @@ struct SystemContext[
                             host_captures,
                         )
                     )
+                resource_binding.finalize()
                 resource_binding.release()
             else:
                 var length = 0
@@ -1842,6 +1864,7 @@ struct SystemContext[
                     self.world[]._device_storage[]._device_context
                 )
                 if length == 0:
+                    resource_binding.complete_without_launch()
                     resource_binding.release()
                     return
 
@@ -1962,6 +1985,8 @@ struct SystemContext[
                     _commit_device_columns[filter](
                         self.world[], column_records^
                     )
+                    # Outputs are published; adapter failures keep them.
+                    resource_binding.finalize()
                 except error:
                     _drain_failed_device(
                         self.world[].resources,
@@ -2066,4 +2091,5 @@ struct SystemContext[
                         host_captures,
                     )
                 )
+            resource_binding.finalize()
             resource_binding.release()
