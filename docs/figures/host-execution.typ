@@ -8,7 +8,7 @@
 
 #set page(width: auto, height: auto, margin: 4pt, fill: white)
 
-// Inter (docs/figures/fonts) matches the system sans stack the site uses.
+// Inter (docs/figures/fonts) is also the documentation site's font.
 #let sans = "Inter"
 #let mono = "DejaVu Sans Mono"
 
