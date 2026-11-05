@@ -4,7 +4,8 @@ name: Sync stacked PR issues
 # For stacked pull requests, this marks referenced issues "In progress" in the
 # project while the pull request is open, and closes them when it is merged.
 # An issue reopened after an automatic close stays open, unless the pull
-# request was edited after the reopen and still references it.
+# request's description or code changed after the reopen and it still
+# references the issue.
 # See scripts/sync_stacked_issue_links.py.
 
 on:

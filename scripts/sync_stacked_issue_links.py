@@ -7,7 +7,8 @@ stacked pull request, this script does what the link would do:
   project to "In progress" if the issue is still in an earlier status.
 - When the pull request is merged, it closes each referenced open issue.
   An issue reopened after an earlier automatic close stays open, unless the
-  pull request was edited after the reopen and still references it.
+  pull request's description or code changed after the reopen and it still
+  references the issue.
 
 It uses the `gh` CLI. `GH_TOKEN` needs issue write access; `PROJECT_TOKEN`, if
 set, is used for the project and needs organization project write access.
@@ -247,28 +248,41 @@ def reopened_after_automatic_close(repo: str, number: int, bot: str) -> str | No
     return reopened_at
 
 
-def last_edited(repo: str, number: int) -> str:
-    """Returns when a pull request's title or body was last changed.
+def last_activity(repo: str, number: int) -> str:
+    """Returns when a pull request last changed its description or code.
+
+    Considers the title and body edit time (or creation time if never
+    edited), the head commit's commit time, and the latest force push, which
+    can replace commits without a newer commit time.
 
     Args:
         repo: Repository as `owner/name`.
         number: Pull request number.
 
     Returns:
-        The last edit time, or the creation time if it was never edited.
+        The latest of these times, as an ISO 8601 UTC timestamp.
     """
     owner, name = repo.split("/")
     pr = graphql(
         """query($owner: String!, $name: String!, $number: Int!) {
-          repository(owner: $owner, name: $name) {
-            pullRequest(number: $number) { createdAt lastEditedAt }
-          }
+          repository(owner: $owner, name: $name) { pullRequest(number: $number) {
+            createdAt
+            lastEditedAt
+            commits(last: 1) { nodes { commit { committedDate } } }
+            timelineItems(itemTypes: [HEAD_REF_FORCE_PUSHED_EVENT], last: 1) {
+              nodes { ... on HeadRefForcePushedEvent { createdAt } }
+            }
+          } }
         }""",
         owner=owner,
         name=name,
         number=number,
     )["repository"]["pullRequest"]
-    return pr["lastEditedAt"] or pr["createdAt"]
+    times = [pr["lastEditedAt"] or pr["createdAt"]]
+    times += [node["commit"]["committedDate"] for node in pr["commits"]["nodes"]]
+    times += [node["createdAt"] for node in pr["timelineItems"]["nodes"]]
+    latest = max(datetime.fromisoformat(time).astimezone(timezone.utc) for time in times)
+    return latest.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def pull_requests(repo: str, number: int | None, lookback: timedelta) -> list[dict]:
@@ -353,11 +367,13 @@ def main() -> None:
             try:
                 if pr["state"] == "MERGED":
                     # A reopen after an automatic close wins, unless the pull
-                    # request was edited afterwards and still requests the close.
+                    # request's description or code changed afterwards while it
+                    # still requests the close.
                     reopened_at = reopened_after_automatic_close(
                         args.repo, number, args.bot_login
                     )
-                    if reopened_at and reopened_at > last_edited(args.repo, pr["number"]):
+                    changed_at = last_activity(args.repo, pr["number"]) if reopened_at else None
+                    if reopened_at and reopened_at > changed_at:
                         print(f"#{number}: reopened after an automatic close; kept open")
                         continue
                     print(f"#{number}: closing")
