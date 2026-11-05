@@ -48,12 +48,16 @@ done
 
 # A complete suite run also verifies public compile-time classifier diagnostics.
 # Individual test-file runs retain the existing focused behavior.
+run_backend_contracts=false
 run_performance=false
 run_synchronization_contracts=false
 run_resource_contracts=false
 run_threaded_contracts=false
 larecs_test_directory="$(cd "$(dirname "$0")" && pwd)"
 for test_path in "${test_args[@]}"; do
+    if [ "${test_path##*/}" = "execution_backend_test.mojo" ]; then
+        run_backend_contracts=true
+    fi
     if [ "${test_path##*/}" = "threaded_execution_test.mojo" ]; then
         run_threaded_contracts=true
     fi
@@ -65,6 +69,7 @@ for test_path in "${test_args[@]}"; do
     fi
     if [ -d "$test_path" ] && \
         [ "$(cd "$test_path" && pwd)" = "$larecs_test_directory" ]; then
+        run_backend_contracts=true
         run_performance=true
         run_resource_contracts=true
         run_threaded_contracts=true
@@ -74,6 +79,10 @@ for test_path in "${test_args[@]}"; do
         break
     fi
 done
+
+if "$run_backend_contracts"; then
+    python "$larecs_test_directory/check_execution_backend_contracts.py"
+fi
 
 if "$run_synchronization_contracts"; then
     python "$larecs_test_directory/check_synchronization_contracts.py"

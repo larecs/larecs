@@ -15,7 +15,7 @@ the kernel describes the filtered component work that can execute on the host
 or device.
 
 ```mojo {doctest="guide_vectorization" global=true}
-from larecs import Scheduler, System, SystemContext, KernelContext, Filter
+from larecs import ExecutionBackend, Scheduler, System, SystemContext, KernelContext, Filter
 
 @fieldwise_init
 struct Position(Copyable, Movable, TrivialRegisterPassable):
@@ -59,14 +59,19 @@ threads and copies only the component directions declared by the filter. For
 example, `move_filter` uploads both component columns but downloads only the
 modified `Position` column.
 
-In `Move.update`, pass `on_device=True` to run a compatible kernel on an
-available accelerator:
+In `Move.update`, pass `backend=ExecutionBackend.DEVICE` to run a compatible
+kernel on an available accelerator:
 
 ```mojo
-context.run[move_entities, on_device=True]()
+from larecs import ExecutionBackend
+
+context.run[move_entities, backend=ExecutionBackend.DEVICE]()
 ```
 
 Device execution requires device-safe component types and the corresponding Mojo
 toolchain. If you need explicit CPU `SIMD` batching, that is not part of the
 public systems API yet; avoid depending on archetype storage internals, whose
 layout and iteration contracts may change.
+
+The default is `ExecutionBackend.HOST`. Selecting DEVICE raises when an
+accelerator is unavailable; it never falls back to host execution.

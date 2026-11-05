@@ -67,6 +67,11 @@
 
 ### Changed
 
+- Replace `on_device` (formerly `on_gpu`) boolean kernel target flags with the
+  compile-time `backend=ExecutionBackend.HOST/DEVICE` enum on ordinary and selected
+  execution. Host remains the default; unavailable device execution now raises
+  instead of falling back. Value-taking callables require HOST.
+
 - **Breaking:** declare `ResourceAdapter.View` as `comptime View[mut: Bool]`
   and return `Self.View[False]` from `bind_host` and `prepare_device`.
   `DevicePassableResource.KernelView` now defaults to `View[False]`; remove

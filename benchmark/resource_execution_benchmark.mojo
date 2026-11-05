@@ -1,6 +1,7 @@
-"""Fixed complete resource invocations against identical base/current drivers.
+"""Fixed complete resource invocations with matched base/current workloads.
 
-The unflagged driver builds against base and current sources identically.
+Bases predating ExecutionBackend need the call-spelling adaptation documented
+in docs/src/guide/benchmarks.md; keep all workload and timing code identical.
 Construction and final checks are excluded; transfers and synchronization are
 included.
 """
@@ -8,6 +9,7 @@ from std.time import perf_counter_ns
 from std.testing import assert_equal
 from std.sys import has_accelerator
 from larecs import (
+    ExecutionBackend,
     World,
     SystemContext,
     KernelContext,
@@ -79,15 +81,35 @@ def ordinary[device: Bool, resource: Bool]() raises:
         pass
     var context = SystemContext(world)
     comptime if resource:
-        context.run[plain, on_device=device]()
+        context.run[
+            plain,
+            backend=(
+                ExecutionBackend.DEVICE if device else ExecutionBackend.HOST
+            ),
+        ]()
     else:
-        context.run[control, on_device=device]()
+        context.run[
+            control,
+            backend=(
+                ExecutionBackend.DEVICE if device else ExecutionBackend.HOST
+            ),
+        ]()
     var start = perf_counter_ns()
     for _ in range(iterations):
         comptime if resource:
-            context.run[plain, on_device=device]()
+            context.run[
+                plain,
+                backend=(
+                    ExecutionBackend.DEVICE if device else ExecutionBackend.HOST
+                ),
+            ]()
         else:
-            context.run[control, on_device=device]()
+            context.run[
+                control,
+                backend=(
+                    ExecutionBackend.DEVICE if device else ExecutionBackend.HOST
+                ),
+            ]()
     var elapsed = Float64(perf_counter_ns() - start) / Float64(iterations)
     check(world, Int32(iterations + 1))
     assert_equal(world.resources.get[Scale]().value, 1)

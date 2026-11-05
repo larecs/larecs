@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, ResourceType, BufferResource, DevicePassableResource, ResourceAdapter, ResourceDeviceCache, ResourceAccess
+PRELUDE = """from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter, Resources, ResourceType, BufferResource, DevicePassableResource, ResourceAdapter, ResourceDeviceCache, ResourceAccess
 from larecs.resource import ResourceStorage, _validate_resource_spec, _ResourceInvocation
 
 @fieldwise_init
@@ -117,7 +117,7 @@ CASES = {
     "sequential_adapter_device_run": (
         "def bad(context: KernelContext[Filter().include[Int32](), Resources().write[Counter]()]):\n"
         "    pass\n\ndef main() raises:\n"
-        "    var world = World[Int32]()\n    var context = SystemContext(world)\n    context.run[bad, on_device=True]()\n",
+        "    var world = World[Int32]()\n    var context = SystemContext(world)\n    context.run[bad, backend=ExecutionBackend.DEVICE]()\n",
         "Device or threaded mutable adapted access requires Adapter.supports_concurrent_mutation",
     ),
     "adapted_set": (
