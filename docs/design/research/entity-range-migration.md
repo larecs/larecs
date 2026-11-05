@@ -62,6 +62,12 @@ limits the timing conclusion even though the diagnostic gate completed.
 
 ## Focused validation
 
+The complete `pixi run tests --parallel 2 test` attempt was interrupted after
+37 of 39 files: 35 passed and two reported the physical-store count defect from
+a pre-fix precompiled library. The lifecycle and world builds did not finish.
+This is not an uninterrupted clean full-suite result; the fresh focused runs
+below verify the corrected implementation.
+
 - Thirteen iterator runtime regressions and five compiler rejection/control pairs
   cover tracked origins, read-only queries, noncopyable/scoped selections,
   shared metadata, independent cursors/locks, and exceptional cleanup.
@@ -84,3 +90,18 @@ passes with sanitizers, including multiple physical sources, a pre-existing
 destination prefix, copied cursors, and post-mutation maintenance. The existing
 heap-backed partition bulk add/replace/remove regression also passes in the
 focused optimized probe.
+
+After the physical-store correction, rerun both bounded suites against PR212
+at source revision `323973fcaff6ed2ec987eb77332fb1976a04c310`:
+`pixi run performance-check --base 8d80588`. All 12 core and 32 spatial cases
+pass the five-pair guard with no sustained regression candidate. Concurrent
+sibling builds still limit attribution; this is not isolated performance evidence.
+The heap-backed bulk regression and the new physical-source/prefix regression
+also pass together through the normal assertion-enabled sanitizer runner.
+
+The initial hosted API-doc build exposed a defect already present at PR212
+revision `8d80588` in
+`systems_scheduler.md`: the second `guide_threaded_execution` block lacks
+`global=true`, causing Modo to emit removed `fn` syntax. PR212 contains the same
+block. API JSON generation and the three guides affected by this migration passed;
+this failure is not reported as a successful complete documentation build.
