@@ -129,11 +129,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     Parameters:
         ComponentTypes: A variadic list with all possible component types for this storage.
 
-    Examples:
-        ```mojo
-        var world = World[Position, Velocity]()
-        world.storage.add_entitiy(Position(10.0, 20.0))
-        ```
+    Access it through `world.storage`, for example
+    `var entity = world.storage.add_entity(Position(10.0, 20.0))`.
+    [Entities, components and the world](../../guide/entities_components_world)
+    shows a complete program.
     """
 
     comptime component_manager = ComponentManager[*Self.ComponentTypes]
@@ -599,9 +598,12 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         Example:
 
-        ```mojo {doctest="add_entity_comps" global=true hide=true}
+        ```mojo {doctest="add_entity" global=true hide=true}
         from larecs import World
+        from std.testing import assert_true
+        ```
 
+        ```mojo {doctest="add_entity" global=true}
         @fieldwise_init
         struct Position(Copyable, Movable):
             var x: Float64
@@ -609,16 +611,16 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         @fieldwise_init
         struct Velocity(Copyable, Movable):
-            var x: Float64
-            var y: Float64
-        ```
+            var dx: Float64
+            var dy: Float64
 
-        ```mojo {doctest="add_entity_comps"}
-        world = World[Position, Velocity]()
-        e = world.add_entity(
-            Position(0, 0),
-            Velocity(0.5, -0.5),
-        )
+        def main() raises:
+            var world = World[Position, Velocity]()
+            var entity = world.storage.add_entity(
+                Position(0, 0),
+                Velocity(0.5, -0.5),
+            )
+            assert_true(world.storage.has[Velocity](entity))
         ```
 
         Parameters:
@@ -699,9 +701,12 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         Example:
 
-        ```mojo {doctest="add_entity_comps" global=true hide=true}
-        from larecs import World, ResourceStorage
+        ```mojo {doctest="add_entities" global=true hide=true}
+        from larecs import World
+        from std.testing import assert_equal
+        ```
 
+        ```mojo {doctest="add_entities" global=true}
         @fieldwise_init
         struct Position(Copyable, Movable):
             var x: Float64
@@ -709,19 +714,21 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         @fieldwise_init
         struct Velocity(Copyable, Movable):
-            var x: Float64
-            var y: Float64
-        ```
+            var dx: Float64
+            var dy: Float64
 
-        ```mojo {doctest="add_entity_comps"}
-        world = World[Position, Velocity]()
-        for entity in world.add_entities(
-            Position(0, 0),
-            Velocity(0.5, -0.5),
-            count = 5
-        ):
-            # Do things with the newly created entities
-            position = entity.unsafe_get[Position]()
+        def main() raises:
+            var world = World[Position, Velocity]()
+            var x = 0.0
+            for entity in world.storage.add_entities(
+                Position(0, 0),
+                Velocity(0.5, -0.5),
+                count=5,
+            ):
+                # Initialize each new entity while the range is locked.
+                entity.unsafe_get[Position]().x = x
+                x += 1.0
+            assert_equal(len(world), 5)
         ```
 
         Parameters:
@@ -935,19 +942,21 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         Example:
 
-        ```mojo {doctest="apply" global=true hide=true}
-        from larecs import World, MutArchetypeRowAccessor, Filter
-        from testing import assert_equal, assert_false
+        ```mojo {doctest="remove_entities" global=true hide=true}
+        from larecs import World, Filter
+        from std.testing import assert_equal
         ```
 
-        ```mojo {doctest="apply"}
-        world = World[Float32, Float64]()
-        _ = world.storage.add_entity(Float32(0))
-        _ = world.storage.add_entity(Float32(0), Float64(0))
-        _ = world.storage.add_entity(Float64(0))
+        ```mojo {doctest="remove_entities" global=true}
+        def main() raises:
+            var world = World[Float32, Float64]()
+            _ = world.storage.add_entity(Float32(0))
+            _ = world.storage.add_entity(Float32(0), Float64(0))
+            _ = world.storage.add_entity(Float64(0))
 
-        # Remove all entities with a Float32 component.
-        world.storage.remove_entities[Filter().include[Float32]()]()
+            # Remove all entities with a Float32 component.
+            world.storage.remove_entities[Filter().include[Float32]()]()
+            assert_equal(len(world), 1)
         ```
 
         Args:
@@ -1241,9 +1250,12 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         **Example:**
 
-        ```mojo {doctest="add_query_comps" global=true}
+        ```mojo {doctest="add_components" global=true hide=true}
         from larecs import World, Filter
+        from std.testing import assert_equal
+        ```
 
+        ```mojo {doctest="add_components" global=true}
         @fieldwise_init
         struct Position(Copyable, Movable):
             var x: Float64
@@ -1251,22 +1263,26 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         @fieldwise_init
         struct Velocity(Copyable, Movable):
-            var x: Float64
-            var y: Float64
+            var dx: Float64
+            var dy: Float64
 
-        world = World[Position, Velocity]()
-        _ = world.storage.add_entities(Position(0, 0), count=100)
+        def main() raises:
+            var world = World[Position, Velocity]()
+            _ = world.storage.add_entities(Position(0, 0), count=100)
 
-        for entity in world.storage.add[
-            Velocity,
-            filter=Filter().include[Position]().exclude[Velocity](),
-        ](
-            Velocity(0.5, -0.5),
-        ):
-            velocity = entity.unsafe_get[Velocity]()
-            position = entity.unsafe_get[Position]()
-            entity.set[Position](Position(position.x + velocity.x, position.y + velocity.y))
-            entity.set[Velocity](Velocity(velocity.x - 0.05, velocity.y - 0.05))
+            for entity in world.storage.add[
+                Velocity,
+                filter=Filter().include[Position]().exclude[Velocity](),
+            ](
+                Velocity(0.5, -0.5),
+            ):
+                ref position = entity.unsafe_get[Position]()
+                ref velocity = entity.unsafe_get[Velocity]()
+                position.x += velocity.dx
+                position.y += velocity.dy
+            assert_equal(
+                len(world.storage.query[Filter().include[Velocity]()]()), 100
+            )
         ```
 
         Parameters:
@@ -1390,9 +1406,12 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         Example:
 
-        ```mojo {doctest="remove_query_comps" global=true}
+        ```mojo {doctest="remove_components" global=true hide=true}
         from larecs import World, Filter
+        from std.testing import assert_false
+        ```
 
+        ```mojo {doctest="remove_components" global=true}
         @fieldwise_init
         struct Position(Copyable, Movable):
             var x: Float64
@@ -1400,16 +1419,19 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         @fieldwise_init
         struct Velocity(Copyable, Movable):
-            var x: Float64
-            var y: Float64
+            var dx: Float64
+            var dy: Float64
 
-        world = World[Position, Velocity]()
-        _ = world.storage.add_entities(Position(0, 0), Velocity(1, 0), count=100)
+        def main() raises:
+            var world = World[Position, Velocity]()
+            _ = world.storage.add_entities(
+                Position(0, 0), Velocity(1, 0), count=100
+            )
 
-        for entity in world.storage.remove[
-            Velocity, filter=Filter().include[Position, Velocity]()
-        ]():
-            position = entity.unsafe_get[Position]()
+            for entity in world.storage.remove[
+                Velocity, filter=Filter().include[Position, Velocity]()
+            ]():
+                assert_false(entity.has[Velocity]())
         ```
 
         Parameters:
@@ -1495,7 +1517,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         """
         Returns a [..host_storage.Replacer] for removing and adding components to an [..entity.Entity] in one go.
 
-        Use as `world.replace[Comp1, Comp2]().by(comp3, comp4, comp5, entity=entity)`.
+        Use as `world.storage.replace[Comp1, Comp2]().by(comp3, comp4, comp5, entity=entity)`.
 
         The number of removed components does not need to match the number of added components.
 

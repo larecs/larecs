@@ -24,14 +24,17 @@ struct Scheduler[*ComponentTypes: ComponentType](Copyable):
     """
     Manages the execution of systems in a world.
 
-    The systems must implement [..system.System].
-    Usage example:
+    The systems must implement [..system.System]. `run` initializes the
+    systems in registration order, updates them in the same order once per
+    step, and finalizes them after the last step.
 
     Example:
 
     ```mojo {doctest="scheduler" global=true hide=true}
-    from larecs import World, Scheduler, System, SystemContext, KernelContext, Filter
+    from larecs import Scheduler, System, SystemContext, KernelContext, Filter
+    ```
 
+    ```mojo {doctest="scheduler" global=true}
     @fieldwise_init
     struct Position(Copyable, Movable):
         var x: Float64
@@ -39,11 +42,9 @@ struct Scheduler[*ComponentTypes: ComponentType](Copyable):
 
     @fieldwise_init
     struct Velocity(Copyable, Movable):
-        var x: Float64
-        var y: Float64
-    ```
+        var dx: Float64
+        var dy: Float64
 
-    ```mojo {doctest="scheduler" global=true}
     # A system delegates filtered component processing to a kernel like this.
     comptime move_filter = Filter().include[Position].read[Velocity]()
 
@@ -51,8 +52,8 @@ struct Scheduler[*ComponentTypes: ComponentType](Copyable):
         for entity in context:
             ref pos = entity.get[Position]()
             ref vel = entity.get[Velocity]()
-            pos.x += vel.x
-            pos.y += vel.y
+            pos.x += vel.dx
+            pos.y += vel.dy
 
     @fieldwise_init
     struct MySystem(System):
@@ -75,10 +76,11 @@ struct Scheduler[*ComponentTypes: ComponentType](Copyable):
                 print(entity.get[Position]().x, entity.get[Position]().y)
     ```
 
-    ```mojo {doctest="scheduler"}
-    scheduler = Scheduler[Position, Velocity]()
-    scheduler.add_system(MySystem(internal_variable=42))
-    scheduler.run(10)
+    ```mojo {doctest="scheduler" global=true}
+    def main() raises:
+        var scheduler = Scheduler[Position, Velocity]()
+        scheduler.add_system(MySystem(internal_variable=42))
+        scheduler.run(10)
     ```
 
     Parameters:
