@@ -236,6 +236,11 @@ def threaded_example() raises:
 
 ```mojo {doctest="guide_threaded_execution" global=true hide=true}
 def main() raises:
+    """Runs the threaded execution example.
+
+    Raises:
+        Error: If configuration or execution preparation fails.
+    """
     threaded_example()
 ```
 

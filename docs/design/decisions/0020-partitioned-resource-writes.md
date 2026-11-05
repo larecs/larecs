@@ -131,8 +131,13 @@ keep this small:
    threaded pre-pass and give each job only the rows that intersect it, still in
    row order. Large footprints appear in several bins.
 2. **Spatial storage.** With cluster-local partitions (decisions 0006/0014),
-   rows of one region are already contiguous, and binning reduces to selecting
-   clusters.
+   rows of one region are already contiguous. Cluster selection can prune
+   candidates only after refreshing membership and computing conservative
+   bounds that include every overlapping footprint, including crowns crossing
+   partition edges. Location keys alone are insufficient. Keep the
+   `partition_range(row)` checks for candidate rows and preserve their original
+   sequential order across clusters; do not replace these checks with cluster
+   membership alone.
 
 Neither changes the result; both reduce the scan overhead.
 
