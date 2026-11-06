@@ -46,6 +46,9 @@ templates:
 
 # Bash commands to run before build as well as test.
 pre-run:
+  # Modo only adds doctest files, so clear the output first. Otherwise files
+  # from renamed or removed doctests stay behind and run with the others.
+  - rm -rf docs/test
   - |
     echo Running 'mojo doc'...
     pixi run mojo doc -o docs/src/larecs.json src/larecs
