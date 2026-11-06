@@ -23,9 +23,9 @@
       <description>
         
         
-        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;47b3551fe842&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-240/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
+        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;34c4261e8f88&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-240/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;Mojo function&lt;a href=&#34;https://github.com/larecs/larecs/blob/47b3551fe8428f985f0863d288553ef9c0e77c65/src/larecs/debug_utils.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Mojo function&lt;a href=&#34;https://github.com/larecs/larecs/blob/34c4261e8f88d2ddd2fd4fac61f545335eaff852/src/larecs/debug_utils.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
 &lt;h1&gt;&lt;code&gt;debug_warn&lt;/code&gt;&lt;/h1&gt;&lt;script lang=&#34;JS&#34;&gt;
 function expandAll() {
     var inputs = document.getElementsByTagName(&#39;details&#39;);
@@ -64,9 +64,9 @@ function collapseAll() {
       <description>
         
         
-        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;47b3551fe842&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-240/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
+        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;34c4261e8f88&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-240/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;Mojo function&lt;a href=&#34;https://github.com/larecs/larecs/blob/47b3551fe8428f985f0863d288553ef9c0e77c65/src/larecs/debug_utils.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Mojo function&lt;a href=&#34;https://github.com/larecs/larecs/blob/34c4261e8f88d2ddd2fd4fac61f545335eaff852/src/larecs/debug_utils.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
 &lt;h1&gt;&lt;code&gt;warn&lt;/code&gt;&lt;/h1&gt;&lt;script lang=&#34;JS&#34;&gt;
 function expandAll() {
     var inputs = document.getElementsByTagName(&#39;details&#39;);

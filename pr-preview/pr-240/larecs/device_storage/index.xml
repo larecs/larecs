@@ -23,9 +23,9 @@
       <description>
         
         
-        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;47b3551fe842&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-240/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
+        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;34c4261e8f88&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-240/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;Mojo struct&lt;a href=&#34;https://github.com/larecs/larecs/blob/47b3551fe8428f985f0863d288553ef9c0e77c65/src/larecs/device_storage.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Mojo struct&lt;a href=&#34;https://github.com/larecs/larecs/blob/34c4261e8f88d2ddd2fd4fac61f545335eaff852/src/larecs/device_storage.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
 &lt;h1&gt;&lt;code&gt;DeviceComponentStorage&lt;/code&gt;&lt;/h1&gt;&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
 
 &lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nd&#34;&gt;@memory_only&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
@@ -317,9 +317,9 @@ the device buffer fails.&lt;/p&gt;
       <description>
         
         
-        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;47b3551fe842&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-240/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
+        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;34c4261e8f88&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-240/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;Mojo struct&lt;a href=&#34;https://github.com/larecs/larecs/blob/47b3551fe8428f985f0863d288553ef9c0e77c65/src/larecs/device_storage.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Mojo struct&lt;a href=&#34;https://github.com/larecs/larecs/blob/34c4261e8f88d2ddd2fd4fac61f545335eaff852/src/larecs/device_storage.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
 &lt;h1&gt;&lt;code&gt;DeviceResourceStorage&lt;/code&gt;&lt;/h1&gt;&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
 
 &lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nd&#34;&gt;@memory_only&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;

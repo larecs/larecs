@@ -11,14 +11,14 @@
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-240/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-240/site.webmanifest" rel="manifest" />
 <title>ResourceAdapter – Larecs🌲</title>
-  <meta name="description" content="Development reference · Larecs 1.0.0b1 · revision 47b3551fe842. Host threading and device execution are experimental. Compatibility and status.
+  <meta name="description" content="Development reference · Larecs 1.0.0b1 · revision 34c4261e8f88. Host threading and device execution are experimental. Compatibility and status.
 Mojo traitSource
 ResourceAdapterStateless operations over the current source; no factory or adapter instance.
 View[False] is the read view and View[True] the mutable view; they may be distinct types. Descriptors are immutable trivial values: mutable views reach shared state through pointers into adapter-managed backing buffers.
 Views and their pointers must not escape a synchronous invocation. Every read view must support concurrent reads on its execution target, including view methods and all reachable data, without hidden unsafe mutation. No alias may mutate, resize, relocate, or free backing data before completion. The adapter author guarantees this; descriptor checks cannot prove it. Device preparation must transfer through ResourceDeviceCache, never enqueue a copy from an external host pointer. Validation must neither mutate nor queue work." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-240/larecs/resource_adapter/ResourceAdapter/" itemprop="url" />
 
 <meta property="og:title" content="ResourceAdapter" />
-<meta property="og:description" content="Development reference · Larecs 1.0.0b1 · revision 47b3551fe842. Host threading and device execution are experimental. Compatibility and status.
+<meta property="og:description" content="Development reference · Larecs 1.0.0b1 · revision 34c4261e8f88. Host threading and device execution are experimental. Compatibility and status.
 
 Mojo traitSource
 ResourceAdapterStateless operations over the current source; no factory or adapter instance.
@@ -39,7 +39,7 @@ mutate nor queue work." />
 
 
   <meta itemprop="name" content="ResourceAdapter">
-  <meta itemprop="description" content="Development reference · Larecs 1.0.0b1 · revision 47b3551fe842. Host threading and device execution are experimental. Compatibility and status.
+  <meta itemprop="description" content="Development reference · Larecs 1.0.0b1 · revision 34c4261e8f88. Host threading and device execution are experimental. Compatibility and status.
 Mojo traitSource
 ResourceAdapterStateless operations over the current source; no factory or adapter instance.
 View[False] is the read view and View[True] the mutable view; they may be distinct types. Descriptors are immutable trivial values: mutable views reach shared state through pointers into adapter-managed backing buffers.
@@ -47,7 +47,7 @@ Views and their pointers must not escape a synchronous invocation. Every read vi
   <meta itemprop="wordCount" content="700">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="ResourceAdapter">
-  <meta name="twitter:description" content="Development reference · Larecs 1.0.0b1 · revision 47b3551fe842. Host threading and device execution are experimental. Compatibility and status.
+  <meta name="twitter:description" content="Development reference · Larecs 1.0.0b1 · revision 34c4261e8f88. Host threading and device execution are experimental. Compatibility and status.
 Mojo traitSource
 ResourceAdapterStateless operations over the current source; no factory or adapter instance.
 View[False] is the read view and View[True] the mutable view; they may be distinct types. Descriptors are immutable trivial values: mutable views reach shared state through pointers into adapter-managed backing buffers.
@@ -2670,9 +2670,9 @@ Views and their pointers must not escape a synchronous invocation. Every read vi
 
         <div class="content">
           <h1>ResourceAdapter</h1>
-          <p>Development reference · Larecs 1.0.0b1 · revision <code>47b3551fe842</code>. Host threading and device execution are experimental. <a href="/larecs/pr-preview/pr-240/reference/compatibility/">Compatibility and status</a>.</p>
+          <p>Development reference · Larecs 1.0.0b1 · revision <code>34c4261e8f88</code>. Host threading and device execution are experimental. <a href="/larecs/pr-preview/pr-240/reference/compatibility/">Compatibility and status</a>.</p>
 
-<p>Mojo trait<a href="https://github.com/larecs/larecs/blob/47b3551fe8428f985f0863d288553ef9c0e77c65/src/larecs/resource_adapter.mojo">Source</a></p>
+<p>Mojo trait<a href="https://github.com/larecs/larecs/blob/34c4261e8f88d2ddd2fd4fac61f545335eaff852/src/larecs/resource_adapter.mojo">Source</a></p>
 <h1><code>ResourceAdapter</code></h1><p>Stateless operations over the current source; no factory or adapter instance.</p>
 <p><code>View[False]</code> is the read view and <code>View[True]</code> the mutable view; they may
 be distinct types. Descriptors are immutable trivial values: mutable views
