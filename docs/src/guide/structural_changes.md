@@ -22,7 +22,8 @@ then look up components again by entity handle.
 
 {{< api SystemContext.add_entities >}} returns exactly the new rows.
 {{< api SystemContext.add >}}, {{< api SystemContext.remove >}}, and
-{{< api SystemContext.replace >}} select rows matching an operation filter.
+{{< api SystemContext.replace >}} select rows matching the filter passed to
+the operation.
 Their [EntitySelection](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/system.mojo#L568) results retain those identities through
 composition changes. Selection `add`, `remove`, and `replace` mutate the same
 selection in place and return nothing. `remove` removes components, not entities.
@@ -31,12 +32,15 @@ expands to other particles that happen to have the same components.
 
 ## Scoped cleanup and empty selections
 
-Use `with` to release the structural lock on normal exit, error, or early return.
-For an existing selection, transfer it into the manager with `with selection^`.
-A selection is movable and noncopyable. Outside a manager, consuming `release`
-or destruction releases it. Inside a manager the lock lasts until scope exit.
-Even zero-count creation returns a locked selection; an empty matching run
-invokes no kernel body. Negative counts raise.
+A selection holds a structural lock until it is released. Use `with` so the lock
+ends on normal exit, on an error, or on early return. Pass an existing selection
+with `with selection^`. Inside `with`, the lock lasts until the block ends,
+even if you release the bound selection. Without `with`, consuming `release`
+or destroying the selection ends the lock. Selections are movable but not
+copyable.
+
+A zero-count `add_entities` still returns a locked selection. Running a kernel
+on an empty selection calls no kernel body. A negative count raises.
 
 ## Delete particles after releasing the selection
 
@@ -46,8 +50,7 @@ removes the marker only after leaving the creation scope. In a system, use
 `context.world[].storage` for deletion: `SystemContext` has no entity-deletion
 method. Unrelated structural operations while a query or selection lives raise a
 locked-world error.
-Do not solve that error by keeping references across the scope boundary.
+To fix it, finish the query or selection scope first, then make the change.
 
-For setup, {{< api HostStorage.add_entities >}} and storage component operations
-remain supported. Their locked row ranges are lower-level results, with no
-selection `run` method; use system selections for application batches.
+During setup, {{< api HostStorage.add_entities >}} returns a locked row range
+for direct access. It has no `run` method; in systems, use selections.

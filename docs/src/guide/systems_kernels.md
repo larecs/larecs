@@ -20,9 +20,11 @@ The kernel's {{< api KernelContext >}} supplies only declared component access;
 requesting an undeclared component through `get` fails compilation.
 {{< api Resources >}} independently declares resource access.
 
-{{< api SystemContext.run >}} calls a host kernel for each nonempty matching
-physical store. Put per-entity work inside the loop. With no matching entities,
-no kernel body runs. Calls complete before the next system proceeds.
+{{< api SystemContext.run >}} calls a host kernel for each non-empty matching
+physical store: a group of stored rows with the same component set. An archetype
+can have several such stores. Put per-entity work inside the loop. With no
+matching entities, no kernel body runs. Calls complete before the next system
+proceeds.
 
 ### Write-only components
 
@@ -47,10 +49,12 @@ use `initialize`, `update(steps=...)`, and `finalize` explicitly.
 
 Use {{< api HostStorage.query >}} for read-only inspection outside kernels.
 The full [creation example](../../start/growing_simulation) inspects the marker
-before scheduling and checks the final result:
+before scheduling:
 
 {{< example file="particles/lifecycle.mojo" region="inspection" >}}
-{{< example file="particles/lifecycle.mojo" region="check" >}}
+
+The example copies the query to show that the copy has its own cursor.
+Consuming both with `^` ends their locks before the scheduler takes the world.
 
 A query's filter requires or excludes component types; `exclusive` restricts it
 to exactly the included set. Query rows are {{< api ArchetypeRowAccessor >}}
@@ -74,7 +78,7 @@ changes. These locks prevent invalidation; they are not thread mutexes.
 | Query row accessor | Movable, noncopyable | Relies on the enclosing query | Reads query components; discard before structural changes |
 | Query | Copies have independent cursors and locks; moves transfer the lock | Retained after exhaustion, even for empty results | Read-only traversal |
 | Entity selection | Movable, noncopyable | Until release, destruction, or manager exit, including empty selections | Component changes and filtered kernel execution on exactly its members |
-| Storage batch range | Copies have independent cursors and locks; moves transfer the lock | Retained after exhaustion, even for empty results | Low-level traversal and mutable `unsafe_get`; no selection `run` |
+| Storage batch range ({{< api HostStorage.add_entities >}}) | Copies have independent cursors and locks; moves transfer the lock | Retained after exhaustion, even for empty results | Low-level traversal and mutable `unsafe_get`; no selection `run` |
 
 See [Structural changes](../structural_changes) for scoped mutation and
 {{< api HostStorage >}} for storage batch operations.
@@ -87,5 +91,5 @@ grants only read access. A locked-world error means a query or selection still
 lives; end its scope before unrelated structural work.
 
 For supported lower-level traversal, see {{< api HostStorage >}} and
-{{< api ArchetypeRowAccessor >}}. Advanced execution remains in
-[the existing systems guide](../systems_scheduler).
+{{< api ArchetypeRowAccessor >}}. For advanced execution, see
+[Systems and the scheduler](../systems_scheduler).

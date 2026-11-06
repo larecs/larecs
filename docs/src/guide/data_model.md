@@ -14,20 +14,22 @@ the complete [movement program](../../start/first_simulation).
 
 An {{< api Entity >}} is a copyable ID and generation, not a component address.
 Keep the handle to find the particle again through {{< api HostStorage.get >}}.
-Deletion invalidates that identity and advances its generation before ID reuse.
+Removing an entity invalidates its handle. Larecs increments the generation
+before reusing the ID, so that handle cannot refer to the new entity.
 Handles belong to their world: do not use a handle in another world.
 
 ## Components and tags
 
-A component conforms to `ComponentType` (`Copyable & Deinitable`); each entity has at most one value
-of each component type. A tag is a component with no fields: its presence carries
-the information. Filters can require or exclude it just like a data component.
+A component conforms to [`ComponentType`](../../larecs#aliases), which requires `Copyable` and
+`Deinitable`. The particle components declare `Copyable, Movable`, which
+satisfies both. Each entity has at most one value of each component type. A tag
+is a component with no fields: its presence carries the information. Filters can require or exclude it just like a data component.
 
-## World type packs
+## Declare the world's component types
 
 {{< api World >}} declares all allowed component types at compile time.
 `World[Position, Velocity]` allows either, both, or neither on an entity.
-Resources have separate storage and do not belong in that component pack.
+Resources have separate storage and do not belong in that component list.
 Entities with the same component set belong to an archetype; you need no storage
 layout knowledge to create them or run systems over them.
 
@@ -37,7 +39,5 @@ Use [systems and kernels](../systems_kernels) for repeated simulation work and
 
 ## References after changes
 
-Changing `Position.x` changes a value. Adding or removing a component changes
-composition and may move rows. Creation, deletion, and other structural changes
-can invalidate component references and row accessors. Retain entity handles,
-then reacquire references after mutation. Never use a row index as identity.
+Structural changes can move rows. Keep entity handles, rather than component
+references or row indices, across [structural changes](../structural_changes).

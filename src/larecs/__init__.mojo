@@ -9,8 +9,8 @@ versioning unless they are explicitly marked experimental. Device execution is
 currently such an experimental API. Threaded host execution is also experimental.
 
 Build the [particle simulation](https://larecs.github.io/larecs/start/first_simulation/)
-for a complete program using systems and kernels. Its checked source lives in
-`examples/particles/movement.mojo`; the tutorial generates excerpts from that file.
+for a complete program using systems and kernels. You can find its source in
+`examples/particles/movement.mojo`.
 
 Exports:
  - sync.AtomicValue

@@ -9,6 +9,8 @@ open = true
 
 Build a working Larecs simulation, then learn the concepts behind it.
 
+- [Install Larecs](../guide/installation): set up the locked environment and
+  run the first example.
 - [Your first simulation](first_simulation): move particles with a system and
   a kernel, and check the result.
 - [Create and remove particles](growing_simulation): create an exact batch and
@@ -16,7 +18,7 @@ Build a working Larecs simulation, then learn the concepts behind it.
 - [Share time and configuration](shared_configuration): schedule shared state
   changes before movement.
 
-Use the consolidated guides for [Data model](../guide/data_model),
+Use the guides on [Data model](../guide/data_model),
 [Systems and kernels](../guide/systems_kernels),
 [Structural changes](../guide/structural_changes), and
 [Resources](../guide/shared_resources).

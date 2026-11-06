@@ -44,9 +44,8 @@ behavior; it also explains how to propose or supersede a decision. The
 [agent guidelines](AGENTS.md) apply to automated contributors.
 
 Build the [particle simulation](https://larecs.github.io/larecs/start/first_simulation/),
-then extend it with creation/removal and shared configuration. The complete
-programs live in [examples/particles](examples/particles); the site displays
-excerpts directly from those sources.
+then extend it with creating and removing particles and shared configuration.
+The complete programs live in [examples/particles](examples/particles).
 
 ## Development utilities
 

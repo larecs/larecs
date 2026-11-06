@@ -14,9 +14,11 @@ The complete [configuration program](../../start/shared_configuration) sets
 
 ## Add, read, replace, and remove
 
-Resource types conform to `Copyable` and `Deinitable`; they need not appear in
-the world's component pack. {{< api ResourceStorage.add >}} inserts values and
-raises on duplicates. {{< api ResourceStorage.get >}} returns a reference and
+A resource conforms to [`ResourceType`](../../larecs#aliases), which requires `Copyable` and
+`Deinitable`. The example's `Copyable, Movable` structs satisfy both. Resource
+types need not appear among the world's declared component types.
+
+{{< api ResourceStorage.add >}} inserts values and raises on duplicates. {{< api ResourceStorage.get >}} returns a reference and
 raises on missing types. {{< api ResourceStorage.set >}} replaces existing values;
 if any requested type is absent, it raises without updating them. Its
 `add_if_not_found=True` option inserts absent types instead.
@@ -29,18 +31,18 @@ Do not retain resource references across removal or replacement.
 
 {{< api Resources >}} declares access independently of component filters.
 `read[Time]()` grants immutable `get`; `read_write` grants mutable `get`.
-Host `write` grants `set` only, not `get`. `Resources[Time]()` defaults to
-read-write access. Every declared resource must exist before
-{{< api SystemContext.run >}}; otherwise it raises.
+On the host, `write` grants `set` only, not `get`; device kernels do not support
+write-only resources. `Resources[Time]()` defaults to read-write access. Every
+declared resource must exist before {{< api SystemContext.run >}}; otherwise it
+raises.
 
-Ordinary sequential host resources can own collections. A resource is shared
-across the entire invocation, not copied once per particle. Updating it once
-per kernel call therefore depends on how matching rows are split into calls;
-use a system hook for one update per simulation step, as `ConfigureTime` does.
+On the sequential host, resources can own collections. Each kernel call sees
+the same resource value. Because one `run` can call the kernel several times,
+update per-step values in a system's `update`, as `ConfigureTime` does.
 
 ## Troubleshooting
 
 If movement reports a missing `Time`, add it before scheduling. If an access
 fails compilation, check the resource declaration independently of the component
 filter. For adapters and device restrictions, use the
-[advanced resource material](../resources#portable-owning-resources).
+[Resource operations and adapters](../resources#portable-owning-resources).

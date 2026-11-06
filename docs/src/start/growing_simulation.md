@@ -18,14 +18,19 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo
 {{< example file="particles/lifecycle.mojo" region="write_only" >}}
 {{< example file="particles/lifecycle.mojo" region="lifecycle" >}}
 
-`Spawn.initialize` uses {{< api SystemContext.add_entities >}} to create three
-positions. Its [EntitySelection](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/system.mojo#L568) contains exactly those new entities,
-even when other particles have the same components. `selected.add` attaches
-velocity. `selected.run[reset_position]()` overwrites their initial position
-of (9, 9) with (0, 0) using write-only access, then `selected.run[move]()`
-moves only those three particles by `0.1`.
-The scope releases the structural lock before
-{{< api HostStorage.remove_entities >}} deletes positions without velocity.
+`reset_position` declares `Position` as write-only: it can `set` a position
+but cannot read one. `Spawn.initialize` creates three particles at (9, 9) with
+{{< api SystemContext.add_entities >}}. The returned
+[EntitySelection](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/system.mojo#L568)
+contains exactly those three entities, even when other particles have the same
+components.
+
+`selected.add` gives them a velocity. `selected.run[reset_position]()` sets their
+positions to (0, 0), and `selected.run[move]()` advances only them by `0.1`.
+While the `with` block is open, Larecs prevents unrelated entity creation,
+deletion, and changes to component composition. This protection is a *structural
+lock*. After the block ends, {{< api HostStorage.remove_entities >}} deletes
+every entity that has a position but no velocity.
 
 ## Schedule creation before movement
 

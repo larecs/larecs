@@ -4,12 +4,16 @@ title = "Installation"
 weight = 1
 +++
 
-Use the repository's locked Pixi environment to run your first host simulation.
-The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo
-`>=1.0.0,<1.1.0`, MAX `>=26.5.0,<27`, and `mojo-tracy >=1.1.0,<2`.
-The manifest uses `conda-forge`, `https://repo.prefix.dev/max`, and
-`https://prefix.dev/tree-d` (for `mojo-tracy`). `pixi.lock` selects the exact builds.
-Larecs is currently a development beta (`1.0.0b1`); APIs can change.
+Install the repository's locked Pixi environment and run the first particle
+example.
+
+- Platforms: Linux x86-64 and macOS Apple Silicon.
+- Dependencies: Mojo `>=1.0.0,<1.1.0`, MAX `>=26.5.0,<27`, and
+  `mojo-tracy >=1.1.0,<2`.
+- Channels: `conda-forge`, `https://repo.prefix.dev/max`, and
+  `https://prefix.dev/tree-d` (for `mojo-tracy`).
+
+`pixi.lock` selects exact builds. Larecs `1.0.0b1` is a beta; APIs can change.
 
 ## Install and verify the pinned environment
 
@@ -28,7 +32,7 @@ The program prints `All particles reached their expected positions.` Its
 assertions verify the result. Host execution needs no accelerator.
 Continue with [Your first simulation](../../start/first_simulation).
 
-## Run from an external project using source
+## Use the source from your own project
 
 Keep the compatible toolchain by invoking the repository's environment, and
 supply an absolute include path. From the repository root:
