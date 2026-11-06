@@ -12,12 +12,20 @@
 <link fetchpriority="low" href="/larecs/pr-preview/pr-237/site.webmanifest" rel="manifest" />
 <title>Structural changes – Larecs🌲</title>
   <meta name="description" content="Create a batch, change its component composition, and run only those particles with a scoped selection. The creation tutorial provides the complete runnable program and its observable result.
-@fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(0, 0), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass Values versus structure Updating Position.x through a kernel changes a value. Creating or deleting entities and adding or removing component types changes structure. Structural changes can move rows: discard old component references and row accessors, then look up components again by entity handle." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/guide/structural_changes/" itemprop="url" />
+def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass" /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/guide/structural_changes/" itemprop="url" />
 
 <meta property="og:title" content="Structural changes" />
 <meta property="og:description" content="Create a batch, change its component composition, and run only those particles
 with a scoped selection. The creation tutorial
 provides the complete runnable program and its observable result.
+def reset_position(context: KernelContext[Filter().write[Position]()]):
+    &#34;&#34;&#34;Initializes every selected position without reading it.
+
+    Args:
+        context: Selected rows with write-only Position access.
+    &#34;&#34;&#34;
+    for particle in context:
+        particle.set(Position(0, 0))
 @fieldwise_init
 struct Spawn(System):
     &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34;
@@ -31,7 +39,7 @@ struct Spawn(System):
         Raises:
             Error: If creation or movement fails.
         &#34;&#34;&#34;
-        with context.add_entities(Position(0, 0), count=3) as selected:
+        with context.add_entities(Position(9, 9), count=3) as selected:
             selected.add(Velocity(1, 0))
             selected.run[reset_position]()
             selected.run[move]()
@@ -45,12 +53,7 @@ struct Spawn(System):
         Args:
             context: Access to the simulation world.
         &#34;&#34;&#34;
-        pass
-Values versus structure
-    Updating Position.x through a kernel changes a value. Creating or deleting
-entities and adding or removing component types changes structure. Structural
-changes can move rows: discard old component references and row accessors,
-then look up components again by entity handle." />
+        pass" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://larecs.github.io/larecs/pr-preview/pr-237/guide/structural_changes/" /><meta property="article:section" content="guide" />
 
@@ -58,12 +61,12 @@ then look up components again by entity handle." />
 
   <meta itemprop="name" content="Structural changes">
   <meta itemprop="description" content="Create a batch, change its component composition, and run only those particles with a scoped selection. The creation tutorial provides the complete runnable program and its observable result.
-@fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(0, 0), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass Values versus structure Updating Position.x through a kernel changes a value. Creating or deleting entities and adding or removing component types changes structure. Structural changes can move rows: discard old component references and row accessors, then look up components again by entity handle.">
-  <meta itemprop="wordCount" content="362">
+def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass">
+  <meta itemprop="wordCount" content="399">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Structural changes">
   <meta name="twitter:description" content="Create a batch, change its component composition, and run only those particles with a scoped selection. The creation tutorial provides the complete runnable program and its observable result.
-@fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(0, 0), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass Values versus structure Updating Position.x through a kernel changes a value. Creating or deleting entities and adding or removing component types changes structure. Structural changes can move rows: discard old component references and row accessors, then look up components again by entity handle.">
+def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass">
 
     <link rel="preload" href="/larecs/pr-preview/pr-237/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
     <link href="/larecs/pr-preview/pr-237/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -254,25 +257,9 @@ then look up components again by entity handle." />
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
-    
-  >Entities, components and the world
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
   >Systems and kernels
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
-    
-  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col open"><a
@@ -321,6 +308,22 @@ then look up components again by entity handle." />
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
+    
+  >Entities, components and the world
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
+    
+  >Adding and removing entities
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/changing_entities/"
     
   >Changing entities
@@ -339,7 +342,7 @@ then look up components again by entity handle." />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -779,25 +782,9 @@ then look up components again by entity handle." />
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
-    
-  >Entities, components and the world
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
   >Systems and kernels
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
-    
-  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col open"><a
@@ -814,6 +801,22 @@ then look up components again by entity handle." />
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
   >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
+    
+  >Entities, components and the world
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
+    
+  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -837,7 +840,7 @@ then look up components again by entity handle." />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1272,6 +1275,14 @@ then look up components again by entity handle." />
           <p>Create a batch, change its component composition, and run only those particles
 with a scoped selection. The <a href="../../start/growing_simulation" >creation tutorial</a>
 provides the complete runnable program and its observable result.</p>
+<p><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">def</span><span class="w"> </span><span class="nf">reset_position</span><span class="p">(</span><span class="n">context</span><span class="p">:</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">[</span><span class="n">Position</span><span class="p">]()]):</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Initializes every selected position without reading it.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">    Args:
+</span></span></span><span class="line"><span class="cl"><span class="s2">        context: Selected rows with write-only Position access.
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">particle</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">context</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">particle.set</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span></span></span></code></pre></div>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="nd">@fieldwise_init</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span><span class="w"> </span><span class="nc">Spawn</span><span class="p">(</span><span class="n">System</span><span class="p">):</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34;</span><span class="w">
@@ -1285,7 +1296,7 @@ provides the complete runnable program and its observable result.</p>
 </span></span></span><span class="line"><span class="cl"><span class="s2">        Raises:
 </span></span></span><span class="line"><span class="cl"><span class="s2">            Error: If creation or movement fails.
 </span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">with</span><span class="w"> </span><span class="n">context.add_entities</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">count</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">selected</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">with</span><span class="w"> </span><span class="n">context.add_entities</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="mi">9</span><span class="p">),</span><span class="w"> </span><span class="n">count</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">selected</span><span class="p">:</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">selected.add</span><span class="p">(</span><span class="n">Velocity</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">selected.run</span><span class="p">[</span><span class="n">reset_position</span><span class="p">]()</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">selected.run</span><span class="p">[</span><span class="n">move</span><span class="p">]()</span><span class="w">
@@ -1299,7 +1310,7 @@ provides the complete runnable program and its observable result.</p>
 </span></span></span><span class="line"><span class="cl"><span class="s2">        Args:
 </span></span></span><span class="line"><span class="cl"><span class="s2">            context: Access to the simulation world.
 </span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">pass</span></span></span></code></pre></div>
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">pass</span></span></span></code></pre></div></p>
 <h2>Values versus structure<span class="hx-absolute -hx-mt-20" id="values-versus-structure"></span>
     <a href="#values-versus-structure" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Updating <code>Position.x</code> through a kernel changes a value. Creating or deleting
 entities and adding or removing component types changes structure. Structural
@@ -1324,8 +1335,10 @@ invokes no kernel body. Negative counts raise.</p>
 <h2>Delete particles after releasing the selection<span class="hx-absolute -hx-mt-20" id="delete-particles-after-releasing-the-selection"></span>
     <a href="#delete-particles-after-releasing-the-selection" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/HostStorage#remove_entity"><code>HostStorage.remove_entity</code></a> deletes one handle;
 <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#remove_entities"><code>HostStorage.remove_entities</code></a> deletes every filter match. The example
-removes the marker only after leaving the creation scope. Unrelated structural
-operations while a query or selection lives raise a locked-world error.
+removes the marker only after leaving the creation scope. In a system, use
+<code>context.world[].storage</code> for deletion: <code>SystemContext</code> has no entity-deletion
+method. Unrelated structural operations while a query or selection lives raise a
+locked-world error.
 Do not solve that error by keeping references across the scope boundary.</p>
 <p>For setup, <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#add_entities"><code>HostStorage.add_entities</code></a> and storage component operations
 remain supported. Their locked row ranges are lower-level results, with no
@@ -1334,10 +1347,10 @@ selection <code>run</code> method; use system selections for application batches
         </div>
         <div class="hx-mt-16"></div>
         <div class="hx-mb-8 hx-flex hx-items-center hx-border-t hx-pt-8 dark:hx-border-neutral-800 contrast-more:hx-border-neutral-400 dark:contrast-more:hx-border-neutral-400 print:hx-hidden"><a
-        href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
-        title="Adding and removing entities"
+        href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
+        title="Systems and kernels"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-pr-4 rtl:hx-pl-4"
-      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Adding and removing entities</a><a
+      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Systems and kernels</a><a
         href="/larecs/pr-preview/pr-237/guide/shared_resources/"
         title="Resources"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-ml-auto ltr:hx-pl-4 ltr:hx-text-right rtl:hx-mr-auto rtl:hx-pr-4 rtl:hx-text-left"

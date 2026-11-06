@@ -10,11 +10,11 @@
 <link rel="icon" href="/larecs/pr-preview/pr-237/favicon-32x32.png" type="image/png" sizes="32x32" />
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-237/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-237/site.webmanifest" rel="manifest" />
-<title>Resources – Larecs🌲</title>
+<title>Resource operations and adapters – Larecs🌲</title>
   <meta name="description" content="Not all data in a world is associated with specific entities. This often applies to parameters (such as a time step), global state variables (such as the current time), or spatial data structures (such as a grid displaying entity positions). These data are called resources.
 Defining resources Similar to components, resources are defined via structs. That is, each resource has a specific type, and having two resources of the same type is not possible." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/guide/resources/" itemprop="url" />
 
-<meta property="og:title" content="Resources" />
+<meta property="og:title" content="Resource operations and adapters" />
 <meta property="og:description" content="Not all data in a world is associated with
 specific entities. This often applies to
 parameters (such as a time step),
@@ -31,12 +31,12 @@ possible." />
 
 
 
-  <meta itemprop="name" content="Resources">
+  <meta itemprop="name" content="Resource operations and adapters">
   <meta itemprop="description" content="Not all data in a world is associated with specific entities. This often applies to parameters (such as a time step), global state variables (such as the current time), or spatial data structures (such as a grid displaying entity positions). These data are called resources.
 Defining resources Similar to components, resources are defined via structs. That is, each resource has a specific type, and having two resources of the same type is not possible.">
-  <meta itemprop="wordCount" content="3536">
+  <meta itemprop="wordCount" content="3532">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Resources">
+  <meta name="twitter:title" content="Resource operations and adapters">
   <meta name="twitter:description" content="Not all data in a world is associated with specific entities. This often applies to parameters (such as a time step), global state variables (such as the current time), or spatial data structures (such as a grid displaying entity positions). These data are called resources.
 Defining resources Similar to components, resources are defined via structs. That is, each resource has a specific type, and having two resources of the same type is not possible.">
 
@@ -229,25 +229,9 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
-    
-  >Entities, components and the world
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
   >Systems and kernels
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
-    
-  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -264,6 +248,22 @@ Defining resources Similar to components, resources are defined via structs. Tha
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
   >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
+    
+  >Entities, components and the world
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
+    
+  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -287,7 +287,7 @@ Defining resources Similar to components, resources are defined via structs. Tha
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-237/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
   
     <ul class='hx-flex hx-flex-col hx-gap-1 hx-relative before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] dark:before:hx-bg-neutral-800 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-pr-3 rtl:before:hx-right-0 ltr:hx-ml-3 rtl:hx-mr-3'><li>
@@ -784,25 +784,9 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
-    
-  >Entities, components and the world
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
   >Systems and kernels
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
-    
-  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -819,6 +803,22 @@ Defining resources Similar to components, resources are defined via structs. Tha
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
   >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
+    
+  >Entities, components and the world
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
+    
+  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -842,7 +842,7 @@ Defining resources Similar to components, resources are defined via structs. Tha
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-237/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1305,11 +1305,11 @@ Defining resources Similar to components, resources are defined via structs. Tha
   <div class="hx-mt-1.5 hx-flex hx-items-center hx-gap-1 hx-overflow-hidden hx-text-sm hx-text-gray-500 dark:hx-text-gray-400 contrast-more:hx-text-current">
         <div class="hx-whitespace-nowrap hx-transition-colors hx-min-w-[24px] hx-overflow-hidden hx-text-ellipsis hover:hx-text-gray-900 dark:hover:hx-text-gray-100">
           <a href="/larecs/pr-preview/pr-237/guide/">User guide</a>
-        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Resources</div>
+        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Resource operations and adapters</div>
   </div>
 
         <div class="content">
-          <h1>Resources</h1>
+          <h1>Resource operations and adapters</h1>
           <p>Not all data in a world is associated with
 specific entities. This often applies to
 parameters (such as a time step),
@@ -1712,19 +1712,6 @@ configuration such as dimensions.</p>
 <p>This complete example uses a rectangular grid. Its view exposes <code>last()</code> to
 keep pointer arithmetic inside the resource API. A scientific view can instead
 provide interpolation, coordinate lookup, or other read-only operations.</p>
-<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="c1"># SKIP_DEBUG</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1"># SKIP_ASAN</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
-  <button
-    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
-    title="Copy code"
-  >
-    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
-    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
-  </button>
-</div>
-</div>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="kn">from</span><span class="w"> </span><span class="nn">std.sys</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="n">has_accelerator</span><span class="w">

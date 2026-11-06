@@ -11,14 +11,16 @@
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-237/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-237/site.webmanifest" rel="manifest" />
 <title>Installation – Larecs🌲</title>
-  <meta name="description" content="Use the repository’s locked Pixi environment to run your first host simulation. The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo &gt;=1.0.0,&lt;1.1.0 and MAX &gt;=26.5.0,&lt;27. pixi.lock selects the exact builds. Larecs is currently a development beta (1.0.0b1); APIs can change.
+  <meta name="description" content="Use the repository’s locked Pixi environment to run your first host simulation. The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo &gt;=1.0.0,&lt;1.1.0, MAX &gt;=26.5.0,&lt;27, and mojo-tracy &gt;=1.1.0,&lt;2. The manifest uses conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock selects the exact builds. Larecs is currently a development beta (1.0.0b1); APIs can change.
 Install and verify the pinned environment Install Pixi, then run:
 git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked pixi run mojo --version pixi run mojo run -I src examples/particles/movement.mojo Keep the checkout revision and its pixi.lock together for reproducibility. The program prints All particles reached their expected positions. Its assertions verify the result. Host execution needs no accelerator. Continue with Your first simulation." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/guide/installation/" itemprop="url" />
 
 <meta property="og:title" content="Installation" />
 <meta property="og:description" content="Use the repository&rsquo;s locked Pixi environment to run your first host simulation.
 The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo
-&gt;=1.0.0,&lt;1.1.0 and MAX &gt;=26.5.0,&lt;27. pixi.lock selects the exact builds.
+&gt;=1.0.0,&lt;1.1.0, MAX &gt;=26.5.0,&lt;27, and mojo-tracy &gt;=1.1.0,&lt;2.
+The manifest uses conda-forge, https://repo.prefix.dev/max, and
+https://prefix.dev/tree-d (for mojo-tracy). pixi.lock selects the exact builds.
 Larecs is currently a development beta (1.0.0b1); APIs can change.
 Install and verify the pinned environment
     Install Pixi, then run:
@@ -45,13 +47,13 @@ Continue with Your first simulation." />
 
 
   <meta itemprop="name" content="Installation">
-  <meta itemprop="description" content="Use the repository’s locked Pixi environment to run your first host simulation. The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo &gt;=1.0.0,&lt;1.1.0 and MAX &gt;=26.5.0,&lt;27. pixi.lock selects the exact builds. Larecs is currently a development beta (1.0.0b1); APIs can change.
+  <meta itemprop="description" content="Use the repository’s locked Pixi environment to run your first host simulation. The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo &gt;=1.0.0,&lt;1.1.0, MAX &gt;=26.5.0,&lt;27, and mojo-tracy &gt;=1.1.0,&lt;2. The manifest uses conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock selects the exact builds. Larecs is currently a development beta (1.0.0b1); APIs can change.
 Install and verify the pinned environment Install Pixi, then run:
 git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked pixi run mojo --version pixi run mojo run -I src examples/particles/movement.mojo Keep the checkout revision and its pixi.lock together for reproducibility. The program prints All particles reached their expected positions. Its assertions verify the result. Host execution needs no accelerator. Continue with Your first simulation.">
-  <meta itemprop="wordCount" content="308">
+  <meta itemprop="wordCount" content="335">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Installation">
-  <meta name="twitter:description" content="Use the repository’s locked Pixi environment to run your first host simulation. The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo &gt;=1.0.0,&lt;1.1.0 and MAX &gt;=26.5.0,&lt;27. pixi.lock selects the exact builds. Larecs is currently a development beta (1.0.0b1); APIs can change.
+  <meta name="twitter:description" content="Use the repository’s locked Pixi environment to run your first host simulation. The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo &gt;=1.0.0,&lt;1.1.0, MAX &gt;=26.5.0,&lt;27, and mojo-tracy &gt;=1.1.0,&lt;2. The manifest uses conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock selects the exact builds. Larecs is currently a development beta (1.0.0b1); APIs can change.
 Install and verify the pinned environment Install Pixi, then run:
 git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked pixi run mojo --version pixi run mojo run -I src examples/particles/movement.mojo Keep the checkout revision and its pixi.lock together for reproducibility. The program prints All particles reached their expected positions. Its assertions verify the result. Host execution needs no accelerator. Continue with Your first simulation.">
 
@@ -271,25 +273,9 @@ git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked p
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
-    
-  >Entities, components and the world
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
   >Systems and kernels
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
-    
-  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -306,6 +292,22 @@ git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked p
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
   >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
+    
+  >Entities, components and the world
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
+    
+  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -329,7 +331,7 @@ git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked p
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -769,25 +771,9 @@ git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked p
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
-    
-  >Entities, components and the world
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
   >Systems and kernels
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
-    
-  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -804,6 +790,22 @@ git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked p
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
   >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
+    
+  >Entities, components and the world
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
+    
+  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -827,7 +829,7 @@ git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked p
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1261,7 +1263,9 @@ git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked p
           <h1>Installation</h1>
           <p>Use the repository&rsquo;s locked Pixi environment to run your first host simulation.
 The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo
-<code>&gt;=1.0.0,&lt;1.1.0</code> and MAX <code>&gt;=26.5.0,&lt;27</code>. <code>pixi.lock</code> selects the exact builds.
+<code>&gt;=1.0.0,&lt;1.1.0</code>, MAX <code>&gt;=26.5.0,&lt;27</code>, and <code>mojo-tracy &gt;=1.1.0,&lt;2</code>.
+The manifest uses <code>conda-forge</code>, <code>https://repo.prefix.dev/max</code>, and
+<code>https://prefix.dev/tree-d</code> (for <code>mojo-tracy</code>). <code>pixi.lock</code> selects the exact builds.
 Larecs is currently a development beta (<code>1.0.0b1</code>); APIs can change.</p>
 <h2>Install and verify the pinned environment<span class="hx-absolute -hx-mt-20" id="install-and-verify-the-pinned-environment"></span>
     <a href="#install-and-verify-the-pinned-environment" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Install <a href="https://pixi.sh/latest/installation/" target="_blank" rel="noopener">Pixi</a>, then run:</p>
@@ -1323,7 +1327,9 @@ repository root:</p>
   </button>
 </div>
 </div>
-<p>You can distribute that <code>larecs.mojoc</code> to your project&rsquo;s include directory.
+<p>You can copy that <code>larecs.mojoc</code> to your project&rsquo;s include directory. Your
+application environment must also provide compatible Mojo, MAX, and <code>mojo-tracy</code>
+from the channels listed above.
 Rebuild it after changing the toolchain or Larecs revision. These instructions
 use a locally built package; they do not require a published package channel.</p>
 <h2>Troubleshooting<span class="hx-absolute -hx-mt-20" id="troubleshooting"></span>

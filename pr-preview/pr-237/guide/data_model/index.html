@@ -49,7 +49,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
   <meta itemprop="name" content="Data model">
   <meta itemprop="description" content="Use entities for identities and components for per-particle values. Start with the complete movement program.
 @fieldwise_init struct Position(Copyable, Movable): &#34;&#34;&#34;Where a particle is.&#34;&#34;&#34; var x: Float64 &#34;&#34;&#34;Horizontal coordinate.&#34;&#34;&#34; var y: Float64 &#34;&#34;&#34;Vertical coordinate.&#34;&#34;&#34; @fieldwise_init struct Velocity(Copyable, Movable): &#34;&#34;&#34;How far a particle moves per unit of time.&#34;&#34;&#34; var dx: Float64 &#34;&#34;&#34;Horizontal speed.&#34;&#34;&#34; var dy: Float64 &#34;&#34;&#34;Vertical speed.&#34;&#34;&#34; var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) var marker = world.storage.add_entity(Position(-3, -3))">
-  <meta itemprop="wordCount" content="300">
+  <meta itemprop="wordCount" content="302">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Data model">
   <meta name="twitter:description" content="Use entities for identities and components for per-particle values. Start with the complete movement program.
@@ -271,25 +271,9 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
-    
-  >Entities, components and the world
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
   >Systems and kernels
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
-    
-  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -306,6 +290,22 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
   >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
+    
+  >Entities, components and the world
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
+    
+  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -329,7 +329,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -769,25 +769,9 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
-    
-  >Entities, components and the world
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
   >Systems and kernels
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
-    
-  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -804,6 +788,22 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
   >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
+    
+  >Entities, components and the world
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
+    
+  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -827,7 +827,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1288,10 +1288,10 @@ the complete <a href="../../start/first_simulation" >movement program</a>.</p>
 <h2>Entity identity<span class="hx-absolute -hx-mt-20" id="entity-identity"></span>
     <a href="#entity-identity" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>An <a href="/larecs/pr-preview/pr-237/larecs/Entity"><code>Entity</code></a> is a copyable ID and generation, not a component address.
 Keep the handle to find the particle again through <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#get"><code>HostStorage.get</code></a>.
-Deletion invalidates that identity; recycling an ID increments its generation.
+Deletion invalidates that identity and advances its generation before ID reuse.
 Handles belong to their world: do not use a handle in another world.</p>
 <h2>Components and tags<span class="hx-absolute -hx-mt-20" id="components-and-tags"></span>
-    <a href="#components-and-tags" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A component is a <code>Copyable</code>, <code>Movable</code> value; each entity has at most one value
+    <a href="#components-and-tags" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A component conforms to <code>ComponentType</code> (<code>Copyable &amp; Deinitable</code>); each entity has at most one value
 of each component type. A tag is a component with no fields: its presence carries
 the information. Filters can require or exclude it just like a data component.</p>
 <h2>World type packs<span class="hx-absolute -hx-mt-20" id="world-type-packs"></span>
@@ -1316,10 +1316,10 @@ then reacquire references after mutation. Never use a row index as identity.</p>
         title="Installation"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-pr-4 rtl:hx-pl-4"
       ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Installation</a><a
-        href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
-        title="Entities, components and the world"
+        href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
+        title="Systems and kernels"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-ml-auto ltr:hx-pl-4 ltr:hx-text-right rtl:hx-mr-auto rtl:hx-pr-4 rtl:hx-text-left"
-      >Entities, components and the world<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
+      >Systems and kernels<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
         
       </main>
     </article>

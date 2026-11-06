@@ -58,7 +58,7 @@ scheduler.run(steps=10)" />
   <meta itemprop="name" content="Systems and kernels">
   <meta itemprop="description" content="Run application behavior through a system and update matching particles with a kernel. The movement tutorial provides the complete program.
 comptime move_filter = Filter().include[Position]().read[Velocity]() comptime move_resources = Resources().read[Time]() def move(context: KernelContext[move_filter, move_resources]): &#34;&#34;&#34;Advances every particle by its velocity times the step length. Args: context: The matching rows and the declared resources. &#34;&#34;&#34; ref time = context.resources.get[Time]() for particle in context: ref position = particle.get[Position]() ref velocity = particle.get[Velocity]() position.x &#43;= velocity.dx * time.delta position.y &#43;= velocity.dy * time.delta @fieldwise_init struct Move(System): &#34;&#34;&#34;Runs the `move` kernel once per step.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Moves all particles. Args: context: Access to the scheduler&#39;s world. Raises: Error: If `Time` is missing from the world. &#34;&#34;&#34; context.run[move]() var scheduler = Scheduler[Position, Velocity](world^) scheduler.add_system(Move()) scheduler.run(steps=10)">
-  <meta itemprop="wordCount" content="618">
+  <meta itemprop="wordCount" content="748">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Systems and kernels">
   <meta name="twitter:description" content="Run application behavior through a system and update matching particles with a kernel. The movement tutorial provides the complete program.
@@ -250,14 +250,6 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
   >Data model
     </a>
               
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
-    
-  >Entities, components and the world
-    </a>
-              
             </li><li class="hx-flex hx-flex-col open"><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
@@ -296,14 +288,6 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
-    
-  >Adding and removing entities
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
   >Structural changes
@@ -315,6 +299,22 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
   >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
+    
+  >Entities, components and the world
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
+    
+  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -338,7 +338,7 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -775,28 +775,12 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
   >Data model
     </a>
               
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
-    
-  >Entities, components and the world
-    </a>
-              
             </li><li class="hx-flex hx-flex-col open"><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
   >Systems and kernels
-    </a>
-              
-            </li><li class="hx-flex hx-flex-col "><a
-    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
-    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
-    
-  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -813,6 +797,22 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
   >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
+    
+  >Entities, components and the world
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
+    
+  >Adding and removing entities
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -836,7 +836,7 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1250,6 +1250,10 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#handles-accessors-queries-selections-and-ranges">Handles, accessors, queries, selections, and ranges
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
         <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#troubleshooting">Troubleshooting
         </a>
       </li></ul>
@@ -1382,6 +1386,51 @@ it in a short loop or let it be destroyed before mutation. A copy starts at the
 same position with an independent cursor and structural lock; a move transfers
 the existing lock. Keep no row accessor beyond its query or across structural
 changes. These locks prevent invalidation; they are not thread mutexes.</p>
+<h3>Handles, accessors, queries, selections, and ranges<span class="hx-absolute -hx-mt-20" id="handles-accessors-queries-selections-and-ranges"></span>
+    <a href="#handles-accessors-queries-selections-and-ranges" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><table>
+  <thead>
+      <tr>
+          <th>Value</th>
+          <th>Copy and move</th>
+          <th>Structural lock</th>
+          <th>Access</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Entity handle</td>
+          <td>Copyable and movable</td>
+          <td>None</td>
+          <td>Identifies an entity for storage calls; survives row movement, not deletion</td>
+      </tr>
+      <tr>
+          <td>Query row accessor</td>
+          <td>Movable, noncopyable</td>
+          <td>Relies on the enclosing query</td>
+          <td>Reads query components; discard before structural changes</td>
+      </tr>
+      <tr>
+          <td>Query</td>
+          <td>Copies have independent cursors and locks; moves transfer the lock</td>
+          <td>Retained after exhaustion, even for empty results</td>
+          <td>Read-only traversal</td>
+      </tr>
+      <tr>
+          <td>Entity selection</td>
+          <td>Movable, noncopyable</td>
+          <td>Until release, destruction, or manager exit, including empty selections</td>
+          <td>Component changes and filtered kernel execution on exactly its members</td>
+      </tr>
+      <tr>
+          <td>Storage batch range</td>
+          <td>Copies have independent cursors and locks; moves transfer the lock</td>
+          <td>Retained after exhaustion, even for empty results</td>
+          <td>Low-level traversal and mutable <code>unsafe_get</code>; no selection <code>run</code></td>
+      </tr>
+  </tbody>
+</table>
+<p>See <a href="../structural_changes" >Structural changes</a> for scoped mutation and
+<a href="/larecs/pr-preview/pr-237/larecs/HostStorage"><code>HostStorage</code></a> for storage batch operations.</p>
 <h2>Troubleshooting<span class="hx-absolute -hx-mt-20" id="troubleshooting"></span>
     <a href="#troubleshooting" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A missing required resource makes <code>run</code> raise: add it during setup. A component
 access compile error usually means the filter does not guarantee that type or
@@ -1394,14 +1443,14 @@ lives; end its scope before unrelated structural work.</p>
         </div>
         <div class="hx-mt-16"></div>
         <div class="hx-mb-8 hx-flex hx-items-center hx-border-t hx-pt-8 dark:hx-border-neutral-800 contrast-more:hx-border-neutral-400 dark:contrast-more:hx-border-neutral-400 print:hx-hidden"><a
-        href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
-        title="Entities, components and the world"
+        href="/larecs/pr-preview/pr-237/guide/data_model/"
+        title="Data model"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-pr-4 rtl:hx-pl-4"
-      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Entities, components and the world</a><a
-        href="/larecs/pr-preview/pr-237/guide/adding_and_removing_entities/"
-        title="Adding and removing entities"
+      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Data model</a><a
+        href="/larecs/pr-preview/pr-237/guide/structural_changes/"
+        title="Structural changes"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-ml-auto ltr:hx-pl-4 ltr:hx-text-right rtl:hx-mr-auto rtl:hx-pr-4 rtl:hx-text-left"
-      >Adding and removing entities<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
+      >Structural changes<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
         
       </main>
     </article>
