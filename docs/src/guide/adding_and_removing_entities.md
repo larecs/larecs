@@ -57,9 +57,6 @@ we can do the following:
     entity = world.storage.add_entity(Position(0, 0), Velocity(1, 0))
 ```
 
-`place_batch` uses `row.idx`, which restarts at zero for each selected host
-range; it does not assign globally unique indices.
-
 ## Batch addition
 
 Systems create batches through {{< api SystemContext.add_entities add_entities >}}.
@@ -74,6 +71,9 @@ exactly the new rows and owning the world's structural-change lock:
     created.run[place_batch]()
     created^.release()
 ```
+
+`place_batch` sets each `x` to `row.idx`. The index restarts at zero for
+each selected host range, so it is not unique across the batch.
 
 Use a `with` block to release the lock automatically, including when an error
 or early return exits the block:

@@ -37,3 +37,21 @@ _Avoid_: Generation (an entity's recycling count), version.
 
 **Stale device copy**:
 A device copy whose recorded revision differs from the item's current revision.
+
+**Tag**:
+A component type with no fields; its presence on an entity carries the
+information.
+
+**Structural change**:
+Creating or deleting an entity, or adding or removing a component type on one.
+Structural changes can move rows; value assignments do not.
+
+**Structural lock**:
+A guard, held by a live query, storage batch range, or entity selection, that
+makes unrelated structural changes raise a locked-world error.
+_Avoid_: Mutex, lock, when referring to thread synchronization.
+
+**Entity selection**:
+An exact, noncopyable set of entity rows returned by a structural operation,
+such as `SystemContext.add_entities`, that holds a structural lock until it is
+released.

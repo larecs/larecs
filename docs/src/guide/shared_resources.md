@@ -1,48 +1,74 @@
 +++
 type = "docs"
-title = "Resources"
+title = "Share values with resources"
 weight = 5
 +++
 
-Share one value per type across your simulation using {{< api ResourceStorage >}}.
-The complete [configuration program](../../start/shared_configuration) sets
-`Time.delta` before movement.
+Store a value that exists once per world, such as the step length, as a
+resource, and let kernels and systems read or change it.
+[Share time and configuration](../../start/shared_configuration) runs this
+code.
 
 {{< example file="particles/configuration.mojo" region="time" >}}
 {{< example file="particles/configuration.mojo" region="configuration" >}}
 {{< example file="particles/configuration.mojo" region="world" >}}
 
-## Add, read, replace, and remove
+`Time` and `Configuration` are resources. `world.resources.add` stores one
+value of each, and `ConfigureTime` changes `Time` through
+`context.world[].resources` before every movement step.
 
-A resource conforms to [`ResourceType`](../../larecs#aliases), which requires `Copyable` and
-`Deinitable`. The example's `Copyable, Movable` structs satisfy both. Resource
-types need not appear among the world's declared component types.
+## Define a resource
 
-{{< api ResourceStorage.add >}} inserts values and raises on duplicates. {{< api ResourceStorage.get >}} returns a reference and
-raises on missing types. {{< api ResourceStorage.set >}} replaces existing values;
-if any requested type is absent, it raises without updating them. Its
-`add_if_not_found=True` option inserts absent types instead.
-{{< api ResourceStorage.remove >}} removes values and raises on missing types.
-Do not retain resource references across removal or replacement.
+A resource is a struct that conforms to
+[`ResourceType`](../../larecs#aliases), which requires `Copyable` and
+`Deinitable`. `Copyable, Movable` satisfies both. A world holds at most one
+value per resource type, and resource types do not appear in the world's
+component list.
 
-## Declare kernel permissions
+## Add, read, replace, and remove resources
+
+{{< api ResourceStorage >}} manages the world's resources:
+
+| Method | Effect | Raises when |
+| --- | --- | --- |
+| {{< api ResourceStorage.add >}} | Inserts values | A type is already present |
+| {{< api ResourceStorage.get >}} | Returns a reference to the value | The type is missing |
+| {{< api ResourceStorage.set >}} | Replaces existing values | Any type is missing; then no value changes. With `add_if_not_found=True`, it inserts missing types instead. |
+| {{< api ResourceStorage.remove >}} | Removes values | A type is missing |
+
+Do not keep a resource reference across removal or replacement.
+
+## Declare kernel access
 
 {{< example file="particles/configuration.mojo" region="kernel" >}}
 
-{{< api Resources >}} declares access independently of component filters.
-`read[Time]()` grants immutable `get`; `read_write` grants mutable `get`.
-On the host, `write` grants `set` only, not `get`; device kernels do not support
-write-only resources. `Resources[Time]()` defaults to read-write access. Every
-declared resource must exist before {{< api SystemContext.run >}}; otherwise it
-raises.
+A kernel declares its resources with {{< api Resources >}}, separately from its
+component filter:
 
-On the sequential host, resources can own collections. Each kernel call sees
-the same resource value. Because one `run` can call the kernel several times,
-update per-step values in a system's `update`, as `ConfigureTime` does.
+| Declaration | Access through the kernel |
+| --- | --- |
+| `read[T]()` | Read with `get` |
+| `read_write[T]()` | Read and write with `get` |
+| `write[T]()` | Write with `set` only, on the host; device kernels reject it |
+| `Resources[T]()` | Read and write, like `read_write` |
+
+Every declared resource must exist in the world when you call
+{{< api SystemContext.run >}}; otherwise `run` raises.
+
+On the sequential host, a resource can own collections such as a `List`. Every
+kernel call in one `run` sees the same resource value. Because one `run` can
+call the kernel several times, change per-step values in a system's `update`,
+as `ConfigureTime` does, rather than in the kernel.
 
 ## Troubleshooting
 
-If movement reports a missing `Time`, add it before scheduling. If an access
-fails compilation, check the resource declaration independently of the component
-filter. For adapters and device restrictions, use the
-[Resource operations and adapters](../resources#portable-owning-resources).
+| Symptom | Fix |
+| --- | --- |
+| `run` raises because `Time` is missing | Add `Time` with `world.resources.add` before you start the scheduler. |
+| Compile error on resource access | Check the kernel's `Resources` declaration; the component filter does not grant resource access. |
+
+## Next steps
+
+[Resource operations and adapters](../resources#portable-owning-resources)
+covers threaded and device restrictions and adapters for resources that own
+data.

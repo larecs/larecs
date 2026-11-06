@@ -1,56 +1,90 @@
 +++
 type = "docs"
-title = "Structural changes"
+title = "Create and remove entities in batches"
 weight = 4
 +++
 
-Create a batch, change its component composition, and run only those particles
-with a scoped selection. The [creation tutorial](../../start/growing_simulation)
-provides the complete runnable program and its observable result.
+Create a batch of entities, change their components, and run kernels on only
+those entities with a scoped selection. Then remove entities once the scope
+ends. [Create and remove particles](../../start/growing_simulation) runs this
+code and checks the result.
 
 {{< example file="particles/lifecycle.mojo" region="write_only" >}}
 {{< example file="particles/lifecycle.mojo" region="lifecycle" >}}
 
+`context.add_entities` creates three particles and returns a selection of
+exactly those three. Inside the `with` block, `selected.add`, `selected.run`,
+and other selection methods act on those particles only. After the block,
+`remove_entities` deletes every particle with a `Position` and no `Velocity`.
+
 ## Values versus structure
 
-Updating `Position.x` through a kernel changes a value. Creating or deleting
-entities and adding or removing component types changes structure. Structural
-changes can move rows: discard old component references and row accessors,
-then look up components again by entity handle.
+Assigning `position.x` in a kernel changes a value. Creating or deleting an
+entity, or adding or removing a component type, changes the world's
+*structure*. A structural change can move rows in memory. After one, discard
+component references and row accessors, and look components up again by
+entity handle.
 
-## Exact selection membership
+## Select exactly the entities you change
 
-{{< api SystemContext.add_entities >}} returns exactly the new rows.
-{{< api SystemContext.add >}}, {{< api SystemContext.remove >}}, and
-{{< api SystemContext.replace >}} select rows matching the filter passed to
-the operation.
-Their [EntitySelection](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/system.mojo#L568) results retain those identities through
-composition changes. Selection `add`, `remove`, and `replace` mutate the same
-selection in place and return nothing. `remove` removes components, not entities.
-Selection `run` intersects that membership with the kernel's filter; it never
-expands to other particles that happen to have the same components.
+These operations return an `EntitySelection`:
 
-## Scoped cleanup and empty selections
+- {{< api SystemContext.add_entities >}} selects exactly the new entities.
+- {{< api SystemContext.add >}}, {{< api SystemContext.remove >}}, and
+  {{< api SystemContext.replace >}} select the entities that match the filter
+  you pass.
 
-A selection holds a structural lock until it is released. Use `with` so the lock
-ends on normal exit, on an error, or on early return. Pass an existing selection
-with `with selection^`. Inside `with`, the lock lasts until the block ends,
-even if you release the bound selection. Without `with`, consuming `release`
-or destroying the selection ends the lock. Selections are movable but not
-copyable.
+A selection keeps its members when their components change. Its `add`,
+`remove`, and `replace` methods change the members' components in place and
+return nothing; `remove` removes components, not entities. Its `run` method
+visits the members that also match the kernel's filter, and never other
+entities with the same components.
 
-A zero-count `add_entities` still returns a locked selection. Running a kernel
-on an empty selection calls no kernel body. A negative count raises.
+[`EntitySelection`](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/system.mojo#L568)
+documents every selection method.
 
-## Delete particles after releasing the selection
+## End the structural lock with `with`
 
-{{< api HostStorage.remove_entity >}} deletes one handle;
-{{< api HostStorage.remove_entities >}} deletes every filter match. The example
-removes the marker only after leaving the creation scope. In a system, use
-`context.world[].storage` for deletion: `SystemContext` has no entity-deletion
-method. Unrelated structural operations while a query or selection lives raise a
+A selection holds a structural lock until it is released. While any lock is
+held, unrelated entity creation, entity deletion, and component additions or
+removals raise a locked-world error.
+
+- Use `with` so the lock ends when the block ends, including on an error or an
+  early return.
+- To scope a selection you already hold, write `with selection^ as selected:`.
+- Inside `with`, the lock lasts until the block ends, even if you release the
+  bound selection earlier.
+- Without `with`, the lock ends when you call the consuming `release` method
+  or the selection is destroyed.
+
+Selections are movable but not copyable.
+
+## Empty and invalid batches
+
+- `add_entities` with `count=0` returns an empty selection that still holds a
+  lock.
+- Running a kernel on an empty selection never runs the kernel body.
+- A negative `count` raises.
+
+## Remove entities
+
+{{< api HostStorage.remove_entity >}} deletes one entity by handle, and
+{{< api HostStorage.remove_entities >}} deletes every entity that matches a
+filter. `SystemContext` has no method for deleting entities, so a system
+deletes through `context.world[].storage`, as `Spawn` does. Delete only after
+the `with` block ends; while the selection's lock is held, deletion raises a
 locked-world error.
-To fix it, finish the query or selection scope first, then make the change.
 
-During setup, {{< api HostStorage.add_entities >}} returns a locked row range
-for direct access. It has no `run` method; in systems, use selections.
+## Create entities outside a system
+
+During setup, {{< api HostStorage.add_entities >}} creates a batch directly in
+the world. It returns a locked row range for direct component access, not a
+selection, and has no `run` method. Inside systems, use
+`context.add_entities` to get a selection.
+
+## Next steps
+
+- [Update entities with systems and kernels](../systems_kernels#compare-handles-queries-and-selections)
+  compares selections with queries and entity handles.
+- [Adding and removing entities](../adding_and_removing_entities) shows the
+  individual storage operations.

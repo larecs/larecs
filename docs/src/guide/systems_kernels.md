@@ -1,95 +1,120 @@
 +++
 type = "docs"
-title = "Systems and kernels"
+title = "Update entities with systems and kernels"
 weight = 3
 +++
 
-Run application behavior through a system and update matching particles with a
-kernel. The [movement tutorial](../../start/first_simulation) provides the complete program.
+Put repeated simulation work in a system, and let the system run a kernel over
+every entity that matches a filter. This page uses the movement code from
+[Your first simulation](../../start/first_simulation).
 
 {{< example file="particles/movement.mojo" region="kernel" >}}
 {{< example file="particles/movement.mojo" region="system" >}}
 {{< example file="particles/movement.mojo" region="scheduler" >}}
 
-## Access declarations
+`move` is the kernel, `Move` is the system that runs it, and the
+{{< api Scheduler >}} calls `Move.update` once per step.
 
-{{< api Filter >}} describes required components and access. `include` grants
-read-write access, `read` grants immutable access, and `exclude` rejects entities
-with that component. [`Filter.exclusive`](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/filter.mojo#L177) rejects extra components.
-The kernel's {{< api KernelContext >}} supplies only declared component access;
-requesting an undeclared component through `get` fails compilation.
-{{< api Resources >}} independently declares resource access.
+## Declare component and resource access
 
-{{< api SystemContext.run >}} calls a host kernel for each non-empty matching
-physical store: a group of stored rows with the same component set. An archetype
-can have several such stores. Put per-entity work inside the loop. With no
-matching entities, no kernel body runs. Calls complete before the next system
-proceeds.
+A {{< api Filter >}} selects entities and sets how the kernel may access their
+components:
 
-### Write-only components
+| Step | Matches | Access through the kernel |
+| --- | --- | --- |
+| `include[T]()` | Entities with `T` | Read and write with `get` |
+| `read[T]()` | Entities with `T` | Read with `get` |
+| `write[T]()` | Entities with `T` | Write with `set` only |
+| `exclude[T]()` | Entities without `T` | None |
+| [`exclusive()`](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/filter.mojo#L177) | Only entities without further components | Unchanged |
+
+The kernel's {{< api KernelContext >}} exposes only the declared access.
+Calling `get` on a component the filter does not guarantee, or writing through
+`read` access, fails to compile. {{< api Resources >}} declares resource access
+separately; see [Share values with resources](../shared_resources).
+
+## How often a kernel runs
+
+On the host, {{< api SystemContext.run >}} calls the kernel once for each
+non-empty matching *physical store*: a group of rows with the same components.
+One logical archetype can have several physical stores. Put per-entity work
+inside the `for` loop over the context. With no matching entities, the kernel
+body never runs. All calls finish before `run` returns, so the next system sees
+the results.
+
+## Write values without reading them
 
 {{< example file="particles/lifecycle.mojo" region="write_only" >}}
 
-[`Filter.write`](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/filter.mojo#L134) permits {{< api EntityAccessor.set >}} and rejects
-`get`: initialize the component for every processed row before reading it in a
-later kernel. The creation program runs this kernel before movement.
-For device execution, read access uploads values, write access downloads results,
-and read-write access does both; write-only values are not uploaded.
-See [execution details](../systems_scheduler#device-execution) for target limits.
+[`Filter.write`](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/filter.mojo#L134)
+permits {{< api EntityAccessor.set >}} and rejects `get`. Set the component on
+every row the kernel visits; a later kernel can then read it.
+[Create and remove particles](../../start/growing_simulation) runs this kernel
+before movement.
 
-## Lifecycle and order
+For device execution, the access mode decides the transfers: read access
+uploads values, write access downloads results, and read-write access does
+both. Write-only values are not uploaded. See
+[device execution](../systems_scheduler#device-execution) for target limits.
 
-{{< api System >}} supplies `initialize`, `update`, and `finalize` hooks.
-{{< api Scheduler.run >}} initializes all systems, updates them for each step,
-then finalizes them, in registration order within each phase. Errors propagate;
-`run` does not guarantee finalization after a failed hook. For repeated stepping,
-use `initialize`, `update(steps=...)`, and `finalize` explicitly.
+## Order systems and steps
 
-## Inspecting entities
+{{< api System >}} has three hooks: `initialize`, `update`, and `finalize`.
+{{< api Scheduler.run >}} initializes all systems, updates them once per step,
+and then finalizes them. Within each phase, systems run in the order you added
+them.
 
-Use {{< api HostStorage.query >}} for read-only inspection outside kernels.
-The full [creation example](../../start/growing_simulation) inspects the marker
-before scheduling:
+An error in a hook propagates out of `run`, and `run` does not guarantee that
+`finalize` runs afterwards. To step the simulation in several batches, call
+`initialize`, `update(steps=...)`, and `finalize` yourself.
+
+## Inspect entities outside a kernel
+
+Use {{< api HostStorage.query >}} to read entities outside a kernel, for
+example during setup. [Create and remove particles](../../start/growing_simulation)
+inspects the marker before it starts the scheduler:
 
 {{< example file="particles/lifecycle.mojo" region="inspection" >}}
 
-The example copies the query to show that the copy has its own cursor.
-Consuming both with `^` ends their locks before the scheduler takes the world.
+Each query row is an {{< api ArchetypeRowAccessor >}}, not an entity handle.
+`get` reads a component the filter guarantees, and `get_entity` returns the
+entity's handle. A query is read-only, even when its filter uses `include`; use
+a kernel to change values. `exclusive()` restricts a query to entities with
+exactly the listed components, so the last assertion counts only `marker`.
 
-A query's filter requires or excludes component types; `exclusive` restricts it
-to exactly the included set. Query rows are {{< api ArchetypeRowAccessor >}}
-values, not entity handles. `get` reads a component guaranteed by the filter;
-`get_entity` retrieves the persistent handle. A query remains read-only even
-when its filter uses `include`. Use a kernel to update matching entities.
+A live query holds a structural lock, even after it is exhausted or when it
+matched nothing. Consume it in a short loop, or let it go out of scope, before
+you create or remove entities. A copy starts at the same position with its own
+cursor and lock; a move transfers the existing lock. The example copies the
+query to show this, and consumes both with `^` so their locks end before the
+scheduler takes the world. Do not keep a row accessor beyond its query or
+across structural changes. Structural locks protect references from
+invalidation; they are not thread mutexes.
 
-### Query lock lifetime, copies, and moves
+## Compare handles, queries, and selections
 
-A live query prevents structural changes, even when empty or exhausted. Consume
-it in a short loop or let it be destroyed before mutation. A copy starts at the
-same position with an independent cursor and structural lock; a move transfers
-the existing lock. Keep no row accessor beyond its query or across structural
-changes. These locks prevent invalidation; they are not thread mutexes.
-
-### Handles, accessors, queries, selections, and ranges
-
-| Value | Copy and move | Structural lock | Access |
+| Value | Copy and move | Structural lock | Use |
 | --- | --- | --- | --- |
-| Entity handle | Copyable and movable | None | Identifies an entity for storage calls; survives row movement, not deletion |
-| Query row accessor | Movable, noncopyable | Relies on the enclosing query | Reads query components; discard before structural changes |
-| Query | Copies have independent cursors and locks; moves transfer the lock | Retained after exhaustion, even for empty results | Read-only traversal |
-| Entity selection | Movable, noncopyable | Until release, destruction, or manager exit, including empty selections | Component changes and filtered kernel execution on exactly its members |
-| Storage batch range ({{< api HostStorage.add_entities >}}) | Copies have independent cursors and locks; moves transfer the lock | Retained after exhaustion, even for empty results | Low-level traversal and mutable `unsafe_get`; no selection `run` |
+| Entity handle | Copyable and movable | None | Identify an entity in storage calls; survives row movement, not deletion |
+| Query row accessor | Movable, not copyable | Held by its query | Read the query's components; discard before structural changes |
+| Query | Copy: own cursor and lock. Move: transfers the lock | Until destroyed, even when exhausted or empty | Read-only traversal |
+| Entity selection | Movable, not copyable | Until released, destroyed, or its `with` block ends, even when empty | Change components and run kernels on exactly its members |
+| Storage batch range ({{< api HostStorage.add_entities >}}) | Copy: own cursor and lock. Move: transfers the lock | Until destroyed, even when exhausted or empty | Low-level traversal and mutable `unsafe_get`; no `run` |
 
-See [Structural changes](../structural_changes) for scoped mutation and
-{{< api HostStorage >}} for storage batch operations.
+[Create and remove entities in batches](../structural_changes) covers
+selections.
 
 ## Troubleshooting
 
-A missing required resource makes `run` raise: add it during setup. A component
-access compile error usually means the filter does not guarantee that type or
-grants only read access. A locked-world error means a query or selection still
-lives; end its scope before unrelated structural work.
+| Symptom | Cause and fix |
+| --- | --- |
+| `run` raises about a missing resource | The kernel declares a resource the world lacks. Add it during setup. |
+| Compile error on component access | The filter does not guarantee the component, or grants only `read` access. Adjust the filter. |
+| Locked-world error | A query or selection is still alive. End its scope before the structural change. |
 
-For supported lower-level traversal, see {{< api HostStorage >}} and
-{{< api ArchetypeRowAccessor >}}. For advanced execution, see
-[Systems and the scheduler](../systems_scheduler).
+## Next steps
+
+- [Systems and the scheduler](../systems_scheduler) covers threaded and device
+  execution.
+- {{< api HostStorage >}} and {{< api ArchetypeRowAccessor >}} document
+  lower-level traversal.

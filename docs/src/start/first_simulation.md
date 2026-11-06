@@ -146,7 +146,7 @@ Continue with [Create and remove particles](../growing_simulation), then
 
 - {{< api SystemContext.run >}} lists every way to run a kernel, including the
   errors it raises.
-- [Inspecting entities](../../guide/systems_kernels#inspecting-entities) shows how to inspect
-  entities outside a kernel.
-- [Resources](../../guide/shared_resources) covers adding, reading, and changing
-  resources.
+- [Inspect entities outside a kernel](../../guide/systems_kernels#inspect-entities-outside-a-kernel)
+  shows how to read entities with a query.
+- [Share values with resources](../../guide/shared_resources) covers adding,
+  reading, and changing resources.

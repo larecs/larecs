@@ -13,12 +13,15 @@ stable 1.0.0 release. After that release, public APIs follow semantic
 versioning unless they are explicitly marked experimental. Device execution is
 currently such an experimental API.
 
-Start with [installation](guide/installation), then run your
-[first particle simulation](start/first_simulation). Extend it with
+To build your first simulation, [install Larecs](guide/installation) and
+follow [Your first simulation](start/first_simulation). Two further tutorials
+extend the same particles with
 [creation and removal](start/growing_simulation) and
-[shared time and configuration](start/shared_configuration).
+[shared configuration](start/shared_configuration).
 
-Use the guides for [Data model](guide/data_model),
-[Systems and kernels](guide/systems_kernels),
-[Structural changes](guide/structural_changes), and [Resources](guide/shared_resources).
-Look up exact declarations in [Reference](larecs).
+The guides explain each task in depth:
+[entities and components](guide/data_model),
+[systems and kernels](guide/systems_kernels),
+[batch creation and removal](guide/structural_changes), and
+[resources](guide/shared_resources). The [Reference](larecs) lists every
+public declaration.

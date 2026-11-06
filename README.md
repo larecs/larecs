@@ -26,26 +26,27 @@ Larecs🌲 has no other external dependencies.
 
 ## Installation
 
-Use the [installation guide](https://larecs.github.io/larecs/guide/installation/)
-for the locked Pixi environment, supported platforms, source inclusion, and
-precompiled packages.
+The [installation guide](https://larecs.github.io/larecs/guide/installation/)
+covers the locked Pixi environment, supported platforms, using the source from
+your own project, and precompiled packages.
 
 ## Usage
 
-Refer to the [API docs](https://larecs.github.io/larecs/) for details
-on how to use Larecs🌲.
+Start with [Your first simulation](https://larecs.github.io/larecs/start/first_simulation/),
+which moves particles with a system and a kernel. Two further tutorials extend
+it with creating and removing particles and with shared configuration. The
+complete programs live in [examples/particles](examples/particles). The
+[API docs](https://larecs.github.io/larecs/) list every public declaration.
 
-To contribute, start with the [contributing guide](CONTRIBUTING.md).
+## Contributing
+
+Start with the [contributing guide](CONTRIBUTING.md).
 [The design record](docs/design/README.md) collects the ECS
-requirements, architecture, and accepted decisions. Start there before changing
+requirements, architecture, and accepted decisions. Read it before you change
 behavior; it also explains how to propose or supersede a decision. The
 [roadmap](docs/roadmap.md) tracks upcoming work by priority, and the
 [changelog](changelog.md) records completed changes. The
 [agent guidelines](AGENTS.md) apply to automated contributors.
-
-Build the [particle simulation](https://larecs.github.io/larecs/start/first_simulation/),
-then extend it with creating and removing particles and shared configuration.
-The complete programs live in [examples/particles](examples/particles).
 
 ## Development utilities
 

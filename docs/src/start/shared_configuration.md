@@ -4,32 +4,60 @@ title = "Share time and configuration"
 weight = 30
 +++
 
-Use one configuration value to control the step length during updates. This
-complete program also includes [creation and removal](../growing_simulation).
+In this tutorial you extend the [creation program](../growing_simulation) so
+that a configuration value controls the step length. You add a second resource
+and a system that copies it into `Time` before every movement step.
+
+## The program
+
+{{< example file="particles/configuration.mojo" full=true >}}
+
+Run it from the repository root:
 
 ```sh
 pixi run mojo run -I src examples/particles/configuration.mojo
 ```
 
-{{< example file="particles/configuration.mojo" full=true >}}
+It prints `Configured time moved walker to x=2.5 and climber to y=5.`
 
-## Set time before movement
+## Add a configuration resource and a system that applies it
 
 {{< example file="particles/configuration.mojo" region="configuration" >}}
 
-`Configuration` holds one shared step length. `ConfigureTime.update` reads it
-and updates `Time.delta` through {{< api ResourceStorage.get >}}.
+`Configuration` is a resource like `Time`: one value for the whole world.
+`ConfigureTime.update` reads it through `context.world[].resources` and assigns
+its `delta` to `Time.delta`.
+{{< api ResourceStorage.get >}} returns a reference, so the assignment changes
+the stored `Time` in place.
+
+## Add both resources to the world
 
 {{< example file="particles/configuration.mojo" region="world" >}}
+
+`Time` starts at `0.1` and `Configuration` holds `0.25`. One
+{{< api ResourceStorage.add >}} call adds both.
+
+## Order the systems
+
 {{< example file="particles/configuration.mojo" region="scheduler" >}}
 
-{{< api Scheduler >}} updates systems in registration order: `ConfigureTime`
-runs before `Move`, so each of the ten updates uses `0.25`. Before those updates,
-`Spawn.initialize` moves the new particles once with the initial `Time.delta`
-of `0.1`. They finish at x=0.1 + 10×0.25 = 2.6; walker starts at zero and
-finishes at x=2.5.
+The {{< api Scheduler >}} updates systems in the order you add them.
+`ConfigureTime` comes before `Move`, so every movement step uses `0.25`.
+If you add `ConfigureTime` after `Move`, the first step still uses `0.1`.
+
+`Spawn.initialize` runs before any update. It moves the new particles once with
+the initial `Time.delta` of `0.1`.
+
+## Check the result
 
 {{< example file="particles/configuration.mojo" region="check" >}}
 
-The program prints `Configured time moved walker to x=2.5 and climber to y=5.`
-See [Resources](../../guide/shared_resources) for permissions and missing values.
+`walker` moves ten steps of 0.25 and ends at x=2.5; `climber` ends at y=5. The
+new particles start at x=0.1 and end at x=0.1 + 10 × 0.25 = 2.6.
+
+## Next steps
+
+- [Share values with resources](../../guide/shared_resources) covers resource
+  permissions and what happens when a resource is missing.
+- [Update entities with systems and kernels](../../guide/systems_kernels)
+  covers filters, system order, and inspection.
