@@ -320,9 +320,9 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         Parameters:
             T: The component type of the column to copy.
 
-        Args:
-            data: Receives the valid column contents, or an empty list when
-                the column is not initialized.
+        Returns:
+            The output list ``data`` containing the valid column contents, or
+            an empty list when the column is not initialized.
 
         Raises:
             Error: If synchronizing the device context fails.

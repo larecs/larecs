@@ -13,52 +13,55 @@ for a complete program using systems and kernels. You can find its source in
 `examples/particles/movement.mojo`.
 
 Exports:
+ - world.World
+ - host_storage.HostStorage
+ - error.LarecsError
+ - error.WorldError
+ - error.ComponentError
+ - error.EntityError
+ - error.UnknownError
+ - component.ComponentType
+ - component.Components
+ - types.ComponentId
+ - archetype.MutArchetypeRowAccessor
+ - archetype.ArchetypeRowAccessor
+ - resource.Resources
+ - resource.ResourceStorage
+ - resource.ResourceType
+ - entity.Entity
+ - lock.LockGuard
+ - lock.LockManager
+ - filter.Filter
+ - filter.BitMaskFilter
+ - system.System
+ - system.SystemContext
+ - system.KernelContext
+ - system.EntitySelection
+ - entity.EntityRange
+ - scheduler.Scheduler
+ - capture.Captures
+ - capture.ReadCapture
+ - capture.MutCapture
+ - capture.read_capture
+ - capture.mut_capture
+ - spatial.SpatialClassifier
+ - spatial.grid_cell
+ - spatial.morton_key_3d
  - sync.AtomicValue
  - sync.AtomicView
  - sync.CompareExchangeResult
  - sync.Synchronized
  - sync.SyncView
  - sync.TryAccess
- - capture.Captures
- - capture.ReadCapture
- - capture.MutCapture
- - capture.read_capture
- - capture.mut_capture
- - archetype.ArchetypeRowAccessor
- - archetype.MutArchetypeRowAccessor
- - component.ComponentManager
- - component.ComponentType
- - device_storage.DeviceComponentStorage
- - device_storage.DeviceResourceStorage
- - entity.Entity
- - entity.EntityAccessor
- - error.ComponentError
- - error.EntityError
- - error.LarecsError
- - error.UnknownError
- - error.WorldError
- - filter.BitMaskFilter
- - filter.Filter
- - host_storage.HostStorage
- - host_storage.Replacer
- - lock.LockGuard
- - lock.LockManager
- - pool.BitPool
- - resource.Resources
- - resource.ResourceStorage
- - resource.ResourceType
- - scheduler.Scheduler
- - system.System
- - system.SystemContext
- - system.KernelContext
- - types.ComponentId
- - spatial.SpatialClassifier
- - spatial.grid_cell
- - spatial.morton_key_3d
+ - resource_adapter.DevicePassableResource
+ - resource_adapter.ResourceAccess
+ - resource_adapter.ResourceAdapter
+ - resource_adapter.ResourceDeviceCache
+ - resource_adapter.ReadBuffer
+ - resource_adapter.BufferResource
  - execution.ExecutionBackend
  - execution.ThreadedExecutionConfig
  - resource_representation.PlainValue
- - world.World
 """
 from .world import World
 from .host_storage import HostStorage
