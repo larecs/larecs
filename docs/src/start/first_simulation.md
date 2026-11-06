@@ -141,9 +141,12 @@ therefore more calls per step.
 
 ## Next steps
 
+Continue with [Create and remove particles](../growing_simulation), then
+[Share time and configuration](../shared_configuration).
+
 - {{< api SystemContext.run >}} lists every way to run a kernel, including the
   errors it raises.
-- [Queries and iteration](../../guide/queries_iteration) shows how to inspect
+- [Inspecting entities](../../guide/systems_kernels#inspecting-entities) shows how to inspect
   entities outside a kernel.
-- [Resources](../../guide/resources) covers adding, reading, and changing
+- [Resources](../../guide/shared_resources) covers adding, reading, and changing
   resources.

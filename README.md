@@ -12,7 +12,7 @@ currently such an experimental API.
 - Clean and simple API
 - High performance due to archetypes and Mojo's compile-time programming
 - Compile-time checks thanks to usage of parameters
-- Native support for [resources](https://mlange-42.github.io/arche/guide/resources/) and scheduling
+- Native support for [resources](https://larecs.github.io/larecs/guide/shared_resources/) and scheduling
 - Systems can run their component-processing kernels on the host or (experimentally) on an accelerator device via `SystemContext.run(..., backend=ExecutionBackend.DEVICE)`
 - Tested and benchmarked
 - More features coming soon...
@@ -26,29 +26,9 @@ Larecs🌲 has no other external dependencies.
 
 ## Installation
 
-This package is written in and for [Mojo](https://docs.modular.com/mojo/manual/get-started)🔥, which needs to be installed in order to compile, test, or use the software. You can build Larecs🌲 as a package as follows:
-
-1. Clone the repository / download the files.
-2. Navigate to the `src/` subfolder.
-3. Execute `mojo precompile larecs -o larecs.mojoc`.
-4. Move the newly created file `larecs.mojoc` to your project's source directory.
-
-### Include source directly for compiler and language server
-
-To access the source while debugging and to adjust the Larecs🌲
-source code, you can include it into run commands of your own
-projects as follows:
-
-```
-mojo run -I "path/to/larecs/src" example.mojo
-```
-
-To let VSCode and the language server know of Larecs🌲, include it as follows:
-
-1. Go to VSCode's `File -> Preferences -> Settings` page.
-2. Go to the `Extensions -> Mojo` section.
-3. Look for the setting `Lsp: Include Dirs`.
-4. Click on `add item` and insert the path to the `src/` subdirectory.
+Use the [installation guide](https://larecs.github.io/larecs/guide/installation/)
+for the locked Pixi environment, supported platforms, source inclusion, and
+precompiled packages.
 
 ## Usage
 
@@ -63,90 +43,10 @@ behavior; it also explains how to propose or supersede a decision. The
 [changelog](changelog.md) records completed changes. The
 [agent guidelines](AGENTS.md) apply to automated contributors.
 
-Below there is a simple example covering the most important functionality.
-Have a look at the `examples` subdirectory for more elaborate examples.
-The example mutates the world directly during setup, then hands it to a
-`Scheduler`; systems are the principal place for state-changing application
-logic, and they delegate filtered component processing to kernels.
-
-```mojo
-# Import the package
-from larecs import (
-    World,
-    Scheduler,
-    System,
-    SystemContext,
-    KernelContext,
-    Filter,
-)
-
-
-# Define components
-@fieldwise_init
-struct Position(Copyable, Movable):
-    var x: Float64
-    var y: Float64
-
-
-@fieldwise_init
-struct IsStatic(Copyable, Movable):
-    pass
-
-
-@fieldwise_init
-struct Velocity(Copyable, Movable):
-    var x: Float64
-    var y: Float64
-
-
-# Define filtered component processing as a kernel
-comptime move_filter = Filter().include[Position].read[Velocity]()
-
-
-def move(context: KernelContext[move_filter]):
-    for entity in context:
-        ref position = entity.get[Position]()
-        ref velocity = entity.get[Velocity]()
-        position.x += velocity.x
-        position.y += velocity.y
-
-
-# Put state-changing application logic in a system
-@fieldwise_init
-struct Move(System):
-    def update(mut self, mut context: SystemContext[...]) raises:
-        context.run[move]()
-
-
-# Run the ECS
-def main() raises:
-    # Create a world, list all components that will / may be used
-    var world = World[Position, Velocity, IsStatic]()
-
-    for _ in range(100):
-        # Add an entity. The returned value is the
-        # entity's ID, which can be used to access the entity later
-        var entity = world.storage.add_entity(Position(0, 0), IsStatic())
-
-        # For example, we may want to change the entity's position
-        world.storage.get[Position](entity).x = 2
-
-        # Or we may want to replace the IsStatic component
-        # of the entity by a Velocity component
-        world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity)
-
-    # Queries provide read-only access to matching components
-    for entity in world.storage.query[
-        Filter().include[Position, Velocity]()
-    ]():
-        _ = entity.get[Position]()
-        _ = entity.get[Velocity]()
-
-    # Run state-changing application logic through the scheduler
-    var scheduler = Scheduler(world^)
-    scheduler.add_system(Move())
-    scheduler.run(1)
-```
+Build the [particle simulation](https://larecs.github.io/larecs/start/first_simulation/),
+then extend it with creation/removal and shared configuration. The complete
+programs live in [examples/particles](examples/particles); the site displays
+excerpts directly from those sources.
 
 ## Development utilities
 

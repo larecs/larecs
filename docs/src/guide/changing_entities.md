@@ -20,7 +20,7 @@ The values of an entity's component can be
 accessed and changed via the {{< api HostStorage.get get >}}
 method of {{< api World World.storage >}}.
 
-```mojo {doctest="guide_change_entities" global=true hide=true}
+```mojo {doctest="guide_change_entities" global=true}
 from larecs import World, Entity, Filter, Components, SystemContext
 from std.testing import *
 
@@ -35,7 +35,7 @@ struct Velocity(Copyable, Movable):
     var dy: Float64
 ```
 
-```mojo {doctest="guide_change_entities" global=true hide=true}
+```mojo {doctest="guide_change_entities" global=true}
 def main() raises:
     var world = World[Position, Velocity]()
 ```

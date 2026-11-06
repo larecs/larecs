@@ -38,7 +38,7 @@ from std.testing import assert_equal, assert_false, assert_true
 
 @fieldwise_init
 struct Time(ResourceType, TrivialRegisterPassable):
-    var time: Float64
+    var delta: Float64
 
 @fieldwise_init
 struct Temperature(ResourceType):
@@ -49,7 +49,7 @@ struct SelectedEntities(ResourceType):
     var entities: List[Entity]
 ```
 
-```mojo {doctest="guide_resources" global=true hide=true}
+```mojo {doctest="guide_resources" global=true}
 @fieldwise_init
 struct Position(Copyable, Movable):
     var x: Float64
@@ -80,7 +80,7 @@ Resources can be accessed and added via the `resources` field
 of {{< api World >}}. Adding a resource is done via the
 {{< api ResourceStorage.add resources.add >}} method:
 
-```mojo {doctest="guide_resources" global=true hide=true}
+```mojo {doctest="guide_resources" global=true}
 def main() raises:
     var world = World[Position, Velocity]()
 ```
@@ -103,17 +103,17 @@ returned reference to the storage origin is not a suitable interim replacement.
 
 ```mojo {doctest="guide_resources" global=true}
     # Change a resource value via a reference
-    world.resources.get[Time]().time = 1.0
+    world.resources.get[Time]().delta = 1.0
 
     # Get a reference to a resource
     ref time = world.resources.get[Time]()
 
     # Change the resource value via the reference
-    time.time = 2.0
+    time.delta = 2.0
 
     # Replace the entire resource through the returned reference
     world.resources.get[Time]() = Time(3.0)
-    assert_equal(world.resources.get[Time]().time, 3.0)
+    assert_equal(world.resources.get[Time]().delta, 3.0)
 ```
 
 The {{< api ResourceStorage.add add >}} and
@@ -190,13 +190,13 @@ A kernel declares the resource types it may access with a compile-time
         for entity in context:
             ref pos = entity.get[Position]()
             ref vel = entity.get[Velocity]()
-            pos.x += vel.dx * time.time
-            pos.y += vel.dy * time.time
+            pos.x += vel.dx * time.delta
+            pos.y += vel.dy * time.delta
 
     var context = SystemContext(world)
     context.run[move_with_time]()
 
-    # `Time.time` is 2.0, so the velocity moved the entity by (4.0, 2.0)
+    # `Time.delta` is 2.0, so the velocity moved the entity by (4.0, 2.0)
     ref position = world.storage.get[Position](mover)
     assert_equal(position.x, 4.0)
     assert_equal(position.y, 2.0)
@@ -322,7 +322,7 @@ This complete example uses a rectangular grid. Its view exposes `last()` to
 keep pointer arithmetic inside the resource API. A scientific view can instead
 provide interpolation, coordinate lookup, or other read-only operations.
 
-```mojo {doctest="guide_custom_resource" global=true hide=true}
+```mojo {doctest="guide_custom_resource" global=true}
 # SKIP_DEBUG
 # SKIP_ASAN
 ```
@@ -686,10 +686,10 @@ offsets, so alternating them uploads that column again each time.
 ```mojo {doctest="guide_resources" global=true}
     world.reuse_device_copies(True)
     # Reading through `read` keeps an unchanged device copy reusable.
-    _ = world.resources.read[Time]().time
+    _ = world.resources.read[Time]().delta
     # A pointer kept across runs bypasses revision tracking...
     var time_ptr = Pointer(to=world.resources.get[Time]())
-    time_ptr[].time = 4.0
+    time_ptr[].delta = 4.0
     # ...so invalidate after mutating through it.
     world.resources.invalidate_device[Time]()
     world.reuse_device_copies(False)

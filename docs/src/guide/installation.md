@@ -4,33 +4,64 @@ title = "Installation"
 weight = 1
 +++
 
+Use the repository's locked Pixi environment to run your first host simulation.
+The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo
+`>=1.0.0,<1.1.0` and MAX `>=26.5.0,<27`. `pixi.lock` selects the exact builds.
+Larecs is currently a development beta (`1.0.0b1`); APIs can change.
 
-Larecs🌲 is written in and for [Mojo](https://docs.modular.com/mojo/manual/get-started)🔥, which needs to be installed in order to compile, test, or use the software. You can build Larecs🌲 as a package as follows:
+## Install and verify the pinned environment
 
-1. Clone the repository / download the files.
-2. Navigate to the `src/` subfolder.
-3. Execute `mojo precompile larecs -o larecs.mojoc`.
-4. Move the newly created file `larecs.mojoc` to your project's source directory.
+Install [Pixi](https://pixi.sh/latest/installation/), then run:
 
-## Include the source directly when compiling
-
-Instead of building Larecs🌲 as a package, you can also include its
-source code directly when running or compiling your own project.
-This has the advantage that you can access the source while debugging 
-and adjusting the Larecs🌲 source code. 
-You can include the Larecs🌲 source code as follows:
-
-```
-mojo run -I "path/to/larecs/src" example.mojo
+```sh
+git clone https://github.com/larecs/larecs.git
+cd larecs
+pixi install --locked
+pixi run mojo --version
+pixi run mojo run -I src examples/particles/movement.mojo
 ```
 
-## Include Larecs🌲 in VSCode and its language server
+Keep the checkout revision and its `pixi.lock` together for reproducibility.
+The program prints `All particles reached their expected positions.` Its
+assertions verify the result. Host execution needs no accelerator.
+Continue with [Your first simulation](../../start/first_simulation).
 
-To let VSCode and its language server know of Larecs🌲 
-(so that Ctrl-Click, mouse hover docs, autocomplete
-and error checking are available), include the package as follows:
+## Run from an external project using source
 
-1. Go to VSCode's `File -> Preferences -> Settings` page.
-2. Go to the `Extensions -> Mojo` section.
-3. Look for the setting `Lsp: Include Dirs`.
-4. Click on `add item` and insert the path to the `src/` subdirectory.
+Keep the compatible toolchain by invoking the repository's environment, and
+supply an absolute include path. From the repository root:
+
+```sh
+larecs_root="$PWD"
+particle_project="$(mktemp -d)"
+cp examples/particles/movement.mojo "$particle_project/main.mojo"
+cd "$particle_project"
+pixi run --manifest-path "$larecs_root/pixi.toml" mojo run -I "$larecs_root/src" "$particle_project/main.mojo"
+```
+
+This runs the same asserted simulation with the program outside the repository.
+In your editor, add the absolute `src` directory to Mojo's LSP include directories.
+
+## Use a precompiled package
+
+Build the package with the same toolchain used by your application. From the
+repository root:
+
+```sh
+mkdir -p /tmp/larecs-package
+pixi run mojo precompile src/larecs -o /tmp/larecs-package/larecs.mojoc
+pixi run mojo run -I /tmp/larecs-package examples/particles/movement.mojo
+```
+
+You can distribute that `larecs.mojoc` to your project's include directory.
+Rebuild it after changing the toolchain or Larecs revision. These instructions
+use a locally built package; they do not require a published package channel.
+
+## Troubleshooting
+
+An import error for `larecs` means the include directory must contain either
+`larecs/` source or `larecs.mojoc`. Compiler errors after a toolchain upgrade
+mean you should restore the checkout's locked environment and rebuild the package.
+On macOS, an `arm64e.x1` or `libSystem.tbd` linker error requires an older installed
+SDK; the repository activation script selects a compatible SDK when `SDKROOT`
+is unset. See the [SDK workaround](https://github.com/larecs/larecs/blob/main/docs/development.md#macos-sdk-linking).

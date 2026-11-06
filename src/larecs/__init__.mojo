@@ -8,85 +8,9 @@ stable 1.0.0 release. After that release, public APIs follow semantic
 versioning unless they are explicitly marked experimental. Device execution is
 currently such an experimental API. Threaded host execution is also experimental.
 
-Example:
-
-```mojo {doctest="readme" global=true}
-# Import the package
-from larecs import (
-    World,
-    Scheduler,
-    System,
-    SystemContext,
-    KernelContext,
-    Filter,
-)
-
-
-# Define components
-@fieldwise_init
-struct Position(Copyable, Movable):
-    var x: Float64
-    var y: Float64
-
-
-@fieldwise_init
-struct IsStatic(Copyable, Movable):
-    pass
-
-
-@fieldwise_init
-struct Velocity(Copyable, Movable):
-    var x: Float64
-    var y: Float64
-
-
-# A kernel processes the components selected by its filter.
-comptime move_filter = Filter().include[Position].read[Velocity]()
-
-
-def move(context: KernelContext[move_filter]):
-    for entity in context:
-        ref pos = entity.get[Position]()
-        ref vel = entity.get[Velocity]()
-        pos.x += vel.x
-        pos.y += vel.y
-
-
-# Systems are the principal place for application logic that mutates ECS state.
-@fieldwise_init
-struct Move(System):
-    def update(mut self, mut context: SystemContext[...]) raises:
-        context.run[move]()
-
-
-# Run the ECS
-def main() raises:
-    # Create a world, list all components that will / may be used
-    var world = World[Position, Velocity, IsStatic]()
-
-    for _ in range(100):
-        # Add an entity. The returned value is the
-        # entity's ID, which can be used to access the entity later
-        var entity = world.storage.add_entity(Position(0, 0), IsStatic())
-
-        # For example, we may want to change the entity's position
-        world.storage.get[Position](entity).x = 2
-
-        # Or we may want to replace the IsStatic component
-        # of the entity by a Velocity component
-        world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity)
-
-    # We can query entities with specific components, read-only
-    for entity in world.storage.query[Filter().include[Position, Velocity]()]():
-        _ = entity.get[Position]()
-        _ = entity.get[Velocity]()
-
-    # Give the initialized world to a scheduler, then run application logic
-    # through a system. The system delegates filtered component work to `move`.
-    var scheduler = Scheduler(world^)
-    scheduler.add_system(Move())
-    scheduler.run(1)
-```
+Build the [particle simulation](https://larecs.github.io/larecs/start/first_simulation/)
+for a complete program using systems and kernels. Its checked source lives in
+`examples/particles/movement.mojo`; the tutorial generates excerpts from that file.
 
 Exports:
  - sync.AtomicValue

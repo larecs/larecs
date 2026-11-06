@@ -16,7 +16,7 @@ storage API. This is useful for setup and isolated changes. In application
 logic, these operations should generally be performed by a
 [system](../systems_scheduler) through its `SystemContext`.
 
-```mojo {doctest="guide_add_remove_entities" global=true hide=true}
+```mojo {doctest="guide_add_remove_entities" global=true}
 from larecs import World, Filter, SystemContext, KernelContext
 
 @fieldwise_init
@@ -35,7 +35,7 @@ def place_batch(rows: KernelContext[Filter().include[Position]()]):
         row.get[Position]().x = Float64(row.idx)
 ```
 
-```mojo {doctest="guide_add_remove_entities" global=true hide=true}
+```mojo {doctest="guide_add_remove_entities" global=true}
 def main() raises:
     var world = World[Position, Velocity]()
 ```
@@ -56,6 +56,9 @@ we can do the following:
 ```mojo {doctest="guide_add_remove_entities" global=true}
     entity = world.storage.add_entity(Position(0, 0), Velocity(1, 0))
 ```
+
+`place_batch` uses `row.idx`, which restarts at zero for each selected host
+range; it does not assign globally unique indices.
 
 ## Batch addition
 
