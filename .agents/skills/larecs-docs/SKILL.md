@@ -59,17 +59,17 @@ Every visible snippet compiles and runs.
   build. `scripts/run_doctests.sh` compiles and runs every program in
   `examples/particles/`; add new example directories there.
 - Short standalone snippets may stay inline as Modo doctest blocks
-  (`{doctest="<label>" global=true}` with a complete `def main() raises:`,
-  because Modo's own wrapper is invalid Mojo). Use `hide=true` only for
-  imports and entry-point lines.
+  (`{doctest="<label>" global=true}` with a complete `def main() raises:`).
+  Modo wraps the lines of non-global blocks in `def main() raises:` through
+  `docs/templates/doctest.mojo`, so a label must not mix a global `main` with
+  non-global blocks. Use `hide=true` only for imports.
 - Show every type, filter, kernel, and system before the prose explains it.
 - Assert the outcome the prose claims with `std.testing` (`assert_equal`,
   `assert_almost_equal`, `assert_raises`).
 - API docstrings use the canonical public path (`world.storage.add_entity`,
   not `world.add_entity`). Show call forms as inline code and link the
-  tutorial or guide for a complete program. Remove a file from
-  `known_unsupported_doctests` in `scripts/run_doctests.sh` once its example
-  is fixed.
+  tutorial or guide for a complete program. Every extracted doctest runs;
+  there is no skip list.
 
 Verify with `pixi run build-docs`: it runs `mojo doc`, Modo, the extracted
 doctests and example programs, and Hugo, and works on Linux and Apple Silicon
