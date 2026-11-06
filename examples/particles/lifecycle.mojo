@@ -187,5 +187,13 @@ def main() raises:
     assert_almost_equal(storage.get[Position](walker).x, 1.0)
     assert_almost_equal(storage.get[Position](climber).y, 2.0)
     assert_equal(len(storage.query[Filter().include[Position]()]()), 5)
+    var spawned_count = 0
+    for row in storage.query[move_filter]():
+        var entity = row.get_entity()
+        if entity != walker and entity != climber:
+            assert_almost_equal(row.get[Position]().x, 1.1)
+            assert_almost_equal(row.get[Position]().y, 0.0)
+            spawned_count += 1
+    assert_equal(spawned_count, 3)
     print("Created three particles and removed the stationary marker.")
     # endregion check

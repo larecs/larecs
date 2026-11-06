@@ -15,7 +15,7 @@ kernel. The [movement tutorial](../../start/first_simulation) provides the compl
 
 {{< api Filter >}} describes required components and access. `include` grants
 read-write access, `read` grants immutable access, and `exclude` rejects entities
-with that component. {{< api Filter Filter.exclusive >}} rejects extra components.
+with that component. [`Filter.exclusive`](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/filter.mojo#L177) rejects extra components.
 The kernel's {{< api KernelContext >}} supplies only declared component access;
 requesting an undeclared component through `get` fails compilation.
 {{< api Resources >}} independently declares resource access.
@@ -28,7 +28,7 @@ no kernel body runs. Calls complete before the next system proceeds.
 
 {{< example file="particles/lifecycle.mojo" region="write_only" >}}
 
-{{< api Filter Filter.write >}} permits {{< api EntityAccessor.set >}} and rejects
+[`Filter.write`](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/filter.mojo#L134) permits {{< api EntityAccessor.set >}} and rejects
 `get`: initialize the component for every processed row before reading it in a
 later kernel. The creation program runs this kernel before movement.
 For device execution, read access uploads values, write access downloads results,
