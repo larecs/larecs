@@ -6,7 +6,9 @@ weight = 1
 
 Use the repository's locked Pixi environment to run your first host simulation.
 The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo
-`>=1.0.0,<1.1.0` and MAX `>=26.5.0,<27`. `pixi.lock` selects the exact builds.
+`>=1.0.0,<1.1.0`, MAX `>=26.5.0,<27`, and `mojo-tracy >=1.1.0,<2`.
+The manifest uses `conda-forge`, `https://repo.prefix.dev/max`, and
+`https://prefix.dev/tree-d` (for `mojo-tracy`). `pixi.lock` selects the exact builds.
 Larecs is currently a development beta (`1.0.0b1`); APIs can change.
 
 ## Install and verify the pinned environment
@@ -53,7 +55,9 @@ pixi run mojo precompile src/larecs -o /tmp/larecs-package/larecs.mojoc
 pixi run mojo run -I /tmp/larecs-package examples/particles/movement.mojo
 ```
 
-You can distribute that `larecs.mojoc` to your project's include directory.
+You can copy that `larecs.mojoc` to your project's include directory. Your
+application environment must also provide compatible Mojo, MAX, and `mojo-tracy`
+from the channels listed above.
 Rebuild it after changing the toolchain or Larecs revision. These instructions
 use a locally built package; they do not require a published package channel.
 

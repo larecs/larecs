@@ -1,7 +1,7 @@
 +++
 type = "docs"
 title = "Resources"
-weight = 25
+weight = 5
 +++
 
 Share one value per type across your simulation using {{< api ResourceStorage >}}.

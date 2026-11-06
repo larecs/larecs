@@ -1,7 +1,7 @@
 +++
 type = "docs"
 title = "Systems and kernels"
-weight = 15
+weight = 3
 +++
 
 Run application behavior through a system and update matching particles with a
@@ -65,6 +65,19 @@ it in a short loop or let it be destroyed before mutation. A copy starts at the
 same position with an independent cursor and structural lock; a move transfers
 the existing lock. Keep no row accessor beyond its query or across structural
 changes. These locks prevent invalidation; they are not thread mutexes.
+
+### Handles, accessors, queries, selections, and ranges
+
+| Value | Copy and move | Structural lock | Access |
+| --- | --- | --- | --- |
+| Entity handle | Copyable and movable | None | Identifies an entity for storage calls; survives row movement, not deletion |
+| Query row accessor | Movable, noncopyable | Relies on the enclosing query | Reads query components; discard before structural changes |
+| Query | Copies have independent cursors and locks; moves transfer the lock | Retained after exhaustion, even for empty results | Read-only traversal |
+| Entity selection | Movable, noncopyable | Until release, destruction, or manager exit, including empty selections | Component changes and filtered kernel execution on exactly its members |
+| Storage batch range | Copies have independent cursors and locks; moves transfer the lock | Retained after exhaustion, even for empty results | Low-level traversal and mutable `unsafe_get`; no selection `run` |
+
+See [Structural changes](../structural_changes) for scoped mutation and
+{{< api HostStorage >}} for storage batch operations.
 
 ## Troubleshooting
 

@@ -1,13 +1,14 @@
 +++
 type = "docs"
 title = "Structural changes"
-weight = 20
+weight = 4
 +++
 
 Create a batch, change its component composition, and run only those particles
 with a scoped selection. The [creation tutorial](../../start/growing_simulation)
 provides the complete runnable program and its observable result.
 
+{{< example file="particles/lifecycle.mojo" region="write_only" >}}
 {{< example file="particles/lifecycle.mojo" region="lifecycle" >}}
 
 ## Values versus structure
@@ -41,8 +42,10 @@ invokes no kernel body. Negative counts raise.
 
 {{< api HostStorage.remove_entity >}} deletes one handle;
 {{< api HostStorage.remove_entities >}} deletes every filter match. The example
-removes the marker only after leaving the creation scope. Unrelated structural
-operations while a query or selection lives raise a locked-world error.
+removes the marker only after leaving the creation scope. In a system, use
+`context.world[].storage` for deletion: `SystemContext` has no entity-deletion
+method. Unrelated structural operations while a query or selection lives raise a
+locked-world error.
 Do not solve that error by keeping references across the scope boundary.
 
 For setup, {{< api HostStorage.add_entities >}} and storage component operations

@@ -15,12 +15,15 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo
 
 ## Create only the new particles
 
+{{< example file="particles/lifecycle.mojo" region="write_only" >}}
 {{< example file="particles/lifecycle.mojo" region="lifecycle" >}}
 
 `Spawn.initialize` uses {{< api SystemContext.add_entities >}} to create three
 positions. Its [EntitySelection](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/system.mojo#L568) contains exactly those new entities,
 even when other particles have the same components. `selected.add` attaches
-velocity, then `selected.run` moves only those three particles by `0.1`.
+velocity. `selected.run[reset_position]()` overwrites their initial position
+of (9, 9) with (0, 0) using write-only access, then `selected.run[move]()`
+moves only those three particles by `0.1`.
 The scope releases the structural lock before
 {{< api HostStorage.remove_entities >}} deletes positions without velocity.
 
@@ -29,7 +32,8 @@ The scope releases the structural lock before
 {{< example file="particles/lifecycle.mojo" region="scheduler" >}}
 
 Initialization runs before the ten updates. The original walker still reaches
-x=1; the stationary marker is gone and five positions remain:
+x=1. Each new particle receives the extra initialization movement and finishes
+at x=0.1 + 10×0.1 = 1.1. The stationary marker is gone and five positions remain:
 
 {{< example file="particles/lifecycle.mojo" region="check" >}}
 

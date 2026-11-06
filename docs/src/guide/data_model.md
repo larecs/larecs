@@ -1,7 +1,7 @@
 +++
 type = "docs"
 title = "Data model"
-weight = 10
+weight = 2
 +++
 
 Use entities for identities and components for per-particle values. Start with
@@ -14,12 +14,12 @@ the complete [movement program](../../start/first_simulation).
 
 An {{< api Entity >}} is a copyable ID and generation, not a component address.
 Keep the handle to find the particle again through {{< api HostStorage.get >}}.
-Deletion invalidates that identity; recycling an ID increments its generation.
+Deletion invalidates that identity and advances its generation before ID reuse.
 Handles belong to their world: do not use a handle in another world.
 
 ## Components and tags
 
-A component is a `Copyable`, `Movable` value; each entity has at most one value
+A component conforms to `ComponentType` (`Copyable & Deinitable`); each entity has at most one value
 of each component type. A tag is a component with no fields: its presence carries
 the information. Filters can require or exclude it just like a data component.
 

@@ -4,8 +4,8 @@ title = "Share time and configuration"
 weight = 30
 +++
 
-Use one configuration value to control every particle's step length. This stage
-runs independently of [creation and removal](../growing_simulation).
+Use one configuration value to control the step length during updates. This
+complete program also includes [creation and removal](../growing_simulation).
 
 ```sh
 pixi run mojo run -I src examples/particles/configuration.mojo
@@ -24,7 +24,10 @@ and updates `Time.delta` through {{< api ResourceStorage.get >}}.
 {{< example file="particles/configuration.mojo" region="scheduler" >}}
 
 {{< api Scheduler >}} updates systems in registration order: `ConfigureTime`
-runs before `Move`, so movement reads `0.25` on every step.
+runs before `Move`, so each of the ten updates uses `0.25`. Before those updates,
+`Spawn.initialize` moves the new particles once with the initial `Time.delta`
+of `0.1`. They finish at x=0.1 + 10×0.25 = 2.6; walker starts at zero and
+finishes at x=2.5.
 
 {{< example file="particles/configuration.mojo" region="check" >}}
 

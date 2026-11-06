@@ -105,7 +105,7 @@ struct Spawn(System):
         Raises:
             Error: If creation or movement fails.
         """
-        with context.add_entities(Position(0, 0), count=3) as selected:
+        with context.add_entities(Position(9, 9), count=3) as selected:
             selected.add(Velocity(1, 0))
             selected.run[reset_position]()
             selected.run[move]()

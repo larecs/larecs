@@ -1,6 +1,6 @@
 +++
 type = "docs"
-title = "Resources"
+title = "Resource operations and adapters"
 weight = 50
 +++
 
@@ -322,7 +322,7 @@ This complete example uses a rectangular grid. Its view exposes `last()` to
 keep pointer arithmetic inside the resource API. A scientific view can instead
 provide interpolation, coordinate lookup, or other read-only operations.
 
-```mojo {doctest="guide_custom_resource" global=true}
+```mojo {doctest="guide_custom_resource" global=true hide=true}
 # SKIP_DEBUG
 # SKIP_ASAN
 ```
