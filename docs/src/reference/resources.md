@@ -8,7 +8,7 @@ type: docs
 | API | Contract |
 | --- | --- |
 | {{< api ResourceStorage.add >}}, {{< api ResourceStorage.set >}}, {{< api ResourceStorage.remove >}} | Insert, replace or remove a value; generated entries state presence requirements and failure behavior. |
-| {{< api Resources >}} | `read` grants immutable access, `write` fresh output access, and `include` read-write access. |
+| {{< api Resources >}} | {{< api Resources.read read >}} grants immutable access, {{< api Resources.write write >}} fresh output access, and {{< api Resources.read_write read_write >}} mutable access preserving existing contents. |
 | {{< api DevicePassableResource >}} | Owning resource sources opt into adapted kernel views. The selected view depends on declared access and execution target. |
 | {{< api ResourceAdapter >}}, {{< api ResourceAccess >}} | Adapter protocol and `READ`, `WRITE`, `READ_WRITE` modes; fresh WRITE does not preserve prior contents. |
 | {{< api BufferResource >}}, {{< api ReadBuffer >}} | Buffer source and immutable view for adapter-backed resources. |
