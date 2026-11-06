@@ -11,17 +11,22 @@
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-237/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-237/site.webmanifest" rel="manifest" />
 <title>Installation – Larecs🌲</title>
-  <meta name="description" content="Use the repository’s locked Pixi environment to run your first host simulation. The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo &gt;=1.0.0,&lt;1.1.0, MAX &gt;=26.5.0,&lt;27, and mojo-tracy &gt;=1.1.0,&lt;2. The manifest uses conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock selects the exact builds. Larecs is currently a development beta (1.0.0b1); APIs can change.
+  <meta name="description" content="Install the repository’s locked Pixi environment and run the first particle example.
+Platforms: Linux x86-64 and macOS Apple Silicon. Dependencies: Mojo &gt;=1.0.0,&lt;1.1.0, MAX &gt;=26.5.0,&lt;27, and mojo-tracy &gt;=1.1.0,&lt;2. Channels: conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock selects exact builds. Larecs 1.0.0b1 is a beta; APIs can change.
 Install and verify the pinned environment Install Pixi, then run:
 git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked pixi run mojo --version pixi run mojo run -I src examples/particles/movement.mojo Keep the checkout revision and its pixi.lock together for reproducibility. The program prints All particles reached their expected positions. Its assertions verify the result. Host execution needs no accelerator. Continue with Your first simulation." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/guide/installation/" itemprop="url" />
 
 <meta property="og:title" content="Installation" />
-<meta property="og:description" content="Use the repository&rsquo;s locked Pixi environment to run your first host simulation.
-The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo
-&gt;=1.0.0,&lt;1.1.0, MAX &gt;=26.5.0,&lt;27, and mojo-tracy &gt;=1.1.0,&lt;2.
-The manifest uses conda-forge, https://repo.prefix.dev/max, and
-https://prefix.dev/tree-d (for mojo-tracy). pixi.lock selects the exact builds.
-Larecs is currently a development beta (1.0.0b1); APIs can change.
+<meta property="og:description" content="Install the repository&rsquo;s locked Pixi environment and run the first particle
+example.
+
+Platforms: Linux x86-64 and macOS Apple Silicon.
+Dependencies: Mojo &gt;=1.0.0,&lt;1.1.0, MAX &gt;=26.5.0,&lt;27, and
+mojo-tracy &gt;=1.1.0,&lt;2.
+Channels: conda-forge, https://repo.prefix.dev/max, and
+https://prefix.dev/tree-d (for mojo-tracy).
+
+pixi.lock selects exact builds. Larecs 1.0.0b1 is a beta; APIs can change.
 Install and verify the pinned environment
     Install Pixi, then run:
 
@@ -47,13 +52,15 @@ Continue with Your first simulation." />
 
 
   <meta itemprop="name" content="Installation">
-  <meta itemprop="description" content="Use the repository’s locked Pixi environment to run your first host simulation. The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo &gt;=1.0.0,&lt;1.1.0, MAX &gt;=26.5.0,&lt;27, and mojo-tracy &gt;=1.1.0,&lt;2. The manifest uses conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock selects the exact builds. Larecs is currently a development beta (1.0.0b1); APIs can change.
+  <meta itemprop="description" content="Install the repository’s locked Pixi environment and run the first particle example.
+Platforms: Linux x86-64 and macOS Apple Silicon. Dependencies: Mojo &gt;=1.0.0,&lt;1.1.0, MAX &gt;=26.5.0,&lt;27, and mojo-tracy &gt;=1.1.0,&lt;2. Channels: conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock selects exact builds. Larecs 1.0.0b1 is a beta; APIs can change.
 Install and verify the pinned environment Install Pixi, then run:
 git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked pixi run mojo --version pixi run mojo run -I src examples/particles/movement.mojo Keep the checkout revision and its pixi.lock together for reproducibility. The program prints All particles reached their expected positions. Its assertions verify the result. Host execution needs no accelerator. Continue with Your first simulation.">
-  <meta itemprop="wordCount" content="335">
+  <meta itemprop="wordCount" content="327">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Installation">
-  <meta name="twitter:description" content="Use the repository’s locked Pixi environment to run your first host simulation. The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo &gt;=1.0.0,&lt;1.1.0, MAX &gt;=26.5.0,&lt;27, and mojo-tracy &gt;=1.1.0,&lt;2. The manifest uses conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock selects the exact builds. Larecs is currently a development beta (1.0.0b1); APIs can change.
+  <meta name="twitter:description" content="Install the repository’s locked Pixi environment and run the first particle example.
+Platforms: Linux x86-64 and macOS Apple Silicon. Dependencies: Mojo &gt;=1.0.0,&lt;1.1.0, MAX &gt;=26.5.0,&lt;27, and mojo-tracy &gt;=1.1.0,&lt;2. Channels: conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock selects exact builds. Larecs 1.0.0b1 is a beta; APIs can change.
 Install and verify the pinned environment Install Pixi, then run:
 git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked pixi run mojo --version pixi run mojo run -I src examples/particles/movement.mojo Keep the checkout revision and its pixi.lock together for reproducibility. The program prints All particles reached their expected positions. Its assertions verify the result. Host execution needs no accelerator. Continue with Your first simulation.">
 
@@ -243,9 +250,9 @@ git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked p
             </li>
           <li>
               <a
-                href="#run-from-an-external-project-using-source"
+                href="#use-the-source-from-your-own-project"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Run from an external project using source</a>
+              >Use the source from your own project</a>
             </li>
           <li>
               <a
@@ -1227,7 +1234,7 @@ git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked p
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#run-from-an-external-project-using-source">Run from an external project using source
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#use-the-source-from-your-own-project">Use the source from your own project
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
@@ -1261,12 +1268,16 @@ git clone https://github.com/larecs/larecs.git cd larecs pixi install --locked p
 
         <div class="content">
           <h1>Installation</h1>
-          <p>Use the repository&rsquo;s locked Pixi environment to run your first host simulation.
-The manifest supports Linux x86-64 and macOS Apple Silicon; it requires Mojo
-<code>&gt;=1.0.0,&lt;1.1.0</code>, MAX <code>&gt;=26.5.0,&lt;27</code>, and <code>mojo-tracy &gt;=1.1.0,&lt;2</code>.
-The manifest uses <code>conda-forge</code>, <code>https://repo.prefix.dev/max</code>, and
-<code>https://prefix.dev/tree-d</code> (for <code>mojo-tracy</code>). <code>pixi.lock</code> selects the exact builds.
-Larecs is currently a development beta (<code>1.0.0b1</code>); APIs can change.</p>
+          <p>Install the repository&rsquo;s locked Pixi environment and run the first particle
+example.</p>
+<ul>
+<li>Platforms: Linux x86-64 and macOS Apple Silicon.</li>
+<li>Dependencies: Mojo <code>&gt;=1.0.0,&lt;1.1.0</code>, MAX <code>&gt;=26.5.0,&lt;27</code>, and
+<code>mojo-tracy &gt;=1.1.0,&lt;2</code>.</li>
+<li>Channels: <code>conda-forge</code>, <code>https://repo.prefix.dev/max</code>, and
+<code>https://prefix.dev/tree-d</code> (for <code>mojo-tracy</code>).</li>
+</ul>
+<p><code>pixi.lock</code> selects exact builds. Larecs <code>1.0.0b1</code> is a beta; APIs can change.</p>
 <h2>Install and verify the pinned environment<span class="hx-absolute -hx-mt-20" id="install-and-verify-the-pinned-environment"></span>
     <a href="#install-and-verify-the-pinned-environment" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Install <a href="https://pixi.sh/latest/installation/" target="_blank" rel="noopener">Pixi</a>, then run:</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
@@ -1289,8 +1300,8 @@ Larecs is currently a development beta (<code>1.0.0b1</code>); APIs can change.<
 The program prints <code>All particles reached their expected positions.</code> Its
 assertions verify the result. Host execution needs no accelerator.
 Continue with <a href="../../start/first_simulation" >Your first simulation</a>.</p>
-<h2>Run from an external project using source<span class="hx-absolute -hx-mt-20" id="run-from-an-external-project-using-source"></span>
-    <a href="#run-from-an-external-project-using-source" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Keep the compatible toolchain by invoking the repository&rsquo;s environment, and
+<h2>Use the source from your own project<span class="hx-absolute -hx-mt-20" id="use-the-source-from-your-own-project"></span>
+    <a href="#use-the-source-from-your-own-project" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Keep the compatible toolchain by invoking the repository&rsquo;s environment, and
 supply an absolute include path. From the repository root:</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 

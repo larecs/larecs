@@ -49,7 +49,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
   <meta itemprop="name" content="Data model">
   <meta itemprop="description" content="Use entities for identities and components for per-particle values. Start with the complete movement program.
 @fieldwise_init struct Position(Copyable, Movable): &#34;&#34;&#34;Where a particle is.&#34;&#34;&#34; var x: Float64 &#34;&#34;&#34;Horizontal coordinate.&#34;&#34;&#34; var y: Float64 &#34;&#34;&#34;Vertical coordinate.&#34;&#34;&#34; @fieldwise_init struct Velocity(Copyable, Movable): &#34;&#34;&#34;How far a particle moves per unit of time.&#34;&#34;&#34; var dx: Float64 &#34;&#34;&#34;Horizontal speed.&#34;&#34;&#34; var dy: Float64 &#34;&#34;&#34;Vertical speed.&#34;&#34;&#34; var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) var marker = world.storage.add_entity(Position(-3, -3))">
-  <meta itemprop="wordCount" content="302">
+  <meta itemprop="wordCount" content="301">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Data model">
   <meta name="twitter:description" content="Use entities for identities and components for per-particle values. Start with the complete movement program.
@@ -255,9 +255,9 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
             </li>
           <li>
               <a
-                href="#world-type-packs"
+                href="#declare-the-worlds-component-types"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >World type packs</a>
+              >Declare the world&amp;rsquo;s component types</a>
             </li>
           <li>
               <a
@@ -1229,7 +1229,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#world-type-packs">World type packs
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#declare-the-worlds-component-types">Declare the world’s component types
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
@@ -1288,26 +1288,26 @@ the complete <a href="../../start/first_simulation" >movement program</a>.</p>
 <h2>Entity identity<span class="hx-absolute -hx-mt-20" id="entity-identity"></span>
     <a href="#entity-identity" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>An <a href="/larecs/pr-preview/pr-237/larecs/Entity"><code>Entity</code></a> is a copyable ID and generation, not a component address.
 Keep the handle to find the particle again through <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#get"><code>HostStorage.get</code></a>.
-Deletion invalidates that identity and advances its generation before ID reuse.
+Removing an entity invalidates its handle. Larecs increments the generation
+before reusing the ID, so that handle cannot refer to the new entity.
 Handles belong to their world: do not use a handle in another world.</p>
 <h2>Components and tags<span class="hx-absolute -hx-mt-20" id="components-and-tags"></span>
-    <a href="#components-and-tags" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A component conforms to <code>ComponentType</code> (<code>Copyable &amp; Deinitable</code>); each entity has at most one value
-of each component type. A tag is a component with no fields: its presence carries
-the information. Filters can require or exclude it just like a data component.</p>
-<h2>World type packs<span class="hx-absolute -hx-mt-20" id="world-type-packs"></span>
-    <a href="#world-type-packs" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/World"><code>World</code></a> declares all allowed component types at compile time.
+    <a href="#components-and-tags" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A component conforms to <a href="../../larecs#aliases" ><code>ComponentType</code></a>, which requires <code>Copyable</code> and
+<code>Deinitable</code>. The particle components declare <code>Copyable, Movable</code>, which
+satisfies both. Each entity has at most one value of each component type. A tag
+is a component with no fields: its presence carries the information. Filters can require or exclude it just like a data component.</p>
+<h2>Declare the world&rsquo;s component types<span class="hx-absolute -hx-mt-20" id="declare-the-worlds-component-types"></span>
+    <a href="#declare-the-worlds-component-types" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/World"><code>World</code></a> declares all allowed component types at compile time.
 <code>World[Position, Velocity]</code> allows either, both, or neither on an entity.
-Resources have separate storage and do not belong in that component pack.
+Resources have separate storage and do not belong in that component list.
 Entities with the same component set belong to an archetype; you need no storage
 layout knowledge to create them or run systems over them.</p>
 <p>Use <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#add_entity"><code>HostStorage.add_entity</code></a> for initial setup and individual creation.
 Use <a href="../systems_kernels" >systems and kernels</a> for repeated simulation work and
 <a href="../structural_changes" >scoped structural changes</a> for batches.</p>
 <h2>References after changes<span class="hx-absolute -hx-mt-20" id="references-after-changes"></span>
-    <a href="#references-after-changes" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Changing <code>Position.x</code> changes a value. Adding or removing a component changes
-composition and may move rows. Creation, deletion, and other structural changes
-can invalidate component references and row accessors. Retain entity handles,
-then reacquire references after mutation. Never use a row index as identity.</p>
+    <a href="#references-after-changes" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Structural changes can move rows. Keep entity handles, rather than component
+references or row indices, across <a href="../structural_changes" >structural changes</a>.</p>
 
         </div>
         <div class="hx-mt-16"></div>

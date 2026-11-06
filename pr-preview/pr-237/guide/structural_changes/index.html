@@ -62,7 +62,7 @@ struct Spawn(System):
   <meta itemprop="name" content="Structural changes">
   <meta itemprop="description" content="Create a batch, change its component composition, and run only those particles with a scoped selection. The creation tutorial provides the complete runnable program and its observable result.
 def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass">
-  <meta itemprop="wordCount" content="399">
+  <meta itemprop="wordCount" content="418">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Structural changes">
   <meta name="twitter:description" content="Create a batch, change its component composition, and run only those particles with a scoped selection. The creation tutorial provides the complete runnable program and its observable result.
@@ -1319,19 +1319,22 @@ then look up components again by entity handle.</p>
 <h2>Exact selection membership<span class="hx-absolute -hx-mt-20" id="exact-selection-membership"></span>
     <a href="#exact-selection-membership" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/SystemContext#add_entities"><code>SystemContext.add_entities</code></a> returns exactly the new rows.
 <a href="/larecs/pr-preview/pr-237/larecs/SystemContext#add"><code>SystemContext.add</code></a>, <a href="/larecs/pr-preview/pr-237/larecs/SystemContext#remove"><code>SystemContext.remove</code></a>, and
-<a href="/larecs/pr-preview/pr-237/larecs/SystemContext#replace"><code>SystemContext.replace</code></a> select rows matching an operation filter.
+<a href="/larecs/pr-preview/pr-237/larecs/SystemContext#replace"><code>SystemContext.replace</code></a> select rows matching the filter passed to
+the operation.
 Their <a href="https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/system.mojo#L568" target="_blank" rel="noopener">EntitySelection</a> results retain those identities through
 composition changes. Selection <code>add</code>, <code>remove</code>, and <code>replace</code> mutate the same
 selection in place and return nothing. <code>remove</code> removes components, not entities.
 Selection <code>run</code> intersects that membership with the kernel&rsquo;s filter; it never
 expands to other particles that happen to have the same components.</p>
 <h2>Scoped cleanup and empty selections<span class="hx-absolute -hx-mt-20" id="scoped-cleanup-and-empty-selections"></span>
-    <a href="#scoped-cleanup-and-empty-selections" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Use <code>with</code> to release the structural lock on normal exit, error, or early return.
-For an existing selection, transfer it into the manager with <code>with selection^</code>.
-A selection is movable and noncopyable. Outside a manager, consuming <code>release</code>
-or destruction releases it. Inside a manager the lock lasts until scope exit.
-Even zero-count creation returns a locked selection; an empty matching run
-invokes no kernel body. Negative counts raise.</p>
+    <a href="#scoped-cleanup-and-empty-selections" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A selection holds a structural lock until it is released. Use <code>with</code> so the lock
+ends on normal exit, on an error, or on early return. Pass an existing selection
+with <code>with selection^</code>. Inside <code>with</code>, the lock lasts until the block ends,
+even if you release the bound selection. Without <code>with</code>, consuming <code>release</code>
+or destroying the selection ends the lock. Selections are movable but not
+copyable.</p>
+<p>A zero-count <code>add_entities</code> still returns a locked selection. Running a kernel
+on an empty selection calls no kernel body. A negative count raises.</p>
 <h2>Delete particles after releasing the selection<span class="hx-absolute -hx-mt-20" id="delete-particles-after-releasing-the-selection"></span>
     <a href="#delete-particles-after-releasing-the-selection" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/HostStorage#remove_entity"><code>HostStorage.remove_entity</code></a> deletes one handle;
 <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#remove_entities"><code>HostStorage.remove_entities</code></a> deletes every filter match. The example
@@ -1339,10 +1342,9 @@ removes the marker only after leaving the creation scope. In a system, use
 <code>context.world[].storage</code> for deletion: <code>SystemContext</code> has no entity-deletion
 method. Unrelated structural operations while a query or selection lives raise a
 locked-world error.
-Do not solve that error by keeping references across the scope boundary.</p>
-<p>For setup, <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#add_entities"><code>HostStorage.add_entities</code></a> and storage component operations
-remain supported. Their locked row ranges are lower-level results, with no
-selection <code>run</code> method; use system selections for application batches.</p>
+To fix it, finish the query or selection scope first, then make the change.</p>
+<p>During setup, <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#add_entities"><code>HostStorage.add_entities</code></a> returns a locked row range
+for direct access. It has no <code>run</code> method; in systems, use selections.</p>
 
         </div>
         <div class="hx-mt-16"></div>

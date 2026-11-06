@@ -58,7 +58,7 @@ scheduler.run(steps=10)" />
   <meta itemprop="name" content="Systems and kernels">
   <meta itemprop="description" content="Run application behavior through a system and update matching particles with a kernel. The movement tutorial provides the complete program.
 comptime move_filter = Filter().include[Position]().read[Velocity]() comptime move_resources = Resources().read[Time]() def move(context: KernelContext[move_filter, move_resources]): &#34;&#34;&#34;Advances every particle by its velocity times the step length. Args: context: The matching rows and the declared resources. &#34;&#34;&#34; ref time = context.resources.get[Time]() for particle in context: ref position = particle.get[Position]() ref velocity = particle.get[Velocity]() position.x &#43;= velocity.dx * time.delta position.y &#43;= velocity.dy * time.delta @fieldwise_init struct Move(System): &#34;&#34;&#34;Runs the `move` kernel once per step.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Moves all particles. Args: context: Access to the scheduler&#39;s world. Raises: Error: If `Time` is missing from the world. &#34;&#34;&#34; context.run[move]() var scheduler = Scheduler[Position, Velocity](world^) scheduler.add_system(Move()) scheduler.run(steps=10)">
-  <meta itemprop="wordCount" content="748">
+  <meta itemprop="wordCount" content="741">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Systems and kernels">
   <meta name="twitter:description" content="Run application behavior through a system and update matching particles with a kernel. The movement tutorial provides the complete program.
@@ -1322,9 +1322,11 @@ with that component. <a href="https://github.com/larecs/larecs/blob/d7629334a689
 The kernel&rsquo;s <a href="/larecs/pr-preview/pr-237/larecs/KernelContext"><code>KernelContext</code></a> supplies only declared component access;
 requesting an undeclared component through <code>get</code> fails compilation.
 <a href="/larecs/pr-preview/pr-237/larecs/Resources"><code>Resources</code></a> independently declares resource access.</p>
-<p><a href="/larecs/pr-preview/pr-237/larecs/SystemContext#run"><code>SystemContext.run</code></a> calls a host kernel for each nonempty matching
-physical store. Put per-entity work inside the loop. With no matching entities,
-no kernel body runs. Calls complete before the next system proceeds.</p>
+<p><a href="/larecs/pr-preview/pr-237/larecs/SystemContext#run"><code>SystemContext.run</code></a> calls a host kernel for each non-empty matching
+physical store: a group of stored rows with the same component set. An archetype
+can have several such stores. Put per-entity work inside the loop. With no
+matching entities, no kernel body runs. Calls complete before the next system
+proceeds.</p>
 <h3>Write-only components<span class="hx-absolute -hx-mt-20" id="write-only-components"></span>
     <a href="#write-only-components" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">def</span><span class="w"> </span><span class="nf">reset_position</span><span class="p">(</span><span class="n">context</span><span class="p">:</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">[</span><span class="n">Position</span><span class="p">]()]):</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Initializes every selected position without reading it.
@@ -1349,8 +1351,8 @@ use <code>initialize</code>, <code>update(steps=...)</code>, and <code>finalize<
 <h2>Inspecting entities<span class="hx-absolute -hx-mt-20" id="inspecting-entities"></span>
     <a href="#inspecting-entities" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Use <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#query"><code>HostStorage.query</code></a> for read-only inspection outside kernels.
 The full <a href="../../start/growing_simulation" >creation example</a> inspects the marker
-before scheduling and checks the final result:</p>
-<p><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">var</span><span class="w"> </span><span class="nv">query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.query</span><span class="p">[</span><span class="w">
+before scheduling:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">var</span><span class="w"> </span><span class="nv">query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.query</span><span class="p">[</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">read</span><span class="p">[</span><span class="n">Position</span><span class="p">]()</span><span class="o">.</span><span class="n">exclude</span><span class="p">[</span><span class="n">Velocity</span><span class="p">]()</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">]()</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">var</span><span class="w"> </span><span class="nv">query_copy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">query.copy</span><span class="p">()</span><span class="w">
@@ -1362,19 +1364,8 @@ before scheduling and checks the final result:</p>
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">assert_equal</span><span class="p">(</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nb">len</span><span class="p">(</span><span class="n">world.storage.query</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">read</span><span class="p">[</span><span class="n">Position</span><span class="p">]()</span><span class="o">.</span><span class="n">exclusive</span><span class="p">()]()),</span><span class="w"> </span><span class="mi">1</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">)</span></span></span></code></pre></div>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="n">ref</span><span class="w"> </span><span class="n">storage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scheduler.world.storage</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">storage.get</span><span class="p">[</span><span class="n">Position</span><span class="p">](</span><span class="n">walker</span><span class="p">)</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">storage.get</span><span class="p">[</span><span class="n">Position</span><span class="p">](</span><span class="n">climber</span><span class="p">)</span><span class="o">.</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">assert_equal</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">storage.query</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">include</span><span class="p">[</span><span class="n">Position</span><span class="p">]()]()),</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">var</span><span class="w"> </span><span class="nv">spawned_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">for</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">storage.query</span><span class="p">[</span><span class="n">move_filter</span><span class="p">]():</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">entity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">row.get_entity</span><span class="p">()</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">entity</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">walker</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">entity</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">climber</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">row.get</span><span class="p">[</span><span class="n">Position</span><span class="p">]()</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="mf">1.1</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">row.get</span><span class="p">[</span><span class="n">Position</span><span class="p">]()</span><span class="o">.</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">spawned_count</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">assert_equal</span><span class="p">(</span><span class="n">spawned_count</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Created three particles and removed the stationary marker.&#34;</span><span class="p">)</span></span></span></code></pre></div></p>
+<p>The example copies the query to show that the copy has its own cursor.
+Consuming both with <code>^</code> ends their locks before the scheduler takes the world.</p>
 <p>A query&rsquo;s filter requires or excludes component types; <code>exclusive</code> restricts it
 to exactly the included set. Query rows are <a href="/larecs/pr-preview/pr-237/larecs/ArchetypeRowAccessor"><code>ArchetypeRowAccessor</code></a>
 values, not entity handles. <code>get</code> reads a component guaranteed by the filter;
@@ -1422,7 +1413,7 @@ changes. These locks prevent invalidation; they are not thread mutexes.</p>
           <td>Component changes and filtered kernel execution on exactly its members</td>
       </tr>
       <tr>
-          <td>Storage batch range</td>
+          <td>Storage batch range (<a href="/larecs/pr-preview/pr-237/larecs/HostStorage#add_entities"><code>HostStorage.add_entities</code></a>)</td>
           <td>Copies have independent cursors and locks; moves transfer the lock</td>
           <td>Retained after exhaustion, even for empty results</td>
           <td>Low-level traversal and mutable <code>unsafe_get</code>; no selection <code>run</code></td>
@@ -1437,8 +1428,8 @@ access compile error usually means the filter does not guarantee that type or
 grants only read access. A locked-world error means a query or selection still
 lives; end its scope before unrelated structural work.</p>
 <p>For supported lower-level traversal, see <a href="/larecs/pr-preview/pr-237/larecs/HostStorage"><code>HostStorage</code></a> and
-<a href="/larecs/pr-preview/pr-237/larecs/ArchetypeRowAccessor"><code>ArchetypeRowAccessor</code></a>. Advanced execution remains in
-<a href="../systems_scheduler" >the existing systems guide</a>.</p>
+<a href="/larecs/pr-preview/pr-237/larecs/ArchetypeRowAccessor"><code>ArchetypeRowAccessor</code></a>. For advanced execution, see
+<a href="../systems_scheduler" >Systems and the scheduler</a>.</p>
 
         </div>
         <div class="hx-mt-16"></div>

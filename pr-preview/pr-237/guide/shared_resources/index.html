@@ -61,7 +61,7 @@ _ = world.storage.add_entity(Position(-3, -3))" />
   <meta itemprop="name" content="Resources">
   <meta itemprop="description" content="Share one value per type across your simulation using ResourceStorage. The complete configuration program sets Time.delta before movement.
 @fieldwise_init struct Time(Copyable, Movable): &#34;&#34;&#34;The simulated time that passes in one step.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Step length.&#34;&#34;&#34; @fieldwise_init struct Configuration(Copyable, Movable): &#34;&#34;&#34;Shared configuration for subsequent movement steps.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Configured step length.&#34;&#34;&#34; @fieldwise_init struct ConfigureTime(System): &#34;&#34;&#34;Sets the step length before movement.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Reads configuration and updates shared time. Args: context: Access to the simulation resources. Raises: Error: If a required resource is missing. &#34;&#34;&#34; ref resources = context.world[].resources resources.get[Time]().delta = resources.get[Configuration]().delta var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1), Configuration(delta=0.25)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) _ = world.storage.add_entity(Position(-3, -3))">
-  <meta itemprop="wordCount" content="379">
+  <meta itemprop="wordCount" content="387">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Resources">
   <meta name="twitter:description" content="Share one value per type across your simulation using ResourceStorage. The complete configuration program sets Time.delta before movement.
@@ -1300,9 +1300,10 @@ The complete <a href="../../start/shared_configuration" >configuration program</
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">var</span><span class="w"> </span><span class="nv">climber</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entity</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">Velocity</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">))</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entity</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">3</span><span class="p">))</span></span></span></code></pre></div></p>
 <h2>Add, read, replace, and remove<span class="hx-absolute -hx-mt-20" id="add-read-replace-and-remove"></span>
-    <a href="#add-read-replace-and-remove" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Resource types conform to <code>Copyable</code> and <code>Deinitable</code>; they need not appear in
-the world&rsquo;s component pack. <a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#add"><code>ResourceStorage.add</code></a> inserts values and
-raises on duplicates. <a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#get"><code>ResourceStorage.get</code></a> returns a reference and
+    <a href="#add-read-replace-and-remove" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A resource conforms to <a href="../../larecs#aliases" ><code>ResourceType</code></a>, which requires <code>Copyable</code> and
+<code>Deinitable</code>. The example&rsquo;s <code>Copyable, Movable</code> structs satisfy both. Resource
+types need not appear among the world&rsquo;s declared component types.</p>
+<p><a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#add"><code>ResourceStorage.add</code></a> inserts values and raises on duplicates. <a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#get"><code>ResourceStorage.get</code></a> returns a reference and
 raises on missing types. <a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#set"><code>ResourceStorage.set</code></a> replaces existing values;
 if any requested type is absent, it raises without updating them. Its
 <code>add_if_not_found=True</code> option inserts absent types instead.
@@ -1327,18 +1328,18 @@ Do not retain resource references across removal or replacement.</p>
 </span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">position.y</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">velocity.dy</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">time.delta</span></span></span></code></pre></div>
 <p><a href="/larecs/pr-preview/pr-237/larecs/Resources"><code>Resources</code></a> declares access independently of component filters.
 <code>read[Time]()</code> grants immutable <code>get</code>; <code>read_write</code> grants mutable <code>get</code>.
-Host <code>write</code> grants <code>set</code> only, not <code>get</code>. <code>Resources[Time]()</code> defaults to
-read-write access. Every declared resource must exist before
-<a href="/larecs/pr-preview/pr-237/larecs/SystemContext#run"><code>SystemContext.run</code></a>; otherwise it raises.</p>
-<p>Ordinary sequential host resources can own collections. A resource is shared
-across the entire invocation, not copied once per particle. Updating it once
-per kernel call therefore depends on how matching rows are split into calls;
-use a system hook for one update per simulation step, as <code>ConfigureTime</code> does.</p>
+On the host, <code>write</code> grants <code>set</code> only, not <code>get</code>; device kernels do not support
+write-only resources. <code>Resources[Time]()</code> defaults to read-write access. Every
+declared resource must exist before <a href="/larecs/pr-preview/pr-237/larecs/SystemContext#run"><code>SystemContext.run</code></a>; otherwise it
+raises.</p>
+<p>On the sequential host, resources can own collections. Each kernel call sees
+the same resource value. Because one <code>run</code> can call the kernel several times,
+update per-step values in a system&rsquo;s <code>update</code>, as <code>ConfigureTime</code> does.</p>
 <h2>Troubleshooting<span class="hx-absolute -hx-mt-20" id="troubleshooting"></span>
     <a href="#troubleshooting" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>If movement reports a missing <code>Time</code>, add it before scheduling. If an access
 fails compilation, check the resource declaration independently of the component
 filter. For adapters and device restrictions, use the
-<a href="../resources#portable-owning-resources" >advanced resource material</a>.</p>
+<a href="../resources#portable-owning-resources" >Resource operations and adapters</a>.</p>
 
         </div>
         <div class="hx-mt-16"></div>
