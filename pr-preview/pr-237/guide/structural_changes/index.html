@@ -10,14 +10,15 @@
 <link rel="icon" href="/larecs/pr-preview/pr-237/favicon-32x32.png" type="image/png" sizes="32x32" />
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-237/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-237/site.webmanifest" rel="manifest" />
-<title>Structural changes – Larecs🌲</title>
-  <meta name="description" content="Create a batch, change its component composition, and run only those particles with a scoped selection. The creation tutorial provides the complete runnable program and its observable result.
+<title>Create and remove entities in batches – Larecs🌲</title>
+  <meta name="description" content="Create a batch of entities, change their components, and run kernels on only those entities with a scoped selection. Then remove entities once the scope ends. Create and remove particles runs this code and checks the result.
 def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass" /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/guide/structural_changes/" itemprop="url" />
 
-<meta property="og:title" content="Structural changes" />
-<meta property="og:description" content="Create a batch, change its component composition, and run only those particles
-with a scoped selection. The creation tutorial
-provides the complete runnable program and its observable result.
+<meta property="og:title" content="Create and remove entities in batches" />
+<meta property="og:description" content="Create a batch of entities, change their components, and run kernels on only
+those entities with a scoped selection. Then remove entities once the scope
+ends. Create and remove particles runs this
+code and checks the result.
 def reset_position(context: KernelContext[Filter().write[Position]()]):
     &#34;&#34;&#34;Initializes every selected position without reading it.
 
@@ -59,13 +60,13 @@ struct Spawn(System):
 
 
 
-  <meta itemprop="name" content="Structural changes">
-  <meta itemprop="description" content="Create a batch, change its component composition, and run only those particles with a scoped selection. The creation tutorial provides the complete runnable program and its observable result.
+  <meta itemprop="name" content="Create and remove entities in batches">
+  <meta itemprop="description" content="Create a batch of entities, change their components, and run kernels on only those entities with a scoped selection. Then remove entities once the scope ends. Create and remove particles runs this code and checks the result.
 def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass">
-  <meta itemprop="wordCount" content="418">
+  <meta itemprop="wordCount" content="561">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Structural changes">
-  <meta name="twitter:description" content="Create a batch, change its component composition, and run only those particles with a scoped selection. The creation tutorial provides the complete runnable program and its observable result.
+  <meta name="twitter:title" content="Create and remove entities in batches">
+  <meta name="twitter:description" content="Create a batch of entities, change their components, and run kernels on only those entities with a scoped selection. Then remove entities once the scope ends. Create and remove particles runs this code and checks the result.
 def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass">
 
     <link rel="preload" href="/larecs/pr-preview/pr-237/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -243,7 +244,7 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -251,7 +252,7 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -259,7 +260,7 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col open"><a
@@ -267,7 +268,7 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
   
     <ul class='hx-flex hx-flex-col hx-gap-1 hx-relative before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] dark:before:hx-bg-neutral-800 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-pr-3 rtl:before:hx-right-0 ltr:hx-ml-3 rtl:hx-mr-3'><li>
@@ -278,21 +279,39 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
             </li>
           <li>
               <a
-                href="#exact-selection-membership"
+                href="#select-exactly-the-entities-you-change"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Exact selection membership</a>
+              >Select exactly the entities you change</a>
             </li>
           <li>
               <a
-                href="#scoped-cleanup-and-empty-selections"
+                href="#end-the-structural-lock-with-with"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Scoped cleanup and empty selections</a>
+              >End the structural lock with &lt;code&gt;with&lt;/code&gt;</a>
             </li>
           <li>
               <a
-                href="#delete-particles-after-releasing-the-selection"
+                href="#empty-and-invalid-batches"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Delete particles after releasing the selection</a>
+              >Empty and invalid batches</a>
+            </li>
+          <li>
+              <a
+                href="#remove-entities"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Remove entities</a>
+            </li>
+          <li>
+              <a
+                href="#create-entities-outside-a-system"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Create entities outside a system</a>
+            </li>
+          <li>
+              <a
+                href="#next-steps"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Next steps</a>
             </li>
           </ul>
   
@@ -302,7 +321,7 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -768,7 +787,7 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -776,7 +795,7 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -784,7 +803,7 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col open"><a
@@ -792,7 +811,7 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -800,7 +819,7 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1238,15 +1257,27 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#exact-selection-membership">Exact selection membership
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#select-exactly-the-entities-you-change">Select exactly the entities you change
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#scoped-cleanup-and-empty-selections">Scoped cleanup and empty selections
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#end-the-structural-lock-with-with">End the structural lock with with
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#delete-particles-after-releasing-the-selection">Delete particles after releasing the selection
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#empty-and-invalid-batches">Empty and invalid batches
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#remove-entities">Remove entities
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#create-entities-outside-a-system">Create entities outside a system
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#next-steps">Next steps
         </a>
       </li></ul>
       <div class="hx-mt-8 hx-border-t hx-bg-white hx-pt-8 hx-shadow-[0_-12px_16px_white] dark:hx-bg-dark dark:hx-shadow-[0_-12px_16px_#111] hx-sticky hx-bottom-0 hx-flex hx-flex-col hx-items-start hx-gap-2 hx-pb-8 dark:hx-border-neutral-800 contrast-more:hx-border-t contrast-more:hx-border-neutral-400 contrast-more:hx-shadow-none contrast-more:dark:hx-border-neutral-400">
@@ -1267,14 +1298,15 @@ def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#3
   <div class="hx-mt-1.5 hx-flex hx-items-center hx-gap-1 hx-overflow-hidden hx-text-sm hx-text-gray-500 dark:hx-text-gray-400 contrast-more:hx-text-current">
         <div class="hx-whitespace-nowrap hx-transition-colors hx-min-w-[24px] hx-overflow-hidden hx-text-ellipsis hover:hx-text-gray-900 dark:hover:hx-text-gray-100">
           <a href="/larecs/pr-preview/pr-237/guide/">User guide</a>
-        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Structural changes</div>
+        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Create and remove entities in batches</div>
   </div>
 
         <div class="content">
-          <h1>Structural changes</h1>
-          <p>Create a batch, change its component composition, and run only those particles
-with a scoped selection. The <a href="../../start/growing_simulation" >creation tutorial</a>
-provides the complete runnable program and its observable result.</p>
+          <h1>Create and remove entities in batches</h1>
+          <p>Create a batch of entities, change their components, and run kernels on only
+those entities with a scoped selection. Then remove entities once the scope
+ends. <a href="../../start/growing_simulation" >Create and remove particles</a> runs this
+code and checks the result.</p>
 <p><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">def</span><span class="w"> </span><span class="nf">reset_position</span><span class="p">(</span><span class="n">context</span><span class="p">:</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">[</span><span class="n">Position</span><span class="p">]()]):</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Initializes every selected position without reading it.
 </span></span></span><span class="line"><span class="cl"><span class="s2">
@@ -1311,52 +1343,83 @@ provides the complete runnable program and its observable result.</p>
 </span></span></span><span class="line"><span class="cl"><span class="s2">            context: Access to the simulation world.
 </span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">pass</span></span></span></code></pre></div></p>
+<p><code>context.add_entities</code> creates three particles and returns a selection of
+exactly those three. Inside the <code>with</code> block, <code>selected.add</code>, <code>selected.run</code>,
+and other selection methods act on those particles only. After the block,
+<code>remove_entities</code> deletes every particle with a <code>Position</code> and no <code>Velocity</code>.</p>
 <h2>Values versus structure<span class="hx-absolute -hx-mt-20" id="values-versus-structure"></span>
-    <a href="#values-versus-structure" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Updating <code>Position.x</code> through a kernel changes a value. Creating or deleting
-entities and adding or removing component types changes structure. Structural
-changes can move rows: discard old component references and row accessors,
-then look up components again by entity handle.</p>
-<h2>Exact selection membership<span class="hx-absolute -hx-mt-20" id="exact-selection-membership"></span>
-    <a href="#exact-selection-membership" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/SystemContext#add_entities"><code>SystemContext.add_entities</code></a> returns exactly the new rows.
-<a href="/larecs/pr-preview/pr-237/larecs/SystemContext#add"><code>SystemContext.add</code></a>, <a href="/larecs/pr-preview/pr-237/larecs/SystemContext#remove"><code>SystemContext.remove</code></a>, and
-<a href="/larecs/pr-preview/pr-237/larecs/SystemContext#replace"><code>SystemContext.replace</code></a> select rows matching the filter passed to
-the operation.
-Their <a href="https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/system.mojo#L568" target="_blank" rel="noopener">EntitySelection</a> results retain those identities through
-composition changes. Selection <code>add</code>, <code>remove</code>, and <code>replace</code> mutate the same
-selection in place and return nothing. <code>remove</code> removes components, not entities.
-Selection <code>run</code> intersects that membership with the kernel&rsquo;s filter; it never
-expands to other particles that happen to have the same components.</p>
-<h2>Scoped cleanup and empty selections<span class="hx-absolute -hx-mt-20" id="scoped-cleanup-and-empty-selections"></span>
-    <a href="#scoped-cleanup-and-empty-selections" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A selection holds a structural lock until it is released. Use <code>with</code> so the lock
-ends on normal exit, on an error, or on early return. Pass an existing selection
-with <code>with selection^</code>. Inside <code>with</code>, the lock lasts until the block ends,
-even if you release the bound selection. Without <code>with</code>, consuming <code>release</code>
-or destroying the selection ends the lock. Selections are movable but not
-copyable.</p>
-<p>A zero-count <code>add_entities</code> still returns a locked selection. Running a kernel
-on an empty selection calls no kernel body. A negative count raises.</p>
-<h2>Delete particles after releasing the selection<span class="hx-absolute -hx-mt-20" id="delete-particles-after-releasing-the-selection"></span>
-    <a href="#delete-particles-after-releasing-the-selection" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/HostStorage#remove_entity"><code>HostStorage.remove_entity</code></a> deletes one handle;
-<a href="/larecs/pr-preview/pr-237/larecs/HostStorage#remove_entities"><code>HostStorage.remove_entities</code></a> deletes every filter match. The example
-removes the marker only after leaving the creation scope. In a system, use
-<code>context.world[].storage</code> for deletion: <code>SystemContext</code> has no entity-deletion
-method. Unrelated structural operations while a query or selection lives raise a
-locked-world error.
-To fix it, finish the query or selection scope first, then make the change.</p>
-<p>During setup, <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#add_entities"><code>HostStorage.add_entities</code></a> returns a locked row range
-for direct access. It has no <code>run</code> method; in systems, use selections.</p>
+    <a href="#values-versus-structure" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Assigning <code>position.x</code> in a kernel changes a value. Creating or deleting an
+entity, or adding or removing a component type, changes the world&rsquo;s
+<em>structure</em>. A structural change can move rows in memory. After one, discard
+component references and row accessors, and look components up again by
+entity handle.</p>
+<h2>Select exactly the entities you change<span class="hx-absolute -hx-mt-20" id="select-exactly-the-entities-you-change"></span>
+    <a href="#select-exactly-the-entities-you-change" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>These operations return an <code>EntitySelection</code>:</p>
+<ul>
+<li><a href="/larecs/pr-preview/pr-237/larecs/SystemContext#add_entities"><code>SystemContext.add_entities</code></a> selects exactly the new entities.</li>
+<li><a href="/larecs/pr-preview/pr-237/larecs/SystemContext#add"><code>SystemContext.add</code></a>, <a href="/larecs/pr-preview/pr-237/larecs/SystemContext#remove"><code>SystemContext.remove</code></a>, and
+<a href="/larecs/pr-preview/pr-237/larecs/SystemContext#replace"><code>SystemContext.replace</code></a> select the entities that match the filter
+you pass.</li>
+</ul>
+<p>A selection keeps its members when their components change. Its <code>add</code>,
+<code>remove</code>, and <code>replace</code> methods change the members&rsquo; components in place and
+return nothing; <code>remove</code> removes components, not entities. Its <code>run</code> method
+visits the members that also match the kernel&rsquo;s filter, and never other
+entities with the same components.</p>
+<p><a href="https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/system.mojo#L568" target="_blank" rel="noopener"><code>EntitySelection</code></a>
+documents every selection method.</p>
+<h2>End the structural lock with <code>with</code><span class="hx-absolute -hx-mt-20" id="end-the-structural-lock-with-with"></span>
+    <a href="#end-the-structural-lock-with-with" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A selection holds a structural lock until it is released. While any lock is
+held, unrelated entity creation, entity deletion, and component additions or
+removals raise a locked-world error.</p>
+<ul>
+<li>Use <code>with</code> so the lock ends when the block ends, including on an error or an
+early return.</li>
+<li>To scope a selection you already hold, write <code>with selection^ as selected:</code>.</li>
+<li>Inside <code>with</code>, the lock lasts until the block ends, even if you release the
+bound selection earlier.</li>
+<li>Without <code>with</code>, the lock ends when you call the consuming <code>release</code> method
+or the selection is destroyed.</li>
+</ul>
+<p>Selections are movable but not copyable.</p>
+<h2>Empty and invalid batches<span class="hx-absolute -hx-mt-20" id="empty-and-invalid-batches"></span>
+    <a href="#empty-and-invalid-batches" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><ul>
+<li><code>add_entities</code> with <code>count=0</code> returns an empty selection that still holds a
+lock.</li>
+<li>Running a kernel on an empty selection never runs the kernel body.</li>
+<li>A negative <code>count</code> raises.</li>
+</ul>
+<h2>Remove entities<span class="hx-absolute -hx-mt-20" id="remove-entities"></span>
+    <a href="#remove-entities" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/HostStorage#remove_entity"><code>HostStorage.remove_entity</code></a> deletes one entity by handle, and
+<a href="/larecs/pr-preview/pr-237/larecs/HostStorage#remove_entities"><code>HostStorage.remove_entities</code></a> deletes every entity that matches a
+filter. <code>SystemContext</code> has no method for deleting entities, so a system
+deletes through <code>context.world[].storage</code>, as <code>Spawn</code> does. Delete only after
+the <code>with</code> block ends; while the selection&rsquo;s lock is held, deletion raises a
+locked-world error.</p>
+<h2>Create entities outside a system<span class="hx-absolute -hx-mt-20" id="create-entities-outside-a-system"></span>
+    <a href="#create-entities-outside-a-system" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>During setup, <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#add_entities"><code>HostStorage.add_entities</code></a> creates a batch directly in
+the world. It returns a locked row range for direct component access, not a
+selection, and has no <code>run</code> method. Inside systems, use
+<code>context.add_entities</code> to get a selection.</p>
+<h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
+    <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><ul>
+<li><a href="../systems_kernels#compare-handles-queries-and-selections" >Update entities with systems and kernels</a>
+compares selections with queries and entity handles.</li>
+<li><a href="../adding_and_removing_entities" >Adding and removing entities</a> shows the
+individual storage operations.</li>
+</ul>
 
         </div>
         <div class="hx-mt-16"></div>
         <div class="hx-mb-8 hx-flex hx-items-center hx-border-t hx-pt-8 dark:hx-border-neutral-800 contrast-more:hx-border-neutral-400 dark:contrast-more:hx-border-neutral-400 print:hx-hidden"><a
         href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
-        title="Systems and kernels"
+        title="Update entities with systems and kernels"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-pr-4 rtl:hx-pl-4"
-      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Systems and kernels</a><a
+      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Update entities with systems and kernels</a><a
         href="/larecs/pr-preview/pr-237/guide/shared_resources/"
-        title="Resources"
+        title="Share values with resources"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-ml-auto ltr:hx-pl-4 ltr:hx-text-right rtl:hx-mr-auto rtl:hx-pr-4 rtl:hx-text-left"
-      >Resources<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
+      >Share values with resources<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
         
       </main>
     </article>

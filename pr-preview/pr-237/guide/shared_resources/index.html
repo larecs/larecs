@@ -10,14 +10,15 @@
 <link rel="icon" href="/larecs/pr-preview/pr-237/favicon-32x32.png" type="image/png" sizes="32x32" />
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-237/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-237/site.webmanifest" rel="manifest" />
-<title>Resources – Larecs🌲</title>
-  <meta name="description" content="Share one value per type across your simulation using ResourceStorage. The complete configuration program sets Time.delta before movement.
+<title>Share values with resources – Larecs🌲</title>
+  <meta name="description" content="Store a value that exists once per world, such as the step length, as a resource, and let kernels and systems read or change it. Share time and configuration runs this code.
 @fieldwise_init struct Time(Copyable, Movable): &#34;&#34;&#34;The simulated time that passes in one step.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Step length.&#34;&#34;&#34; @fieldwise_init struct Configuration(Copyable, Movable): &#34;&#34;&#34;Shared configuration for subsequent movement steps.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Configured step length.&#34;&#34;&#34; @fieldwise_init struct ConfigureTime(System): &#34;&#34;&#34;Sets the step length before movement.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Reads configuration and updates shared time. Args: context: Access to the simulation resources. Raises: Error: If a required resource is missing. &#34;&#34;&#34; ref resources = context.world[].resources resources.get[Time]().delta = resources.get[Configuration]().delta var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1), Configuration(delta=0.25)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) _ = world.storage.add_entity(Position(-3, -3))" /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/guide/shared_resources/" itemprop="url" />
 
-<meta property="og:title" content="Resources" />
-<meta property="og:description" content="Share one value per type across your simulation using ResourceStorage.
-The complete configuration program sets
-Time.delta before movement.
+<meta property="og:title" content="Share values with resources" />
+<meta property="og:description" content="Store a value that exists once per world, such as the step length, as a
+resource, and let kernels and systems read or change it.
+Share time and configuration runs this
+code.
 @fieldwise_init
 struct Time(Copyable, Movable):
     &#34;&#34;&#34;The simulated time that passes in one step.&#34;&#34;&#34;
@@ -58,13 +59,13 @@ _ = world.storage.add_entity(Position(-3, -3))" />
 
 
 
-  <meta itemprop="name" content="Resources">
-  <meta itemprop="description" content="Share one value per type across your simulation using ResourceStorage. The complete configuration program sets Time.delta before movement.
+  <meta itemprop="name" content="Share values with resources">
+  <meta itemprop="description" content="Store a value that exists once per world, such as the step length, as a resource, and let kernels and systems read or change it. Share time and configuration runs this code.
 @fieldwise_init struct Time(Copyable, Movable): &#34;&#34;&#34;The simulated time that passes in one step.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Step length.&#34;&#34;&#34; @fieldwise_init struct Configuration(Copyable, Movable): &#34;&#34;&#34;Shared configuration for subsequent movement steps.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Configured step length.&#34;&#34;&#34; @fieldwise_init struct ConfigureTime(System): &#34;&#34;&#34;Sets the step length before movement.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Reads configuration and updates shared time. Args: context: Access to the simulation resources. Raises: Error: If a required resource is missing. &#34;&#34;&#34; ref resources = context.world[].resources resources.get[Time]().delta = resources.get[Configuration]().delta var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1), Configuration(delta=0.25)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) _ = world.storage.add_entity(Position(-3, -3))">
-  <meta itemprop="wordCount" content="387">
+  <meta itemprop="wordCount" content="491">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Resources">
-  <meta name="twitter:description" content="Share one value per type across your simulation using ResourceStorage. The complete configuration program sets Time.delta before movement.
+  <meta name="twitter:title" content="Share values with resources">
+  <meta name="twitter:description" content="Store a value that exists once per world, such as the step length, as a resource, and let kernels and systems read or change it. Share time and configuration runs this code.
 @fieldwise_init struct Time(Copyable, Movable): &#34;&#34;&#34;The simulated time that passes in one step.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Step length.&#34;&#34;&#34; @fieldwise_init struct Configuration(Copyable, Movable): &#34;&#34;&#34;Shared configuration for subsequent movement steps.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Configured step length.&#34;&#34;&#34; @fieldwise_init struct ConfigureTime(System): &#34;&#34;&#34;Sets the step length before movement.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Reads configuration and updates shared time. Args: context: Access to the simulation resources. Raises: Error: If a required resource is missing. &#34;&#34;&#34; ref resources = context.world[].resources resources.get[Time]().delta = resources.get[Configuration]().delta var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1), Configuration(delta=0.25)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) _ = world.storage.add_entity(Position(-3, -3))">
 
     <link rel="preload" href="/larecs/pr-preview/pr-237/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -242,7 +243,7 @@ _ = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -250,7 +251,7 @@ _ = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -258,7 +259,7 @@ _ = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -266,7 +267,7 @@ _ = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col open"><a
@@ -274,26 +275,38 @@ _ = world.storage.add_entity(Position(-3, -3))" />
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
   
     <ul class='hx-flex hx-flex-col hx-gap-1 hx-relative before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] dark:before:hx-bg-neutral-800 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-pr-3 rtl:before:hx-right-0 ltr:hx-ml-3 rtl:hx-mr-3'><li>
               <a
-                href="#add-read-replace-and-remove"
+                href="#define-a-resource"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Add, read, replace, and remove</a>
+              >Define a resource</a>
             </li>
           <li>
               <a
-                href="#declare-kernel-permissions"
+                href="#add-read-replace-and-remove-resources"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Declare kernel permissions</a>
+              >Add, read, replace, and remove resources</a>
+            </li>
+          <li>
+              <a
+                href="#declare-kernel-access"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Declare kernel access</a>
             </li>
           <li>
               <a
                 href="#troubleshooting"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
               >Troubleshooting</a>
+            </li>
+          <li>
+              <a
+                href="#next-steps"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Next steps</a>
             </li>
           </ul>
   
@@ -761,7 +774,7 @@ _ = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -769,7 +782,7 @@ _ = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -777,7 +790,7 @@ _ = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -785,7 +798,7 @@ _ = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col open"><a
@@ -793,7 +806,7 @@ _ = world.storage.add_entity(Position(-3, -3))" />
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1227,15 +1240,23 @@ _ = world.storage.add_entity(Position(-3, -3))" />
 <nav class="hextra-toc hx-order-last hx-hidden hx-w-64 hx-shrink-0 xl:hx-block print:hx-hidden hx-px-4" aria-label="table of contents">
     <div class="hextra-scrollbar hx-sticky hx-top-16 hx-overflow-y-auto hx-pr-4 hx-pt-6 hx-text-sm [hyphens:auto] hx-max-h-[calc(100vh-var(--navbar-height)-env(safe-area-inset-bottom))] ltr:hx--mr-4 rtl:hx--ml-4"><p class="hx-mb-4 hx-font-semibold hx-tracking-tight">On this page</p><ul>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#add-read-replace-and-remove">Add, read, replace, and remove
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#define-a-resource">Define a resource
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#declare-kernel-permissions">Declare kernel permissions
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#add-read-replace-and-remove-resources">Add, read, replace, and remove resources
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#declare-kernel-access">Declare kernel access
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
         <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#troubleshooting">Troubleshooting
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#next-steps">Next steps
         </a>
       </li></ul>
       <div class="hx-mt-8 hx-border-t hx-bg-white hx-pt-8 hx-shadow-[0_-12px_16px_white] dark:hx-bg-dark dark:hx-shadow-[0_-12px_16px_#111] hx-sticky hx-bottom-0 hx-flex hx-flex-col hx-items-start hx-gap-2 hx-pb-8 dark:hx-border-neutral-800 contrast-more:hx-border-t contrast-more:hx-border-neutral-400 contrast-more:hx-shadow-none contrast-more:dark:hx-border-neutral-400">
@@ -1256,14 +1277,15 @@ _ = world.storage.add_entity(Position(-3, -3))" />
   <div class="hx-mt-1.5 hx-flex hx-items-center hx-gap-1 hx-overflow-hidden hx-text-sm hx-text-gray-500 dark:hx-text-gray-400 contrast-more:hx-text-current">
         <div class="hx-whitespace-nowrap hx-transition-colors hx-min-w-[24px] hx-overflow-hidden hx-text-ellipsis hover:hx-text-gray-900 dark:hover:hx-text-gray-100">
           <a href="/larecs/pr-preview/pr-237/guide/">User guide</a>
-        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Resources</div>
+        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Share values with resources</div>
   </div>
 
         <div class="content">
-          <h1>Resources</h1>
-          <p>Share one value per type across your simulation using <a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage"><code>ResourceStorage</code></a>.
-The complete <a href="../../start/shared_configuration" >configuration program</a> sets
-<code>Time.delta</code> before movement.</p>
+          <h1>Share values with resources</h1>
+          <p>Store a value that exists once per world, such as the step length, as a
+resource, and let kernels and systems read or change it.
+<a href="../../start/shared_configuration" >Share time and configuration</a> runs this
+code.</p>
 <p><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="nd">@fieldwise_init</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span><span class="w"> </span><span class="nc">Time</span><span class="p">(</span><span class="nb">Copyable</span><span class="p">,</span><span class="w"> </span><span class="nb">Movable</span><span class="p">):</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;The simulated time that passes in one step.&#34;&#34;&#34;</span><span class="w">
@@ -1299,18 +1321,51 @@ The complete <a href="../../start/shared_configuration" >configuration program</
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">var</span><span class="w"> </span><span class="nv">walker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entity</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">Velocity</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">var</span><span class="w"> </span><span class="nv">climber</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entity</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">Velocity</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">))</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entity</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">3</span><span class="p">))</span></span></span></code></pre></div></p>
-<h2>Add, read, replace, and remove<span class="hx-absolute -hx-mt-20" id="add-read-replace-and-remove"></span>
-    <a href="#add-read-replace-and-remove" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A resource conforms to <a href="../../larecs#aliases" ><code>ResourceType</code></a>, which requires <code>Copyable</code> and
-<code>Deinitable</code>. The example&rsquo;s <code>Copyable, Movable</code> structs satisfy both. Resource
-types need not appear among the world&rsquo;s declared component types.</p>
-<p><a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#add"><code>ResourceStorage.add</code></a> inserts values and raises on duplicates. <a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#get"><code>ResourceStorage.get</code></a> returns a reference and
-raises on missing types. <a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#set"><code>ResourceStorage.set</code></a> replaces existing values;
-if any requested type is absent, it raises without updating them. Its
-<code>add_if_not_found=True</code> option inserts absent types instead.
-<a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#remove"><code>ResourceStorage.remove</code></a> removes values and raises on missing types.
-Do not retain resource references across removal or replacement.</p>
-<h2>Declare kernel permissions<span class="hx-absolute -hx-mt-20" id="declare-kernel-permissions"></span>
-    <a href="#declare-kernel-permissions" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="n">comptime</span><span class="w"> </span><span class="n">move_filter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">include</span><span class="p">[</span><span class="n">Position</span><span class="p">]()</span><span class="o">.</span><span class="n">read</span><span class="p">[</span><span class="n">Velocity</span><span class="p">]()</span><span class="w">
+<p><code>Time</code> and <code>Configuration</code> are resources. <code>world.resources.add</code> stores one
+value of each, and <code>ConfigureTime</code> changes <code>Time</code> through
+<code>context.world[].resources</code> before every movement step.</p>
+<h2>Define a resource<span class="hx-absolute -hx-mt-20" id="define-a-resource"></span>
+    <a href="#define-a-resource" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A resource is a struct that conforms to
+<a href="../../larecs#aliases" ><code>ResourceType</code></a>, which requires <code>Copyable</code> and
+<code>Deinitable</code>. <code>Copyable, Movable</code> satisfies both. A world holds at most one
+value per resource type, and resource types do not appear in the world&rsquo;s
+component list.</p>
+<h2>Add, read, replace, and remove resources<span class="hx-absolute -hx-mt-20" id="add-read-replace-and-remove-resources"></span>
+    <a href="#add-read-replace-and-remove-resources" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage"><code>ResourceStorage</code></a> manages the world&rsquo;s resources:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Method</th>
+          <th>Effect</th>
+          <th>Raises when</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#add"><code>ResourceStorage.add</code></a></td>
+          <td>Inserts values</td>
+          <td>A type is already present</td>
+      </tr>
+      <tr>
+          <td><a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#get"><code>ResourceStorage.get</code></a></td>
+          <td>Returns a reference to the value</td>
+          <td>The type is missing</td>
+      </tr>
+      <tr>
+          <td><a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#set"><code>ResourceStorage.set</code></a></td>
+          <td>Replaces existing values</td>
+          <td>Any type is missing; then no value changes. With <code>add_if_not_found=True</code>, it inserts missing types instead.</td>
+      </tr>
+      <tr>
+          <td><a href="/larecs/pr-preview/pr-237/larecs/ResourceStorage#remove"><code>ResourceStorage.remove</code></a></td>
+          <td>Removes values</td>
+          <td>A type is missing</td>
+      </tr>
+  </tbody>
+</table>
+<p>Do not keep a resource reference across removal or replacement.</p>
+<h2>Declare kernel access<span class="hx-absolute -hx-mt-20" id="declare-kernel-access"></span>
+    <a href="#declare-kernel-access" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="n">comptime</span><span class="w"> </span><span class="n">move_filter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">include</span><span class="p">[</span><span class="n">Position</span><span class="p">]()</span><span class="o">.</span><span class="n">read</span><span class="p">[</span><span class="n">Velocity</span><span class="p">]()</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">comptime</span><span class="w"> </span><span class="n">move_resources</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Resources</span><span class="p">()</span><span class="o">.</span><span class="n">read</span><span class="p">[</span><span class="n">Time</span><span class="p">]()</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">
@@ -1326,28 +1381,71 @@ Do not retain resource references across removal or replacement.</p>
 </span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">ref</span><span class="w"> </span><span class="n">velocity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">particle.get</span><span class="p">[</span><span class="n">Velocity</span><span class="p">]()</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">position.x</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">velocity.dx</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">time.delta</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">position.y</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">velocity.dy</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">time.delta</span></span></span></code></pre></div>
-<p><a href="/larecs/pr-preview/pr-237/larecs/Resources"><code>Resources</code></a> declares access independently of component filters.
-<code>read[Time]()</code> grants immutable <code>get</code>; <code>read_write</code> grants mutable <code>get</code>.
-On the host, <code>write</code> grants <code>set</code> only, not <code>get</code>; device kernels do not support
-write-only resources. <code>Resources[Time]()</code> defaults to read-write access. Every
-declared resource must exist before <a href="/larecs/pr-preview/pr-237/larecs/SystemContext#run"><code>SystemContext.run</code></a>; otherwise it
-raises.</p>
-<p>On the sequential host, resources can own collections. Each kernel call sees
-the same resource value. Because one <code>run</code> can call the kernel several times,
-update per-step values in a system&rsquo;s <code>update</code>, as <code>ConfigureTime</code> does.</p>
+<p>A kernel declares its resources with <a href="/larecs/pr-preview/pr-237/larecs/Resources"><code>Resources</code></a>, separately from its
+component filter:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Declaration</th>
+          <th>Access through the kernel</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>read[T]()</code></td>
+          <td>Read with <code>get</code></td>
+      </tr>
+      <tr>
+          <td><code>read_write[T]()</code></td>
+          <td>Read and write with <code>get</code></td>
+      </tr>
+      <tr>
+          <td><code>write[T]()</code></td>
+          <td>Write with <code>set</code> only, on the host; device kernels reject it</td>
+      </tr>
+      <tr>
+          <td><code>Resources[T]()</code></td>
+          <td>Read and write, like <code>read_write</code></td>
+      </tr>
+  </tbody>
+</table>
+<p>Every declared resource must exist in the world when you call
+<a href="/larecs/pr-preview/pr-237/larecs/SystemContext#run"><code>SystemContext.run</code></a>; otherwise <code>run</code> raises.</p>
+<p>On the sequential host, a resource can own collections such as a <code>List</code>. Every
+kernel call in one <code>run</code> sees the same resource value. Because one <code>run</code> can
+call the kernel several times, change per-step values in a system&rsquo;s <code>update</code>,
+as <code>ConfigureTime</code> does, rather than in the kernel.</p>
 <h2>Troubleshooting<span class="hx-absolute -hx-mt-20" id="troubleshooting"></span>
-    <a href="#troubleshooting" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>If movement reports a missing <code>Time</code>, add it before scheduling. If an access
-fails compilation, check the resource declaration independently of the component
-filter. For adapters and device restrictions, use the
-<a href="../resources#portable-owning-resources" >Resource operations and adapters</a>.</p>
+    <a href="#troubleshooting" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><table>
+  <thead>
+      <tr>
+          <th>Symptom</th>
+          <th>Fix</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>run</code> raises because <code>Time</code> is missing</td>
+          <td>Add <code>Time</code> with <code>world.resources.add</code> before you start the scheduler.</td>
+      </tr>
+      <tr>
+          <td>Compile error on resource access</td>
+          <td>Check the kernel&rsquo;s <code>Resources</code> declaration; the component filter does not grant resource access.</td>
+      </tr>
+  </tbody>
+</table>
+<h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
+    <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="../resources#portable-owning-resources" >Resource operations and adapters</a>
+covers threaded and device restrictions and adapters for resources that own
+data.</p>
 
         </div>
         <div class="hx-mt-16"></div>
         <div class="hx-mb-8 hx-flex hx-items-center hx-border-t hx-pt-8 dark:hx-border-neutral-800 contrast-more:hx-border-neutral-400 dark:contrast-more:hx-border-neutral-400 print:hx-hidden"><a
         href="/larecs/pr-preview/pr-237/guide/structural_changes/"
-        title="Structural changes"
+        title="Create and remove entities in batches"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-pr-4 rtl:hx-pl-4"
-      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Structural changes</a><a
+      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Create and remove entities in batches</a><a
         href="/larecs/pr-preview/pr-237/guide/entities_components_world/"
         title="Entities, components and the world"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-ml-auto ltr:hx-pl-4 ltr:hx-text-right rtl:hx-mr-auto rtl:hx-pr-4 rtl:hx-text-left"

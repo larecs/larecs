@@ -10,13 +10,14 @@
 <link rel="icon" href="/larecs/pr-preview/pr-237/favicon-32x32.png" type="image/png" sizes="32x32" />
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-237/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-237/site.webmanifest" rel="manifest" />
-<title>Data model – Larecs🌲</title>
-  <meta name="description" content="Use entities for identities and components for per-particle values. Start with the complete movement program.
+<title>Model data with entities and components – Larecs🌲</title>
+  <meta name="description" content="Represent each simulated object as an entity and store its per-object values in components. This page uses the particles from Your first simulation.
 @fieldwise_init struct Position(Copyable, Movable): &#34;&#34;&#34;Where a particle is.&#34;&#34;&#34; var x: Float64 &#34;&#34;&#34;Horizontal coordinate.&#34;&#34;&#34; var y: Float64 &#34;&#34;&#34;Vertical coordinate.&#34;&#34;&#34; @fieldwise_init struct Velocity(Copyable, Movable): &#34;&#34;&#34;How far a particle moves per unit of time.&#34;&#34;&#34; var dx: Float64 &#34;&#34;&#34;Horizontal speed.&#34;&#34;&#34; var dy: Float64 &#34;&#34;&#34;Vertical speed.&#34;&#34;&#34; var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) var marker = world.storage.add_entity(Position(-3, -3))" /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/guide/data_model/" itemprop="url" />
 
-<meta property="og:title" content="Data model" />
-<meta property="og:description" content="Use entities for identities and components for per-particle values. Start with
-the complete movement program.
+<meta property="og:title" content="Model data with entities and components" />
+<meta property="og:description" content="Represent each simulated object as an entity and store its per-object values in
+components. This page uses the particles from
+Your first simulation.
 @fieldwise_init
 struct Position(Copyable, Movable):
     &#34;&#34;&#34;Where a particle is.&#34;&#34;&#34;
@@ -46,13 +47,13 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
 
 
 
-  <meta itemprop="name" content="Data model">
-  <meta itemprop="description" content="Use entities for identities and components for per-particle values. Start with the complete movement program.
+  <meta itemprop="name" content="Model data with entities and components">
+  <meta itemprop="description" content="Represent each simulated object as an entity and store its per-object values in components. This page uses the particles from Your first simulation.
 @fieldwise_init struct Position(Copyable, Movable): &#34;&#34;&#34;Where a particle is.&#34;&#34;&#34; var x: Float64 &#34;&#34;&#34;Horizontal coordinate.&#34;&#34;&#34; var y: Float64 &#34;&#34;&#34;Vertical coordinate.&#34;&#34;&#34; @fieldwise_init struct Velocity(Copyable, Movable): &#34;&#34;&#34;How far a particle moves per unit of time.&#34;&#34;&#34; var dx: Float64 &#34;&#34;&#34;Horizontal speed.&#34;&#34;&#34; var dy: Float64 &#34;&#34;&#34;Vertical speed.&#34;&#34;&#34; var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) var marker = world.storage.add_entity(Position(-3, -3))">
-  <meta itemprop="wordCount" content="301">
+  <meta itemprop="wordCount" content="361">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Data model">
-  <meta name="twitter:description" content="Use entities for identities and components for per-particle values. Start with the complete movement program.
+  <meta name="twitter:title" content="Model data with entities and components">
+  <meta name="twitter:description" content="Represent each simulated object as an entity and store its per-object values in components. This page uses the particles from Your first simulation.
 @fieldwise_init struct Position(Copyable, Movable): &#34;&#34;&#34;Where a particle is.&#34;&#34;&#34; var x: Float64 &#34;&#34;&#34;Horizontal coordinate.&#34;&#34;&#34; var y: Float64 &#34;&#34;&#34;Vertical coordinate.&#34;&#34;&#34; @fieldwise_init struct Velocity(Copyable, Movable): &#34;&#34;&#34;How far a particle moves per unit of time.&#34;&#34;&#34; var dx: Float64 &#34;&#34;&#34;Horizontal speed.&#34;&#34;&#34; var dy: Float64 &#34;&#34;&#34;Vertical speed.&#34;&#34;&#34; var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) var marker = world.storage.add_entity(Position(-3, -3))">
 
     <link rel="preload" href="/larecs/pr-preview/pr-237/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -230,7 +231,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col open"><a
@@ -238,20 +239,14 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
   
     <ul class='hx-flex hx-flex-col hx-gap-1 hx-relative before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] dark:before:hx-bg-neutral-800 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-pr-3 rtl:before:hx-right-0 ltr:hx-ml-3 rtl:hx-mr-3'><li>
               <a
-                href="#entity-identity"
+                href="#define-components"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Entity identity</a>
-            </li>
-          <li>
-              <a
-                href="#components-and-tags"
-                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Components and tags</a>
+              >Define components</a>
             </li>
           <li>
               <a
@@ -261,9 +256,15 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
             </li>
           <li>
               <a
-                href="#references-after-changes"
+                href="#keep-entity-handles"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >References after changes</a>
+              >Keep entity handles</a>
+            </li>
+          <li>
+              <a
+                href="#next-steps"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Next steps</a>
             </li>
           </ul>
   
@@ -273,7 +274,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -281,7 +282,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -289,7 +290,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -755,7 +756,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col open"><a
@@ -763,7 +764,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -771,7 +772,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -779,7 +780,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -787,7 +788,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1221,11 +1222,7 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
 <nav class="hextra-toc hx-order-last hx-hidden hx-w-64 hx-shrink-0 xl:hx-block print:hx-hidden hx-px-4" aria-label="table of contents">
     <div class="hextra-scrollbar hx-sticky hx-top-16 hx-overflow-y-auto hx-pr-4 hx-pt-6 hx-text-sm [hyphens:auto] hx-max-h-[calc(100vh-var(--navbar-height)-env(safe-area-inset-bottom))] ltr:hx--mr-4 rtl:hx--ml-4"><p class="hx-mb-4 hx-font-semibold hx-tracking-tight">On this page</p><ul>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#entity-identity">Entity identity
-        </a>
-      </li>
-      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#components-and-tags">Components and tags
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#define-components">Define components
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
@@ -1233,7 +1230,11 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#references-after-changes">References after changes
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#keep-entity-handles">Keep entity handles
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#next-steps">Next steps
         </a>
       </li></ul>
       <div class="hx-mt-8 hx-border-t hx-bg-white hx-pt-8 hx-shadow-[0_-12px_16px_white] dark:hx-bg-dark dark:hx-shadow-[0_-12px_16px_#111] hx-sticky hx-bottom-0 hx-flex hx-flex-col hx-items-start hx-gap-2 hx-pb-8 dark:hx-border-neutral-800 contrast-more:hx-border-t contrast-more:hx-border-neutral-400 contrast-more:hx-shadow-none contrast-more:dark:hx-border-neutral-400">
@@ -1254,13 +1255,14 @@ var marker = world.storage.add_entity(Position(-3, -3))" />
   <div class="hx-mt-1.5 hx-flex hx-items-center hx-gap-1 hx-overflow-hidden hx-text-sm hx-text-gray-500 dark:hx-text-gray-400 contrast-more:hx-text-current">
         <div class="hx-whitespace-nowrap hx-transition-colors hx-min-w-[24px] hx-overflow-hidden hx-text-ellipsis hover:hx-text-gray-900 dark:hover:hx-text-gray-100">
           <a href="/larecs/pr-preview/pr-237/guide/">User guide</a>
-        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Data model</div>
+        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Model data with entities and components</div>
   </div>
 
         <div class="content">
-          <h1>Data model</h1>
-          <p>Use entities for identities and components for per-particle values. Start with
-the complete <a href="../../start/first_simulation" >movement program</a>.</p>
+          <h1>Model data with entities and components</h1>
+          <p>Represent each simulated object as an entity and store its per-object values in
+components. This page uses the particles from
+<a href="../../start/first_simulation" >Your first simulation</a>.</p>
 <p><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="nd">@fieldwise_init</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span><span class="w"> </span><span class="nc">Position</span><span class="p">(</span><span class="nb">Copyable</span><span class="p">,</span><span class="w"> </span><span class="nb">Movable</span><span class="p">):</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Where a particle is.&#34;&#34;&#34;</span><span class="w">
@@ -1285,41 +1287,57 @@ the complete <a href="../../start/first_simulation" >movement program</a>.</p>
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">var</span><span class="w"> </span><span class="nv">walker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entity</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">Velocity</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">var</span><span class="w"> </span><span class="nv">climber</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entity</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">Velocity</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">))</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">var</span><span class="w"> </span><span class="nv">marker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entity</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">3</span><span class="p">))</span></span></span></code></pre></div></p>
-<h2>Entity identity<span class="hx-absolute -hx-mt-20" id="entity-identity"></span>
-    <a href="#entity-identity" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>An <a href="/larecs/pr-preview/pr-237/larecs/Entity"><code>Entity</code></a> is a copyable ID and generation, not a component address.
-Keep the handle to find the particle again through <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#get"><code>HostStorage.get</code></a>.
-Removing an entity invalidates its handle. Larecs increments the generation
-before reusing the ID, so that handle cannot refer to the new entity.
-Handles belong to their world: do not use a handle in another world.</p>
-<h2>Components and tags<span class="hx-absolute -hx-mt-20" id="components-and-tags"></span>
-    <a href="#components-and-tags" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A component conforms to <a href="../../larecs#aliases" ><code>ComponentType</code></a>, which requires <code>Copyable</code> and
-<code>Deinitable</code>. The particle components declare <code>Copyable, Movable</code>, which
-satisfies both. Each entity has at most one value of each component type. A tag
-is a component with no fields: its presence carries the information. Filters can require or exclude it just like a data component.</p>
+<p><code>Position</code> and <code>Velocity</code> are components. <code>World[Position, Velocity]</code> declares
+the component types the world can store. Each
+<a href="/larecs/pr-preview/pr-237/larecs/HostStorage#add_entity"><code>HostStorage.add_entity</code></a> call creates an entity with the given
+components and returns its handle.</p>
+<h2>Define components<span class="hx-absolute -hx-mt-20" id="define-components"></span>
+    <a href="#define-components" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A component is a struct that conforms to
+<a href="../../larecs#aliases" ><code>ComponentType</code></a>, which requires <code>Copyable</code> and
+<code>Deinitable</code>. <code>Copyable, Movable</code> satisfies both. An entity holds at most one
+value of each component type.</p>
+<p>A component with no fields is a <em>tag</em>. Its presence carries the information,
+and filters can require or exclude it like any other component.</p>
 <h2>Declare the world&rsquo;s component types<span class="hx-absolute -hx-mt-20" id="declare-the-worlds-component-types"></span>
-    <a href="#declare-the-worlds-component-types" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/World"><code>World</code></a> declares all allowed component types at compile time.
-<code>World[Position, Velocity]</code> allows either, both, or neither on an entity.
-Resources have separate storage and do not belong in that component list.
-Entities with the same component set belong to an archetype; you need no storage
-layout knowledge to create them or run systems over them.</p>
-<p>Use <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#add_entity"><code>HostStorage.add_entity</code></a> for initial setup and individual creation.
-Use <a href="../systems_kernels" >systems and kernels</a> for repeated simulation work and
-<a href="../structural_changes" >scoped structural changes</a> for batches.</p>
-<h2>References after changes<span class="hx-absolute -hx-mt-20" id="references-after-changes"></span>
-    <a href="#references-after-changes" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Structural changes can move rows. Keep entity handles, rather than component
-references or row indices, across <a href="../structural_changes" >structural changes</a>.</p>
+    <a href="#declare-the-worlds-component-types" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/World"><code>World</code></a> lists every component type at compile time. An entity of
+<code>World[Position, Velocity]</code> can have either component, both, or neither: in the
+example, <code>marker</code> has only a <code>Position</code>. Resources live in separate storage and
+do not appear in this list.</p>
+<p>Larecs groups entities with the same set of components into a <em>logical
+archetype</em>. You need no knowledge of this layout to create entities or run
+systems over them.</p>
+<h2>Keep entity handles<span class="hx-absolute -hx-mt-20" id="keep-entity-handles"></span>
+    <a href="#keep-entity-handles" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>An <a href="/larecs/pr-preview/pr-237/larecs/Entity"><code>Entity</code></a> is a copyable ID and generation, not the address of its
+components. Keep the handle to find the entity again, for example with
+<a href="/larecs/pr-preview/pr-237/larecs/HostStorage#get"><code>HostStorage.get</code></a>.</p>
+<ul>
+<li>Removing an entity invalidates its handle. Larecs increments the generation
+before it reuses the ID, so an old handle never refers to a new entity.</li>
+<li>A handle belongs to the world that created it. Do not use it with another
+world.</li>
+<li>Structural changes can move an entity&rsquo;s components in memory. Keep the
+handle across <a href="../structural_changes" >structural changes</a>, not component
+references or row indices.</li>
+</ul>
+<h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
+    <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><ul>
+<li><a href="../systems_kernels" >Update entities with systems and kernels</a> for repeated
+simulation work.</li>
+<li><a href="../structural_changes" >Create and remove entities in batches</a> for creating
+many entities at once.</li>
+</ul>
 
         </div>
         <div class="hx-mt-16"></div>
         <div class="hx-mb-8 hx-flex hx-items-center hx-border-t hx-pt-8 dark:hx-border-neutral-800 contrast-more:hx-border-neutral-400 dark:contrast-more:hx-border-neutral-400 print:hx-hidden"><a
         href="/larecs/pr-preview/pr-237/guide/installation/"
-        title="Installation"
+        title="Install Larecs"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-pr-4 rtl:hx-pl-4"
-      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Installation</a><a
+      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Install Larecs</a><a
         href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
-        title="Systems and kernels"
+        title="Update entities with systems and kernels"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-ml-auto ltr:hx-pl-4 ltr:hx-text-right rtl:hx-mr-auto rtl:hx-pr-4 rtl:hx-text-left"
-      >Systems and kernels<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
+      >Update entities with systems and kernels<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
         
       </main>
     </article>

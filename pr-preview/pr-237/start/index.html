@@ -11,8 +11,8 @@
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-237/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-237/site.webmanifest" rel="manifest" />
 <title>Get started – Larecs🌲</title>
-  <meta name="description" content="Build a working Larecs simulation, then learn the concepts behind it.
-Install Larecs: set up the locked environment and run the first example. Your first simulation: move particles with a system and a kernel, and check the result. Create and remove particles: create an exact batch and remove stationary particles. Share time and configuration: schedule shared state changes before movement. Use the guides on Data model, Systems and kernels, Structural changes, and Resources." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/start/" itemprop="url" />
+  <meta name="description" content="Build a particle simulation one feature at a time. Each stage is a complete program in examples/particles/.
+Install Larecs: set up the locked environment and run the first program. Your first simulation: move particles with a system and a kernel, and check where they end up. Create and remove particles: create a batch of particles and remove the stationary one. Share time and configuration: set the step length from a configuration resource before each movement step. The guides cover each topic in depth: entities and components, systems and kernels, batch creation and removal, and resources." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/start/" itemprop="url" />
 
 <meta property="og:title" content="Get started" />
 <meta property="og:description" content="" />
@@ -20,13 +20,13 @@ Install Larecs: set up the locked environment and run the first example. Your fi
 <meta property="og:url" content="https://larecs.github.io/larecs/pr-preview/pr-237/start/" />
 
   <meta itemprop="name" content="Get started">
-  <meta itemprop="description" content="Build a working Larecs simulation, then learn the concepts behind it.
-Install Larecs: set up the locked environment and run the first example. Your first simulation: move particles with a system and a kernel, and check the result. Create and remove particles: create an exact batch and remove stationary particles. Share time and configuration: schedule shared state changes before movement. Use the guides on Data model, Systems and kernels, Structural changes, and Resources.">
-  <meta itemprop="wordCount" content="73">
+  <meta itemprop="description" content="Build a particle simulation one feature at a time. Each stage is a complete program in examples/particles/.
+Install Larecs: set up the locked environment and run the first program. Your first simulation: move particles with a system and a kernel, and check where they end up. Create and remove particles: create a batch of particles and remove the stationary one. Share time and configuration: set the step length from a configuration resource before each movement step. The guides cover each topic in depth: entities and components, systems and kernels, batch creation and removal, and resources.">
+  <meta itemprop="wordCount" content="95">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Get started">
-  <meta name="twitter:description" content="Build a working Larecs simulation, then learn the concepts behind it.
-Install Larecs: set up the locked environment and run the first example. Your first simulation: move particles with a system and a kernel, and check the result. Create and remove particles: create an exact batch and remove stationary particles. Share time and configuration: schedule shared state changes before movement. Use the guides on Data model, Systems and kernels, Structural changes, and Resources.">
+  <meta name="twitter:description" content="Build a particle simulation one feature at a time. Each stage is a complete program in examples/particles/.
+Install Larecs: set up the locked environment and run the first program. Your first simulation: move particles with a system and a kernel, and check where they end up. Create and remove particles: create a batch of particles and remove the stationary one. Share time and configuration: set the step length from a configuration resource before each movement step. The guides cover each topic in depth: entities and components, systems and kernels, batch creation and removal, and resources.">
 
     <link rel="preload" href="/larecs/pr-preview/pr-237/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
     <link href="/larecs/pr-preview/pr-237/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -204,7 +204,7 @@ Install Larecs: set up the locked environment and run the first example. Your fi
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -212,7 +212,7 @@ Install Larecs: set up the locked environment and run the first example. Your fi
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -220,7 +220,7 @@ Install Larecs: set up the locked environment and run the first example. Your fi
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -228,7 +228,7 @@ Install Larecs: set up the locked environment and run the first example. Your fi
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -236,7 +236,7 @@ Install Larecs: set up the locked environment and run the first example. Your fi
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -702,7 +702,7 @@ Install Larecs: set up the locked environment and run the first example. Your fi
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -710,7 +710,7 @@ Install Larecs: set up the locked environment and run the first example. Your fi
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -718,7 +718,7 @@ Install Larecs: set up the locked environment and run the first example. Your fi
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -726,7 +726,7 @@ Install Larecs: set up the locked environment and run the first example. Your fi
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -734,7 +734,7 @@ Install Larecs: set up the locked environment and run the first example. Your fi
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1187,21 +1187,23 @@ Install Larecs: set up the locked environment and run the first example. Your fi
 
         <div class="content">
           <h1>Get started</h1>
-          <p>Build a working Larecs simulation, then learn the concepts behind it.</p>
-<ul>
+          <p>Build a particle simulation one feature at a time. Each stage is a complete
+program in <code>examples/particles/</code>.</p>
+<ol>
 <li><a href="../guide/installation" >Install Larecs</a>: set up the locked environment and
-run the first example.</li>
+run the first program.</li>
 <li><a href="first_simulation" >Your first simulation</a>: move particles with a system and
-a kernel, and check the result.</li>
-<li><a href="growing_simulation" >Create and remove particles</a>: create an exact batch and
-remove stationary particles.</li>
-<li><a href="shared_configuration" >Share time and configuration</a>: schedule shared state
-changes before movement.</li>
-</ul>
-<p>Use the guides on <a href="../guide/data_model" >Data model</a>,
-<a href="../guide/systems_kernels" >Systems and kernels</a>,
-<a href="../guide/structural_changes" >Structural changes</a>, and
-<a href="../guide/shared_resources" >Resources</a>.</p>
+a kernel, and check where they end up.</li>
+<li><a href="growing_simulation" >Create and remove particles</a>: create a batch of
+particles and remove the stationary one.</li>
+<li><a href="shared_configuration" >Share time and configuration</a>: set the step length
+from a configuration resource before each movement step.</li>
+</ol>
+<p>The guides cover each topic in depth:
+<a href="../guide/data_model" >entities and components</a>,
+<a href="../guide/systems_kernels" >systems and kernels</a>,
+<a href="../guide/structural_changes" >batch creation and removal</a>, and
+<a href="../guide/shared_resources" >resources</a>.</p>
 
         </div>
         <div class="hx-mt-16"></div>

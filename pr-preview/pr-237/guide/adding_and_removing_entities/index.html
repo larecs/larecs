@@ -86,7 +86,7 @@ we can do the following:" />
   <meta itemprop="description" content="Adding and removing individual entities is done via the add_entity and remove_entity methods of World.storage. Revisiting our earlier example of a world with Position and Velocity, this reads as follows:
 The examples in this chapter mutate a World directly to demonstrate its storage API. This is useful for setup and isolated changes. In application logic, these operations should generally be performed by a system through its SystemContext.
 from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init struct Position(Copyable, Movable): var x: Float64 var y: Float64 @fieldwise_init struct Velocity(Copyable, Movable): var dx: Float64 var dy: Float64 def place_batch(rows: KernelContext[Filter().include[Position]()]): &#34;&#34;&#34;Places each execution-local row one unit farther along the x axis.&#34;&#34;&#34; for row in rows: row.get[Position]().x = Float64(row.idx) def main() raises: var world = World[Position, Velocity]() # Add an entity and get its representation var entity = world.storage.add_entity() # Remove the entity world.storage.remove_entity(entity) Components can be added to the entities directly upon creation. For example, to create an entity with a position at (0, 0) and a velocity of (1, 0), we can do the following:">
-  <meta itemprop="wordCount" content="620">
+  <meta itemprop="wordCount" content="625">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Adding and removing entities">
   <meta name="twitter:description" content="Adding and removing individual entities is done via the add_entity and remove_entity methods of World.storage. Revisiting our earlier example of a world with Position and Velocity, this reads as follows:
@@ -268,7 +268,7 @@ from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init s
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -276,7 +276,7 @@ from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init s
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -284,7 +284,7 @@ from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init s
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -292,7 +292,7 @@ from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init s
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -300,7 +300,7 @@ from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init s
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -781,7 +781,7 @@ from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init s
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -789,7 +789,7 @@ from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init s
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -797,7 +797,7 @@ from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init s
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -805,7 +805,7 @@ from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init s
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -813,7 +813,7 @@ from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init s
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1359,8 +1359,6 @@ we can do the following:</p>
   </button>
 </div>
 </div>
-<p><code>place_batch</code> uses <code>row.idx</code>, which restarts at zero for each selected host
-range; it does not assign globally unique indices.</p>
 <h2>Batch addition<span class="hx-absolute -hx-mt-20" id="batch-addition"></span>
     <a href="#batch-addition" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Systems create batches through <a href="/larecs/pr-preview/pr-237/larecs/SystemContext#add_entities"><code>add_entities</code></a>.
 The result is a movable, noncopyable <a href="/larecs/pr-preview/pr-237/larecs/EntitySelection"><code>EntitySelection</code></a> containing
@@ -1382,6 +1380,8 @@ exactly the new rows and owning the world&rsquo;s structural-change lock:</p>
   </button>
 </div>
 </div>
+<p><code>place_batch</code> sets each <code>x</code> to <code>row.idx</code>. The index restarts at zero for
+each selected host range, so it is not unique across the batch.</p>
 <p>Use a <code>with</code> block to release the lock automatically, including when an error
 or early return exits the block:</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">

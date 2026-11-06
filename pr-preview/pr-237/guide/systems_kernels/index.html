@@ -10,13 +10,14 @@
 <link rel="icon" href="/larecs/pr-preview/pr-237/favicon-32x32.png" type="image/png" sizes="32x32" />
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-237/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-237/site.webmanifest" rel="manifest" />
-<title>Systems and kernels – Larecs🌲</title>
-  <meta name="description" content="Run application behavior through a system and update matching particles with a kernel. The movement tutorial provides the complete program.
+<title>Update entities with systems and kernels – Larecs🌲</title>
+  <meta name="description" content="Put repeated simulation work in a system, and let the system run a kernel over every entity that matches a filter. This page uses the movement code from Your first simulation.
 comptime move_filter = Filter().include[Position]().read[Velocity]() comptime move_resources = Resources().read[Time]() def move(context: KernelContext[move_filter, move_resources]): &#34;&#34;&#34;Advances every particle by its velocity times the step length. Args: context: The matching rows and the declared resources. &#34;&#34;&#34; ref time = context.resources.get[Time]() for particle in context: ref position = particle.get[Position]() ref velocity = particle.get[Velocity]() position.x &#43;= velocity.dx * time.delta position.y &#43;= velocity.dy * time.delta @fieldwise_init struct Move(System): &#34;&#34;&#34;Runs the `move` kernel once per step.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Moves all particles. Args: context: Access to the scheduler&#39;s world. Raises: Error: If `Time` is missing from the world. &#34;&#34;&#34; context.run[move]() var scheduler = Scheduler[Position, Velocity](world^) scheduler.add_system(Move()) scheduler.run(steps=10)" /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/guide/systems_kernels/" itemprop="url" />
 
-<meta property="og:title" content="Systems and kernels" />
-<meta property="og:description" content="Run application behavior through a system and update matching particles with a
-kernel. The movement tutorial provides the complete program.
+<meta property="og:title" content="Update entities with systems and kernels" />
+<meta property="og:description" content="Put repeated simulation work in a system, and let the system run a kernel over
+every entity that matches a filter. This page uses the movement code from
+Your first simulation.
 comptime move_filter = Filter().include[Position]().read[Velocity]()
 comptime move_resources = Resources().read[Time]()
 
@@ -55,13 +56,13 @@ scheduler.run(steps=10)" />
 
 
 
-  <meta itemprop="name" content="Systems and kernels">
-  <meta itemprop="description" content="Run application behavior through a system and update matching particles with a kernel. The movement tutorial provides the complete program.
+  <meta itemprop="name" content="Update entities with systems and kernels">
+  <meta itemprop="description" content="Put repeated simulation work in a system, and let the system run a kernel over every entity that matches a filter. This page uses the movement code from Your first simulation.
 comptime move_filter = Filter().include[Position]().read[Velocity]() comptime move_resources = Resources().read[Time]() def move(context: KernelContext[move_filter, move_resources]): &#34;&#34;&#34;Advances every particle by its velocity times the step length. Args: context: The matching rows and the declared resources. &#34;&#34;&#34; ref time = context.resources.get[Time]() for particle in context: ref position = particle.get[Position]() ref velocity = particle.get[Velocity]() position.x &#43;= velocity.dx * time.delta position.y &#43;= velocity.dy * time.delta @fieldwise_init struct Move(System): &#34;&#34;&#34;Runs the `move` kernel once per step.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Moves all particles. Args: context: Access to the scheduler&#39;s world. Raises: Error: If `Time` is missing from the world. &#34;&#34;&#34; context.run[move]() var scheduler = Scheduler[Position, Velocity](world^) scheduler.add_system(Move()) scheduler.run(steps=10)">
-  <meta itemprop="wordCount" content="741">
+  <meta itemprop="wordCount" content="894">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Systems and kernels">
-  <meta name="twitter:description" content="Run application behavior through a system and update matching particles with a kernel. The movement tutorial provides the complete program.
+  <meta name="twitter:title" content="Update entities with systems and kernels">
+  <meta name="twitter:description" content="Put repeated simulation work in a system, and let the system run a kernel over every entity that matches a filter. This page uses the movement code from Your first simulation.
 comptime move_filter = Filter().include[Position]().read[Velocity]() comptime move_resources = Resources().read[Time]() def move(context: KernelContext[move_filter, move_resources]): &#34;&#34;&#34;Advances every particle by its velocity times the step length. Args: context: The matching rows and the declared resources. &#34;&#34;&#34; ref time = context.resources.get[Time]() for particle in context: ref position = particle.get[Position]() ref velocity = particle.get[Velocity]() position.x &#43;= velocity.dx * time.delta position.y &#43;= velocity.dy * time.delta @fieldwise_init struct Move(System): &#34;&#34;&#34;Runs the `move` kernel once per step.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Moves all particles. Args: context: Access to the scheduler&#39;s world. Raises: Error: If `Time` is missing from the world. &#34;&#34;&#34; context.run[move]() var scheduler = Scheduler[Position, Velocity](world^) scheduler.add_system(Move()) scheduler.run(steps=10)">
 
     <link rel="preload" href="/larecs/pr-preview/pr-237/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -239,7 +240,7 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -247,7 +248,7 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col open"><a
@@ -255,32 +256,56 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
   
     <ul class='hx-flex hx-flex-col hx-gap-1 hx-relative before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] dark:before:hx-bg-neutral-800 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-pr-3 rtl:before:hx-right-0 ltr:hx-ml-3 rtl:hx-mr-3'><li>
               <a
-                href="#access-declarations"
+                href="#declare-component-and-resource-access"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Access declarations</a>
+              >Declare component and resource access</a>
             </li>
           <li>
               <a
-                href="#lifecycle-and-order"
+                href="#how-often-a-kernel-runs"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Lifecycle and order</a>
+              >How often a kernel runs</a>
             </li>
           <li>
               <a
-                href="#inspecting-entities"
+                href="#write-values-without-reading-them"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Inspecting entities</a>
+              >Write values without reading them</a>
+            </li>
+          <li>
+              <a
+                href="#order-systems-and-steps"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Order systems and steps</a>
+            </li>
+          <li>
+              <a
+                href="#inspect-entities-outside-a-kernel"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Inspect entities outside a kernel</a>
+            </li>
+          <li>
+              <a
+                href="#compare-handles-queries-and-selections"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Compare handles, queries, and selections</a>
             </li>
           <li>
               <a
                 href="#troubleshooting"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
               >Troubleshooting</a>
+            </li>
+          <li>
+              <a
+                href="#next-steps"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Next steps</a>
             </li>
           </ul>
   
@@ -290,7 +315,7 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -298,7 +323,7 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -764,7 +789,7 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -772,7 +797,7 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col open"><a
@@ -780,7 +805,7 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -788,7 +813,7 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -796,7 +821,7 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1230,31 +1255,35 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
 <nav class="hextra-toc hx-order-last hx-hidden hx-w-64 hx-shrink-0 xl:hx-block print:hx-hidden hx-px-4" aria-label="table of contents">
     <div class="hextra-scrollbar hx-sticky hx-top-16 hx-overflow-y-auto hx-pr-4 hx-pt-6 hx-text-sm [hyphens:auto] hx-max-h-[calc(100vh-var(--navbar-height)-env(safe-area-inset-bottom))] ltr:hx--mr-4 rtl:hx--ml-4"><p class="hx-mb-4 hx-font-semibold hx-tracking-tight">On this page</p><ul>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#access-declarations">Access declarations
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#declare-component-and-resource-access">Declare component and resource access
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#write-only-components">Write-only components
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#how-often-a-kernel-runs">How often a kernel runs
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#lifecycle-and-order">Lifecycle and order
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#write-values-without-reading-them">Write values without reading them
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#inspecting-entities">Inspecting entities
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#order-systems-and-steps">Order systems and steps
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#query-lock-lifetime-copies-and-moves">Query lock lifetime, copies, and moves
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#inspect-entities-outside-a-kernel">Inspect entities outside a kernel
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#handles-accessors-queries-selections-and-ranges">Handles, accessors, queries, selections, and ranges
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#compare-handles-queries-and-selections">Compare handles, queries, and selections
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
         <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#troubleshooting">Troubleshooting
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#next-steps">Next steps
         </a>
       </li></ul>
       <div class="hx-mt-8 hx-border-t hx-bg-white hx-pt-8 hx-shadow-[0_-12px_16px_white] dark:hx-bg-dark dark:hx-shadow-[0_-12px_16px_#111] hx-sticky hx-bottom-0 hx-flex hx-flex-col hx-items-start hx-gap-2 hx-pb-8 dark:hx-border-neutral-800 contrast-more:hx-border-t contrast-more:hx-border-neutral-400 contrast-more:hx-shadow-none contrast-more:dark:hx-border-neutral-400">
@@ -1275,13 +1304,14 @@ comptime move_filter = Filter().include[Position]().read[Velocity]() comptime mo
   <div class="hx-mt-1.5 hx-flex hx-items-center hx-gap-1 hx-overflow-hidden hx-text-sm hx-text-gray-500 dark:hx-text-gray-400 contrast-more:hx-text-current">
         <div class="hx-whitespace-nowrap hx-transition-colors hx-min-w-[24px] hx-overflow-hidden hx-text-ellipsis hover:hx-text-gray-900 dark:hover:hx-text-gray-100">
           <a href="/larecs/pr-preview/pr-237/guide/">User guide</a>
-        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Systems and kernels</div>
+        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Update entities with systems and kernels</div>
   </div>
 
         <div class="content">
-          <h1>Systems and kernels</h1>
-          <p>Run application behavior through a system and update matching particles with a
-kernel. The <a href="../../start/first_simulation" >movement tutorial</a> provides the complete program.</p>
+          <h1>Update entities with systems and kernels</h1>
+          <p>Put repeated simulation work in a system, and let the system run a kernel over
+every entity that matches a filter. This page uses the movement code from
+<a href="../../start/first_simulation" >Your first simulation</a>.</p>
 <p><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="n">comptime</span><span class="w"> </span><span class="n">move_filter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">include</span><span class="p">[</span><span class="n">Position</span><span class="p">]()</span><span class="o">.</span><span class="n">read</span><span class="p">[</span><span class="n">Velocity</span><span class="p">]()</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">comptime</span><span class="w"> </span><span class="n">move_resources</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Resources</span><span class="p">()</span><span class="o">.</span><span class="n">read</span><span class="p">[</span><span class="n">Time</span><span class="p">]()</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">
@@ -1315,20 +1345,60 @@ kernel. The <a href="../../start/first_simulation" >movement tutorial</a> provid
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">var</span><span class="w"> </span><span class="nv">scheduler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Scheduler</span><span class="p">[</span><span class="n">Position</span><span class="p">,</span><span class="w"> </span><span class="n">Velocity</span><span class="p">](</span><span class="n">world</span><span class="o">^</span><span class="p">)</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">scheduler.add_system</span><span class="p">(</span><span class="n">Move</span><span class="p">())</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">scheduler.run</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span></span></span></code></pre></div></p>
-<h2>Access declarations<span class="hx-absolute -hx-mt-20" id="access-declarations"></span>
-    <a href="#access-declarations" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/Filter"><code>Filter</code></a> describes required components and access. <code>include</code> grants
-read-write access, <code>read</code> grants immutable access, and <code>exclude</code> rejects entities
-with that component. <a href="https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/filter.mojo#L177" target="_blank" rel="noopener"><code>Filter.exclusive</code></a> rejects extra components.
-The kernel&rsquo;s <a href="/larecs/pr-preview/pr-237/larecs/KernelContext"><code>KernelContext</code></a> supplies only declared component access;
-requesting an undeclared component through <code>get</code> fails compilation.
-<a href="/larecs/pr-preview/pr-237/larecs/Resources"><code>Resources</code></a> independently declares resource access.</p>
-<p><a href="/larecs/pr-preview/pr-237/larecs/SystemContext#run"><code>SystemContext.run</code></a> calls a host kernel for each non-empty matching
-physical store: a group of stored rows with the same component set. An archetype
-can have several such stores. Put per-entity work inside the loop. With no
-matching entities, no kernel body runs. Calls complete before the next system
-proceeds.</p>
-<h3>Write-only components<span class="hx-absolute -hx-mt-20" id="write-only-components"></span>
-    <a href="#write-only-components" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">def</span><span class="w"> </span><span class="nf">reset_position</span><span class="p">(</span><span class="n">context</span><span class="p">:</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">[</span><span class="n">Position</span><span class="p">]()]):</span><span class="w">
+<p><code>move</code> is the kernel, <code>Move</code> is the system that runs it, and the
+<a href="/larecs/pr-preview/pr-237/larecs/Scheduler"><code>Scheduler</code></a> calls <code>Move.update</code> once per step.</p>
+<h2>Declare component and resource access<span class="hx-absolute -hx-mt-20" id="declare-component-and-resource-access"></span>
+    <a href="#declare-component-and-resource-access" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A <a href="/larecs/pr-preview/pr-237/larecs/Filter"><code>Filter</code></a> selects entities and sets how the kernel may access their
+components:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Step</th>
+          <th>Matches</th>
+          <th>Access through the kernel</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>include[T]()</code></td>
+          <td>Entities with <code>T</code></td>
+          <td>Read and write with <code>get</code></td>
+      </tr>
+      <tr>
+          <td><code>read[T]()</code></td>
+          <td>Entities with <code>T</code></td>
+          <td>Read with <code>get</code></td>
+      </tr>
+      <tr>
+          <td><code>write[T]()</code></td>
+          <td>Entities with <code>T</code></td>
+          <td>Write with <code>set</code> only</td>
+      </tr>
+      <tr>
+          <td><code>exclude[T]()</code></td>
+          <td>Entities without <code>T</code></td>
+          <td>None</td>
+      </tr>
+      <tr>
+          <td><a href="https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/filter.mojo#L177" target="_blank" rel="noopener"><code>exclusive()</code></a></td>
+          <td>Only entities without further components</td>
+          <td>Unchanged</td>
+      </tr>
+  </tbody>
+</table>
+<p>The kernel&rsquo;s <a href="/larecs/pr-preview/pr-237/larecs/KernelContext"><code>KernelContext</code></a> exposes only the declared access.
+Calling <code>get</code> on a component the filter does not guarantee, or writing through
+<code>read</code> access, fails to compile. <a href="/larecs/pr-preview/pr-237/larecs/Resources"><code>Resources</code></a> declares resource access
+separately; see <a href="../shared_resources" >Share values with resources</a>.</p>
+<h2>How often a kernel runs<span class="hx-absolute -hx-mt-20" id="how-often-a-kernel-runs"></span>
+    <a href="#how-often-a-kernel-runs" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>On the host, <a href="/larecs/pr-preview/pr-237/larecs/SystemContext#run"><code>SystemContext.run</code></a> calls the kernel once for each
+non-empty matching <em>physical store</em>: a group of rows with the same components.
+One logical archetype can have several physical stores. Put per-entity work
+inside the <code>for</code> loop over the context. With no matching entities, the kernel
+body never runs. All calls finish before <code>run</code> returns, so the next system sees
+the results.</p>
+<h2>Write values without reading them<span class="hx-absolute -hx-mt-20" id="write-values-without-reading-them"></span>
+    <a href="#write-values-without-reading-them" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">def</span><span class="w"> </span><span class="nf">reset_position</span><span class="p">(</span><span class="n">context</span><span class="p">:</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">[</span><span class="n">Position</span><span class="p">]()]):</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Initializes every selected position without reading it.
 </span></span></span><span class="line"><span class="cl"><span class="s2">
 </span></span></span><span class="line"><span class="cl"><span class="s2">    Args:
@@ -1336,22 +1406,27 @@ proceeds.</p>
 </span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">particle</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">context</span><span class="p">:</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">particle.set</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span></span></span></code></pre></div>
-<p><a href="https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/filter.mojo#L134" target="_blank" rel="noopener"><code>Filter.write</code></a> permits <a href="/larecs/pr-preview/pr-237/larecs/EntityAccessor#set"><code>EntityAccessor.set</code></a> and rejects
-<code>get</code>: initialize the component for every processed row before reading it in a
-later kernel. The creation program runs this kernel before movement.
-For device execution, read access uploads values, write access downloads results,
-and read-write access does both; write-only values are not uploaded.
-See <a href="../systems_scheduler#device-execution" >execution details</a> for target limits.</p>
-<h2>Lifecycle and order<span class="hx-absolute -hx-mt-20" id="lifecycle-and-order"></span>
-    <a href="#lifecycle-and-order" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/System"><code>System</code></a> supplies <code>initialize</code>, <code>update</code>, and <code>finalize</code> hooks.
-<a href="/larecs/pr-preview/pr-237/larecs/Scheduler#run"><code>Scheduler.run</code></a> initializes all systems, updates them for each step,
-then finalizes them, in registration order within each phase. Errors propagate;
-<code>run</code> does not guarantee finalization after a failed hook. For repeated stepping,
-use <code>initialize</code>, <code>update(steps=...)</code>, and <code>finalize</code> explicitly.</p>
-<h2>Inspecting entities<span class="hx-absolute -hx-mt-20" id="inspecting-entities"></span>
-    <a href="#inspecting-entities" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Use <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#query"><code>HostStorage.query</code></a> for read-only inspection outside kernels.
-The full <a href="../../start/growing_simulation" >creation example</a> inspects the marker
-before scheduling:</p>
+<p><a href="https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/filter.mojo#L134" target="_blank" rel="noopener"><code>Filter.write</code></a>
+permits <a href="/larecs/pr-preview/pr-237/larecs/EntityAccessor#set"><code>EntityAccessor.set</code></a> and rejects <code>get</code>. Set the component on
+every row the kernel visits; a later kernel can then read it.
+<a href="../../start/growing_simulation" >Create and remove particles</a> runs this kernel
+before movement.</p>
+<p>For device execution, the access mode decides the transfers: read access
+uploads values, write access downloads results, and read-write access does
+both. Write-only values are not uploaded. See
+<a href="../systems_scheduler#device-execution" >device execution</a> for target limits.</p>
+<h2>Order systems and steps<span class="hx-absolute -hx-mt-20" id="order-systems-and-steps"></span>
+    <a href="#order-systems-and-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><a href="/larecs/pr-preview/pr-237/larecs/System"><code>System</code></a> has three hooks: <code>initialize</code>, <code>update</code>, and <code>finalize</code>.
+<a href="/larecs/pr-preview/pr-237/larecs/Scheduler#run"><code>Scheduler.run</code></a> initializes all systems, updates them once per step,
+and then finalizes them. Within each phase, systems run in the order you added
+them.</p>
+<p>An error in a hook propagates out of <code>run</code>, and <code>run</code> does not guarantee that
+<code>finalize</code> runs afterwards. To step the simulation in several batches, call
+<code>initialize</code>, <code>update(steps=...)</code>, and <code>finalize</code> yourself.</p>
+<h2>Inspect entities outside a kernel<span class="hx-absolute -hx-mt-20" id="inspect-entities-outside-a-kernel"></span>
+    <a href="#inspect-entities-outside-a-kernel" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Use <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#query"><code>HostStorage.query</code></a> to read entities outside a kernel, for
+example during setup. <a href="../../start/growing_simulation" >Create and remove particles</a>
+inspects the marker before it starts the scheduler:</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">var</span><span class="w"> </span><span class="nv">query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.query</span><span class="p">[</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">read</span><span class="p">[</span><span class="n">Position</span><span class="p">]()</span><span class="o">.</span><span class="n">exclude</span><span class="p">[</span><span class="n">Velocity</span><span class="p">]()</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">]()</span><span class="w">
@@ -1364,27 +1439,27 @@ before scheduling:</p>
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">assert_equal</span><span class="p">(</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nb">len</span><span class="p">(</span><span class="n">world.storage.query</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">read</span><span class="p">[</span><span class="n">Position</span><span class="p">]()</span><span class="o">.</span><span class="n">exclusive</span><span class="p">()]()),</span><span class="w"> </span><span class="mi">1</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">)</span></span></span></code></pre></div>
-<p>The example copies the query to show that the copy has its own cursor.
-Consuming both with <code>^</code> ends their locks before the scheduler takes the world.</p>
-<p>A query&rsquo;s filter requires or excludes component types; <code>exclusive</code> restricts it
-to exactly the included set. Query rows are <a href="/larecs/pr-preview/pr-237/larecs/ArchetypeRowAccessor"><code>ArchetypeRowAccessor</code></a>
-values, not entity handles. <code>get</code> reads a component guaranteed by the filter;
-<code>get_entity</code> retrieves the persistent handle. A query remains read-only even
-when its filter uses <code>include</code>. Use a kernel to update matching entities.</p>
-<h3>Query lock lifetime, copies, and moves<span class="hx-absolute -hx-mt-20" id="query-lock-lifetime-copies-and-moves"></span>
-    <a href="#query-lock-lifetime-copies-and-moves" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>A live query prevents structural changes, even when empty or exhausted. Consume
-it in a short loop or let it be destroyed before mutation. A copy starts at the
-same position with an independent cursor and structural lock; a move transfers
-the existing lock. Keep no row accessor beyond its query or across structural
-changes. These locks prevent invalidation; they are not thread mutexes.</p>
-<h3>Handles, accessors, queries, selections, and ranges<span class="hx-absolute -hx-mt-20" id="handles-accessors-queries-selections-and-ranges"></span>
-    <a href="#handles-accessors-queries-selections-and-ranges" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><table>
+<p>Each query row is an <a href="/larecs/pr-preview/pr-237/larecs/ArchetypeRowAccessor"><code>ArchetypeRowAccessor</code></a>, not an entity handle.
+<code>get</code> reads a component the filter guarantees, and <code>get_entity</code> returns the
+entity&rsquo;s handle. A query is read-only, even when its filter uses <code>include</code>; use
+a kernel to change values. <code>exclusive()</code> restricts a query to entities with
+exactly the listed components, so the last assertion counts only <code>marker</code>.</p>
+<p>A live query holds a structural lock, even after it is exhausted or when it
+matched nothing. Consume it in a short loop, or let it go out of scope, before
+you create or remove entities. A copy starts at the same position with its own
+cursor and lock; a move transfers the existing lock. The example copies the
+query to show this, and consumes both with <code>^</code> so their locks end before the
+scheduler takes the world. Do not keep a row accessor beyond its query or
+across structural changes. Structural locks protect references from
+invalidation; they are not thread mutexes.</p>
+<h2>Compare handles, queries, and selections<span class="hx-absolute -hx-mt-20" id="compare-handles-queries-and-selections"></span>
+    <a href="#compare-handles-queries-and-selections" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><table>
   <thead>
       <tr>
           <th>Value</th>
           <th>Copy and move</th>
           <th>Structural lock</th>
-          <th>Access</th>
+          <th>Use</th>
       </tr>
   </thead>
   <tbody>
@@ -1392,56 +1467,78 @@ changes. These locks prevent invalidation; they are not thread mutexes.</p>
           <td>Entity handle</td>
           <td>Copyable and movable</td>
           <td>None</td>
-          <td>Identifies an entity for storage calls; survives row movement, not deletion</td>
+          <td>Identify an entity in storage calls; survives row movement, not deletion</td>
       </tr>
       <tr>
           <td>Query row accessor</td>
-          <td>Movable, noncopyable</td>
-          <td>Relies on the enclosing query</td>
-          <td>Reads query components; discard before structural changes</td>
+          <td>Movable, not copyable</td>
+          <td>Held by its query</td>
+          <td>Read the query&rsquo;s components; discard before structural changes</td>
       </tr>
       <tr>
           <td>Query</td>
-          <td>Copies have independent cursors and locks; moves transfer the lock</td>
-          <td>Retained after exhaustion, even for empty results</td>
+          <td>Copy: own cursor and lock. Move: transfers the lock</td>
+          <td>Until destroyed, even when exhausted or empty</td>
           <td>Read-only traversal</td>
       </tr>
       <tr>
           <td>Entity selection</td>
-          <td>Movable, noncopyable</td>
-          <td>Until release, destruction, or manager exit, including empty selections</td>
-          <td>Component changes and filtered kernel execution on exactly its members</td>
+          <td>Movable, not copyable</td>
+          <td>Until released, destroyed, or its <code>with</code> block ends, even when empty</td>
+          <td>Change components and run kernels on exactly its members</td>
       </tr>
       <tr>
           <td>Storage batch range (<a href="/larecs/pr-preview/pr-237/larecs/HostStorage#add_entities"><code>HostStorage.add_entities</code></a>)</td>
-          <td>Copies have independent cursors and locks; moves transfer the lock</td>
-          <td>Retained after exhaustion, even for empty results</td>
-          <td>Low-level traversal and mutable <code>unsafe_get</code>; no selection <code>run</code></td>
+          <td>Copy: own cursor and lock. Move: transfers the lock</td>
+          <td>Until destroyed, even when exhausted or empty</td>
+          <td>Low-level traversal and mutable <code>unsafe_get</code>; no <code>run</code></td>
       </tr>
   </tbody>
 </table>
-<p>See <a href="../structural_changes" >Structural changes</a> for scoped mutation and
-<a href="/larecs/pr-preview/pr-237/larecs/HostStorage"><code>HostStorage</code></a> for storage batch operations.</p>
+<p><a href="../structural_changes" >Create and remove entities in batches</a> covers
+selections.</p>
 <h2>Troubleshooting<span class="hx-absolute -hx-mt-20" id="troubleshooting"></span>
-    <a href="#troubleshooting" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>A missing required resource makes <code>run</code> raise: add it during setup. A component
-access compile error usually means the filter does not guarantee that type or
-grants only read access. A locked-world error means a query or selection still
-lives; end its scope before unrelated structural work.</p>
-<p>For supported lower-level traversal, see <a href="/larecs/pr-preview/pr-237/larecs/HostStorage"><code>HostStorage</code></a> and
-<a href="/larecs/pr-preview/pr-237/larecs/ArchetypeRowAccessor"><code>ArchetypeRowAccessor</code></a>. For advanced execution, see
-<a href="../systems_scheduler" >Systems and the scheduler</a>.</p>
+    <a href="#troubleshooting" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><table>
+  <thead>
+      <tr>
+          <th>Symptom</th>
+          <th>Cause and fix</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>run</code> raises about a missing resource</td>
+          <td>The kernel declares a resource the world lacks. Add it during setup.</td>
+      </tr>
+      <tr>
+          <td>Compile error on component access</td>
+          <td>The filter does not guarantee the component, or grants only <code>read</code> access. Adjust the filter.</td>
+      </tr>
+      <tr>
+          <td>Locked-world error</td>
+          <td>A query or selection is still alive. End its scope before the structural change.</td>
+      </tr>
+  </tbody>
+</table>
+<h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
+    <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><ul>
+<li><a href="../systems_scheduler" >Systems and the scheduler</a> covers threaded and device
+execution.</li>
+<li><a href="/larecs/pr-preview/pr-237/larecs/HostStorage"><code>HostStorage</code></a> and <a href="/larecs/pr-preview/pr-237/larecs/ArchetypeRowAccessor"><code>ArchetypeRowAccessor</code></a> document
+lower-level traversal.</li>
+</ul>
 
         </div>
         <div class="hx-mt-16"></div>
         <div class="hx-mb-8 hx-flex hx-items-center hx-border-t hx-pt-8 dark:hx-border-neutral-800 contrast-more:hx-border-neutral-400 dark:contrast-more:hx-border-neutral-400 print:hx-hidden"><a
         href="/larecs/pr-preview/pr-237/guide/data_model/"
-        title="Data model"
+        title="Model data with entities and components"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-pr-4 rtl:hx-pl-4"
-      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Data model</a><a
+      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Model data with entities and components</a><a
         href="/larecs/pr-preview/pr-237/guide/structural_changes/"
-        title="Structural changes"
+        title="Create and remove entities in batches"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-ml-auto ltr:hx-pl-4 ltr:hx-text-right rtl:hx-mr-auto rtl:hx-pr-4 rtl:hx-text-left"
-      >Structural changes<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
+      >Create and remove entities in batches<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
         
       </main>
     </article>

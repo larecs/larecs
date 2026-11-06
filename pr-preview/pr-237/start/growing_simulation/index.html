@@ -11,22 +11,19 @@
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-237/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-237/site.webmanifest" rel="manifest" />
 <title>Create and remove particles – Larecs🌲</title>
-  <meta name="description" content="Extend movement with a batch of three moving particles and remove the stationary marker. Run the complete program from the repository:
-pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: examples/particles/lifecycle.mojo &#34;&#34;&#34;Creates a particle batch, moves it, and removes stationary particles. Region markers supply excerpts for the particle learning path. &#34;&#34;&#34; from std.testing import assert_almost_equal, assert_equal from larecs import ( Filter, KernelContext, Resources, Scheduler, System, SystemContext, World, ) @fieldwise_init struct Position(Copyable, Movable): &#34;&#34;&#34;Where a particle is.&#34;&#34;&#34; var x: Float64 &#34;&#34;&#34;Horizontal coordinate.&#34;&#34;&#34; var y: Float64 &#34;&#34;&#34;Vertical coordinate.&#34;&#34;&#34; @fieldwise_init struct Velocity(Copyable, Movable): &#34;&#34;&#34;How far a particle moves per unit of time.&#34;&#34;&#34; var dx: Float64 &#34;&#34;&#34;Horizontal speed.&#34;&#34;&#34; var dy: Float64 &#34;&#34;&#34;Vertical speed.&#34;&#34;&#34; @fieldwise_init struct Time(Copyable, Movable): &#34;&#34;&#34;The simulated time that passes in one step.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Step length.&#34;&#34;&#34; comptime move_filter = Filter().include[Position]().read[Velocity]() comptime move_resources = Resources().read[Time]() def move(context: KernelContext[move_filter, move_resources]): &#34;&#34;&#34;Advances every particle by its velocity times the step length. Args: context: The matching rows and the declared resources. &#34;&#34;&#34; ref time = context.resources.get[Time]() for particle in context: ref position = particle.get[Position]() ref velocity = particle.get[Velocity]() position.x &#43;= velocity.dx * time.delta position.y &#43;= velocity.dy * time.delta def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass @fieldwise_init struct Move(System): &#34;&#34;&#34;Runs the `move` kernel once per step.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Moves all particles. Args: context: Access to the scheduler&#39;s world. Raises: Error: If `Time` is missing from the world. &#34;&#34;&#34; context.run[move]() def main() raises: &#34;&#34;&#34;Runs the simulation and checks the final positions. Raises: Error: If the simulation fails or a position differs from the expected value. &#34;&#34;&#34; var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) var marker = world.storage.add_entity(Position(-3, -3)) var query = world.storage.query[ Filter().read[Position]().exclude[Velocity]() ]() var query_copy = query.copy() for row in query^: assert_almost_equal(row.get[Position]().x, -3.0) assert_equal(row.get_entity(), marker) for _ in query_copy^: pass assert_equal( len(world.storage.query[Filter().read[Position]().exclusive()]()), 1 ) var scheduler = Scheduler[Position, Velocity](world^) scheduler.add_system(Spawn()) scheduler.add_system(Move()) scheduler.run(steps=10) ref storage = scheduler.world.storage assert_almost_equal(storage.get[Position](walker).x, 1.0) assert_almost_equal(storage.get[Position](climber).y, 2.0) assert_equal(len(storage.query[Filter().include[Position]()]()), 5) var spawned_count = 0 for row in storage.query[move_filter](): var entity = row.get_entity() if entity != walker and entity != climber: assert_almost_equal(row.get[Position]().x, 1.1) assert_almost_equal(row.get[Position]().y, 0.0) spawned_count &#43;= 1 assert_equal(spawned_count, 3) print(&#34;Created three particles and removed the stationary marker.&#34;) View the source on GitHub" /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/start/growing_simulation/" itemprop="url" />
+  <meta name="description" content="In this tutorial you extend the movement program with a system that creates three moving particles and removes the stationary marker. You learn how to change which entities exist without affecting the particles you did not create.
+The program keeps Position, Velocity, Time, move, and Move from the first tutorial unchanged.
+The program Complete program: examples/particles/lifecycle.mojo &#34;&#34;&#34;Creates a particle batch, moves it, and removes stationary particles. Region markers supply excerpts for the particle learning path. &#34;&#34;&#34; from std.testing import assert_almost_equal, assert_equal from larecs import ( Filter, KernelContext, Resources, Scheduler, System, SystemContext, World, ) @fieldwise_init struct Position(Copyable, Movable): &#34;&#34;&#34;Where a particle is.&#34;&#34;&#34; var x: Float64 &#34;&#34;&#34;Horizontal coordinate.&#34;&#34;&#34; var y: Float64 &#34;&#34;&#34;Vertical coordinate.&#34;&#34;&#34; @fieldwise_init struct Velocity(Copyable, Movable): &#34;&#34;&#34;How far a particle moves per unit of time.&#34;&#34;&#34; var dx: Float64 &#34;&#34;&#34;Horizontal speed.&#34;&#34;&#34; var dy: Float64 &#34;&#34;&#34;Vertical speed.&#34;&#34;&#34; @fieldwise_init struct Time(Copyable, Movable): &#34;&#34;&#34;The simulated time that passes in one step.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Step length.&#34;&#34;&#34; comptime move_filter = Filter().include[Position]().read[Velocity]() comptime move_resources = Resources().read[Time]() def move(context: KernelContext[move_filter, move_resources]): &#34;&#34;&#34;Advances every particle by its velocity times the step length. Args: context: The matching rows and the declared resources. &#34;&#34;&#34; ref time = context.resources.get[Time]() for particle in context: ref position = particle.get[Position]() ref velocity = particle.get[Velocity]() position.x &#43;= velocity.dx * time.delta position.y &#43;= velocity.dy * time.delta def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass @fieldwise_init struct Move(System): &#34;&#34;&#34;Runs the `move` kernel once per step.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Moves all particles. Args: context: Access to the scheduler&#39;s world. Raises: Error: If `Time` is missing from the world. &#34;&#34;&#34; context.run[move]() def main() raises: &#34;&#34;&#34;Runs the simulation and checks the final positions. Raises: Error: If the simulation fails or a position differs from the expected value. &#34;&#34;&#34; var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) var marker = world.storage.add_entity(Position(-3, -3)) var query = world.storage.query[ Filter().read[Position]().exclude[Velocity]() ]() var query_copy = query.copy() for row in query^: assert_almost_equal(row.get[Position]().x, -3.0) assert_equal(row.get_entity(), marker) for _ in query_copy^: pass assert_equal( len(world.storage.query[Filter().read[Position]().exclusive()]()), 1 ) var scheduler = Scheduler[Position, Velocity](world^) scheduler.add_system(Spawn()) scheduler.add_system(Move()) scheduler.run(steps=10) ref storage = scheduler.world.storage assert_almost_equal(storage.get[Position](walker).x, 1.0) assert_almost_equal(storage.get[Position](climber).y, 2.0) assert_equal(len(storage.query[Filter().include[Position]()]()), 5) var spawned_count = 0 for row in storage.query[move_filter](): var entity = row.get_entity() if entity != walker and entity != climber: assert_almost_equal(row.get[Position]().x, 1.1) assert_almost_equal(row.get[Position]().y, 0.0) spawned_count &#43;= 1 assert_equal(spawned_count, 3) print(&#34;Created three particles and removed the stationary marker.&#34;) View the source on GitHub" /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-237/start/growing_simulation/" itemprop="url" />
 
 <meta property="og:title" content="Create and remove particles" />
-<meta property="og:description" content="Extend movement with a batch of three moving particles
-and remove the stationary marker. Run the complete program from the repository:
-
-
-pixi run mojo run -I src examples/particles/lifecycle.mojo
-  
+<meta property="og:description" content="In this tutorial you extend the movement program with a
+system that creates three moving particles and removes the stationary marker.
+You learn how to change which entities exist without affecting the particles
+you did not create.
+The program keeps Position, Velocity, Time, move, and Move from the
+first tutorial unchanged.
+The program
     
-    
-  
-
-
-
 Complete program: examples/particles/lifecycle.mojo
 &#34;&#34;&#34;Creates a particle batch, moves it, and removes stationary particles.
 
@@ -212,13 +209,15 @@ View the source on GitHub" />
 
 
   <meta itemprop="name" content="Create and remove particles">
-  <meta itemprop="description" content="Extend movement with a batch of three moving particles and remove the stationary marker. Run the complete program from the repository:
-pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: examples/particles/lifecycle.mojo &#34;&#34;&#34;Creates a particle batch, moves it, and removes stationary particles. Region markers supply excerpts for the particle learning path. &#34;&#34;&#34; from std.testing import assert_almost_equal, assert_equal from larecs import ( Filter, KernelContext, Resources, Scheduler, System, SystemContext, World, ) @fieldwise_init struct Position(Copyable, Movable): &#34;&#34;&#34;Where a particle is.&#34;&#34;&#34; var x: Float64 &#34;&#34;&#34;Horizontal coordinate.&#34;&#34;&#34; var y: Float64 &#34;&#34;&#34;Vertical coordinate.&#34;&#34;&#34; @fieldwise_init struct Velocity(Copyable, Movable): &#34;&#34;&#34;How far a particle moves per unit of time.&#34;&#34;&#34; var dx: Float64 &#34;&#34;&#34;Horizontal speed.&#34;&#34;&#34; var dy: Float64 &#34;&#34;&#34;Vertical speed.&#34;&#34;&#34; @fieldwise_init struct Time(Copyable, Movable): &#34;&#34;&#34;The simulated time that passes in one step.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Step length.&#34;&#34;&#34; comptime move_filter = Filter().include[Position]().read[Velocity]() comptime move_resources = Resources().read[Time]() def move(context: KernelContext[move_filter, move_resources]): &#34;&#34;&#34;Advances every particle by its velocity times the step length. Args: context: The matching rows and the declared resources. &#34;&#34;&#34; ref time = context.resources.get[Time]() for particle in context: ref position = particle.get[Position]() ref velocity = particle.get[Velocity]() position.x &#43;= velocity.dx * time.delta position.y &#43;= velocity.dy * time.delta def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass @fieldwise_init struct Move(System): &#34;&#34;&#34;Runs the `move` kernel once per step.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Moves all particles. Args: context: Access to the scheduler&#39;s world. Raises: Error: If `Time` is missing from the world. &#34;&#34;&#34; context.run[move]() def main() raises: &#34;&#34;&#34;Runs the simulation and checks the final positions. Raises: Error: If the simulation fails or a position differs from the expected value. &#34;&#34;&#34; var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) var marker = world.storage.add_entity(Position(-3, -3)) var query = world.storage.query[ Filter().read[Position]().exclude[Velocity]() ]() var query_copy = query.copy() for row in query^: assert_almost_equal(row.get[Position]().x, -3.0) assert_equal(row.get_entity(), marker) for _ in query_copy^: pass assert_equal( len(world.storage.query[Filter().read[Position]().exclusive()]()), 1 ) var scheduler = Scheduler[Position, Velocity](world^) scheduler.add_system(Spawn()) scheduler.add_system(Move()) scheduler.run(steps=10) ref storage = scheduler.world.storage assert_almost_equal(storage.get[Position](walker).x, 1.0) assert_almost_equal(storage.get[Position](climber).y, 2.0) assert_equal(len(storage.query[Filter().include[Position]()]()), 5) var spawned_count = 0 for row in storage.query[move_filter](): var entity = row.get_entity() if entity != walker and entity != climber: assert_almost_equal(row.get[Position]().x, 1.1) assert_almost_equal(row.get[Position]().y, 0.0) spawned_count &#43;= 1 assert_equal(spawned_count, 3) print(&#34;Created three particles and removed the stationary marker.&#34;) View the source on GitHub">
-  <meta itemprop="wordCount" content="773">
+  <meta itemprop="description" content="In this tutorial you extend the movement program with a system that creates three moving particles and removes the stationary marker. You learn how to change which entities exist without affecting the particles you did not create.
+The program keeps Position, Velocity, Time, move, and Move from the first tutorial unchanged.
+The program Complete program: examples/particles/lifecycle.mojo &#34;&#34;&#34;Creates a particle batch, moves it, and removes stationary particles. Region markers supply excerpts for the particle learning path. &#34;&#34;&#34; from std.testing import assert_almost_equal, assert_equal from larecs import ( Filter, KernelContext, Resources, Scheduler, System, SystemContext, World, ) @fieldwise_init struct Position(Copyable, Movable): &#34;&#34;&#34;Where a particle is.&#34;&#34;&#34; var x: Float64 &#34;&#34;&#34;Horizontal coordinate.&#34;&#34;&#34; var y: Float64 &#34;&#34;&#34;Vertical coordinate.&#34;&#34;&#34; @fieldwise_init struct Velocity(Copyable, Movable): &#34;&#34;&#34;How far a particle moves per unit of time.&#34;&#34;&#34; var dx: Float64 &#34;&#34;&#34;Horizontal speed.&#34;&#34;&#34; var dy: Float64 &#34;&#34;&#34;Vertical speed.&#34;&#34;&#34; @fieldwise_init struct Time(Copyable, Movable): &#34;&#34;&#34;The simulated time that passes in one step.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Step length.&#34;&#34;&#34; comptime move_filter = Filter().include[Position]().read[Velocity]() comptime move_resources = Resources().read[Time]() def move(context: KernelContext[move_filter, move_resources]): &#34;&#34;&#34;Advances every particle by its velocity times the step length. Args: context: The matching rows and the declared resources. &#34;&#34;&#34; ref time = context.resources.get[Time]() for particle in context: ref position = particle.get[Position]() ref velocity = particle.get[Velocity]() position.x &#43;= velocity.dx * time.delta position.y &#43;= velocity.dy * time.delta def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass @fieldwise_init struct Move(System): &#34;&#34;&#34;Runs the `move` kernel once per step.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Moves all particles. Args: context: Access to the scheduler&#39;s world. Raises: Error: If `Time` is missing from the world. &#34;&#34;&#34; context.run[move]() def main() raises: &#34;&#34;&#34;Runs the simulation and checks the final positions. Raises: Error: If the simulation fails or a position differs from the expected value. &#34;&#34;&#34; var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) var marker = world.storage.add_entity(Position(-3, -3)) var query = world.storage.query[ Filter().read[Position]().exclude[Velocity]() ]() var query_copy = query.copy() for row in query^: assert_almost_equal(row.get[Position]().x, -3.0) assert_equal(row.get_entity(), marker) for _ in query_copy^: pass assert_equal( len(world.storage.query[Filter().read[Position]().exclusive()]()), 1 ) var scheduler = Scheduler[Position, Velocity](world^) scheduler.add_system(Spawn()) scheduler.add_system(Move()) scheduler.run(steps=10) ref storage = scheduler.world.storage assert_almost_equal(storage.get[Position](walker).x, 1.0) assert_almost_equal(storage.get[Position](climber).y, 2.0) assert_equal(len(storage.query[Filter().include[Position]()]()), 5) var spawned_count = 0 for row in storage.query[move_filter](): var entity = row.get_entity() if entity != walker and entity != climber: assert_almost_equal(row.get[Position]().x, 1.1) assert_almost_equal(row.get[Position]().y, 0.0) spawned_count &#43;= 1 assert_equal(spawned_count, 3) print(&#34;Created three particles and removed the stationary marker.&#34;) View the source on GitHub">
+  <meta itemprop="wordCount" content="963">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Create and remove particles">
-  <meta name="twitter:description" content="Extend movement with a batch of three moving particles and remove the stationary marker. Run the complete program from the repository:
-pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: examples/particles/lifecycle.mojo &#34;&#34;&#34;Creates a particle batch, moves it, and removes stationary particles. Region markers supply excerpts for the particle learning path. &#34;&#34;&#34; from std.testing import assert_almost_equal, assert_equal from larecs import ( Filter, KernelContext, Resources, Scheduler, System, SystemContext, World, ) @fieldwise_init struct Position(Copyable, Movable): &#34;&#34;&#34;Where a particle is.&#34;&#34;&#34; var x: Float64 &#34;&#34;&#34;Horizontal coordinate.&#34;&#34;&#34; var y: Float64 &#34;&#34;&#34;Vertical coordinate.&#34;&#34;&#34; @fieldwise_init struct Velocity(Copyable, Movable): &#34;&#34;&#34;How far a particle moves per unit of time.&#34;&#34;&#34; var dx: Float64 &#34;&#34;&#34;Horizontal speed.&#34;&#34;&#34; var dy: Float64 &#34;&#34;&#34;Vertical speed.&#34;&#34;&#34; @fieldwise_init struct Time(Copyable, Movable): &#34;&#34;&#34;The simulated time that passes in one step.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Step length.&#34;&#34;&#34; comptime move_filter = Filter().include[Position]().read[Velocity]() comptime move_resources = Resources().read[Time]() def move(context: KernelContext[move_filter, move_resources]): &#34;&#34;&#34;Advances every particle by its velocity times the step length. Args: context: The matching rows and the declared resources. &#34;&#34;&#34; ref time = context.resources.get[Time]() for particle in context: ref position = particle.get[Position]() ref velocity = particle.get[Velocity]() position.x &#43;= velocity.dx * time.delta position.y &#43;= velocity.dy * time.delta def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass @fieldwise_init struct Move(System): &#34;&#34;&#34;Runs the `move` kernel once per step.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Moves all particles. Args: context: Access to the scheduler&#39;s world. Raises: Error: If `Time` is missing from the world. &#34;&#34;&#34; context.run[move]() def main() raises: &#34;&#34;&#34;Runs the simulation and checks the final positions. Raises: Error: If the simulation fails or a position differs from the expected value. &#34;&#34;&#34; var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) var marker = world.storage.add_entity(Position(-3, -3)) var query = world.storage.query[ Filter().read[Position]().exclude[Velocity]() ]() var query_copy = query.copy() for row in query^: assert_almost_equal(row.get[Position]().x, -3.0) assert_equal(row.get_entity(), marker) for _ in query_copy^: pass assert_equal( len(world.storage.query[Filter().read[Position]().exclusive()]()), 1 ) var scheduler = Scheduler[Position, Velocity](world^) scheduler.add_system(Spawn()) scheduler.add_system(Move()) scheduler.run(steps=10) ref storage = scheduler.world.storage assert_almost_equal(storage.get[Position](walker).x, 1.0) assert_almost_equal(storage.get[Position](climber).y, 2.0) assert_equal(len(storage.query[Filter().include[Position]()]()), 5) var spawned_count = 0 for row in storage.query[move_filter](): var entity = row.get_entity() if entity != walker and entity != climber: assert_almost_equal(row.get[Position]().x, 1.1) assert_almost_equal(row.get[Position]().y, 0.0) spawned_count &#43;= 1 assert_equal(spawned_count, 3) print(&#34;Created three particles and removed the stationary marker.&#34;) View the source on GitHub">
+  <meta name="twitter:description" content="In this tutorial you extend the movement program with a system that creates three moving particles and removes the stationary marker. You learn how to change which entities exist without affecting the particles you did not create.
+The program keeps Position, Velocity, Time, move, and Move from the first tutorial unchanged.
+The program Complete program: examples/particles/lifecycle.mojo &#34;&#34;&#34;Creates a particle batch, moves it, and removes stationary particles. Region markers supply excerpts for the particle learning path. &#34;&#34;&#34; from std.testing import assert_almost_equal, assert_equal from larecs import ( Filter, KernelContext, Resources, Scheduler, System, SystemContext, World, ) @fieldwise_init struct Position(Copyable, Movable): &#34;&#34;&#34;Where a particle is.&#34;&#34;&#34; var x: Float64 &#34;&#34;&#34;Horizontal coordinate.&#34;&#34;&#34; var y: Float64 &#34;&#34;&#34;Vertical coordinate.&#34;&#34;&#34; @fieldwise_init struct Velocity(Copyable, Movable): &#34;&#34;&#34;How far a particle moves per unit of time.&#34;&#34;&#34; var dx: Float64 &#34;&#34;&#34;Horizontal speed.&#34;&#34;&#34; var dy: Float64 &#34;&#34;&#34;Vertical speed.&#34;&#34;&#34; @fieldwise_init struct Time(Copyable, Movable): &#34;&#34;&#34;The simulated time that passes in one step.&#34;&#34;&#34; var delta: Float64 &#34;&#34;&#34;Step length.&#34;&#34;&#34; comptime move_filter = Filter().include[Position]().read[Velocity]() comptime move_resources = Resources().read[Time]() def move(context: KernelContext[move_filter, move_resources]): &#34;&#34;&#34;Advances every particle by its velocity times the step length. Args: context: The matching rows and the declared resources. &#34;&#34;&#34; ref time = context.resources.get[Time]() for particle in context: ref position = particle.get[Position]() ref velocity = particle.get[Velocity]() position.x &#43;= velocity.dx * time.delta position.y &#43;= velocity.dy * time.delta def reset_position(context: KernelContext[Filter().write[Position]()]): &#34;&#34;&#34;Initializes every selected position without reading it. Args: context: Selected rows with write-only Position access. &#34;&#34;&#34; for particle in context: particle.set(Position(0, 0)) @fieldwise_init struct Spawn(System): &#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34; def initialize(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Creates a scoped batch. Args: context: Access to the simulation world. Raises: Error: If creation or movement fails. &#34;&#34;&#34; with context.add_entities(Position(9, 9), count=3) as selected: selected.add(Velocity(1, 0)) selected.run[reset_position]() selected.run[move]() context.world[].storage.remove_entities[ Filter().include[Position]().exclude[Velocity]() ]() def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Leaves creation to initialization. Args: context: Access to the simulation world. &#34;&#34;&#34; pass @fieldwise_init struct Move(System): &#34;&#34;&#34;Runs the `move` kernel once per step.&#34;&#34;&#34; def update(mut self, mut context: SystemContext[...]) raises: &#34;&#34;&#34;Moves all particles. Args: context: Access to the scheduler&#39;s world. Raises: Error: If `Time` is missing from the world. &#34;&#34;&#34; context.run[move]() def main() raises: &#34;&#34;&#34;Runs the simulation and checks the final positions. Raises: Error: If the simulation fails or a position differs from the expected value. &#34;&#34;&#34; var world = World[Position, Velocity]() world.resources.add(Time(delta=0.1)) var walker = world.storage.add_entity(Position(0, 0), Velocity(1, 0)) var climber = world.storage.add_entity(Position(5, 0), Velocity(0, 2)) var marker = world.storage.add_entity(Position(-3, -3)) var query = world.storage.query[ Filter().read[Position]().exclude[Velocity]() ]() var query_copy = query.copy() for row in query^: assert_almost_equal(row.get[Position]().x, -3.0) assert_equal(row.get_entity(), marker) for _ in query_copy^: pass assert_equal( len(world.storage.query[Filter().read[Position]().exclusive()]()), 1 ) var scheduler = Scheduler[Position, Velocity](world^) scheduler.add_system(Spawn()) scheduler.add_system(Move()) scheduler.run(steps=10) ref storage = scheduler.world.storage assert_almost_equal(storage.get[Position](walker).x, 1.0) assert_almost_equal(storage.get[Position](climber).y, 2.0) assert_equal(len(storage.query[Filter().include[Position]()]()), 5) var spawned_count = 0 for row in storage.query[move_filter](): var entity = row.get_entity() if entity != walker and entity != climber: assert_almost_equal(row.get[Position]().x, 1.1) assert_almost_equal(row.get[Position]().y, 0.0) spawned_count &#43;= 1 assert_equal(spawned_count, 3) print(&#34;Created three particles and removed the stationary marker.&#34;) View the source on GitHub">
 
     <link rel="preload" href="/larecs/pr-preview/pr-237/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
     <link href="/larecs/pr-preview/pr-237/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -374,15 +373,39 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
   
     <ul class='hx-flex hx-flex-col hx-gap-1 hx-relative before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] dark:before:hx-bg-neutral-800 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-pr-3 rtl:before:hx-right-0 ltr:hx-ml-3 rtl:hx-mr-3'><li>
               <a
-                href="#create-only-the-new-particles"
+                href="#the-program"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Create only the new particles</a>
+              >The program</a>
             </li>
           <li>
               <a
-                href="#schedule-creation-before-movement"
+                href="#set-positions-without-reading-them"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Schedule creation before movement</a>
+              >Set positions without reading them</a>
+            </li>
+          <li>
+              <a
+                href="#create-the-batch-in-a-system"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Create the batch in a system</a>
+            </li>
+          <li>
+              <a
+                href="#register-spawn-before-move"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Register Spawn before Move</a>
+            </li>
+          <li>
+              <a
+                href="#check-the-result"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Check the result</a>
+            </li>
+          <li>
+              <a
+                href="#next-steps"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Next steps</a>
             </li>
           </ul>
   
@@ -410,7 +433,7 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -418,7 +441,7 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -426,7 +449,7 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -434,7 +457,7 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -442,7 +465,7 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -908,7 +931,7 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -916,7 +939,7 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/data_model/"
     
-  >Data model
+  >Model data with entities and components
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -924,7 +947,7 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/systems_kernels/"
     
-  >Systems and kernels
+  >Update entities with systems and kernels
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -932,7 +955,7 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/structural_changes/"
     
-  >Structural changes
+  >Create and remove entities in batches
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -940,7 +963,7 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-237/guide/shared_resources/"
     
-  >Resources
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1374,11 +1397,27 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
 <nav class="hextra-toc hx-order-last hx-hidden hx-w-64 hx-shrink-0 xl:hx-block print:hx-hidden hx-px-4" aria-label="table of contents">
     <div class="hextra-scrollbar hx-sticky hx-top-16 hx-overflow-y-auto hx-pr-4 hx-pt-6 hx-text-sm [hyphens:auto] hx-max-h-[calc(100vh-var(--navbar-height)-env(safe-area-inset-bottom))] ltr:hx--mr-4 rtl:hx--ml-4"><p class="hx-mb-4 hx-font-semibold hx-tracking-tight">On this page</p><ul>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#create-only-the-new-particles">Create only the new particles
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#the-program">The program
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#schedule-creation-before-movement">Schedule creation before movement
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#set-positions-without-reading-them">Set positions without reading them
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#create-the-batch-in-a-system">Create the batch in a system
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#register-spawn-before-move">Register Spawn before Move
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#check-the-result">Check the result
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#next-steps">Next steps
         </a>
       </li></ul>
       <div class="hx-mt-8 hx-border-t hx-bg-white hx-pt-8 hx-shadow-[0_-12px_16px_white] dark:hx-bg-dark dark:hx-shadow-[0_-12px_16px_#111] hx-sticky hx-bottom-0 hx-flex hx-flex-col hx-items-start hx-gap-2 hx-pb-8 dark:hx-border-neutral-800 contrast-more:hx-border-t contrast-more:hx-border-neutral-400 contrast-more:hx-shadow-none contrast-more:dark:hx-border-neutral-400">
@@ -1404,21 +1443,14 @@ pixi run mojo run -I src examples/particles/lifecycle.mojo Complete program: exa
 
         <div class="content">
           <h1>Create and remove particles</h1>
-          <p>Extend <a href="../first_simulation" >movement</a> with a batch of three moving particles
-and remove the stationary marker. Run the complete program from the repository:</p>
-<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">pixi run mojo run -I src examples/particles/lifecycle.mojo</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
-  <button
-    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
-    title="Copy code"
-  >
-    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
-    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
-  </button>
-</div>
-</div>
-<details class="example-program">
+          <p>In this tutorial you extend the <a href="../first_simulation" >movement program</a> with a
+system that creates three moving particles and removes the stationary marker.
+You learn how to change which entities exist without affecting the particles
+you did not create.</p>
+<p>The program keeps <code>Position</code>, <code>Velocity</code>, <code>Time</code>, <code>move</code>, and <code>Move</code> from the
+first tutorial unchanged.</p>
+<h2>The program<span class="hx-absolute -hx-mt-20" id="the-program"></span>
+    <a href="#the-program" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><details class="example-program">
 <summary>Complete program: <code>examples/particles/lifecycle.mojo</code></summary>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;Creates a particle batch, moves it, and removes stationary particles.
 </span></span></span><span class="line"><span class="cl"><span class="s2">
@@ -1599,8 +1631,24 @@ and remove the stationary marker. Run the complete program from the repository:<
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Created three particles and removed the stationary marker.&#34;</span><span class="p">)</span></span></span></code></pre></div>
 <p><a href="https://github.com/larecs/larecs/blob/main/examples/particles/lifecycle.mojo">View the source on GitHub</a></p>
 </details>
-<h2>Create only the new particles<span class="hx-absolute -hx-mt-20" id="create-only-the-new-particles"></span>
-    <a href="#create-only-the-new-particles" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">def</span><span class="w"> </span><span class="nf">reset_position</span><span class="p">(</span><span class="n">context</span><span class="p">:</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">[</span><span class="n">Position</span><span class="p">]()]):</span><span class="w">
+<p>Run it from the repository root:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">pixi run mojo run -I src examples/particles/lifecycle.mojo</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>It prints <code>Created three particles and removed the stationary marker.</code></p>
+<h2>Set positions without reading them<span class="hx-absolute -hx-mt-20" id="set-positions-without-reading-them"></span>
+    <a href="#set-positions-without-reading-them" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>New particles start at (9, 9). Before they move, a kernel resets them to the
+origin:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">def</span><span class="w"> </span><span class="nf">reset_position</span><span class="p">(</span><span class="n">context</span><span class="p">:</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">[</span><span class="n">Position</span><span class="p">]()]):</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Initializes every selected position without reading it.
 </span></span></span><span class="line"><span class="cl"><span class="s2">
 </span></span></span><span class="line"><span class="cl"><span class="s2">    Args:
@@ -1608,6 +1656,12 @@ and remove the stationary marker. Run the complete program from the repository:<
 </span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">particle</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">context</span><span class="p">:</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">particle.set</span><span class="p">(</span><span class="n">Position</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span></span></span></code></pre></div>
+<p><code>Filter().write[Position]()</code> grants write-only access: the kernel can replace a
+position with <code>set</code>, but it cannot read one with <code>get</code>. A kernel that writes
+every value it touches needs no more than this.</p>
+<h2>Create the batch in a system<span class="hx-absolute -hx-mt-20" id="create-the-batch-in-a-system"></span>
+    <a href="#create-the-batch-in-a-system" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Creating and removing entities changes the world&rsquo;s structure. Do it inside a
+system, here in <code>initialize</code>, which runs once before the first step:</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="nd">@fieldwise_init</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span><span class="w"> </span><span class="nc">Spawn</span><span class="p">(</span><span class="n">System</span><span class="p">):</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Creates and moves only the new particles at initialization.&#34;&#34;&#34;</span><span class="w">
@@ -1635,28 +1689,36 @@ and remove the stationary marker. Run the complete program from the repository:<
 </span></span></span><span class="line"><span class="cl"><span class="s2">        Args:
 </span></span></span><span class="line"><span class="cl"><span class="s2">            context: Access to the simulation world.
 </span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">pass</span></span></span></code></pre></div></p>
-<p><code>reset_position</code> declares <code>Position</code> as write-only: it can <code>set</code> a position
-but cannot read one. <code>Spawn.initialize</code> creates three particles at (9, 9) with
-<a href="/larecs/pr-preview/pr-237/larecs/SystemContext#add_entities"><code>SystemContext.add_entities</code></a>. The returned
-<a href="https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/system.mojo#L568" target="_blank" rel="noopener">EntitySelection</a>
-contains exactly those three entities, even when other particles have the same
-components.</p>
-<p><code>selected.add</code> gives them a velocity. <code>selected.run[reset_position]()</code> sets their
-positions to (0, 0), and <code>selected.run[move]()</code> advances only them by <code>0.1</code>.
-While the <code>with</code> block is open, Larecs prevents unrelated entity creation,
-deletion, and changes to component composition. This protection is a <em>structural
-lock</em>. After the block ends, <a href="/larecs/pr-preview/pr-237/larecs/HostStorage#remove_entities"><code>HostStorage.remove_entities</code></a> deletes
-every entity that has a position but no velocity.</p>
-<h2>Schedule creation before movement<span class="hx-absolute -hx-mt-20" id="schedule-creation-before-movement"></span>
-    <a href="#schedule-creation-before-movement" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">var</span><span class="w"> </span><span class="nv">scheduler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Scheduler</span><span class="p">[</span><span class="n">Position</span><span class="p">,</span><span class="w"> </span><span class="n">Velocity</span><span class="p">](</span><span class="n">world</span><span class="o">^</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">pass</span></span></span></code></pre></div>
+<p><a href="/larecs/pr-preview/pr-237/larecs/SystemContext#add_entities"><code>context.add_entities(Position(9, 9), count=3)</code></a>
+creates three particles and returns an <code>EntitySelection</code> of exactly those
+three. The <code>with</code> block binds that selection to <code>selected</code>:</p>
+<ol>
+<li><code>selected.add(Velocity(1, 0))</code> gives the three particles a velocity.</li>
+<li><code>selected.run[reset_position]()</code> moves them to (0, 0).</li>
+<li><code>selected.run[move]()</code> advances them once by <code>Time.delta</code>, so they start at
+x=0.1.</li>
+</ol>
+<p>Each <code>selected.run</code> visits only the selected particles, even though <code>walker</code>
+also has a <code>Position</code> and a <code>Velocity</code>. While the block is open, the selection
+holds a <em>structural lock</em>: Larecs rejects any other entity creation, entity
+deletion, or component addition or removal in the world. The lock ends when the
+block ends, also on an error.</p>
+<p>After the block,
+<a href="/larecs/pr-preview/pr-237/larecs/HostStorage#remove_entities"><code>context.world[].storage.remove_entities</code></a>
+deletes every entity that has a <code>Position</code> and no <code>Velocity</code>. In this world,
+that is <code>marker</code>. <code>Spawn</code> leaves <code>update</code> empty because it does all its work
+once.</p>
+<h2>Register Spawn before Move<span class="hx-absolute -hx-mt-20" id="register-spawn-before-move"></span>
+    <a href="#register-spawn-before-move" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">var</span><span class="w"> </span><span class="nv">scheduler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Scheduler</span><span class="p">[</span><span class="n">Position</span><span class="p">,</span><span class="w"> </span><span class="n">Velocity</span><span class="p">](</span><span class="n">world</span><span class="o">^</span><span class="p">)</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">scheduler.add_system</span><span class="p">(</span><span class="n">Spawn</span><span class="p">())</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">scheduler.add_system</span><span class="p">(</span><span class="n">Move</span><span class="p">())</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">scheduler.run</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span></span></span></code></pre></div>
-<p>Initialization runs before the ten updates. The original walker still reaches
-x=1. Each new particle receives the extra initialization movement and finishes
-at x=0.1 + 10×0.1 = 1.1. The stationary marker is gone and five positions remain:</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="n">ref</span><span class="w"> </span><span class="n">storage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scheduler.world.storage</span><span class="w">
+<p><code>run</code> initializes <code>Spawn</code> and <code>Move</code> in order, then updates them ten times.
+<code>Move</code> has no initialization, so the three new particles exist before the first
+movement step.</p>
+<h2>Check the result<span class="hx-absolute -hx-mt-20" id="check-the-result"></span>
+    <a href="#check-the-result" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="n">ref</span><span class="w"> </span><span class="n">storage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scheduler.world.storage</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">storage.get</span><span class="p">[</span><span class="n">Position</span><span class="p">](</span><span class="n">walker</span><span class="p">)</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0</span><span class="p">)</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">storage.get</span><span class="p">[</span><span class="n">Position</span><span class="p">](</span><span class="n">climber</span><span class="p">)</span><span class="o">.</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0</span><span class="p">)</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">assert_equal</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">storage.query</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">include</span><span class="p">[</span><span class="n">Position</span><span class="p">]()]()),</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w">
@@ -1669,9 +1731,15 @@ at x=0.1 + 10×0.1 = 1.1. The stationary marker is gone and five positions remai
 </span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">spawned_count</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">assert_equal</span><span class="p">(</span><span class="n">spawned_count</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Created three particles and removed the stationary marker.&#34;</span><span class="p">)</span></span></span></code></pre></div>
-<p>The program prints <code>Created three particles and removed the stationary marker.</code>
-Continue with <a href="../shared_configuration" >shared configuration</a>, or use the
-<a href="../../guide/structural_changes" >Structural changes guide</a> for mutation rules.</p>
+<p><code>walker</code> and <code>climber</code> end where they did in the first tutorial. Each new
+particle starts at x=0.1 and moves ten steps of 0.1, so it ends at x=1.1. The
+marker is gone, so five particles have a position.</p>
+<h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
+    <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><ul>
+<li>Continue with <a href="../shared_configuration" >Share time and configuration</a>.</li>
+<li><a href="../../guide/structural_changes" >Create and remove entities in batches</a>
+covers selections, locks, and deletion in detail.</li>
+</ul>
 
         </div>
         <div class="hx-mt-16"></div>
