@@ -4,6 +4,7 @@ Run after `pixi run build-docs` with the scripts Pixi test-api-reference task.
 """
 
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -71,9 +72,11 @@ class ReferenceTests(unittest.TestCase):
                 ["hugo", "-s", str(ROOT / "docs/site"), "--baseURL",
                  "https://example.test/preview/", "--destination", destination],
                 capture_output=True, text=True, check=True,
+                env=os.environ | {"HUGO_BASEURL": "https://example.test/preview/"},
             )
             html = (Path(destination) / "reference/identity/index.html").read_text()
-            self.assertIn('href="/preview/larecs/world/World/"', html)
+            self.assertTrue('href="/preview/larecs/world/World/"' in html,
+                            "API link lacks the alternate deployment prefix")
 
     def test_rendered_contracts_and_sources(self):
         """Keep constraints, exact overloads and pinned source links visible."""

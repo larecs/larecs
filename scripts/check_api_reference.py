@@ -1,6 +1,7 @@
 """Check compiler-derived symbol targets and guide links in the built site."""
 
 import json
+import os
 import re
 from html.parser import HTMLParser
 from pathlib import Path
@@ -67,6 +68,7 @@ def check(root: Path = ROOT) -> None:
     # Resolve relative links with the same trailing-slash behavior as a browser.
     config = (root / "docs/site/hugo.yaml").read_text()
     base = re.search(r"(?m)^baseURL: (.+)$", config).group(1).strip()
+    base = os.environ.get("HUGO_BASEURL", base)
     base_path = urlsplit(base).path
     for page in (public / "reference").rglob("index.html"):
         page_url = urljoin(base, str(page.parent.relative_to(public)) + "/")
