@@ -36,6 +36,7 @@ jobs:
               - 'README.md'
               - 'modo.yaml'
               - 'scripts/docs.py'
+              - 'scripts/*api_reference.py'
               - 'scripts/run_doctests.sh'
               - 'scripts/pixi.toml'
               - 'scripts/pixi.lock'
@@ -84,6 +85,9 @@ jobs:
         run: |
           pixi install --locked
           pixi run build-docs
+
+      - name: Check API reference integration
+        run: pixi run --manifest-path scripts/pixi.toml test-api-reference
 
       - name: Archive Doc-tests
         uses: actions/upload-artifact@v4
