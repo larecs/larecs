@@ -8,7 +8,15 @@
   </url><url>
     <loc>https://larecs.github.io/larecs/pr-preview/pr-240/guide/installation/</loc>
   </url><url>
+    <loc>https://larecs.github.io/larecs/pr-preview/pr-240/guide/data_model/</loc>
+  </url><url>
     <loc>https://larecs.github.io/larecs/pr-preview/pr-240/reference/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/pr-preview/pr-240/guide/systems_kernels/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/pr-preview/pr-240/guide/structural_changes/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/pr-preview/pr-240/guide/shared_resources/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/pr-preview/pr-240/guide/entities_components_world/</loc>
   </url><url>
@@ -16,7 +24,11 @@
   </url><url>
     <loc>https://larecs.github.io/larecs/pr-preview/pr-240/guide/adding_and_removing_entities/</loc>
   </url><url>
+    <loc>https://larecs.github.io/larecs/pr-preview/pr-240/start/growing_simulation/</loc>
+  </url><url>
     <loc>https://larecs.github.io/larecs/pr-preview/pr-240/guide/changing_entities/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/pr-preview/pr-240/start/shared_configuration/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/pr-preview/pr-240/guide/queries_iteration/</loc>
   </url><url>

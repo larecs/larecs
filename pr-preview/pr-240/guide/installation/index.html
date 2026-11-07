@@ -10,37 +10,40 @@
 <link rel="icon" href="/larecs/pr-preview/pr-240/favicon-32x32.png" type="image/png" sizes="32x32" />
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-240/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-240/site.webmanifest" rel="manifest" />
-<title>Installation – Larecs🌲</title>
-  <meta name="description" content="Larecs🌲 is written in and for Mojo🔥, which needs to be installed in order to compile, test, or use the software. You can build Larecs🌲 as a package as follows:
-Clone the repository / download the files. Navigate to the src/ subfolder. Execute mojo precompile larecs -o larecs.mojoc. Move the newly created file larecs.mojoc to your project’s source directory. Include the source directly when compiling Instead of building Larecs🌲 as a package, you can also include its source code directly when running or compiling your own project. This has the advantage that you can access the source while debugging and adjusting the Larecs🌲 source code. You can include the Larecs🌲 source code as follows:" /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-240/guide/installation/" itemprop="url" />
+<title>Install Larecs – Larecs🌲</title>
+  <meta name="description" content="Install the repository’s locked Pixi environment and run the first particle program. Then use Larecs from your own project, either as source or as a precompiled package.
+Larecs runs on Linux x86-64 and macOS on Apple Silicon. Larecs 1.0.0b1 is a beta, so its APIs can still change. Pixi installs these dependencies:
+Mojo &gt;=1.0.0,&lt;1.1.0 MAX &gt;=26.5.0,&lt;27 mojo-tracy &gt;=1.1.0,&lt;2 It resolves them from the channels conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock pins the exact builds." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-240/guide/installation/" itemprop="url" />
 
-<meta property="og:title" content="Installation" />
-<meta property="og:description" content="Larecs🌲 is written in and for Mojo🔥, which needs to be installed in order to compile, test, or use the software. You can build Larecs🌲 as a package as follows:
+<meta property="og:title" content="Install Larecs" />
+<meta property="og:description" content="Install the repository&rsquo;s locked Pixi environment and run the first particle
+program. Then use Larecs from your own project, either as source or as a
+precompiled package.
+Larecs runs on Linux x86-64 and macOS on Apple Silicon. Larecs 1.0.0b1 is a
+beta, so its APIs can still change. Pixi installs these dependencies:
 
-Clone the repository / download the files.
-Navigate to the src/ subfolder.
-Execute mojo precompile larecs -o larecs.mojoc.
-Move the newly created file larecs.mojoc to your project&rsquo;s source directory.
+Mojo &gt;=1.0.0,&lt;1.1.0
+MAX &gt;=26.5.0,&lt;27
+mojo-tracy &gt;=1.1.0,&lt;2
 
-Include the source directly when compiling
-    Instead of building Larecs🌲 as a package, you can also include its
-source code directly when running or compiling your own project.
-This has the advantage that you can access the source while debugging
-and adjusting the Larecs🌲 source code.
-You can include the Larecs🌲 source code as follows:" />
+It resolves them from the channels conda-forge, https://repo.prefix.dev/max,
+and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock pins the exact
+builds." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://larecs.github.io/larecs/pr-preview/pr-240/guide/installation/" /><meta property="article:section" content="guide" />
 
 
 
-  <meta itemprop="name" content="Installation">
-  <meta itemprop="description" content="Larecs🌲 is written in and for Mojo🔥, which needs to be installed in order to compile, test, or use the software. You can build Larecs🌲 as a package as follows:
-Clone the repository / download the files. Navigate to the src/ subfolder. Execute mojo precompile larecs -o larecs.mojoc. Move the newly created file larecs.mojoc to your project’s source directory. Include the source directly when compiling Instead of building Larecs🌲 as a package, you can also include its source code directly when running or compiling your own project. This has the advantage that you can access the source while debugging and adjusting the Larecs🌲 source code. You can include the Larecs🌲 source code as follows:">
-  <meta itemprop="wordCount" content="189">
+  <meta itemprop="name" content="Install Larecs">
+  <meta itemprop="description" content="Install the repository’s locked Pixi environment and run the first particle program. Then use Larecs from your own project, either as source or as a precompiled package.
+Larecs runs on Linux x86-64 and macOS on Apple Silicon. Larecs 1.0.0b1 is a beta, so its APIs can still change. Pixi installs these dependencies:
+Mojo &gt;=1.0.0,&lt;1.1.0 MAX &gt;=26.5.0,&lt;27 mojo-tracy &gt;=1.1.0,&lt;2 It resolves them from the channels conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock pins the exact builds.">
+  <meta itemprop="wordCount" content="360">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Installation">
-  <meta name="twitter:description" content="Larecs🌲 is written in and for Mojo🔥, which needs to be installed in order to compile, test, or use the software. You can build Larecs🌲 as a package as follows:
-Clone the repository / download the files. Navigate to the src/ subfolder. Execute mojo precompile larecs -o larecs.mojoc. Move the newly created file larecs.mojoc to your project’s source directory. Include the source directly when compiling Instead of building Larecs🌲 as a package, you can also include its source code directly when running or compiling your own project. This has the advantage that you can access the source while debugging and adjusting the Larecs🌲 source code. You can include the Larecs🌲 source code as follows:">
+  <meta name="twitter:title" content="Install Larecs">
+  <meta name="twitter:description" content="Install the repository’s locked Pixi environment and run the first particle program. Then use Larecs from your own project, either as source or as a precompiled package.
+Larecs runs on Linux x86-64 and macOS on Apple Silicon. Larecs 1.0.0b1 is a beta, so its APIs can still change. Pixi installs these dependencies:
+Mojo &gt;=1.0.0,&lt;1.1.0 MAX &gt;=26.5.0,&lt;27 mojo-tracy &gt;=1.1.0,&lt;2 It resolves them from the channels conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock pins the exact builds.">
 
     <link rel="preload" href="/larecs/pr-preview/pr-240/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
     <link href="/larecs/pr-preview/pr-240/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -186,6 +189,22 @@ Clone the repository / download the files. Navigate to the src/ subfolder. Execu
   >Your first simulation
     </a>
               
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/start/growing_simulation/"
+    
+  >Create and remove particles
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/start/shared_configuration/"
+    
+  >Share time and configuration
+    </a>
+              
             </li></ul>
       </div></li>
           <li class="open"><a
@@ -201,23 +220,67 @@ Clone the repository / download the files. Navigate to the src/ subfolder. Execu
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-240/guide/installation/"
     
-  >Installation
+  >Install Larecs
     </a>
   
     <ul class='hx-flex hx-flex-col hx-gap-1 hx-relative before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] dark:before:hx-bg-neutral-800 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-pr-3 rtl:before:hx-right-0 ltr:hx-ml-3 rtl:hx-mr-3'><li>
               <a
-                href="#include-the-source-directly-when-compiling"
+                href="#install-the-locked-environment"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Include the source directly when compiling</a>
+              >Install the locked environment</a>
             </li>
           <li>
               <a
-                href="#include-larecs-in-vscode-and-its-language-server"
+                href="#use-the-source-from-your-own-project"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Include Larecs🌲 in VSCode and its language server</a>
+              >Use the source from your own project</a>
+            </li>
+          <li>
+              <a
+                href="#use-a-precompiled-package"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Use a precompiled package</a>
+            </li>
+          <li>
+              <a
+                href="#troubleshooting"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Troubleshooting</a>
             </li>
           </ul>
   
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/data_model/"
+    
+  >Model data with entities and components
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/systems_kernels/"
+    
+  >Update entities with systems and kernels
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/structural_changes/"
+    
+  >Create and remove entities in batches
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/shared_resources/"
+    
+  >Share values with resources
+    </a>
               
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
@@ -256,7 +319,7 @@ Clone the repository / download the files. Navigate to the src/ subfolder. Execu
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-240/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1387,6 +1450,22 @@ Clone the repository / download the files. Navigate to the src/ subfolder. Execu
   >Your first simulation
     </a>
               
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/start/growing_simulation/"
+    
+  >Create and remove particles
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/start/shared_configuration/"
+    
+  >Share time and configuration
+    </a>
+              
             </li></ul>
       </div></li>
           <li class="open"><a
@@ -1402,7 +1481,39 @@ Clone the repository / download the files. Navigate to the src/ subfolder. Execu
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/pr-preview/pr-240/guide/installation/"
     
-  >Installation
+  >Install Larecs
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/data_model/"
+    
+  >Model data with entities and components
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/systems_kernels/"
+    
+  >Update entities with systems and kernels
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/structural_changes/"
+    
+  >Create and remove entities in batches
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/shared_resources/"
+    
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1442,7 +1553,7 @@ Clone the repository / download the files. Navigate to the src/ subfolder. Execu
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-240/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -2572,11 +2683,19 @@ Clone the repository / download the files. Navigate to the src/ subfolder. Execu
 <nav class="hextra-toc hx-order-last hx-hidden hx-w-64 hx-shrink-0 xl:hx-block print:hx-hidden hx-px-4" aria-label="table of contents">
     <div class="hextra-scrollbar hx-sticky hx-top-16 hx-overflow-y-auto hx-pr-4 hx-pt-6 hx-text-sm [hyphens:auto] hx-max-h-[calc(100vh-var(--navbar-height)-env(safe-area-inset-bottom))] ltr:hx--mr-4 rtl:hx--ml-4"><p class="hx-mb-4 hx-font-semibold hx-tracking-tight">On this page</p><ul>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#include-the-source-directly-when-compiling">Include the source directly when compiling
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#install-the-locked-environment">Install the locked environment
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#include-larecs-in-vscode-and-its-language-server">Include Larecs🌲 in VSCode and its language server
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#use-the-source-from-your-own-project">Use the source from your own project
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#use-a-precompiled-package">Use a precompiled package
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#troubleshooting">Troubleshooting
         </a>
       </li></ul>
       <div class="hx-mt-8 hx-border-t hx-bg-white hx-pt-8 hx-shadow-[0_-12px_16px_white] dark:hx-bg-dark dark:hx-shadow-[0_-12px_16px_#111] hx-sticky hx-bottom-0 hx-flex hx-flex-col hx-items-start hx-gap-2 hx-pb-8 dark:hx-border-neutral-800 contrast-more:hx-border-t contrast-more:hx-border-neutral-400 contrast-more:hx-shadow-none contrast-more:dark:hx-border-neutral-400">
@@ -2597,27 +2716,33 @@ Clone the repository / download the files. Navigate to the src/ subfolder. Execu
   <div class="hx-mt-1.5 hx-flex hx-items-center hx-gap-1 hx-overflow-hidden hx-text-sm hx-text-gray-500 dark:hx-text-gray-400 contrast-more:hx-text-current">
         <div class="hx-whitespace-nowrap hx-transition-colors hx-min-w-[24px] hx-overflow-hidden hx-text-ellipsis hover:hx-text-gray-900 dark:hover:hx-text-gray-100">
           <a href="/larecs/pr-preview/pr-240/guide/">User guide</a>
-        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Installation</div>
+        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Install Larecs</div>
   </div>
 
         <div class="content">
-          <h1>Installation</h1>
-          <p>Larecs🌲 is written in and for <a href="https://docs.modular.com/mojo/manual/get-started" target="_blank" rel="noopener">Mojo</a>🔥, which needs to be installed in order to compile, test, or use the software. You can build Larecs🌲 as a package as follows:</p>
-<ol>
-<li>Clone the repository / download the files.</li>
-<li>Navigate to the <code>src/</code> subfolder.</li>
-<li>Execute <code>mojo precompile larecs -o larecs.mojoc</code>.</li>
-<li>Move the newly created file <code>larecs.mojoc</code> to your project&rsquo;s source directory.</li>
-</ol>
-<h2>Include the source directly when compiling<span class="hx-absolute -hx-mt-20" id="include-the-source-directly-when-compiling"></span>
-    <a href="#include-the-source-directly-when-compiling" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Instead of building Larecs🌲 as a package, you can also include its
-source code directly when running or compiling your own project.
-This has the advantage that you can access the source while debugging
-and adjusting the Larecs🌲 source code.
-You can include the Larecs🌲 source code as follows:</p>
+          <h1>Install Larecs</h1>
+          <p>Install the repository&rsquo;s locked Pixi environment and run the first particle
+program. Then use Larecs from your own project, either as source or as a
+precompiled package.</p>
+<p>Larecs runs on Linux x86-64 and macOS on Apple Silicon. Larecs <code>1.0.0b1</code> is a
+beta, so its APIs can still change. Pixi installs these dependencies:</p>
+<ul>
+<li>Mojo <code>&gt;=1.0.0,&lt;1.1.0</code></li>
+<li>MAX <code>&gt;=26.5.0,&lt;27</code></li>
+<li><code>mojo-tracy &gt;=1.1.0,&lt;2</code></li>
+</ul>
+<p>It resolves them from the channels <code>conda-forge</code>, <code>https://repo.prefix.dev/max</code>,
+and <code>https://prefix.dev/tree-d</code> (for <code>mojo-tracy</code>). <code>pixi.lock</code> pins the exact
+builds.</p>
+<h2>Install the locked environment<span class="hx-absolute -hx-mt-20" id="install-the-locked-environment"></span>
+    <a href="#install-the-locked-environment" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Install <a href="https://pixi.sh/latest/installation/" target="_blank" rel="noopener">Pixi</a>, then run:</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
-<pre><code>mojo run -I &#34;path/to/larecs/src&#34; example.mojo</code></pre><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">git clone https://github.com/larecs/larecs.git
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> larecs
+</span></span><span class="line"><span class="cl">pixi install --locked
+</span></span><span class="line"><span class="cl">pixi run mojo --version
+</span></span><span class="line"><span class="cl">pixi run mojo run -I src examples/particles/movement.mojo</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
   <button
     class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
     title="Copy code"
@@ -2627,24 +2752,86 @@ You can include the Larecs🌲 source code as follows:</p>
   </button>
 </div>
 </div>
-<h2>Include Larecs🌲 in VSCode and its language server<span class="hx-absolute -hx-mt-20" id="include-larecs-in-vscode-and-its-language-server"></span>
-    <a href="#include-larecs-in-vscode-and-its-language-server" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>To let VSCode and its language server know of Larecs🌲
-(so that Ctrl-Click, mouse hover docs, autocomplete
-and error checking are available), include the package as follows:</p>
-<ol>
-<li>Go to VSCode&rsquo;s <code>File -&gt; Preferences -&gt; Settings</code> page.</li>
-<li>Go to the <code>Extensions -&gt; Mojo</code> section.</li>
-<li>Look for the setting <code>Lsp: Include Dirs</code>.</li>
-<li>Click on <code>add item</code> and insert the path to the <code>src/</code> subdirectory.</li>
-</ol>
+<p>The program prints <code>All particles reached their expected positions.</code> and fails
+with an assertion error if a particle ends elsewhere. It runs on the host and
+needs no accelerator. To reproduce a result later, keep the checkout revision
+together with its <code>pixi.lock</code>.</p>
+<p>Continue with <a href="../../start/first_simulation" >Your first simulation</a>, which
+explains this program.</p>
+<h2>Use the source from your own project<span class="hx-absolute -hx-mt-20" id="use-the-source-from-your-own-project"></span>
+    <a href="#use-the-source-from-your-own-project" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Run your program with the repository&rsquo;s environment and pass the absolute path
+of <code>src</code> as an include directory. From the repository root:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl"><span class="nv">larecs_root</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$PWD</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">particle_project</span><span class="o">=</span><span class="s2">&#34;</span><span class="k">$(</span>mktemp -d<span class="k">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">cp examples/particles/movement.mojo <span class="s2">&#34;</span><span class="nv">$particle_project</span><span class="s2">/main.mojo&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> <span class="s2">&#34;</span><span class="nv">$particle_project</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">pixi run --manifest-path <span class="s2">&#34;</span><span class="nv">$larecs_root</span><span class="s2">/pixi.toml&#34;</span> mojo run -I <span class="s2">&#34;</span><span class="nv">$larecs_root</span><span class="s2">/src&#34;</span> <span class="s2">&#34;</span><span class="nv">$particle_project</span><span class="s2">/main.mojo&#34;</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>This runs the same program from a directory outside the repository. For
+completion and diagnostics in your editor, add the same <code>src</code> path to the Mojo
+language server&rsquo;s include directories.</p>
+<h2>Use a precompiled package<span class="hx-absolute -hx-mt-20" id="use-a-precompiled-package"></span>
+    <a href="#use-a-precompiled-package" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Build the package with the toolchain your application uses. From the repository
+root:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">mkdir -p /tmp/larecs-package
+</span></span><span class="line"><span class="cl">pixi run mojo precompile src/larecs -o /tmp/larecs-package/larecs.mojoc
+</span></span><span class="line"><span class="cl">pixi run mojo run -I /tmp/larecs-package examples/particles/movement.mojo</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>Copy <code>larecs.mojoc</code> to your project&rsquo;s include directory. Your application&rsquo;s
+environment must provide compatible Mojo, MAX, and <code>mojo-tracy</code> builds from the
+channels above. Rebuild the package after you change the toolchain or the
+Larecs revision.</p>
+<h2>Troubleshooting<span class="hx-absolute -hx-mt-20" id="troubleshooting"></span>
+    <a href="#troubleshooting" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><table>
+  <thead>
+      <tr>
+          <th>Symptom</th>
+          <th>Fix</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Import error for <code>larecs</code></td>
+          <td>Point <code>-I</code> at a directory that contains <code>larecs/</code> source or <code>larecs.mojoc</code>.</td>
+      </tr>
+      <tr>
+          <td>Compiler errors after a toolchain upgrade</td>
+          <td>Restore the locked environment with <code>pixi install --locked</code> and rebuild the package.</td>
+      </tr>
+      <tr>
+          <td>macOS linker error mentioning <code>arm64e.x1</code> or <code>libSystem.tbd</code></td>
+          <td>Install an older macOS SDK. With <code>SDKROOT</code> unset, the repository&rsquo;s activation script selects a compatible one. See the <a href="https://github.com/larecs/larecs/blob/main/docs/development.md#macos-sdk-linking" target="_blank" rel="noopener">SDK workaround</a>.</td>
+      </tr>
+  </tbody>
+</table>
 
         </div>
         <div class="hx-mt-16"></div>
         <div class="hx-mb-8 hx-flex hx-items-center hx-border-t hx-pt-8 dark:hx-border-neutral-800 contrast-more:hx-border-neutral-400 dark:contrast-more:hx-border-neutral-400 print:hx-hidden"><a
-        href="/larecs/pr-preview/pr-240/guide/entities_components_world/"
-        title="Entities, components and the world"
+        href="/larecs/pr-preview/pr-240/guide/data_model/"
+        title="Model data with entities and components"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-ml-auto ltr:hx-pl-4 ltr:hx-text-right rtl:hx-mr-auto rtl:hx-pr-4 rtl:hx-text-left"
-      >Entities, components and the world<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
+      >Model data with entities and components<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
         
       </main>
     </article>

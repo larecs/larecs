@@ -11,8 +11,8 @@
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-240/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-240/site.webmanifest" rel="manifest" />
 <title>Get started – Larecs🌲</title>
-  <meta name="description" content="Build a working Larecs simulation, then learn the concepts behind it.
-Your first simulation: move particles with a system and a kernel, and check the result. " /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-240/start/" itemprop="url" />
+  <meta name="description" content="Build a particle simulation one feature at a time. Each stage is a complete program in examples/particles/.
+Install Larecs: set up the locked environment and run the first program. Your first simulation: move particles with a system and a kernel, and check where they end up. Create and remove particles: create a batch of particles and remove the stationary one. Share time and configuration: set the step length from a configuration resource before each movement step. The guides cover each topic in depth: entities and components, systems and kernels, batch creation and removal, and resources." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-240/start/" itemprop="url" />
 
 <meta property="og:title" content="Get started" />
 <meta property="og:description" content="" />
@@ -20,13 +20,13 @@ Your first simulation: move particles with a system and a kernel, and check the 
 <meta property="og:url" content="https://larecs.github.io/larecs/pr-preview/pr-240/start/" />
 
   <meta itemprop="name" content="Get started">
-  <meta itemprop="description" content="Build a working Larecs simulation, then learn the concepts behind it.
-Your first simulation: move particles with a system and a kernel, and check the result.">
-  <meta itemprop="wordCount" content="26">
+  <meta itemprop="description" content="Build a particle simulation one feature at a time. Each stage is a complete program in examples/particles/.
+Install Larecs: set up the locked environment and run the first program. Your first simulation: move particles with a system and a kernel, and check where they end up. Create and remove particles: create a batch of particles and remove the stationary one. Share time and configuration: set the step length from a configuration resource before each movement step. The guides cover each topic in depth: entities and components, systems and kernels, batch creation and removal, and resources.">
+  <meta itemprop="wordCount" content="95">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Get started">
-  <meta name="twitter:description" content="Build a working Larecs simulation, then learn the concepts behind it.
-Your first simulation: move particles with a system and a kernel, and check the result.">
+  <meta name="twitter:description" content="Build a particle simulation one feature at a time. Each stage is a complete program in examples/particles/.
+Install Larecs: set up the locked environment and run the first program. Your first simulation: move particles with a system and a kernel, and check where they end up. Create and remove particles: create a batch of particles and remove the stationary one. Share time and configuration: set the step length from a configuration resource before each movement step. The guides cover each topic in depth: entities and components, systems and kernels, batch creation and removal, and resources.">
 
     <link rel="preload" href="/larecs/pr-preview/pr-240/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
     <link href="/larecs/pr-preview/pr-240/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -173,6 +173,22 @@ Your first simulation: move particles with a system and a kernel, and check the 
   >Your first simulation
     </a>
               
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/start/growing_simulation/"
+    
+  >Create and remove particles
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/start/shared_configuration/"
+    
+  >Share time and configuration
+    </a>
+              
             </li></ul>
       </div></li>
           <li class="open"><a
@@ -188,7 +204,39 @@ Your first simulation: move particles with a system and a kernel, and check the 
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-240/guide/installation/"
     
-  >Installation
+  >Install Larecs
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/data_model/"
+    
+  >Model data with entities and components
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/systems_kernels/"
+    
+  >Update entities with systems and kernels
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/structural_changes/"
+    
+  >Create and remove entities in batches
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/shared_resources/"
+    
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -228,7 +276,7 @@ Your first simulation: move particles with a system and a kernel, and check the 
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-240/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1359,6 +1407,22 @@ Your first simulation: move particles with a system and a kernel, and check the 
   >Your first simulation
     </a>
               
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/start/growing_simulation/"
+    
+  >Create and remove particles
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/start/shared_configuration/"
+    
+  >Share time and configuration
+    </a>
+              
             </li></ul>
       </div></li>
           <li class="open"><a
@@ -1374,7 +1438,39 @@ Your first simulation: move particles with a system and a kernel, and check the 
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-240/guide/installation/"
     
-  >Installation
+  >Install Larecs
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/data_model/"
+    
+  >Model data with entities and components
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/systems_kernels/"
+    
+  >Update entities with systems and kernels
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/structural_changes/"
+    
+  >Create and remove entities in batches
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/shared_resources/"
+    
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1414,7 +1510,7 @@ Your first simulation: move particles with a system and a kernel, and check the 
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-240/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -2563,11 +2659,23 @@ Your first simulation: move particles with a system and a kernel, and check the 
 
         <div class="content">
           <h1>Get started</h1>
-          <p>Build a working Larecs simulation, then learn the concepts behind it.</p>
-<ul>
+          <p>Build a particle simulation one feature at a time. Each stage is a complete
+program in <code>examples/particles/</code>.</p>
+<ol>
+<li><a href="../guide/installation" >Install Larecs</a>: set up the locked environment and
+run the first program.</li>
 <li><a href="first_simulation" >Your first simulation</a>: move particles with a system and
-a kernel, and check the result.</li>
-</ul>
+a kernel, and check where they end up.</li>
+<li><a href="growing_simulation" >Create and remove particles</a>: create a batch of
+particles and remove the stationary one.</li>
+<li><a href="shared_configuration" >Share time and configuration</a>: set the step length
+from a configuration resource before each movement step.</li>
+</ol>
+<p>The guides cover each topic in depth:
+<a href="../guide/data_model" >entities and components</a>,
+<a href="../guide/systems_kernels" >systems and kernels</a>,
+<a href="../guide/structural_changes" >batch creation and removal</a>, and
+<a href="../guide/shared_resources" >resources</a>.</p>
 
         </div>
         <div class="hx-mt-16"></div>

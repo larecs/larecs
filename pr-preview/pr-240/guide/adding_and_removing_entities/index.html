@@ -13,7 +13,7 @@
 <title>Adding and removing entities – Larecs🌲</title>
   <meta name="description" content="Adding and removing individual entities is done via the add_entity and remove_entity methods of World.storage. Revisiting our earlier example of a world with Position and Velocity, this reads as follows:
 The examples in this chapter mutate a World directly to demonstrate its storage API. This is useful for setup and isolated changes. In application logic, these operations should generally be performed by a system through its SystemContext.
-# Add an entity and get its representation var entity = world.storage.add_entity() # Remove the entity world.storage.remove_entity(entity) Components can be added to the entities directly upon creation. For example, to create an entity with a position at (0, 0) and a velocity of (1, 0), we can do the following:" /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-240/guide/adding_and_removing_entities/" itemprop="url" />
+from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init struct Position(Copyable, Movable): var x: Float64 var y: Float64 @fieldwise_init struct Velocity(Copyable, Movable): var dx: Float64 var dy: Float64 def place_batch(rows: KernelContext[Filter().include[Position]()]): &#34;&#34;&#34;Places each execution-local row one unit farther along the x axis.&#34;&#34;&#34; for row in rows: row.get[Position]().x = Float64(row.idx) def main() raises: var world = World[Position, Velocity]() # Add an entity and get its representation var entity = world.storage.add_entity() # Remove the entity world.storage.remove_entity(entity) Components can be added to the entities directly upon creation. For example, to create an entity with a position at (0, 0) and a velocity of (1, 0), we can do the following:" /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-240/guide/adding_and_removing_entities/" itemprop="url" />
 
 <meta property="og:title" content="Adding and removing entities" />
 <meta property="og:description" content="Adding and removing individual entities is done
@@ -26,6 +26,40 @@ The examples in this chapter mutate a World directly to demonstrate its
 storage API. This is useful for setup and isolated changes. In application
 logic, these operations should generally be performed by a
 system through its SystemContext.
+
+
+from larecs import World, Filter, SystemContext, KernelContext
+
+@fieldwise_init
+struct Position(Copyable, Movable):
+    var x: Float64
+    var y: Float64
+
+@fieldwise_init
+struct Velocity(Copyable, Movable):
+    var dx: Float64
+    var dy: Float64
+
+def place_batch(rows: KernelContext[Filter().include[Position]()]):
+    &#34;&#34;&#34;Places each execution-local row one unit farther along the x axis.&#34;&#34;&#34;
+    for row in rows:
+        row.get[Position]().x = Float64(row.idx)
+  
+    
+    
+  
+
+
+
+
+def main() raises:
+    var world = World[Position, Velocity]()
+  
+    
+    
+  
+
+
 
 
     # Add an entity and get its representation
@@ -51,13 +85,13 @@ we can do the following:" />
   <meta itemprop="name" content="Adding and removing entities">
   <meta itemprop="description" content="Adding and removing individual entities is done via the add_entity and remove_entity methods of World.storage. Revisiting our earlier example of a world with Position and Velocity, this reads as follows:
 The examples in this chapter mutate a World directly to demonstrate its storage API. This is useful for setup and isolated changes. In application logic, these operations should generally be performed by a system through its SystemContext.
-# Add an entity and get its representation var entity = world.storage.add_entity() # Remove the entity world.storage.remove_entity(entity) Components can be added to the entities directly upon creation. For example, to create an entity with a position at (0, 0) and a velocity of (1, 0), we can do the following:">
-  <meta itemprop="wordCount" content="545">
+from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init struct Position(Copyable, Movable): var x: Float64 var y: Float64 @fieldwise_init struct Velocity(Copyable, Movable): var dx: Float64 var dy: Float64 def place_batch(rows: KernelContext[Filter().include[Position]()]): &#34;&#34;&#34;Places each execution-local row one unit farther along the x axis.&#34;&#34;&#34; for row in rows: row.get[Position]().x = Float64(row.idx) def main() raises: var world = World[Position, Velocity]() # Add an entity and get its representation var entity = world.storage.add_entity() # Remove the entity world.storage.remove_entity(entity) Components can be added to the entities directly upon creation. For example, to create an entity with a position at (0, 0) and a velocity of (1, 0), we can do the following:">
+  <meta itemprop="wordCount" content="625">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Adding and removing entities">
   <meta name="twitter:description" content="Adding and removing individual entities is done via the add_entity and remove_entity methods of World.storage. Revisiting our earlier example of a world with Position and Velocity, this reads as follows:
 The examples in this chapter mutate a World directly to demonstrate its storage API. This is useful for setup and isolated changes. In application logic, these operations should generally be performed by a system through its SystemContext.
-# Add an entity and get its representation var entity = world.storage.add_entity() # Remove the entity world.storage.remove_entity(entity) Components can be added to the entities directly upon creation. For example, to create an entity with a position at (0, 0) and a velocity of (1, 0), we can do the following:">
+from larecs import World, Filter, SystemContext, KernelContext @fieldwise_init struct Position(Copyable, Movable): var x: Float64 var y: Float64 @fieldwise_init struct Velocity(Copyable, Movable): var dx: Float64 var dy: Float64 def place_batch(rows: KernelContext[Filter().include[Position]()]): &#34;&#34;&#34;Places each execution-local row one unit farther along the x axis.&#34;&#34;&#34; for row in rows: row.get[Position]().x = Float64(row.idx) def main() raises: var world = World[Position, Velocity]() # Add an entity and get its representation var entity = world.storage.add_entity() # Remove the entity world.storage.remove_entity(entity) Components can be added to the entities directly upon creation. For example, to create an entity with a position at (0, 0) and a velocity of (1, 0), we can do the following:">
 
     <link rel="preload" href="/larecs/pr-preview/pr-240/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
     <link href="/larecs/pr-preview/pr-240/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -203,6 +237,22 @@ The examples in this chapter mutate a World directly to demonstrate its storage 
   >Your first simulation
     </a>
               
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/start/growing_simulation/"
+    
+  >Create and remove particles
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/start/shared_configuration/"
+    
+  >Share time and configuration
+    </a>
+              
             </li></ul>
       </div></li>
           <li class="open"><a
@@ -218,7 +268,39 @@ The examples in this chapter mutate a World directly to demonstrate its storage 
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-240/guide/installation/"
     
-  >Installation
+  >Install Larecs
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/data_model/"
+    
+  >Model data with entities and components
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/systems_kernels/"
+    
+  >Update entities with systems and kernels
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/structural_changes/"
+    
+  >Create and remove entities in batches
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/shared_resources/"
+    
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -273,7 +355,7 @@ The examples in this chapter mutate a World directly to demonstrate its storage 
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-240/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1404,6 +1486,22 @@ The examples in this chapter mutate a World directly to demonstrate its storage 
   >Your first simulation
     </a>
               
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/start/growing_simulation/"
+    
+  >Create and remove particles
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/start/shared_configuration/"
+    
+  >Share time and configuration
+    </a>
+              
             </li></ul>
       </div></li>
           <li class="open"><a
@@ -1419,7 +1517,39 @@ The examples in this chapter mutate a World directly to demonstrate its storage 
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-240/guide/installation/"
     
-  >Installation
+  >Install Larecs
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/data_model/"
+    
+  >Model data with entities and components
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/systems_kernels/"
+    
+  >Update entities with systems and kernels
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/structural_changes/"
+    
+  >Create and remove entities in batches
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-240/guide/shared_resources/"
+    
+  >Share values with resources
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -1459,7 +1589,7 @@ The examples in this chapter mutate a World directly to demonstrate its storage 
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/pr-preview/pr-240/guide/resources/"
     
-  >Resources
+  >Resource operations and adapters
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -2631,6 +2761,46 @@ logic, these operations should generally be performed by a
 <a href="../systems_scheduler" >system</a> through its <code>SystemContext</code>.</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="kn">from</span><span class="w"> </span><span class="nn">larecs</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="n">World</span><span class="p">,</span><span class="w"> </span><span class="n">Filter</span><span class="p">,</span><span class="w"> </span><span class="n">SystemContext</span><span class="p">,</span><span class="w"> </span><span class="n">KernelContext</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nd">@fieldwise_init</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span><span class="w"> </span><span class="nc">Position</span><span class="p">(</span><span class="nb">Copyable</span><span class="p">,</span><span class="w"> </span><span class="nb">Movable</span><span class="p">):</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">x</span><span class="p">:</span><span class="w"> </span><span class="nb">Float64</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">y</span><span class="p">:</span><span class="w"> </span><span class="nb">Float64</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nd">@fieldwise_init</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span><span class="w"> </span><span class="nc">Velocity</span><span class="p">(</span><span class="nb">Copyable</span><span class="p">,</span><span class="w"> </span><span class="nb">Movable</span><span class="p">):</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">dx</span><span class="p">:</span><span class="w"> </span><span class="nb">Float64</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">dy</span><span class="p">:</span><span class="w"> </span><span class="nb">Float64</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">def</span><span class="w"> </span><span class="nf">place_batch</span><span class="p">(</span><span class="n">rows</span><span class="p">:</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">include</span><span class="p">[</span><span class="n">Position</span><span class="p">]()]):</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Places each execution-local row one unit farther along the x axis.&#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">rows</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">row.get</span><span class="p">[</span><span class="n">Position</span><span class="p">]()</span><span class="o">.</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Float64</span><span class="p">(</span><span class="n">row.idx</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="n">raises</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">world</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">World</span><span class="p">[</span><span class="n">Position</span><span class="p">,</span><span class="w"> </span><span class="n">Velocity</span><span class="p">]()</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="w">    </span><span class="c1"># Add an entity and get its representation</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">entity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entity</span><span class="p">()</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">
@@ -2682,6 +2852,8 @@ exactly the new rows and owning the world&rsquo;s structural-change lock:</p>
   </button>
 </div>
 </div>
+<p><code>place_batch</code> sets each <code>x</code> to <code>row.idx</code>. The index restarts at zero for
+each selected host range, so it is not unique across the batch.</p>
 <p>Use a <code>with</code> block to release the lock automatically, including when an error
 or early return exits the block:</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
