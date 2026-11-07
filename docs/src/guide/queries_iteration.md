@@ -22,7 +22,7 @@ specifying the components that each entity we look for must have
 iterate over all entities with a `Position` and a `Velocity` component,
 we can do this as follows:
 
-```mojo {doctest="guide_queries_iteration" global=true hide=true}
+```mojo {doctest="guide_queries_iteration" global=true}
 from larecs import World, Filter, SystemContext, KernelContext
 
 @fieldwise_init
@@ -45,7 +45,7 @@ def move_entities(context: KernelContext[move_filter]):
         pos.y += vel.dy
 ```
 
-```mojo {doctest="guide_queries_iteration" global=true hide=true}
+```mojo {doctest="guide_queries_iteration" global=true}
 def main() raises:
     var world = World[Position, Velocity]()
 ```

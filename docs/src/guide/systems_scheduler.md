@@ -44,6 +44,16 @@ from larecs import (
 )
 
 @fieldwise_init
+struct Position(Movable, Copyable, TrivialRegisterPassable):
+    var x: Float64
+    var y: Float64
+
+@fieldwise_init
+struct Velocity(Movable, Copyable, TrivialRegisterPassable):
+    var dx: Float64
+    var dy: Float64
+
+@fieldwise_init
 struct Time(ResourceType, TrivialRegisterPassable):
     var delta: Float64
 
@@ -103,18 +113,6 @@ number of times, and then finalizes them.
 
 To construct an example of a scheduler, let us define
 further systems for adding entities and logging their positions.
-
-```mojo {doctest="guide_systems_scheduler" global=true hide=true}
-@fieldwise_init
-struct Position(Movable, Copyable, TrivialRegisterPassable):
-    var x: Float64
-    var y: Float64
-
-@fieldwise_init
-struct Velocity(Movable, Copyable, TrivialRegisterPassable):
-    var dx: Float64
-    var dy: Float64
-```
 
 ```mojo {doctest="guide_systems_scheduler" global=true}
 @fieldwise_init
