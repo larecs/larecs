@@ -15,4 +15,4 @@ Spatial classification groups entities by application-defined keys. It changes p
 | {{< api Synchronized >}}, {{< api SyncView >}} | Own guarded state or borrow its view. Use nonblocking `try_read` or `try_write` and check acquisition. |
 | {{< api TryAccess >}} | Test `is_acquired()` before consuming the result with `take()`. Keep access within the acquired guard's lifetime. |
 
-The generated declarations define supported value types, origins, mutation rights and memory orderings. See [spatial clustering](../../guide/spatial_clustering) and [synchronization](../../guide/synchronization) for complete examples. Synchronization does not grant undeclared component/resource access or permit structural mutation during kernel execution.
+The generated declarations define supported value types, origins, mutation rights and memory orderings. See [maintaining particle locality](../../guide/spatial_locality/maintain) and [coordinating shared writes](../../guide/execution/shared_writes) for complete examples. Synchronization does not grant undeclared component/resource access or permit structural mutation during kernel execution.

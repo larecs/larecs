@@ -55,7 +55,7 @@ before movement.
 For device execution, the access mode decides the transfers: read access
 uploads values, write access downloads results, and read-write access does
 both. Write-only values are not uploaded. See
-[device execution](../systems_scheduler#device-execution) for target limits.
+[device execution](../execution/device) for target limits.
 
 ## Order systems and steps
 
@@ -114,7 +114,7 @@ selections.
 
 ## Next steps
 
-- [Systems and the scheduler](../systems_scheduler) covers threaded and device
-  execution.
+- [Execution](../execution) covers captures, portable resources, threaded host
+  kernels, and device execution.
 - {{< api HostStorage >}} and {{< api ArchetypeRowAccessor >}} document
   lower-level traversal.

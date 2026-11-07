@@ -69,6 +69,5 @@ as `ConfigureTime` does, rather than in the kernel.
 
 ## Next steps
 
-[Resource operations and adapters](../resources#portable-owning-resources)
-covers threaded and device restrictions and adapters for resources that own
-data.
+[Use portable resources](../execution/portable_resources) covers threaded and
+device restrictions and adapters for resources that own data.
