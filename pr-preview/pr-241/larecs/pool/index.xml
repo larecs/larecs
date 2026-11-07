@@ -1,0 +1,275 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Larecs🌲 – pool</title>
+    <link>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/pool/</link>
+    <description>Recent content in pool on Larecs🌲</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	  <atom:link href="https://larecs.github.io/larecs/pr-preview/pr-241/larecs/pool/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+      
+        
+      
+    
+    
+    <item>
+      <title>BitPool</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/pool/BitPool/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/pool/BitPool/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;24a607075a78&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mojo struct&lt;a href=&#34;https://github.com/larecs/larecs/blob/24a607075a785e147383eb3a23ef813860a146a1/src/larecs/pool.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;h1&gt;&lt;code&gt;BitPool&lt;/code&gt;&lt;/h1&gt;&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nd&#34;&gt;@memory_only&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nc&#34;&gt;BitPool&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;Pool of reusable bit indices.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;BitPool&lt;/code&gt; hands out unique bit indices in the range &lt;code&gt;0..&amp;lt;capacity&lt;/code&gt; and
+recycles returned indices for later reuse. Recycled indices are stored as an
+implicit singly linked free list inside &lt;code&gt;_bits&lt;/code&gt;, so allocation and recycling
+are O(1).&lt;/p&gt;
+&lt;h2&gt;Aliases&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;aliases&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#aliases&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;a id=&#34;capacity&#34;&gt;&lt;/a&gt;
+&lt;h3&gt;&lt;code&gt;capacity&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;capacity&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#capacity&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;The maximum number of unique bit indices managed by the pool.&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;capacity&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;SIMD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;UInt8&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;MAX_FINITE&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;+&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;Int&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;))&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;h2&gt;Implemented traits&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;implemented-traits&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#implemented-traits&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;code&gt;AnyType&lt;/code&gt;, &lt;code&gt;Copyable&lt;/code&gt;, &lt;code&gt;Deinitable&lt;/code&gt;, &lt;code&gt;Movable&lt;/code&gt;&lt;/p&gt;
+&lt;h2&gt;Methods&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;methods&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#methods&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;script lang=&#34;JS&#34;&gt;
+function expandAll() {
+    var inputs = document.getElementsByTagName(&#39;details&#39;);
+
+    for(var i = 0; i &lt; inputs.length; i++) {
+        inputs[i].open = true;
+    }
+}
+
+function collapseAll() {
+    var inputs = document.getElementsByTagName(&#39;details&#39;);
+
+    for(var i = 0; i &lt; inputs.length; i++) {
+        inputs[i].open = false;
+    }
+}
+&lt;/script&gt;
+&lt;a class=&#34;&#34; onclick=&#34;expandAll()&#34; style=&#34;cursor:pointer;&#34;&gt;Expand&amp;nbsp;all&lt;/a&gt;&amp;nbsp;&amp;nbsp;
+&lt;a class=&#34;&#34; onclick=&#34;collapseAll()&#34; style=&#34;cursor:pointer;&#34;&gt;Collapse&amp;nbsp;all&lt;/a&gt;
+&lt;h3&gt;&lt;code&gt;__init__&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;__init__&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#__init__&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Initializes an empty bit pool.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;fm&#34;&gt;__init__&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;out&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The pool starts with no allocated bits and no recycled bits. Fresh calls
+to &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/larecs/pool/BitPool/#get&#34; &gt;&lt;code&gt;BitPool.get&lt;/code&gt;&lt;/a&gt; return monotonically increasing indices until recycled
+bits become available.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Self&lt;/code&gt;&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;get&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;get&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#get&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Returns a fresh or recycled bit index.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;get&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;mut&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;out&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;bit_idx&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;Int&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Recycled indices are returned before allocating new indices. When no
+recycled index exists, the next fresh index is allocated.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;bit_idx&lt;/strong&gt; (&lt;code&gt;Int&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Int&lt;/code&gt;: The acquired bit index.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Raises:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;InternalError: If the pool is full.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;recycle&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;recycle&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#recycle&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Hands a bit index back for recycling.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;recycle&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;mut&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;bit_idx&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;Int&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The recycled index becomes the head of the free list and may be returned
+by the next &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/larecs/pool/BitPool/#get&#34; &gt;&lt;code&gt;BitPool.get&lt;/code&gt;&lt;/a&gt; call.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;bit_idx&lt;/strong&gt; (&lt;code&gt;Int&lt;/code&gt;): The index of the bit to recycle.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;code&gt;reset&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;reset&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#reset&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Resets the pool to its initial empty state.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;reset&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;mut&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;All previously handed-out indices are invalidated from the pool&amp;rsquo;s point
+of view. The next allocation starts again at index 0.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>EntityPool</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/pool/EntityPool/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/pool/EntityPool/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;24a607075a78&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mojo struct&lt;a href=&#34;https://github.com/larecs/larecs/blob/24a607075a785e147383eb3a23ef813860a146a1/src/larecs/pool.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;h1&gt;&lt;code&gt;EntityPool&lt;/code&gt;&lt;/h1&gt;&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nd&#34;&gt;@memory_only&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nc&#34;&gt;EntityPool&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;EntityPool is an implementation using implicit linked lists.&lt;/p&gt;
+&lt;p&gt;Follows the entity recycling scheme from
+&lt;a href=&#34;https://skypjack.github.io/2019-05-06-ecs-baf-part-3/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;ECS back and forth, part 3&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Per-ID generations survive reset. Recycling or resetting advances the
+affected generations modulo 2&lt;strong&gt;32; an ancient handle can alias a new one
+after 2&lt;/strong&gt;32 advances of its ID. Handles are local to a pool, and copying a
+pool creates an independent snapshot with the same handles and history.
+Copying takes O(high-water mark) time and storage, including retained IDs.&lt;/p&gt;
+&lt;h2&gt;Implemented traits&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;implemented-traits&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#implemented-traits&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;code&gt;AnyType&lt;/code&gt;, &lt;code&gt;Copyable&lt;/code&gt;, &lt;code&gt;Deinitable&lt;/code&gt;, &lt;code&gt;Movable&lt;/code&gt;, &lt;code&gt;Sized&lt;/code&gt;&lt;/p&gt;
+&lt;h2&gt;Methods&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;methods&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#methods&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;script lang=&#34;JS&#34;&gt;
+function expandAll() {
+    var inputs = document.getElementsByTagName(&#39;details&#39;);
+
+    for(var i = 0; i &lt; inputs.length; i++) {
+        inputs[i].open = true;
+    }
+}
+
+function collapseAll() {
+    var inputs = document.getElementsByTagName(&#39;details&#39;);
+
+    for(var i = 0; i &lt; inputs.length; i++) {
+        inputs[i].open = false;
+    }
+}
+&lt;/script&gt;
+&lt;a class=&#34;&#34; onclick=&#34;expandAll()&#34; style=&#34;cursor:pointer;&#34;&gt;Expand&amp;nbsp;all&lt;/a&gt;&amp;nbsp;&amp;nbsp;
+&lt;a class=&#34;&#34; onclick=&#34;collapseAll()&#34; style=&#34;cursor:pointer;&#34;&gt;Collapse&amp;nbsp;all&lt;/a&gt;
+&lt;h3&gt;&lt;code&gt;__init__&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;__init__&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#__init__&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Initializes an empty entity pool with the reserved zero entity.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;fm&#34;&gt;__init__&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;out&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Self&lt;/code&gt;&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;get&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;get&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#get&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Returns a fresh or recycled entity.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;get&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;mut&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Entity&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Entity&lt;/code&gt;: The acquired entity.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;recycle&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;recycle&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#recycle&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Hands an entity back for recycling.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;recycle&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;mut&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;entity&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Entity&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;entity&lt;/strong&gt; (&lt;code&gt;Entity&lt;/code&gt;): The entity to recycle.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Raises:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;InternalError: If &lt;code&gt;entity&lt;/code&gt; is the reserved zero entity.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;reset&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;reset&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#reset&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Invalidates all issued handles and resets allocation to ID 1.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;reset&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;mut&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Advances generations for the active prefix, including recycled IDs,
+and retains all per-ID history and reserved memory for reuse. Length,
+capacity, and available counts become zero; reserved ID 0 is unchanged.
+Reset takes O(capacity()) time; subsequent allocation remains amortized
+O(1) and reuses storage up to the previous high-water mark. Generations
+wrap modulo 2**32, so handles cannot remain unique indefinitely.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;code&gt;is_alive&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;is_alive&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#is_alive&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Returns whether an entity is still alive, based on the entity&amp;rsquo;s generations.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;is_alive&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;entity&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Entity&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Bool&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;entity&lt;/strong&gt; (&lt;code&gt;Entity&lt;/code&gt;): The entity to check.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Bool&lt;/code&gt;: True if &lt;code&gt;entity&lt;/code&gt;&amp;rsquo;s generation matches the pool&amp;rsquo;s current generation for its ID.
+False if &lt;code&gt;entity&lt;/code&gt;&amp;rsquo;s ID is outside the current allocation range,
+including IDs not yet reissued after reset.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;__len__&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;__len__&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#__len__&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Returns the current number of used entities.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;fm&#34;&gt;__len__&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;Int&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Int&lt;/code&gt;: The number of entities currently in use.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;capacity&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;capacity&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#capacity&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Returns the current capacity (used and recycled entities).&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;capacity&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;Int&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Int&lt;/code&gt;: The number of entities allocated since reset, used or recycled.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;available&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;available&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#available&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Returns the current number of available/recycled entities.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;available&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;Int&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Int&lt;/code&gt;: The number of recycled entities available for reuse.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+  </channel>
+</rss>
