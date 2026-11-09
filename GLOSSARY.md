@@ -25,6 +25,23 @@ A resource's kernel-facing representation, distinct from its owning source.
 It describes the data available to the kernel on its execution target.
 _Avoid_: Resource owner, when referring to the view.
 
+**Resource source**:
+The host-owned value stored under a resource type. An adapter binds its kernel
+view for the selected target and declared access.
+
+**Resource lease**:
+An invocation's retained access to a source, preventing reentrant lookup,
+replacement, or removal until completion. It does not synchronize workers'
+shared writes or protect against previously escaped aliases.
+
+**Cluster key**:
+An application classifier's UInt64 identity for a locality group. Equal keys
+identify a cluster; key proximity does not establish exact spatial neighbors.
+
+**Staging store**:
+A partitioned logical archetype's physical store for rows awaiting explicit
+spatial maintenance. Ordinary matching queries and kernels still visit them.
+
 **Device copy**:
 The device-held bytes of one resource or of one store's component column,
 last transferred to or from the host.

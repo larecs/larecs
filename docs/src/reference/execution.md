@@ -23,4 +23,4 @@ The generated `run` entry keeps overload anchors, access constraints, preparatio
 | {{< api ExecutionBackend >}} | Compile-time `HOST` or `DEVICE`; HOST is the default. |
 | {{< api ThreadedExecutionConfig >}} | Worker/chunk settings and minimum row threshold; configuration alone does not enable threading. |
 
-See [systems and scheduling](../../guide/systems_scheduler) for runnable variations. Kernels cannot perform arbitrary structural changes while execution holds structural locks.
+See [Execution](../../guide/execution) for independent particle stages and target restrictions. Kernels cannot perform arbitrary structural changes while execution holds structural locks.

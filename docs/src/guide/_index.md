@@ -7,13 +7,21 @@ weight = -1
 open = true
 +++
 
-This user guide provides a brief explanation of the main data types and functionality
-of Larecs&#xfeff;🌲. For new users it is advisable to go through it in the order of the 
-side menu.
+Complete [Your first simulation](../start/first_simulation) before choosing a
+task. Each group below leads to implemented guides and checked particle stages.
 
-For a deeper dive into ECS and the architecture by Larecs🌲, have a look at
-the [ECS FAQ](https://github.com/SanderMertens/ecs-faq) by Sander Mertens, 
-the author of the [Flecs ECS](http://flecs.dev/) and the 
-[architecture section](https://mlange-42.github.io/arche/background/architecture/) 
-of the [Arche](https://github.com/mlange-42/arche) ECS
-by Martin Lange, which served as the main inspiration for Larecs🌲.
+| Group | Tasks |
+| --- | --- |
+| Data model | [Model entities and components](data_model). |
+| Systems and kernels | [Declare kernel access, order systems, and inspect entities](systems_kernels). |
+| Structural changes | [Create and change batches with scoped selections](structural_changes). |
+| Resources | [Share values with resources](shared_resources). |
+| [Execution](execution) | Select host/device, pass captures, bind portable resources, run host chunks, reuse device copies, and coordinate shared output. |
+| [Spatial locality](spatial_locality) | Classify particles, maintain placement explicitly, and select exact clusters. |
+| [Performance](performance) | Validate work, profile dominant systems, and measure complete steps. |
+
+The earlier [systems](systems_scheduler), [resource operations](resources),
+[spatial clustering](spatial_clustering), [synchronization](synchronization),
+and [benchmark](benchmarks) pages remain accessible. Use
+[compatibility and status](../reference/compatibility) for experimental limits
+and [errors and migration](../reference/errors) for diagnostics.

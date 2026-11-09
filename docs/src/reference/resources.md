@@ -18,4 +18,4 @@ type: docs
 
 Ordinary resources can own heap data on sequential host execution. Device plain resources require a recursively checked pointer-free representation; an owning resource instead needs an adapter. These rules differ from the component transfer check; see [compatibility](../compatibility).
 
-The [resource guide](../../guide/resources) and [capture examples](../../guide/systems_scheduler) provide complete runnable programs.
+The [portable resource guide](../../guide/execution/portable_resources) and [capture guide](../../guide/execution/captures) provide independent particle programs. [Reuse unchanged device copies](../../guide/execution/copy_reuse) covers revisions and escaped-reference invalidation.

@@ -12,6 +12,10 @@ Read each generated operation's **Raises** and **Constraints** before handling a
 | {{< api WorldError >}} | Includes structural lock exhaustion, a locked world and negative batch counts. Release queries/selections before structural changes; pass a nonnegative count. |
 | Device setup or synchronization failure | `run` raises; it does not retry on host. Fix device availability or explicitly select HOST. |
 | Invalid resource/capture access | Check declarations, presence, access modes and binding order. Synchronization cannot repair a declaration mismatch. |
+| `Threaded resources require explicit read access` | Ordinary threaded resources must declare `read`; mutable adapters need concurrent-mutation support. See [threaded restrictions](../../guide/execution/threaded#troubleshooting). |
+| `Cluster selection requires clean spatial maintenance` | Release live selections/queries and maintain explicitly before selecting the next cluster. See [spatial recovery](../../guide/spatial_locality/maintain#execute-and-troubleshoot). |
+| Device reads stale data with reuse enabled | Reacquire mutable references after each run or invalidate after escaped writes. See [copy-reuse recovery](../../guide/execution/copy_reuse#troubleshooting). |
+| `TryAccess.is_acquired()` is false | The guard attempt is Busy. Record required unfinished work for a later pass; there is no automatic retry. See [shared-write alternatives](../../guide/execution/shared_writes). |
 
 A failing kernel call is not a transaction: do not infer rollback of writes already performed. Scoped selections release locks on exit, including exceptional exit. Failure effects specific to an operation remain in its defining declaration.
 
