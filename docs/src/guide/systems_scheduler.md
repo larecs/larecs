@@ -4,10 +4,10 @@ title = "Systems and the scheduler"
 weight = 60
 +++
 
-A key feature of entity-component systems is that
-operations on the entities are organized in systems,
-which operate independently from one another and can
-be added or removed as required.
+In an entity component system, you organize the operations on entities in
+systems. You register each system with a {{< api Scheduler >}}, which runs
+its lifecycle methods for all registered systems in registration order.
+Registration is permanent: the scheduler has no method to remove a system.
 
 ## Systems
 

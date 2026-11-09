@@ -17,7 +17,10 @@ currently such an experimental API.
 
 - Clean and simple API
 - High performance due to archetypes and Mojo's compile-time programming
-- Support for SIMD via a [`vectorize`](https://docs.modular.com/mojo/stdlib/algorithm/functional/vectorize/)-like syntax
+- Column storage: each archetype stores every component type in its own
+  contiguous column
+- Kernels that run sequentially on the host, or experimentally in parallel
+  host chunks or on an accelerator
 - Compile-time checks thanks to usage of parameters
 - Native support for [resources](https://mlange-42.github.io/arche/guide/resources/) and scheduling.
 - Tested and benchmarked

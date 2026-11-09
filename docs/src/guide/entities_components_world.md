@@ -82,14 +82,23 @@ a key in a dictionary.
 How components can be assigned to entities is described 
 in the [following chapters](../adding_and_removing_entities).
 
-> [!Warning]
-> Currently, only "trivial" structs are supported as 
-> components in Larecs🌲. That is, structs that can be
-> copied and moved via simple memory operations. This does
-> *not* include structs that manage heap-allocated memory
-> such as `List` or `Dict`. Typically, it is not advisable to
-> use such objects in the ECS context anyway; however, 
-> Larecs🌲 might support such "complex" structs in a future version. 
+A component type can be any `Copyable & Deinitable` struct, including one
+that owns heap memory, such as a `List` field. Kernels add requirements for
+the components they access, depending on where they run:
+
+| Execution | Requirement for accessed components |
+| --- | --- |
+| Sequential host (default) | None beyond `Copyable & Deinitable` |
+| Threaded host (experimental) | Pointer-free value with trivial copy, move, and destruction |
+| Device (experimental) | Conforms to `TrivialRegisterPassable` |
+
+A kernel that accesses an ineligible component fails to compile. Storage
+operations and queries accept every component type.
+
+Prefer plain values such as `Position` and `Velocity`. When entities change
+archetype or are removed, Larecs runs the move constructors and destructors
+of owning components row by row, and such components cannot be used by
+threaded or device kernels.
 
 ## The world
 
