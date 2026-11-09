@@ -2,6 +2,8 @@
 type = "docs"
 title = "Resource operations and adapters"
 weight = 50
+[sidebar]
+exclude = true
 +++
 
 Not all data in a world is associated with
@@ -232,11 +234,9 @@ Host kernels may also capture surrounding values and access resources through
 `context.run(kernel)`. See [Capturing host kernels](../systems_scheduler#capturing-host-kernels)
 for an example. Device entry points use the non-capturing `context.run[kernel]()` form.
 
-Import `ExecutionBackend` from `larecs` and replace the host `run` call with:
-
-```mojo
-    context.run[move_with_time, backend=ExecutionBackend.DEVICE]()
-```
+Import `ExecutionBackend` from `larecs` and use
+`context.run[move_with_time, backend=ExecutionBackend.DEVICE]()`. The
+[device guide](../execution/device) checks this target with host parity.
 
 Host execution is the default. DEVICE requires a working accelerator and raises
 when unavailable, including for empty matches; it never falls back to HOST.
@@ -250,11 +250,9 @@ fields in this increment) are rejected. Host kernels still support owning resour
 
 ## Resource permissions
 
-`Resources[T]()` preserves `read_write` access. Prefer explicit declarations:
-
-```mojo
-comptime required = Resources().read[Time]().read_write[Statistics]()
-```
+`Resources[T]()` preserves `read_write` access. Prefer explicit declarations,
+such as `Resources().read[Time]().read_write[Statistics]()`, to keep time
+immutable while allowing statistics updates.
 
 A `read` getter is immutable and its device buffer is never downloaded.
 `read_write` permits mutable `get[T]()` and copies device changes back after
@@ -269,27 +267,15 @@ Use `BufferResource` for a contiguous scalar collection. The same kernel request
 the original source type and receives its read-only `ReadBuffer` view on both
 backends:
 
-```mojo
-from larecs import ExecutionBackend, BufferResource, Filter, KernelContext, Resources, SystemContext, World
+{{< example file="particles/portable_resources.mojo" region="kernel" >}}
 
-comptime Samples = BufferResource[DType.int32]
-comptime required = Resources().read[Samples]()
+`Samples` is `BufferResource[DType.float64]` in this checked particle stage.
+The kernel requests the owning `Samples` type and reads the prepared view.
+It combines sample zero with the custom grid view to update particle velocity.
+The [portable-resource guide](../execution/portable_resources) shows the
+owner, view, adapter, setup, and assertions beside their explanations.
 
-def add_sample(context: KernelContext[Filter().include[Int32](), required]):
-    ref samples = context.resources.get[Samples]()
-    for entity in context:
-        entity.get[Int32]() += samples[0]
-
-def main() raises:
-    var world = World[Int32]()
-    world.resources.add(Samples([Int32(7), Int32(8)]))
-    _ = world.storage.add_entities(Int32(1), count=37)
-    var context = SystemContext(world)
-    context.run[add_sample]()
-    context.run[add_sample, backend=ExecutionBackend.DEVICE]()
-    world.resources.get[Samples]().samples[0] = 9
-    context.run[add_sample]()
-```
+{{< example file="particles/portable_resources.mojo" full=true >}}
 
 Device execution requires a working accelerator. By default, the samples are
 uploaded on every device run; worlds that
@@ -563,15 +549,11 @@ every target. The access declaration selects the view:
 | `Resources().write[T]()` | `T.View[True]` | Fresh, initialized by the adapter |
 | `Resources().read_write[T]()` | `T.View[True]` | Existing contents preserved |
 
-Read and writer views can be different types:
-
-```mojo
-struct GridAdapter(ResourceAdapter):
-    comptime Source = Grid
-    comptime View[mutable: Bool] = GridFill if mutable else GridRead
-    comptime supports_mutation = True
-    comptime supports_concurrent_mutation = True
-```
+Read and writer views can be different types. The checked
+{{< repo "examples/scatter_resource.mojo" "scatter program" >}} sets
+`GridAdapter.Source` to `Grid` and selects `GridFill` for mutable access or
+`GridRead` for read access. It enables both mutation capabilities because
+writers reserve distinct slots with atomics.
 
 Both capabilities default to `False`. `supports_mutation` admits `write` and
 `read_write` declarations for sequential host runs. Device and `threaded=True`
@@ -614,7 +596,7 @@ Failures follow the [invocation rules](#invocation-lifetime-and-failures):
 - If `finalize` raises, the run raises, but published outputs remain and the
   world stays usable.
 
-[`examples/scatter_resource.mojo`](../../../examples/scatter_resource.mojo)
+{{< repo "examples/scatter_resource.mojo" "scatter example" >}}
 is a complete example. Writers reserve per-cell slots with atomic counters
 and count dropped writes; `finalize` clamps the counters. The same thin kernel
 runs sequentially, threaded, and on a device. Run it with

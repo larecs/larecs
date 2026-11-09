@@ -38,7 +38,7 @@ class Page(HTMLParser):
             self.links.append(attrs["href"])
 
 
-def check(root: Path = ROOT) -> None:
+def check(root: Path = ROOT, public: Path | None = None, base: str | None = None) -> None:
     """Reject nonexistent symbol targets and broken reference links.
 
     Args:
@@ -47,7 +47,7 @@ def check(root: Path = ROOT) -> None:
     Raises:
         ValueError: If a page or anchor is missing.
     """
-    public = root / "docs/site/public"
+    public = public or root / "docs/site/public"
     data = json.loads((root / "docs/site/data/api.json").read_text())
     pages = {}
 
@@ -65,10 +65,21 @@ def check(root: Path = ROOT) -> None:
 
     for target in {item["target"] for item in data["symbols"].values()}:
         resolve(target)
+    for name, item in data["symbols"].items():
+        source = root / item["source"]
+        lines = source.read_text().splitlines()
+        line = item["line"]
+        symbol = item["source_symbol"]
+        if not 1 <= line <= len(lines) or not re.search(
+            r"\b(?:def|struct|trait|comptime) " + re.escape(symbol) + r"(?:\W|$)", lines[line - 1]
+        ):
+            raise ValueError(f"Invalid symbol source: {name}: {item}")
+        expected = f"https://github.com/larecs/larecs/blob/{data['revision']}/{item['source']}#L{line}"
+        if item["source_url"] != expected:
+            raise ValueError(f"Unpinned symbol source: {name}")
     # Resolve relative links with the same trailing-slash behavior as a browser.
     config = (root / "docs/site/hugo.yaml").read_text()
-    base = re.search(r"(?m)^baseURL: (.+)$", config).group(1).strip()
-    base = os.environ.get("HUGO_BASEURL", base)
+    base = base or os.environ.get("HUGO_BASEURL") or re.search(r"(?m)^baseURL: (.+)$", config).group(1).strip()
     base_path = urlsplit(base).path
     for page in (public / "reference").rglob("index.html"):
         page_url = urljoin(base, str(page.parent.relative_to(public)) + "/")

@@ -6,7 +6,7 @@ weight = 7
 
 This is a dynamically regenerated comparison, not one fixed historical run.
 The workflow records its checkout SHA and resolves Mojo through
-`benchmark/plots/pixi.lock`; its `ubuntu-latest` label does not identify a CPU
+`benchmark/plots/pixi.lock`; its `ubuntu-24.04` label does not identify a CPU
 or cache size. No numerical speedup is asserted without a selected run's data.
 The driver defines iteration calibration and measured work; compiler generation,
 world construction, plotting, and dependency setup are outside per-entity loop
@@ -31,7 +31,7 @@ that produced them. Select the run for the measured checkout SHA; the report
 contains no fixed checked-in plot or golden timings.
 
 The documentation workflow (`.github/workflows/publish.yml`) regenerates this
-plot for each published commit on a GitHub-hosted `ubuntu-latest` runner,
+plot for each published commit on a GitHub-hosted `ubuntu-24.04` runner,
 using the Mojo version pinned in `benchmark/plots/pixi.lock`. The workflow
 does not record the runner's CPU or cache sizes, and the hardware behind that
 runner label can change between runs. Read the plot as a comparison on one

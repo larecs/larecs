@@ -2,6 +2,8 @@
 type = "docs"
 title = "Adding and removing entities"
 weight = 20
+[sidebar]
+exclude = true
 +++
 
 Adding and removing individual entities is done
@@ -18,6 +20,7 @@ logic, these operations should generally be performed by a
 
 ```mojo {doctest="guide_add_remove_entities" global=true}
 from larecs import World, Filter, SystemContext, KernelContext
+from std.testing import assert_equal
 
 @fieldwise_init
 struct Position(Copyable, Movable):
@@ -37,6 +40,11 @@ def place_batch(rows: KernelContext[Filter().include[Position]()]):
 
 ```mojo {doctest="guide_add_remove_entities" global=true}
 def main() raises:
+    """Checks creation, selected placement, and removal.
+
+    Raises:
+        Error: If mutation, execution, or result assertions fail.
+    """
     var world = World[Position, Velocity]()
 ```
 
@@ -55,7 +63,10 @@ we can do the following:
 
 ```mojo {doctest="guide_add_remove_entities" global=true}
     entity = world.storage.add_entity(Position(0, 0), Velocity(1, 0))
+    assert_equal(world.storage.read[Velocity](entity).dx, 1.0)
 ```
+
+The assertion reads back the velocity stored on the new entity.
 
 ## Batch addition
 

@@ -9,7 +9,7 @@ checks where they end up. You define the particle data, write the movement
 logic once, and let Larecs apply it to every particle that can move.
 
 You need a working Mojo installation and the Larecs source, as described in
-[Installation](../../guide/installation). The tutorial assumes you can read
+[Installation](../../start/installation). The tutorial assumes you can read
 basic Mojo: structs, functions, and `var` declarations.
 
 ## The program

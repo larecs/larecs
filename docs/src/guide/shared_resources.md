@@ -20,7 +20,7 @@ value of each, and `ConfigureTime` changes `Time` through
 ## Define a resource
 
 A resource is a struct that conforms to
-[`ResourceType`](../../larecs#aliases), which requires `Copyable` and
+{{< api resource.ResourceType >}}, which requires `Copyable` and
 `Deinitable`. `Copyable, Movable` satisfies both. A world holds at most one
 value per resource type, and resource types do not appear in the world's
 component list.

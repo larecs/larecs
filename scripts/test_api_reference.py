@@ -5,7 +5,6 @@ Run after `pixi run build-docs` with the scripts Pixi test-api-reference task.
 
 import json
 import os
-import shutil
 import subprocess
 import tempfile
 import unittest
@@ -13,6 +12,9 @@ from pathlib import Path
 
 from api_reference import ROOT, root_exports
 from check_api_reference import Page, check
+from check_docs import check as check_site, Page as SitePage
+from docs_redirects import write_case_redirects
+from check_docs_browser import check_browser
 
 
 class ReferenceTests(unittest.TestCase):
@@ -48,7 +50,6 @@ class ReferenceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Missing API anchor"):
                 check(root)
 
-    @unittest.skipUnless(shutil.which("hugo"), "Run in the scripts Pixi environment")
     def test_unknown_symbols_fail_hugo(self):
         """Reject unknown shortcodes in the actual renderer."""
         fixture = ROOT / "docs/site/content/reference/unknown-symbol-test.md"
@@ -64,19 +65,22 @@ class ReferenceTests(unittest.TestCase):
         finally:
             fixture.unlink(missing_ok=True)
 
-    @unittest.skipUnless(shutil.which("hugo"), "Run in the scripts Pixi environment")
     def test_preview_base_path(self):
         """Render API links under a deployment prefix different from production."""
         with tempfile.TemporaryDirectory() as destination:
+            base = "https://example.test/deploy/pr-preview/pr-999/"
             subprocess.run(
                 ["hugo", "-s", str(ROOT / "docs/site"), "--baseURL",
-                 "https://example.test/preview/", "--destination", destination],
+                 base, "--destination", destination],
                 capture_output=True, text=True, check=True,
-                env=os.environ | {"HUGO_BASEURL": "https://example.test/preview/"},
+                env=os.environ | {"HUGO_BASEURL": base},
             )
             html = (Path(destination) / "reference/identity/index.html").read_text()
-            self.assertTrue('href="/preview/larecs/world/World/"' in html,
+            self.assertTrue('href="/deploy/pr-preview/pr-999/larecs/world/World/"' in html,
                             "API link lacks the alternate deployment prefix")
+            write_case_redirects(ROOT, Path(destination), base)
+            check_site(ROOT, Path(destination), base)
+            check_browser(Path(destination), base)
 
     def test_rendered_contracts_and_sources(self):
         """Keep constraints, exact overloads and pinned source links visible."""
@@ -90,6 +94,15 @@ class ReferenceTests(unittest.TestCase):
         legacy = (ROOT / "docs/site/public/larecs/SystemContext/index.html").read_text()
         self.assertIn("/larecs/system/SystemContext/", legacy)
         self.assertTrue(Page(html).ids)
+        declaration = json.loads((ROOT / "docs/src/larecs.json").read_text())["decl"]
+        module = next(m for m in declaration["modules"] if m["name"] == "system")
+        context = next(s for s in module["structs"] if s["name"] == "SystemContext")
+        run = next(f for f in context["functions"] if f["name"] == "run")
+        text = "".join(SitePage(html).text)
+        self.assertIn(run["overloads"][1]["signature"], text)
+        resources = (ROOT / "docs/site/public/larecs/resource/ResourceStorage/index.html").read_text()
+        self.assertIn("Note:", resources)
+        self.assertIn("re-obtain it", resources)
 
 
 if __name__ == "__main__":

@@ -49,9 +49,52 @@ html,
   font-size: 1.0em;
 }
 
-/* blocks without word wrap. TODO: requires Hugo template adjustment */
-.hextra-code-block:not(.no-wrap) pre {
-  text-wrap: auto;
+/* Keep declarations and unbroken identifiers inside narrow reading columns. */
+.content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hextra-code-block pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow-x: auto;
+}
+
+.hextra-code-block .line,
+.hextra-code-block .cl {
+  min-width: 0;
+}
+
+.exact-declaration pre {
+  white-space: pre;
+}
+
+.docs-context {
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid #cbd5e1;
+  background: #f1f5f9;
+  color: #1e293b;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.docs-context a {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+html.dark .docs-context {
+  border-color: #475569;
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+/* Typst exports use dark labels; keep their canvas readable in both themes. */
+.content img[src$=".svg"] {
+  background: #fff;
+  padding: 0.5rem;
 }
 
 /* images */
@@ -946,4 +989,31 @@ html.dark .chroma .gl {
 /* TextWhitespace */
 html.dark .chroma .w {
   color: #6e7681
+}
+
+/* Wide figures retain legible labels and scroll independently on phones. */
+.docs-diagram {
+  container-type: inline-size;
+}
+
+.docs-figure {
+  overflow-x: auto;
+  margin-top: 0.66rem;
+}
+
+.content .docs-figure img {
+  min-width: 40rem;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+
+.figure-hint {
+  font-size: 0.8rem;
+}
+
+@container (min-width: 40rem) {
+  .figure-hint {
+    display: none;
+  }
 }

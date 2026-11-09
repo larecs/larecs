@@ -1361,6 +1361,7 @@ struct HostKernelContext[
         DevicePointer[mut=True, dtype=DType.uint8, origin=MutUntrackedOrigin],
         len(Self.capture_spec),
     ]
+    """The type of the per-capture device pointer array."""
     var _capture_pointers: Self.CaptureBuffers
 
     def __init__(
@@ -1738,7 +1739,7 @@ struct SystemContext[
 
         `filter`, `required_resources`, and `capture_spec` are inferred from
         the kernel's `KernelContext` parameter. The tutorial
-        [Your first simulation](../../start/first_simulation) shows a complete
+        [Your first simulation](../../../start/first_simulation) shows a complete
         program.
 
         Execution: The call returns after all kernel work has finished.

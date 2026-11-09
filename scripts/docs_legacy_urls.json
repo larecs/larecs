@@ -1,0 +1,168 @@
+{
+  "guide/adding_and_removing_entities/": [
+    "batch-addition",
+    "batch-removal"
+  ],
+  "guide/benchmarks/": [
+    "benchmark-methodology",
+    "deferred-dirty-classification",
+    "growable-store-comparison-on-linux",
+    "historical-bounded-block-comparison-on-macos",
+    "partitioned-storage-comparison",
+    "pr-to-pr-performance-checks",
+    "resource-execution",
+    "shared-host-execution-comparison",
+    "small-spatial-benchmarks-on-every-pr",
+    "storage-range-migration",
+    "synchronization-primitives",
+    "threaded-host-execution",
+    "versus-array-of-structs"
+  ],
+  "guide/changing_entities/": [
+    "accessing-and-changing-individual-components",
+    "adding-and-removing-components",
+    "batch-operations",
+    "setting-multiple-components-at-once"
+  ],
+  "guide/data_model/": [
+    "declare-the-worlds-component-types",
+    "define-components",
+    "keep-entity-handles",
+    "next-steps"
+  ],
+  "guide/entities_components_world/": [
+    "components",
+    "entities",
+    "the-world"
+  ],
+  "guide/execution/captures/": [
+    "borrow-locals-on-the-host",
+    "declare-explicit-slots-for-a-thin-kernel",
+    "restrictions-and-recovery"
+  ],
+  "guide/execution/copy_reuse/": [
+    "check-both-transfer-policies",
+    "enable-reuse-and-invalidate-escaped-writes",
+    "keep-the-kernel-independent-of-transfer-policy",
+    "know-which-operations-advance-revisions",
+    "troubleshooting"
+  ],
+  "guide/execution/device/": [
+    "account-for-transfers-and-completion",
+    "define-a-transferable-movement-stage",
+    "execute-and-compare-independent-runs",
+    "select-the-target-in-the-system",
+    "troubleshooting-and-limits"
+  ],
+  "guide/execution/": [],
+  "guide/execution/portable_resources/": [
+    "implement-validation-and-target-preparation",
+    "keep-sources-and-views-valid-until-completion",
+    "request-the-source-type-and-receive-its-view",
+    "separate-the-owner-from-the-kernel-view",
+    "troubleshooting",
+    "use-a-writer-view-only-when-the-adapter-supports-it"
+  ],
+  "guide/execution/shared_writes/": [
+    "match-ordering-and-backend-support",
+    "run-and-troubleshoot",
+    "use-standalone-host-primitives-when-you-own-the-storage",
+    "write-a-separate-output-for-each-particle"
+  ],
+  "guide/execution/threaded/": [
+    "configure-and-check-the-result",
+    "keep-inputs-portable-and-work-independent",
+    "respect-chunk-boundaries-and-lifetimes",
+    "troubleshooting"
+  ],
+  "guide/": [],
+  "guide/installation/": [
+    "install-the-locked-environment",
+    "troubleshooting",
+    "use-a-precompiled-package",
+    "use-the-source-from-your-own-project"
+  ],
+  "guide/performance/": [],
+  "guide/performance/measure/": [
+    "capture-a-tracy-trace",
+    "establish-a-checked-workload",
+    "keep-results-with-their-conditions",
+    "measure-complete-updates-separately-from-setup",
+    "profile-the-dominant-system",
+    "respect-explicit-simd-limits",
+    "separate-arithmetic-from-boundary-costs"
+  ],
+  "guide/queries_iteration/": [
+    "iterating-over-queries",
+    "processing-components-with-kernels",
+    "queries"
+  ],
+  "guide/resources/": [
+    "adapter-allocation-and-access-rules",
+    "adding-and-accessing-resources",
+    "defining-a-custom-portable-resource",
+    "defining-resources",
+    "invocation-lifetime-and-failures",
+    "migrating-existing-adapters",
+    "mutable-adapted-resources-experimental",
+    "portable-owning-resources",
+    "registering-and-using-the-custom-resource",
+    "removing-resources",
+    "resource-permissions",
+    "reusing-unchanged-device-copies-experimental",
+    "using-resources-in-kernels"
+  ],
+  "guide/shared_resources/": [
+    "add-read-replace-and-remove-resources",
+    "declare-kernel-access",
+    "define-a-resource",
+    "next-steps",
+    "troubleshooting"
+  ],
+  "guide/spatial_clustering/": [
+    "growable-cluster-local-partitions",
+    "cluster-local-partition-blocks"
+  ],
+  "guide/spatial_locality/": [],
+  "guide/spatial_locality/maintain/": [
+    "compare-row-ordering-with-growable-partitions",
+    "declare-eligible-classifier-inputs",
+    "execute-and-troubleshoot",
+    "run-movement-before-explicit-maintenance",
+    "select-exact-maintained-cluster-membership",
+    "track-dirty-inputs-and-choose-a-cadence"
+  ],
+  "guide/structural_changes/": [
+    "create-entities-outside-a-system",
+    "empty-and-invalid-batches",
+    "end-the-structural-lock-with-with",
+    "next-steps",
+    "remove-entities",
+    "select-exactly-the-entities-you-change",
+    "values-versus-structure"
+  ],
+  "guide/synchronization/": [
+    "atomic-updates",
+    "host-and-device-use",
+    "scoped-access-and-contention"
+  ],
+  "guide/systems_kernels/": [
+    "compare-handles-queries-and-selections",
+    "declare-component-and-resource-access",
+    "how-often-a-kernel-runs",
+    "inspect-entities-outside-a-kernel",
+    "next-steps",
+    "order-systems-and-steps",
+    "troubleshooting",
+    "write-values-without-reading-them"
+  ],
+  "guide/systems_scheduler/": [
+    "capturing-host-kernels",
+    "device-execution",
+    "passing-host-local-values-to-a-device-kernel",
+    "resources-in-kernels",
+    "scheduler",
+    "systems",
+    "threaded-host-execution-experimental"
+  ]
+}

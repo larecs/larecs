@@ -1,6 +1,6 @@
 +++
 type = "docs"
-title = "Get started"
+title = "Start"
 weight = -2
 
 [sidebar]
@@ -10,7 +10,7 @@ open = true
 Build a particle simulation one feature at a time. Each stage is a complete
 program in `examples/particles/`.
 
-1. [Install Larecs](../guide/installation): set up the locked environment and
+1. [Install Larecs](installation): set up the locked environment and
    run the first program.
 2. [Your first simulation](first_simulation): move particles with a system and
    a kernel, and check where they end up.
@@ -18,6 +18,9 @@ program in `examples/particles/`.
    particles and remove the stationary one.
 4. [Share time and configuration](shared_configuration): set the step length
    from a configuration resource before each movement step.
+
+After the first program, [Entities, components and the world](../guide/entities_components_world)
+explains how ECS identities and data fit the simulation.
 
 The guides cover each topic in depth:
 [entities and components](../guide/data_model),

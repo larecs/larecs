@@ -2,6 +2,8 @@
 type = "docs"
 title = "Entities, components and the world"
 weight = 10
+[sidebar]
+exclude = true
 +++
 
 Larecs🌲 is an entity component system (ECS) framework for Mojo.
@@ -123,8 +125,18 @@ and create a `World` instance as follows:
 
 ```mojo {doctest="guide_entities_components_world" global=true}
 from larecs import World
+from std.testing import assert_equal
 
-def main():
+def main() raises:
+    """Checks the initial state of a world.
+
+    Raises:
+        Error: If the initial entity count differs from zero.
+    """
     # Create a world with the components Position and Velocity
     var world = World[Position, Velocity]()
+    assert_equal(len(world), 0)
 ```
+
+The world accepts these component types and starts with no entities. The
+assertion checks that initial state.

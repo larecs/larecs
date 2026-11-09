@@ -65,11 +65,8 @@ the modified `Position` column.
 In `Move.update`, pass `backend=ExecutionBackend.DEVICE` to run a compatible
 kernel on an available accelerator:
 
-```mojo
-from larecs import ExecutionBackend
-
-context.run[move_entities, backend=ExecutionBackend.DEVICE]()
-```
+Use `context.run[move_entities, backend=ExecutionBackend.DEVICE]()` after
+importing `ExecutionBackend` from `larecs`.
 
 Device execution requires device-safe component types and the corresponding Mojo
 toolchain. If you need explicit CPU `SIMD` batching, that is not part of the

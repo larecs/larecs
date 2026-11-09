@@ -26,7 +26,7 @@ Larecs🌲 has no other external dependencies.
 
 ## Installation
 
-The [installation guide](https://larecs.github.io/larecs/guide/installation/)
+The [installation guide](https://larecs.github.io/larecs/start/installation/)
 covers the locked Pixi environment, supported platforms, using the source from
 your own project, and precompiled packages.
 

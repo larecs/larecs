@@ -2,6 +2,8 @@
 type = "docs"
 title = "Benchmark index"
 weight = 100
+[sidebar]
+exclude = true
 +++
 
 This reference preserves the earlier benchmark page's anchors. Application

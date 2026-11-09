@@ -10,7 +10,9 @@ trait CaptureSpec:
     """Describes a capture's value type and access convention."""
 
     comptime Value: Copyable
+    """Type of the value bound to this capture slot."""
     comptime writable: Bool
+    """Whether the slot permits mutation and device copy-back."""
 
 
 struct ReadCapture[T: Copyable](CaptureSpec):
@@ -21,7 +23,9 @@ struct ReadCapture[T: Copyable](CaptureSpec):
     """
 
     comptime Value = Self.T
+    """Type of the captured host value."""
     comptime writable = False
+    """Read-only access; device results are not copied back."""
 
 
 struct MutCapture[T: Copyable](CaptureSpec):
@@ -32,7 +36,9 @@ struct MutCapture[T: Copyable](CaptureSpec):
     """
 
     comptime Value = Self.T
+    """Type of the captured host value."""
     comptime writable = True
+    """Mutable access with synchronous device copy-back."""
 
 
 @fieldwise_init
@@ -56,7 +62,9 @@ trait CaptureBindingType(Copyable):
     """A host borrow retained throughout a synchronous kernel invocation."""
 
     comptime Value: Copyable
+    """Type of the value bound to this capture slot."""
     comptime writable: Bool
+    """Whether the slot permits mutation and device copy-back."""
 
     def _address(self) -> Int:
         """Returns the borrowed address for internal transfer operations.
@@ -80,7 +88,9 @@ struct CaptureBinding[mut: Bool, //, T: Copyable, origin: Origin[mut=mut]](
     """
 
     comptime Value = Self.T
+    """Type of the captured host value."""
     comptime writable = Self.mut
+    """Whether the borrowed host value may be mutated."""
     var _pointer: Pointer[Self.T, Self.origin]
 
     def _address(self) -> Int:

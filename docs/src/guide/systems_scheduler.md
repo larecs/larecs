@@ -2,6 +2,8 @@
 type = "docs"
 title = "Systems and the scheduler"
 weight = 60
+[sidebar]
+exclude = true
 +++
 
 In an entity component system, you organize the operations on entities in

@@ -10,6 +10,30 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def source_locations(text: str) -> dict[tuple[str, ...], int]:
+    """Index source declarations by enclosing type/function, excluding docstrings."""
+    locations = {}
+    scopes = []
+    in_docstring = False
+    for number, line in enumerate(text.splitlines(), 1):
+        if '"""' in line:
+            if line.count('"""') % 2:
+                in_docstring = not in_docstring
+            continue
+        if in_docstring:
+            continue
+        match = re.match(r"^( *)(?:def|struct|trait|comptime) ([\w_]+)(?:\W|$)", line)
+        if not match or match[2] in {"if", "for", "assert"}:
+            continue
+        indent, name = len(match[1]), match[2]
+        while scopes and scopes[-1][0] >= indent:
+            scopes.pop()
+        key = tuple(item[1] for item in scopes) + (name,)
+        locations.setdefault(key, number)
+        scopes.append((indent, name))
+    return locations
+
+
 def root_exports(source: str) -> dict[str, str]:
     """Return root names and defining paths, rejecting manual export drift.
 
@@ -48,19 +72,22 @@ def build_reference(root: Path = ROOT) -> dict:
     ).strip()
     symbols = {}
     content = root / "docs/site/content"
+    locations = {}
 
     def add(name, target, source):
         """Register a declaration under its defining import path."""
-        source_text = (root / source).read_text()
-        parts = name.split(".")[1:]
-        position = 0
-        for part in parts:
-            match = re.search(r"(?m)^[ \t]*(?:def|struct|trait|comptime) " + re.escape(part.split("-", 1)[0]) + r"(?:\W|$)", source_text[position:])
-            if match:
-                position += match.start()
-        line = source_text[:position].count("\n") + 1
+        if source not in locations:
+            locations[source] = source_locations((root / source).read_text())
+        parts = tuple(part.split("-", 1)[0] for part in name.split(".")[1:])
+        # Compiler-synthesized/inherited members link to their owning type.
+        owner = parts
+        while owner and owner not in locations[source]:
+            owner = owner[:-1]
+        if not owner:
+            raise ValueError(f"No source declaration for {name}")
+        line = locations[source][owner]
         symbols[f"larecs.{name}"] = {
-            "target": target, "source": source, "line": line,
+            "target": target, "source": source, "line": line, "source_symbol": owner[-1],
             "source_url": f"https://github.com/larecs/larecs/blob/{revision}/{source}#L{line}",
         }
         symbols[name] = symbols[f"larecs.{name}"]
@@ -117,14 +144,24 @@ def build_reference(root: Path = ROOT) -> dict:
         "Replacer": "host_storage.Replacer",
         "BitPool": "pool.BitPool",
     }
+    redirects = {}
+    case_redirects = {}
     for name, qualified in legacy.items():
         target = symbols[f"larecs.{qualified}"]["target"]
         if "#" in target:
             continue
+        route = f"larecs/{name}/"
+        redirects[route] = target
+        # Root type aliases such as System/ collide with system/ on APFS.
+        # Generate these after Hugo, preserving the module landing page.
+        if (content / "larecs" / name.lower() / "_index.md").is_file():
+            case_redirects[route] = target
+            continue
         page = content / (target.rstrip("/") + ".md")
         text = page.read_text()
-        # Hugo aliases keep incoming fragments because the browser retains them.
-        text = text.replace("type: docs\n", f'type: docs\naliases: ["/larecs/{name}/"]\n', 1)
+        alias = f'aliases: ["/{route}"]\n'
+        if alias not in text:
+            text = text.replace("type: docs\n", "type: docs\n" + alias, 1)
         page.write_text(text)
 
     data = {
@@ -132,6 +169,8 @@ def build_reference(root: Path = ROOT) -> dict:
         "version": tomllib.loads((root / "pixi.toml").read_text())["workspace"]["version"],
         "symbols": symbols,
         "exports": exports,
+        "redirects": redirects,
+        "case_redirects": case_redirects,
     }
     destination = root / "docs/site/data/api.json"
     destination.parent.mkdir(parents=True, exist_ok=True)

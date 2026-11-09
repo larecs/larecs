@@ -2,6 +2,8 @@
 type = "docs"
 title = "Synchronization"
 weight = 55
+[sidebar]
+exclude = true
 +++
 
 Larecs provides atomic scalars and scoped shared-read/exclusive-write access

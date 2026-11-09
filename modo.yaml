@@ -31,7 +31,7 @@ short-links: true
 report-missing: true
 
 # Break with error on any warning.
-strict: false
+strict: true
 
 # Run without generating any output files.
 dry-run: false
@@ -50,8 +50,9 @@ pre-run:
   # as stale output and conceal broken links.
   - rm -rf docs/test docs/site/content
   - |
+    set -eu
     echo Running 'mojo doc'...
-    pixi run mojo doc -o docs/src/larecs.json src/larecs
+    pixi run --manifest-path pixi.toml mojo doc -o docs/src/larecs.json src/larecs
     echo Done.
 
 # Bash scripts to run before build.
@@ -69,13 +70,15 @@ pre-test: []
 # why the doctest files can't just be pointed at as a directory).
 post-test:
   - |
+    set -eu
     echo Running Mojo doctests...
-    pixi run doctest
+    pixi run --manifest-path pixi.toml doctest
+    pixi run --manifest-path pixi.toml docs-contracts
     echo Done.
 
 # Bash scripts to run after build.
 post-build:
-  - pixi run python scripts/api_reference.py
+  - pixi run --manifest-path pixi.toml python scripts/api_reference.py
 
 # Bash scripts to run after build as well as test.
 post-run: []
