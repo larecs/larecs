@@ -1,0 +1,926 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Larecs🌲 – Development</title>
+    <link>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/</link>
+    <description>Recent content in Development on Larecs🌲</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	  <atom:link href="https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+      
+        
+      
+    
+    
+    <item>
+      <title>Set up, build, and test</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/setup/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/setup/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Use a repository checkout to build Larecs and check a change against its locked
+toolchain. The supported Pixi platforms are Linux x86-64 and macOS Apple Silicon.
+Application installation has a separate &lt;a href=&#34;../../../guide/installation&#34; &gt;guide&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Install and smoke-test&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;install-and-smoke-test&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#install-and-smoke-test&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;From the repository root, install the locked environments and run the checked
+movement program:&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi install --locked
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo --version
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo run -I src examples/particles/movement.mojo&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;The program prints &lt;code&gt;All particles reached their expected positions.&lt;/code&gt; after
+asserting the results. The root manifest declares Mojo &lt;code&gt;&amp;gt;=1.0.0,&amp;lt;1.1.0&lt;/code&gt;, MAX
+&lt;code&gt;&amp;gt;=26.5.0,&amp;lt;27&lt;/code&gt;, and mojo-tracy &lt;code&gt;&amp;gt;=1.1.0,&amp;lt;2&lt;/code&gt;; &lt;code&gt;pixi.lock&lt;/code&gt; pins the actual
+resolution. Retain the reported compiler build with verification evidence.
+The separate scripts environment pins documentation tools.&lt;/p&gt;
+&lt;h2&gt;Build a package&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;build-a-package&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#build-a-package&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Precompile the source package, then build an example against that package:&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo precompile src/larecs -o /tmp/larecs.mojoc
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo build -I /tmp examples/particles/movement.mojo -o /tmp/larecs-movement
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;/tmp/larecs-movement&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;This checks package consumption without &lt;code&gt;-I src&lt;/code&gt;. The final program must
+produce the same result as the source smoke run. CI also performs a package
+smoke check; generated packages are disposable build outputs.&lt;/p&gt;
+&lt;h2&gt;Run focused checks, then the suite&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;run-focused-checks-then-the-suite&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#run-focused-checks-then-the-suite&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;For a storage-lifecycle change, run the focused test before the full suite:&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run tests test/host_storage_lifecycle_test.mojo
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run tests &lt;span class=&#34;nb&#34;&gt;test&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run test-resource-compile-failures&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;The test wrapper precompiles Larecs and uses assertions, debug information,
+tracing linkage, and AddressSanitizer unless a file opts out. A full directory
+run also executes compile-contract checks and bounded core/spatial performance
+checks. Focused files trigger their associated contracts but omit performance
+checks. The resource compile-failure fixture task is a separate CI step.
+Use &lt;a href=&#34;../checks&#34; &gt;test and hardware coverage&lt;/a&gt; to select the right checks and
+interpret device skips. Optimized performance measurements need separate
+untraced, unsanitized binaries.&lt;/p&gt;
+&lt;h2&gt;Resolve platform failures&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;resolve-platform-failures&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#resolve-platform-failures&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Symptom&lt;/th&gt;
+          &lt;th&gt;Action&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Metal compiler crashes compiling a GPU iterator with &lt;code&gt;-g&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;Add &lt;code&gt;# SKIP_DEBUG&lt;/code&gt; to every GPU-launching test. Keep the actual GPU path; see the &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/development.md#metal-debug-info&#34;&gt;Metal compiler workaround&lt;/a&gt;.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;libSystem.tbd&lt;/code&gt; reports unknown &lt;code&gt;arm64e.x1&lt;/code&gt; architecture&lt;/td&gt;
+          &lt;td&gt;Install an older compatible macOS SDK and leave &lt;code&gt;SDKROOT&lt;/code&gt; unset so Pixi activation can choose it. An explicit &lt;code&gt;SDKROOT&lt;/code&gt; is respected; see the &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/development.md#macos-sdk-linking&#34;&gt;SDK workaround&lt;/a&gt;.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;A focused test needs a custom invocation&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;pixi run tests --no-precompile test/&amp;lt;filename&amp;gt;.mojo&lt;/code&gt; omits package precompilation; keep include/linker settings consistent with the wrapper.&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;The canonical &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/development.md#coding-standards&#34;&gt;coding standards&lt;/a&gt;
+and &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/test/run_tests.sh&#34;&gt;test wrapper&lt;/a&gt; remain at their repository
+paths. &lt;a href=&#34;../documentation&#34; &gt;Build documentation&lt;/a&gt; when examples or contracts change.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Test and hardware coverage</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/checks/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/checks/</guid>
+      <description>
+        
+        
+        &lt;p&gt;These checks establish different facts. A rejected program checks a compiler
+contract; a host test checks host execution; successful device compilation
+does not establish actual accelerator execution.&lt;/p&gt;
+&lt;h2&gt;Compile-contract commands&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;compile-contract-commands&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#compile-contract-commands&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Run these commands from the repository root in the test environment. Positive
+controls must compile, negative controls must fail for the expected diagnostic,
+and intentional exclusions must remain accepted.&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Contract&lt;/th&gt;
+          &lt;th&gt;Command&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Type-only struct invariants and exclusions&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;pixi run -e test python test/check_struct_constraints.py&lt;/code&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Iterator mutability, filters, and borrows&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;pixi run -e test python test/check_iteration_contracts.py&lt;/code&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Explicit backend selection and unsupported combinations&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;pixi run -e test python test/check_execution_backend_contracts.py&lt;/code&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Threaded eligibility, captures, resource access, and fallback&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;pixi run -e test python test/check_threaded_contracts.py&lt;/code&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Ordinary/adapted resource representations and capabilities&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;pixi run -e test python test/check_resource_contracts.py&lt;/code&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Synchronization view/guard confinement and backend restrictions&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;pixi run -e test python test/check_synchronization_contracts.py&lt;/code&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Read-only spatial registration filters&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;pixi run spatial-filter-checks&lt;/code&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Duplicate resource/type-list fixtures&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;pixi run test-resource-compile-failures&lt;/code&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;The full &lt;code&gt;pixi run tests test&lt;/code&gt; wrapper runs the first seven families and the
+thread-capacity Python tests. Focused &lt;code&gt;world_entity_iterator&lt;/code&gt;,
+&lt;code&gt;execution_backend&lt;/code&gt;, &lt;code&gt;threaded_execution&lt;/code&gt;, &lt;code&gt;resource_adapter&lt;/code&gt;, and
+&lt;code&gt;synchronization&lt;/code&gt; test files trigger their corresponding family. The last
+table row is separate. The &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/test/check_struct_constraints.py&#34;&gt;struct checker&lt;/a&gt;
+uses type-only bindings so constructor checks cannot conceal a missing
+declaration invariant; see the
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/research/struct-constraints.md&#34;&gt;constraint audit&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Runtime evidence&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;runtime-evidence&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#runtime-evidence&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Result&lt;/th&gt;
+          &lt;th&gt;What it establishes&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Compile pass for device code&lt;/td&gt;
+          &lt;td&gt;The installed compiler accepts that specialization; no hardware behavior is proved.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Host correctness pass&lt;/td&gt;
+          &lt;td&gt;Assertions ran on the host, including actual worker overlap where a test checks it.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Device &lt;code&gt;SKIP&lt;/code&gt;, or an early guard returning before a launch&lt;/td&gt;
+          &lt;td&gt;Host/setup or compile coverage only; no device execution.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;A device launch completes and output assertions pass&lt;/td&gt;
+          &lt;td&gt;Execution on the named device for that workload and toolchain.&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;code&gt;has_accelerator()&lt;/code&gt; describes compilation support. Runtime context creation can
+still fail. The particle programs probe both and print explicit device PASS or
+SKIP evidence. Some older GPU tests return early on unsupported targets while
+the file still reports PASS; inspect the guard and logs, rather than counting
+file passes as device coverage. &lt;code&gt;ExecutionBackend.DEVICE&lt;/code&gt; itself never falls back.&lt;/p&gt;
+&lt;p&gt;Record compiler/build, OS, processor/device, revision, executed path, assertions,
+and skips separately. The Linux/macOS CI matrix does not imply NVIDIA, AMD, or
+Apple device coverage merely from runner names. A source or driver change can
+invalidate earlier evidence; current status is in the
+&lt;a href=&#34;../../../reference/compatibility&#34; &gt;compatibility reference&lt;/a&gt;, and durable backend
+investigations remain in the &lt;a href=&#34;../design&#34; &gt;evidence map&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Markers and diagnostics&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;markers-and-diagnostics&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#markers-and-diagnostics&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;code&gt;test/run_tests.sh&lt;/code&gt; enables ASAN, &lt;code&gt;-g&lt;/code&gt;, &lt;code&gt;-DASSERT=all&lt;/code&gt;, and Tracy linkage.
+&lt;code&gt;# SKIP_ASAN&lt;/code&gt; opts a file out of sanitization; &lt;code&gt;# SKIP_DEBUG&lt;/code&gt; omits debug info.
+Every test that launches a GPU kernel needs &lt;code&gt;# SKIP_DEBUG&lt;/code&gt; because of the
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/development.md#metal-debug-info&#34;&gt;Metal compiler failure&lt;/a&gt;.
+Neither marker means that the test may skip its assertions. The doctest runner
+uses assertions and Tracy linkage, but does not enable the test wrapper&amp;rsquo;s
+ASAN/debug defaults.&lt;/p&gt;
+&lt;p&gt;CI bounds test compilation concurrency with &lt;code&gt;--parallel 2&lt;/code&gt; and retains
+&lt;code&gt;output/memory/&lt;/code&gt; diagnostics. An interrupted runner or missing artifact is not
+a correctness pass. See &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/.github/workflows/main.yml&#34;&gt;the CI workflow&lt;/a&gt;
+and &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/scripts/monitor_ci_memory.py&#34;&gt;the memory monitor&lt;/a&gt; for the
+recorded process boundary; keep performance measurements isolated from builds.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Change an ECS contract</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/contracts/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/contracts/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Use this workflow when a change affects ownership, storage, query membership,
+execution, safety, compatibility, or measured costs. It follows the existing
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/AGENTS.md&#34;&gt;repository guidelines&lt;/a&gt; and
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/README.md#recording-a-change&#34;&gt;ADR workflow&lt;/a&gt;.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Locate the current requirement and relevant decisions in the
+&lt;a href=&#34;../design&#34; &gt;design map&lt;/a&gt;. Check status and supersession before treating a
+decision as current. Verify behavior in &lt;code&gt;src/larecs&lt;/code&gt; and focused tests;
+acceptance alone does not prove implementation.&lt;/li&gt;
+&lt;li&gt;For a consequential choice, add the next numbered file in
+&lt;code&gt;docs/design/decisions/&lt;/code&gt; using the index&amp;rsquo;s metadata schema and Context,
+Decision, Rationale, Consequences, and Evidence sections. Mark unaccepted
+ideas &lt;code&gt;proposed&lt;/code&gt;. To replace an accepted choice, retain the old record,
+mark it superseded, and update the index and requirements.&lt;/li&gt;
+&lt;li&gt;Update implementation and representative correctness/compile-contract tests
+together. For row movement, preserve typed lifecycles, live identities,
+location repair, bounded membership, and invalidation. For execution,
+check fallback, empty matches, cleanup, binding lifetime, and unsupported
+targets. Use &lt;a href=&#34;../../architecture&#34; &gt;architecture&lt;/a&gt; to trace affected mechanisms.&lt;/li&gt;
+&lt;li&gt;Add or update representative benchmarks for changes to storage, queries,
+classification, movement, or execution costs. Follow the
+&lt;a href=&#34;../benchmarks&#34; &gt;methodology&lt;/a&gt; and &lt;a href=&#34;../regression&#34; &gt;regression operation&lt;/a&gt;;
+a passing broad threshold does not prove zero overhead.&lt;/li&gt;
+&lt;li&gt;Update visible application consequences in guides, exact contracts in the
+reference/docstrings, and changed mechanisms in architecture. Extract
+runnable listings from checked sources, regenerate affected figures, and
+run the &lt;a href=&#34;../documentation&#34; &gt;documentation build&lt;/a&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Keep unfinished tasks and priorities in &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/roadmap.md&#34;&gt;the roadmap&lt;/a&gt;,
+and completed release history in &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/changelog.md&#34;&gt;the changelog&lt;/a&gt;.
+Research notes and thesis alternatives remain evidence with their original
+status; they do not create a second requirements or documentation-policy system.
+The canonical &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/development.md#coding-standards&#34;&gt;coding standards&lt;/a&gt;
+also govern listings and API docstrings.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Build documentation and figures</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/documentation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/documentation/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Run the complete pipeline after changing a page, example, API contract, or
+figure. Work from the repository root with the &lt;a href=&#34;../setup&#34; &gt;locked setup&lt;/a&gt;.
+We retain Modo and the existing documentation conventions.&lt;/p&gt;
+&lt;h2&gt;Generate and check the site&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;generate-and-check-the-site&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#generate-and-check-the-site&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Build the site and run the reference integration suite:&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run build-docs
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run --manifest-path scripts/pixi.toml test-api-reference&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;The first command clears generated pages/tests, generates compiler JSON with
+&lt;code&gt;mojo doc&lt;/code&gt;, runs Modo, compiles and runs every extracted doctest and particle
+program, creates API metadata, builds Hugo, and checks reference symbol/link
+targets. Output is in &lt;code&gt;docs/site/public/&lt;/code&gt;. The integration suite checks root
+aliases, module-only symbols, export drift, constraints, exact declarations,
+redirects, and revision-pinned source links. A missing extracted-test directory
+or empty doctest inventory fails rather than reporting success.&lt;/p&gt;
+&lt;p&gt;On Apple Silicon, &lt;code&gt;scripts/docs.py&lt;/code&gt; builds the installed Modo release natively
+with the scripts environment&amp;rsquo;s Go toolchain and caches it under &lt;code&gt;scripts/.pixi/&lt;/code&gt;.
+Linux uses the bundled executable. Existing Modo missing-description and
+cross-reference warnings stay visible; this pipeline does not enable blanket
+strict mode. A Modo script-error line still fails the wrapper even when Modo
+returns zero.&lt;/p&gt;
+&lt;h2&gt;Add a checked excerpt&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;add-a-checked-excerpt&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#add-a-checked-excerpt&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Keep a complete runnable program in &lt;code&gt;examples/particles/&lt;/code&gt;, with result
+assertions. Delimit a coherent excerpt with &lt;code&gt;# region NAME&lt;/code&gt; and
+&lt;code&gt;# endregion NAME&lt;/code&gt;, then use the existing shortcode:&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&amp;lt; example file=&amp;#34;particles/movement.mojo&amp;#34; region=&amp;#34;kernel&amp;#34; &amp;gt;}}
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&amp;lt; example file=&amp;#34;particles/movement.mojo&amp;#34; full=true &amp;gt;}}&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;The first form displays the exact checked region; the second offers the whole
+program. Missing files or regions fail Hugo. Show required types, filters,
+kernel, and system before explaining them; do not hide definitions needed to
+read a listing. The runner already includes every particle program. Add any
+new example directory to &lt;code&gt;scripts/run_doctests.sh&lt;/code&gt; so it cannot escape execution.
+Short inline Modo doctests need a complete &lt;code&gt;def main() raises:&lt;/code&gt; when global;
+do not mix global and wrapped non-global blocks under one label.&lt;/p&gt;
+&lt;h2&gt;Export reproducible figures&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;export-reproducible-figures&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#export-reproducible-figures&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Edit the self-contained sources in &lt;code&gt;docs/figures/&lt;/code&gt;, then export all figures:&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run figures&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&lt;code&gt;scripts/build_figures.py&lt;/code&gt; compiles every non-helper &lt;code&gt;*.typ&lt;/code&gt; source; filenames
+starting with &lt;code&gt;_&lt;/code&gt; are helpers. Typst uses &lt;code&gt;--ignore-system-fonts&lt;/code&gt; and the
+committed Inter fonts. Sources pin CeTZ &lt;code&gt;0.5.2&lt;/code&gt;. Outputs go to
+&lt;code&gt;docs/site/static/images/&amp;lt;name&amp;gt;.svg&lt;/code&gt;. Commit source and SVG together, compare
+repeat-export hashes, inspect rendered labels, and put explanatory prose,
+descriptive alt text, and an italic caption beside each figure. The
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/figures/README.md&#34;&gt;figure catalog&lt;/a&gt; records thesis provenance
+and changes to historical layouts. Export runs separately from &lt;code&gt;build-docs&lt;/code&gt;.&lt;/p&gt;
+&lt;h2&gt;Verify paths and generated declarations&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;verify-paths-and-generated-declarations&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#verify-paths-and-generated-declarations&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Use the &lt;code&gt;api&lt;/code&gt; shortcode for API symbols and built-site paths for published
+pages. Unknown API names fail the build. Keep the initializer&amp;rsquo;s &lt;code&gt;Exports:&lt;/code&gt; list
+aligned with imports; a module-only symbol does not become a root export by
+appearing in the generated module tree.&lt;/p&gt;
+&lt;p&gt;Use the &lt;code&gt;repo&lt;/code&gt; shortcode for repository evidence outside &lt;code&gt;docs/src&lt;/code&gt;, for
+example &lt;code&gt;repo &amp;quot;docs/design/README.md&amp;quot; &amp;quot;Design index&amp;quot;&lt;/code&gt;. It pins the link to
+the same HEAD revision as API source links. Build a committed checkout for
+publication. The &lt;a href=&#34;../design&#34; &gt;design map&lt;/a&gt; deliberately links the canonical
+repository records rather than duplicating their metadata into generated pages.&lt;/p&gt;
+&lt;p&gt;Check changed page links, generated heading IDs, image targets, and figure
+labels in &lt;code&gt;docs/site/public/&lt;/code&gt;. Asset links such as &lt;code&gt;/images/architecture.svg&lt;/code&gt;
+must remain under the configured base URL, including PR previews. To inspect
+locally, use &lt;code&gt;pixi run serve-docs&lt;/code&gt; after a build or &lt;code&gt;pixi run watch-docs&lt;/code&gt; while
+editing. Repository PR previews use
+&lt;code&gt;https://larecs.github.io/larecs/pr-preview/pr-&amp;lt;number&amp;gt;/&lt;/code&gt;; generation and
+deployment remain in &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/.github/workflows/publish.yml&#34;&gt;the existing workflow&lt;/a&gt;.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Measure an implementation change</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/benchmarks/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/benchmarks/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Use representative workloads to compare a storage, query, movement, or execution
+change. We validate semantic equivalence before interpreting elapsed time;
+application profiling starts in &lt;a href=&#34;../../../guide/performance/measure&#34; &gt;Measure and tune a simulation&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Benchmark methodology&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;benchmark-methodology&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#benchmark-methodology&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Build a focused manual driver once with
+&lt;code&gt;pixi run mojo build -I src benchmark/&amp;lt;benchmark_filename&amp;gt;.mojo -o /tmp/larecs-benchmark&lt;/code&gt;,
+then run &lt;code&gt;/tmp/larecs-benchmark&lt;/code&gt; repeatedly. Run the complete manual suite with
+&lt;code&gt;pixi run mojo run -I src benchmark/run_benchmarks.mojo&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;When changing storage, queries, classification, row movement, or execution costs,
+add or update representative benchmarks using these criteria:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Keep the combined PR performance checks near one minute per runner, including
+compilation, warmup, and sampling. Measure cold compilation and execution
+separately on Linux and macOS before expanding the suite. Keep large worlds,
+GPU cases, and the complete benchmark registry in focused manual drivers.&lt;/li&gt;
+&lt;li&gt;Use deterministic inputs, bounded calibration or fixed iteration counts, and a
+compact scenario matrix. Spatial cases should cover uniform, dense, sparse,
+and moving entities with different maintenance cadences.&lt;/li&gt;
+&lt;li&gt;Compare identical entities and semantic work, with an unchanged-layout control.
+Measure isolated operations and complete frames when useful. Include input
+updates, classification, sorting, movement, location repair, and transfers
+whenever they belong to the claimed workload. State excluded setup and
+maintenance costs; validate results, locations, and payload preservation
+outside the timer, and consume results to prevent dead-code elimination.&lt;/li&gt;
+&lt;li&gt;Build each timing binary once, then run it repeatedly. Compare the same current
+driver against baseline and current libraries on the same runner with matching
+compiler versions and optimization settings. Use optimized builds without
+debug info, sanitizers, or tracing. Run builds and measurements sequentially,
+with no competing benchmark jobs, and report compilation separately.&lt;/li&gt;
+&lt;li&gt;Warm both binaries, alternate baseline/current order, and use repeated paired
+samples. Keep machine-specific timing baselines out of the repository. See
+&lt;a href=&#34;../regression#pr-to-pr-performance-checks&#34; &gt;PR performance checks&lt;/a&gt; and
+&lt;a href=&#34;../regression#small-spatial-benchmarks-on-every-pr&#34; &gt;spatial checks&lt;/a&gt; for baseline selection,
+thresholds, confirmation, and support for revisions predating the spatial API.&lt;/li&gt;
+&lt;li&gt;Keep the small regression checks in &lt;code&gt;pixi run tests test&lt;/code&gt; on Linux and macOS;
+focused test-file runs omit performance checks. Investigate sustained failures
+and document evidence before changing thresholds; use dedicated measurements
+for smaller regressions.&lt;/li&gt;
+&lt;li&gt;Keep scenario matrices and expected-case manifests synchronized. Invalid or
+incomplete reports, build failures, and correctness failures must fail checks.
+Update the regression reference when changing cases, timing boundaries, sampling, or baseline
+selection. Record hardware, compiler, method, and limitations with performance
+claims; track unmeasured benefits and remaining work in the roadmap.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Focused driver selection&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;focused-driver-selection&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#focused-driver-selection&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Mechanism&lt;/th&gt;
+          &lt;th&gt;Checked driver and evidence&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Exact selections and structural batches&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;benchmark/entity_selection_benchmark.mojo&lt;/code&gt;; &lt;a href=&#34;../reports/selection&#34; &gt;selection reports&lt;/a&gt;.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Implemented threaded engine&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;benchmark/threaded_execution.mojo&lt;/code&gt;; &lt;a href=&#34;../reports/threaded&#34; &gt;threaded report&lt;/a&gt;.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Scalar atomics and uncontended guards&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;benchmark/synchronization_benchmark.mojo&lt;/code&gt;; &lt;a href=&#34;../reports/synchronization&#34; &gt;protocol and limits&lt;/a&gt;.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Dirty classification&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;benchmark/dirty_spatial.mojo&lt;/code&gt;; &lt;a href=&#34;../reports/dirty_spatial&#34; &gt;deferred maintenance report&lt;/a&gt;.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Growable partition placement&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;benchmark/partitioned_spatial.mojo&lt;/code&gt;; &lt;a href=&#34;../reports/partitions&#34; &gt;current and historical layouts&lt;/a&gt;.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Ordinary and adapted resources&lt;/td&gt;
+          &lt;td&gt;&lt;code&gt;benchmark/resource_execution_benchmark.mojo&lt;/code&gt; and &lt;code&gt;benchmark/resource_adapter_benchmark.mojo&lt;/code&gt;; &lt;a href=&#34;../reports/resources&#34; &gt;resource report&lt;/a&gt;.&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;For a new comparison, retain hardware/OS, compiler build, both library revisions,
+driver hash, flags, warmup/calibration, paired raw samples, correctness results,
+and excluded costs. If a historical record lacks a field, label it unknown
+rather than reconstructing a claim from a machine name. Keep timing reports
+separate from application instructions and from the roadmap&amp;rsquo;s unfinished work.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Operate regression checks</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/regression/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/regression/</guid>
+      <description>
+        
+        
+        &lt;p&gt;This reference describes &lt;code&gt;scripts/check_performance.py&lt;/code&gt; and its bounded CPU
+suites. Run commands from the repository root after &lt;a href=&#34;../setup&#34; &gt;setup&lt;/a&gt;.
+The &lt;a href=&#34;../benchmarks&#34; &gt;methodology&lt;/a&gt; governs new cases; &lt;a href=&#34;../reports/regression&#34; &gt;historical gate costs&lt;/a&gt;
+are measurements, not runtime promises.&lt;/p&gt;
+&lt;h2&gt;PR-to-PR performance checks&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;pr-to-pr-performance-checks&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#pr-to-pr-performance-checks&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;code&gt;pixi run performance-check --base &amp;lt;revision&amp;gt;&lt;/code&gt; compares the current library
+with another Git revision on the same machine. Without &lt;code&gt;--base&lt;/code&gt;, local runs
+compare the working tree against committed &lt;code&gt;HEAD&lt;/code&gt;; GitHub PR runs use the exact
+PR base SHA, and main-branch push runs use the previous push commit. The tested
+current revision is the checkout SHA (normally the PR merge commit in CI).
+The complete &lt;code&gt;pixi run tests test&lt;/code&gt; command runs the gate on Linux and macOS
+following correctness tests. Focused test-file runs omit it.&lt;/p&gt;
+&lt;p&gt;The coordinator builds the same current driver against both source trees with
+the installed Mojo compiler, using optimized builds without tracing, debug
+information, or sanitizers. It warms both binaries, then runs five pairs,
+alternating baseline/current order. A case becomes a candidate only if four
+pairs and the paired medians show &lt;strong&gt;over 30% slowdown and over 500 ns extra
+operation/frame time&lt;/strong&gt;. Candidates are checked in a fresh five-pair round;
+only candidates recurring in both rounds fail. Invalid/incomplete reports,
+incorrect results, compilation failures, unavailable baselines, and timeouts
+fail rather than silently skipping coverage.&lt;/p&gt;
+&lt;p&gt;The two focused drivers avoid the expensive complete benchmark registry:&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Core case&lt;/th&gt;
+          &lt;th&gt;Sizes&lt;/th&gt;
+          &lt;th&gt;Timed work&lt;/th&gt;
+          &lt;th&gt;Excluded setup and validation&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;access&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;512/2,048 matching rows&lt;/td&gt;
+          &lt;td&gt;Stable-ID component reads and integer checksum&lt;/td&gt;
+          &lt;td&gt;World construction; exact per-entity payload checks&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;query&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;512/2,048 matching rows&lt;/td&gt;
+          &lt;td&gt;Fresh filtered iterator, row visits, and checksum&lt;/td&gt;
+          &lt;td&gt;Construction of two matching archetypes and equally many excluded tag-only rows; payload checks&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;execute&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;512/2,048 rows&lt;/td&gt;
+          &lt;td&gt;Ordinary host dispatch and integer increments&lt;/td&gt;
+          &lt;td&gt;Construction; check every row&amp;rsquo;s accumulated increments&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;selected_execute&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;64 selected rows amid 512/2,048 background rows&lt;/td&gt;
+          &lt;td&gt;Host dispatch over a reusable contiguous selection&lt;/td&gt;
+          &lt;td&gt;Construction and selection creation/release; selected and untouched-row checks&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;selected_mutation&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;Same selection/background sizes&lt;/td&gt;
+          &lt;td&gt;Add/remove a tag, including partial-archetype movement and location repair&lt;/td&gt;
+          &lt;td&gt;Construction; final membership, absence of tags, payload, and background-location checks&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;batch_cycle&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;512/2,048 rows&lt;/td&gt;
+          &lt;td&gt;Batch creation, payload initialization, removal, and recycling&lt;/td&gt;
+          &lt;td&gt;World construction and first validation/warmup cycle; recycled payload, membership, and surviving control-row checks&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Core calibration doubles from 8 to at most 8,192 operations, stopping at 5 ms
+per case. Fast cases can reach the cap first. Each duration is &lt;strong&gt;per complete
+operation&lt;/strong&gt;, not per entity. Read cases consume the checksum inside the timer;
+execution writes are checked after timing, with observable lengths consumed
+inside the timer. Spatial timing boundaries and the case matrix are below.&lt;/p&gt;
+&lt;p&gt;Run one driver with &lt;code&gt;pixi run core-benchmarks&lt;/code&gt; or &lt;code&gt;pixi run spatial-benchmarks&lt;/code&gt;.
+Select a gate with &lt;code&gt;pixi run performance-check --suite core --base &amp;lt;revision&amp;gt;&lt;/code&gt;
+or &lt;code&gt;--suite spatial&lt;/code&gt;; repeat &lt;code&gt;--suite&lt;/code&gt; to select multiple drivers. The original
+&lt;code&gt;pixi run spatial-performance-check&lt;/code&gt; remains a spatial-only compatibility command.&lt;/p&gt;
+&lt;p&gt;Reports default to the ignored &lt;code&gt;output/performance/&lt;/code&gt; directory; use &lt;code&gt;--output&lt;/code&gt;
+to choose another directory. &lt;code&gt;report.json&lt;/code&gt; includes the schema version,
+requested/resolved/effective baselines, current checkout SHA and dirty state,
+driver SHA-256 hashes, compiler, OS/CPU, thresholds, compilation and sampling
+costs, all paired measurements, and both confirmation rounds when needed.
+&lt;code&gt;summary.md&lt;/code&gt; gives median times, paired changes, candidates, and confirmed
+failures. Candidates whose confirmation did not finish are labeled unconfirmed;
+only a completed confirmation can label a candidate transient. Process logs
+retain build, warmup, execution, and error diagnostics.
+GitHub adds the Markdown to the job summary and uploads the reports/logs as
+&lt;code&gt;performance-&amp;lt;runner&amp;gt;-&amp;lt;attempt&amp;gt;&lt;/code&gt; artifacts for 30 days, including failed checks.
+This uses read-only PR permissions and works without publishing PR comments.
+Require the existing build/test checks in branch protection to enforce the gate.&lt;/p&gt;
+&lt;p&gt;There are no checked-in machine-specific golden timings. Driver changes affect
+both sides; compare historical evidence only when hashes and environments are
+compatible. Compiler upgrades do not measure compiler-to-compiler changes.
+These broad thresholds target substantial regressions on shared runners;
+smaller or cumulative regressions, larger worlds, heap-backed payloads, disjoint
+selections, and device costs need focused measurements or future coverage. See
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0011-pr-performance-regression-checks.md&#34;&gt;decision 0011&lt;/a&gt;
+and the &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/roadmap.md#performance-regression-coverage&#34;&gt;roadmap&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Small spatial benchmarks on every PR&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;small-spatial-benchmarks-on-every-pr&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#small-spatial-benchmarks-on-every-pr&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Run &lt;code&gt;pixi run spatial-benchmarks&lt;/code&gt; for one bounded CPU-only comparison, or
+&lt;code&gt;pixi run spatial-performance-check --base &amp;lt;revision&amp;gt;&lt;/code&gt; for a regression check.
+The complete &lt;code&gt;pixi run tests test&lt;/code&gt; command runs this suite through the shared
+coordinator after successful correctness tests, on both Linux and macOS PR
+runners. Focused test-file runs omit it. The existing 100,000-row maintenance benchmark and the full benchmark
+suite remain manual measurements.&lt;/p&gt;
+&lt;p&gt;The small driver uses &lt;strong&gt;512 and 2,048 entities&lt;/strong&gt;, one archetype, an integer cell
+key and a 128-byte SIMD payload per row. It inserts rows in a deterministic
+scrambled order, then compares the same stable-ID cell visits before and after
+spatial ordering. Its 32 cases cover:&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Workload&lt;/th&gt;
+          &lt;th&gt;Cell distribution&lt;/th&gt;
+          &lt;th&gt;Timed work&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Static cell aggregates&lt;/td&gt;
+          &lt;td&gt;Uniform: 8 entities/cell&lt;/td&gt;
+          &lt;td&gt;Read keys and all payload lanes; sum and square each cell&amp;rsquo;s aggregate&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Static cell aggregates&lt;/td&gt;
+          &lt;td&gt;Dense: 64 entities/cell&lt;/td&gt;
+          &lt;td&gt;Same operation, with fewer occupied cells&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Static cell aggregates&lt;/td&gt;
+          &lt;td&gt;Sparse: 8 entities/cell, key gaps of 1,024&lt;/td&gt;
+          &lt;td&gt;Same operation across nonconsecutive occupied keys&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Maintenance alone&lt;/td&gt;
+          &lt;td&gt;All three distributions&lt;/td&gt;
+          &lt;td&gt;Clean explicit boundary, or reverse keys via stable-ID access and sort/move/repair every pass&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Moving cell aggregates&lt;/td&gt;
+          &lt;td&gt;Uniform&lt;/td&gt;
+          &lt;td&gt;Update every entity&amp;rsquo;s cell, aggregate cells, maintain every frame or every fourth frame&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Static workload timing excludes construction, registration, and the initial
+maintenance pass. Mobile timing includes input updates and the selected
+maintenance cadence; its scrambled control performs the same updates and cell
+visits without maintenance. Maintenance-only reversal and conservative marking via mutable stable-ID access
+are included in timing. A clean ordered boundary uses deferred maintenance in the
+current library and full classification in older baseline libraries. This is an
+intentional maintenance-contract change; use the &lt;a href=&#34;../reports/dirty_spatial&#34; &gt;dedicated dirty-classification report&lt;/a&gt; for
+an explicit full-scan control.
+Checksums validate aggregate results and payload preservation, and a query
+validates maintenance&amp;rsquo;s output order, outside the timer. These are synthetic
+cell aggregates; full neighborhood algorithms, additional archetypes, transfer
+costs, and larger working sets remain separate measurements.&lt;/p&gt;
+&lt;p&gt;Each batch doubles from 8 to at most 8,192 frames, stopping once it takes 20 ms.
+The checker compiles &lt;strong&gt;the same current driver&lt;/strong&gt; against the current library
+and the PR&amp;rsquo;s base commit, warms both binaries, then collects five paired runs
+with alternating execution order. It reports median frame times and paired
+changes for both ordered and scrambled controls. A case fails only when at
+least four pairs show both
+&lt;strong&gt;over 30% slowdown and over 500 ns extra time&lt;/strong&gt;, and the paired medians exceed
+those thresholds. A suspected regression must recur in a fresh five-pair run.
+This broad threshold catches substantial regressions on shared runners;
+smaller changes need dedicated measurements. No machine-specific timing
+baseline is checked in.&lt;/p&gt;
+&lt;p&gt;The baseline comes from the GitHub PR event&amp;rsquo;s base SHA. Local runs default to
+committed &lt;code&gt;HEAD&lt;/code&gt;; pass &lt;code&gt;--base&lt;/code&gt; to compare another revision. An unavailable full
+SHA is fetched over public HTTPS. Since release PR #174 predates the spatial
+API, spatial PR #175 bootstraps against &lt;code&gt;42234f3b43d4dda58a674842374115f78ec2f08d&lt;/code&gt;,
+the implementation before this benchmark addition. Subsequent PRs whose base
+has the spatial API use their actual base. Compilation, malformed/missing
+records, checksum failures, and sustained regressions all fail the check.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Design and evidence map</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/design/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/design/</guid>
+      <description>
+        
+        
+        &lt;p&gt;The canonical records stay at their repository paths. Links here resolve at
+the same revision as the generated API, preserving front matter, supersession,
+cross-links, and durable evidence. We do not infer implementation from acceptance.&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Source&lt;/th&gt;
+          &lt;th&gt;Authority and use&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/README.md&#34;&gt;Design index&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Complete ADR index, lifecycle meanings, metadata schema, and recording workflow.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/requirements.md&#34;&gt;ECS requirements&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Accepted contracts with evidence and explicit implementation gaps.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/architecture.md&#34;&gt;Repository architecture map&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Source-level overview; &lt;a href=&#34;../../architecture&#34; &gt;published architecture&lt;/a&gt; expands current mechanisms.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/development.md&#34;&gt;Development reference&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Canonical coding/docstring standards and detailed platform workarounds.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/GLOSSARY.md&#34;&gt;Glossary&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Shared terminology for composition, storage, execution, and ownership.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/roadmap.md&#34;&gt;Roadmap&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Unfinished work and priorities.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/changelog.md&#34;&gt;Changelog&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Completed release history.&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;Decisions&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;decisions&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#decisions&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;The statuses below identify how to read the records; qualifications in their
+front matter remain authoritative. Current behavior is checked against source
+and tests in &lt;a href=&#34;../../architecture&#34; &gt;architecture&lt;/a&gt;.&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Records&lt;/th&gt;
+          &lt;th&gt;Status and boundary&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0001-locked-entity-selections.md&#34;&gt;0001 selections&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0002-gpu-system-execution.md&#34;&gt;0002 device execution&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0003-grid-stride-entity-iteration.md&#34;&gt;0003 grid stride&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0004-scoped-selection-errors.md&#34;&gt;0004 errors&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Accepted; current selection/execution foundations.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0005-filtered-spatial-row-reordering.md&#34;&gt;0005 spatial ordering&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0010-spatial-classifier-maintenance.md&#34;&gt;0010 full maintenance&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Superseded by 0012; retain historical classification/movement rationale.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0006-partitioned-spatial-archetype-storage.md&#34;&gt;0006 partitions&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0008-dirty-entity-spatial-classification.md&#34;&gt;0008 dirty identities&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0009-typed-row-permutation-foundation.md&#34;&gt;0009 typed movement&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0012-deferred-spatial-maintenance.md&#34;&gt;0012 deferred maintenance&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Accepted; current spatial foundations.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0007-special-cluster-component.md&#34;&gt;0007 special Cluster component&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Rejected; not a component users must add.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0011-pr-performance-regression-checks.md&#34;&gt;0011 regression checks&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Accepted; &lt;a href=&#34;../regression&#34; &gt;gate operation&lt;/a&gt; describes the implemented checker.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0013-cluster-local-partition-blocks.md&#34;&gt;0013 bounded blocks&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Superseded by 0014; the historical 256-row cap is not current.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0014-growable-cluster-stores.md&#34;&gt;0014 growable stores&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Accepted; current partition layout.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0015-host-device-execution-terminology.md&#34;&gt;0015 terminology&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Superseded by 0023; preserves beta spelling migration.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0016-kernel-memory-synchronization.md&#34;&gt;0016 synchronization&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Accepted, partially implemented; standalone primitives exist, dedicated kernel bindings and collection domains do not.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0017-deferred-kernel-access.md&#34;&gt;0017 deferred access&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Proposed; no callable deferred-access API.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0018-portable-resource-adapters.md&#34;&gt;0018 adapters&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Superseded by 0020 and extended by 0022; preserve source/view and lifetime rationale.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0019-threaded-host-execution.md&#34;&gt;0019 threaded execution&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Superseded by 0020; its feasibility evidence is historical.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0020-declared-plain-values.md&#34;&gt;0020 plain values&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Accepted; threaded execution remains experimental.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0021-skip-unchanged-device-uploads.md&#34;&gt;0021 device-copy reuse&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0022-mutable-adapted-resources.md&#34;&gt;0022 mutable adapters&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Accepted, experimental; implemented contracts are checked against transfer and adapter tests.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0023-explicit-execution-backend.md&#34;&gt;0023 explicit targets&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/decisions/0024-locked-storage-ranges.md&#34;&gt;0024 storage ranges&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Accepted; current target selection and bounded ranges.&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;Research and historical evidence&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;research-and-historical-evidence&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#research-and-historical-evidence&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Research describes the revision and question it investigated. Old &lt;code&gt;on_device&lt;/code&gt;
+spellings, mutable-adapter experiments, or a recommended design are not current
+APIs. A probe may depend on its recorded toolchain rather than the current one.&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Repository evidence&lt;/th&gt;
+          &lt;th&gt;Scope&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/research/host-thread-execution.md&#34;&gt;Host-thread investigation&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Feasibility findings and prototype measurements; not the implemented engine. Companion &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/research/host-thread-dispatch-probe.mojo&#34;&gt;dispatch probe&lt;/a&gt; and &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/research/host-thread-benchmark.mojo&#34;&gt;benchmark&lt;/a&gt; retain that experiment.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/research/gpu-synchronization.md&#34;&gt;GPU synchronization survey&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Upstream primitive/backend evidence supporting 0016, with coverage limitations.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/research/apple-gpu-publication-ordering.md&#34;&gt;Apple publication ordering&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;M4 correctness/performance evidence for release-store/acquire-load publication.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/research/entity-range-migration.md&#34;&gt;Storage range migration&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Cursor-sharing evidence and timing samples affected by concurrent builds; no controlled speedup claim.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/research/struct-constraints.md&#34;&gt;Struct constraint audit&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Mojo 1.0 declaration invariants, proof limits, and intentional exclusions.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/research/reference-invalidation-probe.mojo&#34;&gt;Reference invalidation probe&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Escaped-reference behavior motivating explicit device-copy invalidation.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/research/resource-view-probe.mojo&#34;&gt;Resource-view probe&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/design/research/resource-trait-dispatch-probe.mojo&#34;&gt;trait-dispatch probe&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Resource descriptor and trait-dispatch experiments; production behavior comes from current adapters/tests.&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;a href=&#34;../reports&#34; &gt;Measurement reports&lt;/a&gt; preserve historical benchmark material with
+its environment, method, and missing metadata called out. Thesis figures supply
+visual vocabulary; their adaptation is recorded in the
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/8d289cca4516b0b4d4226288c60dce41e62b853c/docs/figures/README.md&#34;&gt;figure catalog&lt;/a&gt;. Thesis-specific systems,
+memory headers, bounded layouts, or branch experiments establish no current
+Larecs guarantee.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Measurement reports</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/reports/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-242/inside/development/reports/</guid>
+      <description>
+        
+        
+        &lt;p&gt;These scoped records retain benchmark investigations and their limitations.
+They describe the recorded hardware, toolchain, revision, and workload rather
+than promising application performance. Missing metadata is identified explicitly.
+Use the &lt;a href=&#34;../benchmarks&#34; &gt;methodology&lt;/a&gt; for new measurements and the
+&lt;a href=&#34;../regression&#34; &gt;regression reference&lt;/a&gt; for current gate operation.&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Report&lt;/th&gt;
+          &lt;th&gt;Evidence boundary&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;selection&#34; &gt;Selections and shared host setup&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Early incomplete sample, controlled M4 setup comparison, and range-migration evidence.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;threaded&#34; &gt;Threaded host execution&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Implemented engine on Ryzen 5850U; separate historical prototype link.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;synchronization&#34; &gt;Synchronization protocol&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Driver timing boundaries; no recorded timing result.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;dirty_spatial&#34; &gt;Deferred dirty classification&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;M4 sparse/full comparisons, marking costs, and default-path gate evidence.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;partitions&#34; &gt;Partition layouts&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Linux growable stores and explicitly historical macOS bounded blocks.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;resources&#34; &gt;Resource execution&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;M4 source/adapter and staged-publication costs.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;aos&#34; &gt;AoS plotting workflow&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Dynamic publishing-run artifact; environment limits and raw-result access.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;a href=&#34;regression&#34; &gt;Regression-check runtime&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Initial local and hosted gate costs; no cross-platform speed comparison.&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Additional investigations retain their original paths in the
+&lt;a href=&#34;../design&#34; &gt;design and evidence map&lt;/a&gt;, including host-dispatch prototypes,
+Apple GPU publication, and storage-range migration.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+  </channel>
+</rss>
