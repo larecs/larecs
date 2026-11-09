@@ -56,6 +56,16 @@ jobs:
         run: |
           curl -ssL https://pixi.sh/install.sh | bash
 
+      - name: Run AoS benchmarks
+        run: pixi run --manifest-path benchmark/plots/pixi.toml plots
+
+      - name: Archive benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: aos-benchmark
+          path: benchmark/plots/results
+          if-no-files-found: error
+
       - name: Use the preview base URL for pull requests
         if: ${{ github.event_name == 'pull_request' }}
         run: |
