@@ -88,10 +88,6 @@ def main() raises:
     scheduler.run(1)
 ```
 
-```mojo {doctest="readme" hide=true}
-main()
-```
-
 Exports:
  - sync.AtomicValue
  - sync.AtomicView
