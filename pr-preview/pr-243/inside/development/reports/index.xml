@@ -1,0 +1,1104 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Larecs🌲 – Measurement reports</title>
+    <link>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/</link>
+    <description>Recent content in Measurement reports on Larecs🌲</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	  <atom:link href="https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+      
+        
+      
+    
+    
+    <item>
+      <title>Selection and shared host measurements</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/selection/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/selection/</guid>
+      <description>
+        
+        
+        &lt;p&gt;These records cover exact selections and shared host setup. The controlled
+comparison identifies its M4 environment and revisions; the earlier single-run
+sample has incomplete metadata and is retained only as historical evidence.
+&amp;ldquo;Refactor&amp;rdquo; and &amp;ldquo;current&amp;rdquo; below identify the candidate in that comparison.&lt;/p&gt;
+&lt;h2&gt;Early selection sample&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;early-selection-sample&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#early-selection-sample&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The following sample was recorded in documentation commit &lt;code&gt;1f44b03&lt;/code&gt;. Its exact
+measured implementation revision, compiler build, OS version, and accelerator
+model were not recorded. Its driver/workload are identified, but the sample
+cannot support a reproducible cross-version comparison.&lt;/p&gt;
+&lt;p&gt;The focused &lt;code&gt;entity_selection_benchmark.mojo&lt;/code&gt; workload compares ordinary
+full-world host execution with contiguous and disjoint 64-row selections in a
+100,000-row world, a selected add/remove chain, and selected device execution when
+an accelerator is available. On the Apple Metal development host used for the
+1.0.0b2 work, one bounded run measured approximately 0.0253 ms for the 100k-row
+host path, 0.0000664 ms for the contiguous selection, 0.000556 ms for 64 disjoint
+single-row ranges, 0.00727 ms for the add/remove chain, and 0.379 ms for the device
+selection. These are development measurements, not a cross-version historical
+baseline; use the benchmark on target hardware for regression decisions.&lt;/p&gt;
+&lt;p&gt;The manual &lt;a href=&#34;https://github.com/larecs/larecs/blob/003dea471daba8a096b7cd84bd507481ea9a39fe/docs/design/research/host-thread-execution.md#measured-sequential-versus-threaded-calls&#34;&gt;host thread dispatch experiment&lt;/a&gt;
+compares complete sequential kernel calls with dynamically claimed whole-store
+and contiguous chunk jobs at 1/2/4 worker tasks, including small and large
+increment/compute workloads and single-store cases. Its driver, timing
+boundaries, reproduction commands, and
+Linux measurements are recorded there. It is a restricted feasibility benchmark;
+the current experimental engine adds eligibility and lifecycle checks absent
+from that prototype. Both drivers remain outside the normal PR performance gate.&lt;/p&gt;
+&lt;h2&gt;Shared host execution comparison&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;shared-host-execution-comparison&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#shared-host-execution-comparison&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The focused selection driver also measures thin and lexical host kernels over
+seven matching archetypes (512 rows each) alongside six nonmatching archetypes
+(512 rows each). All matching rows perform the same increment; the closure also
+counts range invocations. Construction and result checks are excluded, and
+checks outside the timer verify row count, every row against &lt;code&gt;Bencher.num_iters&lt;/code&gt;,
+and the closure&amp;rsquo;s exact invocation count and accumulated values.
+These cases remain manual benchmarks; they are not added to the small PR suite.&lt;/p&gt;
+&lt;p&gt;On Apple M4, macOS 27.0.1, Mojo 1.0.0 (&lt;code&gt;ed45d567&lt;/code&gt;), the shared host setup refactor
+in &lt;code&gt;1cd32ba&lt;/code&gt; was compared with &lt;code&gt;688fb670c87ced6b08c920e2c3527a1890218c6f&lt;/code&gt;
+using the &lt;strong&gt;same updated driver&lt;/strong&gt; and compiler environment. Build one optimized
+binary against an isolated baseline checkout and one against the current source, without
+&lt;code&gt;-g&lt;/code&gt;, sanitizers, or tracing. Warm each once, then alternate baseline/current
+order across five paired samples with no concurrent builds or benchmark jobs.
+The driver uses fixed iterations: 100 full-world calls, 1,000 multi-archetype
+calls, 10,000 contiguous selected calls, and 1,000 disjoint selected calls.&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Host workload&lt;/th&gt;
+          &lt;th&gt;Baseline median&lt;/th&gt;
+          &lt;th&gt;Refactor median&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;100,000 rows, full-world thin&lt;/td&gt;
+          &lt;td&gt;23.33 µs&lt;/td&gt;
+          &lt;td&gt;22.89 µs&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;3,584 rows, seven matching archetypes, thin&lt;/td&gt;
+          &lt;td&gt;1.269 µs&lt;/td&gt;
+          &lt;td&gt;1.034 µs&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Same rows, lexical closure&lt;/td&gt;
+          &lt;td&gt;1.089 µs&lt;/td&gt;
+          &lt;td&gt;0.885 µs&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;64 selected contiguous rows in a 100k world&lt;/td&gt;
+          &lt;td&gt;69.0 ns&lt;/td&gt;
+          &lt;td&gt;18.5 ns&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;64 selected disjoint single-row ranges in a 100k world&lt;/td&gt;
+          &lt;td&gt;690 ns&lt;/td&gt;
+          &lt;td&gt;257 ns&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;The unchanged mutation controls measured 10.13 → 10.09 µs for a 64-row
+add/remove chain and 107 → 98 µs for the first 512-row disjoint mutation pass.
+The existing selected device case ran on the actual Apple M4 accelerator and
+measured 276.31 → 267.52 µs. These short synthetic batches are local evidence,
+not portable timing baselines or application speedup claims. Full-world row
+work dominates discovery at 100k rows; small selections benefit from avoiding
+matching-range allocation. Compilation is excluded from every operation timing.
+The initial baseline driver build took 18.65 seconds; a repeated current build
+took 1.36 seconds with local compiler caches populated. These build times are not comparable cold-compilation
+measurements and establish no compilation speedup. Linux operation timings
+remain unmeasured locally.&lt;/p&gt;
+&lt;p&gt;Reproduce with the current driver against both libraries:&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo build -I /path/to/baseline/src benchmark/entity_selection_benchmark.mojo -o /tmp/larecs-selection-base
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo build -I src benchmark/entity_selection_benchmark.mojo -o /tmp/larecs-selection-current
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;/tmp/larecs-selection-base
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;/tmp/larecs-selection-current&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;h2&gt;Storage range migration&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;storage-range-migration&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#storage-range-migration&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The &lt;a href=&#34;https://github.com/larecs/larecs/blob/003dea471daba8a096b7cd84bd507481ea9a39fe/docs/design/research/entity-range-migration.md&#34;&gt;#170 comparison&lt;/a&gt; uses the
+current selection and migration drivers against PR212, including the 100k-row
+ordinary host path and 65,536-row whole-archetype batches. Concurrent sibling
+builds overlapped every sample, so these results support no controlled
+regression or speedup claim. Query/range metadata sharing is checked directly
+in the cursor regression tests.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Threaded host measurements</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/threaded/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/threaded/</guid>
+      <description>
+        
+        
+        &lt;p&gt;The measurements below concern the implemented engine at &lt;code&gt;4489ceb&lt;/code&gt;, on AMD
+Ryzen 7 PRO 5850U, Linux x86-64, Mojo 1.0.0 (&lt;code&gt;ed45d567&lt;/code&gt;), MAX 26.5.0.
+The &lt;a href=&#34;../../design#research-and-historical-evidence&#34; &gt;host-dispatch feasibility investigation&lt;/a&gt;
+retains a different prototype and must not substitute for this engine.&lt;/p&gt;
+&lt;h2&gt;Threaded host execution&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;threaded-host-execution&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#threaded-host-execution&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;benchmark/threaded_execution.mojo&lt;/code&gt; measures the implemented public
+&lt;code&gt;SystemContext.run[kernel, threaded=True]()&lt;/code&gt; against unchanged sequential calls.
+Both worlds have identical initial rows, arithmetic, and layout. The driver
+covers 1/2/4 worker tasks, one/four stores, balanced and seven-to-one skewed
+stores, 1,024–1,048,576 total rows, and increments or 32 dependent arithmetic
+rounds per row. It forces &lt;code&gt;min_parallel_rows=0&lt;/code&gt; to expose dispatch overhead;
+configured one-worker runs still use whole-range sequential fallback.&lt;/p&gt;
+&lt;p&gt;Each case warms both paths twice, calibrates the sequential path to a 10 ms
+batch or at most 4,096 calls, then alternates order across five paired samples.
+Complete-call timing includes discovery, validation, spatial-invalidation checks,
+resource binding, context allocation, atomic claiming, dispatch, join, cleanup,
+and world-size consumption. Construction, initial runtime warmup, compilation, and exact result
+validation are excluded. Every final row is validated against all warmup,
+calibration, and measured calls. No resources or spatial classifiers are bound;
+shared-resource, selected, and partitioned correctness lives in the tests,
+while their performance remains unmeasured here.&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo build -I src benchmark/threaded_execution.mojo -o /tmp/larecs-threaded-benchmark
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;/tmp/larecs-threaded-benchmark
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;/tmp/larecs-threaded-benchmark
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;/tmp/larecs-threaded-benchmark&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;Build once without debug info, tracing, or sanitizers. Run measurements without
+other builds or benchmark jobs. Each &lt;code&gt;PAIR&lt;/code&gt; line contains skew flag, base rows
+per store, store count, arithmetic rounds, worker count, pair index, calls per
+batch, sequential ns/call, and threaded ns/call. In skewed cases, total rows
+are ten times the base row count. Report compilation separately and retain
+hardware/compiler details; this synthetic comparison establishes no portable
+cutoff, fixed speedup, or application-level benefit.&lt;/p&gt;
+&lt;p&gt;At revision &lt;code&gt;4489ceb&lt;/code&gt;, on Linux x86-64 (&lt;code&gt;7.2.5-3-omarchy&lt;/code&gt;), AMD Ryzen 7 PRO
+5850U (8 cores, 16 hardware threads), Mojo 1.0.0 (&lt;code&gt;ed45d567&lt;/code&gt;), and MAX 26.5.0,
+the optimized build took 17.57 seconds in the installed environment; this is not a cold-cache
+compilation measurement. Three serial binary runs took 7.12, 7.48, and 7.70
+seconds after regression builds completed. All 30 scenarios and 450 paired
+measurements passed exact result validation. Raw local output is retained in
+ignored &lt;code&gt;output/threaded-execution/run-{1,2,3}.txt&lt;/code&gt; files.&lt;/p&gt;
+&lt;p&gt;Four-worker results below summarize 15 pairs per case. Times are medians in
+microseconds per complete call; speedup is the median paired ratio, so it need
+not equal the ratio of the displayed medians.&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Total rows&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Stores&lt;/th&gt;
+          &lt;th&gt;Work per row&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Sequential µs&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Threaded µs&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Speedup&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1,024&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;4 balanced&lt;/td&gt;
+          &lt;td&gt;increment&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.718&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;16.072&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.04×&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;65,536&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;4 balanced&lt;/td&gt;
+          &lt;td&gt;32 rounds&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1,869.585&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;550.040&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;3.44×&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;262,144&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1&lt;/td&gt;
+          &lt;td&gt;increment&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;100.969&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;46.486&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;2.24×&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1,048,576&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;4 balanced&lt;/td&gt;
+          &lt;td&gt;increment&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;406.295&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;141.176&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;2.95×&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1,048,576&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1&lt;/td&gt;
+          &lt;td&gt;32 rounds&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;32,106.429&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;8,967.991&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;3.50×&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;163,840&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;4 skewed&lt;/td&gt;
+          &lt;td&gt;32 rounds&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;4,999.816&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1,455.091&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;3.39×&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;This is one developer machine with unpinned affinity and frequency. Tiny
+increments lose substantially when the row cutoff is explicitly disabled;
+the default cutoff avoids that dispatch. These measurements cover neither
+macOS arm64 nor application kernels, shared-resource workloads, exact selections,
+spatial maintenance, or partitioned layouts. The engine remains experimental.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Synchronization measurement protocol</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/synchronization/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/synchronization/</guid>
+      <description>
+        
+        
+        &lt;p&gt;This record preserves the standalone driver protocol. No hardware, compiler,
+run revision, or timing results were recorded with this section, so it makes
+no measured performance claim. The driver is available at the documentation
+revision through &lt;a href=&#34;https://github.com/larecs/larecs/blob/003dea471daba8a096b7cd84bd507481ea9a39fe/benchmark/synchronization_benchmark.mojo&#34;&gt;its source&lt;/a&gt;.
+Current implementation details are in &lt;a href=&#34;../../../architecture/synchronization&#34; &gt;synchronization internals&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Synchronization primitives&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;synchronization-primitives&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#synchronization-primitives&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;benchmark/synchronization_benchmark.mojo&lt;/code&gt; is a focused manual comparison of
+100,000 sequential scalar increments using a plain scalar control, direct Mojo
+relaxed atomics, Larecs relaxed atomic views, and uncontended write guards. Every
+case performs equivalent increments and consumes results. Setup and final exact
+total validation are excluded; guard acquisition, payload access, and release
+are included. These are isolated uncontended costs, not complete ECS execution,
+contention, allocation, transfer, or GPU measurements. No new timing cases are
+added to the normal PR performance suite.&lt;/p&gt;
+&lt;p&gt;Build once without debug information, sanitizers, or tracing, warm the binary,
+then run repeated samples without other builds or benchmark jobs:&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo build -I src benchmark/synchronization_benchmark.mojo -o /tmp/larecs-synchronization
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;/tmp/larecs-synchronization&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;Report compilation time separately from execution and retain hardware/compiler
+details with timing claims. Concurrent compound access and exact atomic totals
+are correctness checks in &lt;code&gt;test/synchronization_test.mojo&lt;/code&gt;; contended performance
+and complete binding/transfer measurements remain roadmap work.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Deferred classification measurements</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/dirty_spatial/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/dirty_spatial/</guid>
+      <description>
+        
+        
+        &lt;p&gt;This report retains M4 results for implementation &lt;code&gt;76868ef&lt;/code&gt; based on &lt;code&gt;0241e91&lt;/code&gt;,
+with Mojo 1.0.0 (&lt;code&gt;ed45d567&lt;/code&gt;). The original run did not record an OS build.
+The current &lt;a href=&#34;../../../architecture/spatial&#34; &gt;maintenance mechanism&lt;/a&gt; can differ
+from this measured revision; the workloads and timing exclusions follow below.
+&amp;ldquo;Current&amp;rdquo; below refers to the measured implementation.&lt;/p&gt;
+&lt;h2&gt;Deferred dirty classification&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;deferred-dirty-classification&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#deferred-dirty-classification&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Build &lt;code&gt;pixi run mojo build -I src benchmark/dirty_spatial.mojo -o /tmp/larecs-dirty-spatial&lt;/code&gt;,
+then run that binary with no concurrent compilation or benchmark jobs.
+It constructs identical scrambled 2,048/32,768-entity worlds with 72 component
+bytes per row plus entity IDs, establishes initial spatial order, warms both
+paths, and alternates five paired samples of sixteen frames (1,024 frames for
+clean boundaries to resolve their small cost). The 24 scenarios
+cover uniform (16 entities/cell), dense (256/cell), and sparse (16/cell with
+key gaps of 128) distributions, with 0, 1, 1/64, or all identities updated.
+Each updated identity receives two reference writes per frame; classification
+observes final values. On alternating frames those writes cancel. Other frames
+advance cells by one. Both paths perform identical updates and semantic work.&lt;/p&gt;
+&lt;p&gt;The deferred path uses automatic tracking. Its control requests a full rebuild
+after those same writes. Timings include updates, marking, key scratch allocation,
+classification, sorting, typed movement of all columns, and location repair.
+Construction, registration, initial maintenance, and correctness checks are
+excluded. Every sample validates complete key order, each identity/location,
+the expected final input for every identity, and all eight payload lanes outside timing through read-only queries. Output
+records rows, distribution, dirty count, pair number, and deferred/full frame ns.
+This compares current deferred maintenance with current explicit full rebuilds;
+it does not measure a historical implementation or total application speedup.&lt;/p&gt;
+&lt;p&gt;Clean calls do no row work. Dirty calls still copy O(entity-ID capacity) keys
+and inspect affected archetypes, so sparse classification is not O(D) complete
+maintenance. Full rebuilds currently reset sparse membership and caches. Dense
+updates may favor contiguous full classification; structural-heavy workloads
+use full rebuilds. Retained keys/membership cost at least nine bytes per allocated
+ID plus queue capacity (full ID/generation identities and allocator slack).
+Scratch and movement metadata add temporary memory. These are layout costs,
+not measured application memory usage.&lt;/p&gt;
+&lt;p&gt;A local run on &lt;strong&gt;Apple M4, arm64, Mojo 1.0.0 (&lt;code&gt;ed45d567&lt;/code&gt;)&lt;/strong&gt; with implementation
+&lt;code&gt;76868ef&lt;/code&gt; (based on &lt;code&gt;0241e91&lt;/code&gt;) built the optimized driver in &lt;strong&gt;4.74 seconds&lt;/strong&gt;.
+Five warmed pairs gave these median complete-frame times for 32,768 entities:&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Distribution&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Dirty identities&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Deferred&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Explicit full rebuild&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Deferred/full&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Uniform&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.685 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.076 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.637&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Uniform&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;512&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.749 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.133 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.661&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Dense&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;512&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.811 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.194 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.679&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Sparse&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.097 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.490 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.198&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Sparse&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;512&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.112 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.497 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.226&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Uniform&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;32,768&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.850 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.858 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.991&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Across both sizes and all distributions, nonzero sparse-update scenarios took
+19.5–67.9% of the full-rebuild frame time. Clean boundaries measured approximately
+3–4 ns (close to timer resolution), versus 0.031/0.490 ms full rebuilds at the two
+sizes. Fully dirty frames took 99.1–104.6% of the explicit control. An earlier
+version that resolved every dirty identity separately took 131–141% for fully
+dirty frames; the accepted all-ID-dirty fallback avoids that column/location
+setup cost. Neither path can avoid moving clean rows when regrouping demands it.&lt;/p&gt;
+&lt;p&gt;The separate same-driver PR gate against &lt;code&gt;0241e91&lt;/code&gt; passed all 12 core and 32
+spatial cases in &lt;strong&gt;41.1 seconds&lt;/strong&gt; including four sequential compilations and
+five paired samples. It found no confirmed regression under the existing
+30%/500 ns rule. It still measured approximately &lt;strong&gt;15–19%&lt;/strong&gt; overhead for reversing
+maintenance, &lt;strong&gt;10–14%&lt;/strong&gt; for maintained mobile frames, and &lt;strong&gt;3–8%&lt;/strong&gt; for ordinary
+stable-ID access. Those costs remain visible tradeoffs, not claims of zero
+regression. Linux evidence comes from the PR checks; actual GPU execution is
+validated separately and is not included in these CPU performance numbers.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Partition layout measurements</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/partitions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/partitions/</guid>
+      <description>
+        
+        
+        &lt;p&gt;These comparisons have distinct layouts and environments. The Linux report
+compares growable stores with 256-row-capped blocks; the macOS report compares
+historical bounded blocks with row reordering. Keep those controls separate.
+The growable results were recorded in documentation commit &lt;code&gt;6d7c2ea&lt;/code&gt;; its text
+does not identify an exact current implementation SHA beyond decision 0014.
+The macOS comparison does identify its implementation and base revisions.
+Below, &amp;ldquo;current&amp;rdquo; refers to the candidate in each comparison.&lt;/p&gt;
+&lt;h2&gt;Partitioned storage comparison&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;partitioned-storage-comparison&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#partitioned-storage-comparison&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Build the optimized standalone driver once:
+&lt;code&gt;pixi run mojo build -I src benchmark/partitioned_spatial.mojo -o /tmp/larecs-partition-benchmark&lt;/code&gt;.
+Run that binary without concurrent compilation or benchmark jobs. Partitioning
+is explicitly selected at registration; the control is the &lt;strong&gt;same current
+library&amp;rsquo;s deferred row reordering&lt;/strong&gt;, not forced full classification or a
+historical library with different invalidation costs. The existing core/spatial
+PR gate separately measures changes to the default paths against the exact base.&lt;/p&gt;
+&lt;p&gt;The driver constructs identical deterministic scrambled 2,048/32,768-row worlds
+with two component-defined archetypes, 64-byte SIMD payloads, an integer input,
+and an additional eight-byte column on half the rows. It compares one growable
+store per logical cluster with row reordering for uniform (16 identities per cell), dense
+(1,024 per cell), and singleton sparse (one identity per cell, key spacing 128)
+distributions. Each configuration warms both layouts with one sixteen-frame
+batch, then alternates their order for five paired sixteen-frame samples.&lt;/p&gt;
+&lt;p&gt;The 48 scenarios cover maintenance with 1, 1/64, or all identities updated;
+ordinary read-only query scans and host execution with unchanged layouts;
+and complete cell frames with the same updates, maintenance every frame (or
+every fourth frame for 1/64 updates), all-lane per-cell aggregation, and cyclic
+adjacent-cell aggregate products. Both layouts use identical entities, input
+updates, and semantic work. The scan controls still call the clean boundary.
+All measured update frames include marking, pending key allocation/copy,
+classification, directory construction or sorting, column growth/movement,
+source swap-removal, location repair, and allocation reclamation as applicable.
+Cell frames also include query setup, cell scratch allocation, aggregation,
+and neighbor arithmetic. Construction, initial placement, policy/device setup,
+and validation are excluded. There are no device transfers in these CPU timings.&lt;/p&gt;
+&lt;p&gt;Every sample checks all identities once, final inputs, all payload lanes,
+entity locations, default key order or homogeneous cluster stores, and equal
+complete spatial checksums outside timing. Query/host scan reductions are also
+checked against their complete expected sums. Results are consumed inside the
+timer. This is a synthetic spatial workload, not a game/simulation speedup,
+collision detection, or a persistent neighbor index.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;MEMORY&lt;/code&gt; records report initial maintained &lt;strong&gt;capacity-derived owned bytes&lt;/strong&gt;;
+&lt;code&gt;MEMORY_AFTER_MOVEMENT&lt;/code&gt; reports retained buffers after 96 fully moving frames:
+physical-directory slots, component/ID buffers, entity locations, key/dirty
+caches, queued identities, and recycled-slot capacity. Counted allocations are
+physical-directory plus row-column/ID allocations. Graph/pool allocations,
+allocator overhead, device state, classifier configuration, and all temporary
+maintenance/query/cell scratch are excluded; these records are not RSS or peak
+memory measurements. The components are trivial and have no hidden payload heap.
+Columns in a store share capacity, but each column and the IDs allocate
+separately. &lt;code&gt;PAIR&lt;/code&gt; records give rows, distribution, mode, update count, cadence,
+pair index, reordering ns/frame, and partition ns/frame.&lt;/p&gt;
+&lt;h3&gt;Growable-store comparison on Linux&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;growable-store-comparison-on-linux&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#growable-store-comparison-on-linux&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The same current driver was built against committed base &lt;code&gt;df0e6c5638beaab2bf3784a2b4784044a7c2707e&lt;/code&gt;
+(256-row-capped blocks) and the growable-store implementation from decision 0014.
+This local run used &lt;strong&gt;AMD Ryzen 7 PRO 5850U, Linux 7.2.5-3-omarchy x86_64,
+Mojo 1.0.0 (&lt;code&gt;ed45d567&lt;/code&gt;)&lt;/strong&gt;, normal optimized builds without tracing, sanitizers,
+or debug information. Cold builds ran sequentially and took &lt;strong&gt;11.13 s / 11.11 s&lt;/strong&gt;
+(base/current). No other builds or benchmark jobs ran during timing; background
+desktop services remained active. Five pairs of fresh binary invocations alternated
+base/current order. Each invocation used the warmup, five paired sixteen-frame
+samples per case, timing boundaries, and complete validation described above.
+Values below are medians of the five per-invocation medians, in milliseconds.
+All 48 cases validated in all ten invocations. Median complete driver execution
+including validation was &lt;strong&gt;13.10 s / 11.33 s&lt;/strong&gt; (base/current).&lt;/p&gt;
+&lt;p&gt;Driver SHA-256: &lt;code&gt;37795c49baa95f1b911d43327d413097b85a5f60f92f3137accf7abfa9a90ad9&lt;/code&gt;.&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Distribution&lt;/th&gt;
+          &lt;th&gt;Timed work, 32,768 rows&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Capped blocks&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Growable stores&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Growable / capped&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Uniform&lt;/td&gt;
+          &lt;td&gt;Maintenance, 512 updates/frame&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.416&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.256&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.61&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Dense&lt;/td&gt;
+          &lt;td&gt;Maintenance, 512 updates/frame&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.111&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.072&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.65&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Dense&lt;/td&gt;
+          &lt;td&gt;Complete frame, all moving&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;6.032&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;4.295&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.71&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Singleton sparse&lt;/td&gt;
+          &lt;td&gt;Complete frame, all moving&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;20.400&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;17.231&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.84&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Dense&lt;/td&gt;
+          &lt;td&gt;Ordinary query scan, clean&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.430&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.427&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.99&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Dense&lt;/td&gt;
+          &lt;td&gt;Ordinary CPU scan, clean&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.030&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.031&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.03&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Uniform&lt;/td&gt;
+          &lt;td&gt;Ordinary CPU scan, clean&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.068&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.070&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.03&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Singleton sparse&lt;/td&gt;
+          &lt;td&gt;Ordinary CPU scan, clean&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.337&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.344&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.02&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Dense initial placement used &lt;strong&gt;64 stores and 225 counted allocations&lt;/strong&gt;, versus
+128 blocks and 449 allocations in the base. Initial counted owned bytes fell
+from 4,448,265 to 4,403,209. After 96 fully moving frames, growable dense stores
+retained &lt;strong&gt;7,847,945 bytes and 64,512 row slots&lt;/strong&gt;, versus 5,062,665 bytes and
+32,768 slots for capped blocks. Destination stores can grow while their old rows
+are still awaiting transfer, and nonempty stores retain that spare capacity.
+Fewer stores therefore do not guarantee less retained memory. These remain
+capacity-derived buffer measurements, with the exclusions described above.&lt;/p&gt;
+&lt;p&gt;Full scans changed by -0.8% to +4.3% across these distributions; small timing
+differences on this desktop runner do not establish a scan improvement.
+Maintenance and fully moving frame results favor growable stores here, but
+singleton clusters still have separate allocations and substantial traversal
+overhead. This is CPU-only synthetic evidence; macOS, GPU, application, peak
+memory, and additional component-width comparisons remain on the roadmap.
+Local raw reports are retained under &lt;code&gt;output/performance/growable_clusters/&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;Historical bounded-block comparison on macOS&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;historical-bounded-block-comparison-on-macos&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#historical-bounded-block-comparison-on-macos&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The measurements below are historical evidence for decision 0013’s
+256-row-capped blocks, not timings for the current growable-store layout.
+Dense clusters now use fewer stores; sparse clusters still require separate
+allocations. Rerun the driver before making performance claims about the new layout.&lt;/p&gt;
+&lt;p&gt;A local optimized run on &lt;strong&gt;Apple M4, macOS 27.0.1 arm64, Mojo 1.0.0
+(&lt;code&gt;ed45d567&lt;/code&gt;)&lt;/strong&gt;, implementation &lt;code&gt;f3d99cd&lt;/code&gt; (base &lt;code&gt;6037850&lt;/code&gt;), built in
+&lt;strong&gt;7.59 seconds&lt;/strong&gt; and completed
+execution/validation in &lt;strong&gt;8.88 seconds&lt;/strong&gt;.
+Driver SHA-256: &lt;code&gt;da005387b10958c875771cdfb16cebbe455aa7e883631ef36f021734f355a787&lt;/code&gt;.
+No concurrent builds or benchmark jobs ran. Representative medians across five
+warmed pairs for 32,768 rows were:&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Distribution&lt;/th&gt;
+          &lt;th&gt;Timed work&lt;/th&gt;
+          &lt;th&gt;Updates / cadence&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Reordering&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Partitions&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Partition / reorder&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Uniform&lt;/td&gt;
+          &lt;td&gt;Maintenance&lt;/td&gt;
+          &lt;td&gt;1 / every frame&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.626 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.336 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.54&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Uniform&lt;/td&gt;
+          &lt;td&gt;Maintenance&lt;/td&gt;
+          &lt;td&gt;512 / every frame&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.334 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.381 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.29&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Dense&lt;/td&gt;
+          &lt;td&gt;Maintenance&lt;/td&gt;
+          &lt;td&gt;1 / every frame&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.600 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.017 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.03&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Dense&lt;/td&gt;
+          &lt;td&gt;Maintenance&lt;/td&gt;
+          &lt;td&gt;512 / every frame&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.348 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.096 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.07&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Uniform&lt;/td&gt;
+          &lt;td&gt;Complete cell frame&lt;/td&gt;
+          &lt;td&gt;512 / every fourth frame&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.627 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.393 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.63&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Dense&lt;/td&gt;
+          &lt;td&gt;Complete cell frame&lt;/td&gt;
+          &lt;td&gt;512 / every fourth frame&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.651 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.293 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.45&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Uniform&lt;/td&gt;
+          &lt;td&gt;Complete cell frame&lt;/td&gt;
+          &lt;td&gt;All / every frame&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.956 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;2.785 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.42&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Dense&lt;/td&gt;
+          &lt;td&gt;Complete cell frame&lt;/td&gt;
+          &lt;td&gt;All / every frame&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.881 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;3.125 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.66&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Singleton sparse&lt;/td&gt;
+          &lt;td&gt;Complete cell frame&lt;/td&gt;
+          &lt;td&gt;All / every frame&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.357 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;17.011 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;12.54&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Uniform&lt;/td&gt;
+          &lt;td&gt;Ordinary query scan&lt;/td&gt;
+          &lt;td&gt;Clean&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.149 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.175 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.17&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Dense&lt;/td&gt;
+          &lt;td&gt;Ordinary query scan&lt;/td&gt;
+          &lt;td&gt;Clean&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.149 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.148 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.99&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Singleton sparse&lt;/td&gt;
+          &lt;td&gt;Ordinary query scan&lt;/td&gt;
+          &lt;td&gt;Clean&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.149 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.237 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.59&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Uniform&lt;/td&gt;
+          &lt;td&gt;Ordinary host scan&lt;/td&gt;
+          &lt;td&gt;Clean&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.019 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.045 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;2.36&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Dense&lt;/td&gt;
+          &lt;td&gt;Ordinary host scan&lt;/td&gt;
+          &lt;td&gt;Clean&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.019 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.022 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;1.16&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Singleton sparse&lt;/td&gt;
+          &lt;td&gt;Ordinary host scan&lt;/td&gt;
+          &lt;td&gt;Clean&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.020 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0.155 ms&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;7.92&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Initial maintained capacity and allocation evidence for those worlds:&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Layout / distribution&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Counted owned bytes&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Counted row/directory allocations&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Partition blocks&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Row capacity / live rows&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Reordering, all distributions&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;4,359,561&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;8&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;0&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;32,768 / 32,768&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Partitions, uniform&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;7,241,737&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;14,337&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;4,096&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;32,768 / 32,768&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Partitions, dense&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;4,448,265&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;449&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;128&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;32,768 / 32,768&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Partitions, singleton sparse&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;27,426,825&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;114,689&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;32,768&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;32,768 / 32,768&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;All initial blocks were fully occupied at their allocated capacities. Component
+capacity alone therefore understates partition overhead: physical-store metadata
+and many separate allocations matter, especially for singleton clusters. At
+2,048 rows counted bytes were 273,801 for reordering versus 452,617 uniform,
+278,025 dense, and 1,714,185 singleton partition storage. After 96 fully moving
+frames, counted retained bytes were &lt;strong&gt;4,883,849&lt;/strong&gt; for
+reordering versus &lt;strong&gt;10,116,809&lt;/strong&gt; uniform, &lt;strong&gt;5,062,665&lt;/strong&gt; dense, and &lt;strong&gt;51,019,785&lt;/strong&gt;
+singleton partitions at 32,768 rows. Uniform partition row capacity grew to
+58,320; dense/singleton row capacity remained 32,768. Empty blocks released their
+row allocations, while partial block growth and high-water directory/queue
+capacity remained. These are retained-buffer measurements, not peak memory.&lt;/p&gt;
+&lt;p&gt;Small dense/uniform updates took less elapsed maintenance time with partitions,
+while directory rebuilding and per-block scans dominated singleton cases. The
+benchmark measures total elapsed costs, not byte-movement counters.
+Fully moving workloads were slower despite local transfer. Keep partitions
+opt-in, and retain the reordering default. The measured bounded-block
+implementation copied identity-capacity keys,
+inspected blocks, and could move unchanged rows during same-cluster compaction.
+The current layout retains key copying and directory scans but removes
+cross-block compaction; destination growth can still relocate existing columns.
+Cluster selection scans metadata. Application workloads,
+other component widths, structural-heavy frames, Linux comparative timings,
+process/peak memory, and device timings remain on the roadmap. GPU functional
+integration ran on the actual local accelerator; it is separate evidence from
+these CPU performance measurements.&lt;/p&gt;
+&lt;p&gt;The separate default-path PR gate against &lt;code&gt;6037850&lt;/code&gt; passed all twelve core and
+32 spatial cases in &lt;strong&gt;49.2 seconds&lt;/strong&gt;, including four sequential builds and five
+paired samples. It required no regression confirmation. Ordinary 2,048-row
+query/host execution changes were +0.1%/-0.6%, stable-ID access was +3.9%, and
+selected mutation was +0.9% in that run. These small shared-machine differences
+are not a zero-overhead guarantee; the existing 30%/500 ns rule is unchanged.
+Hosted Linux/macOS evidence is retained by the PR checks.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Resource execution measurements</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/resources/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/resources/</guid>
+      <description>
+        
+        
+        &lt;p&gt;This report records Apple M4/macOS 27.0.1 results with Mojo 1.0.0 (&lt;code&gt;ed45d567&lt;/code&gt;),
+base &lt;code&gt;6a3841b&lt;/code&gt;, and the portable-adapter work recorded in &lt;code&gt;fde2cb9&lt;/code&gt;.
+The original text did not identify the exact measured current-tree SHA;
+&lt;code&gt;fde2cb9&lt;/code&gt; identifies the retained report/driver, not proof of a clean timed tree.
+The measured read-only adapter implementation predates later mutable-adapter
+and device-copy-reuse work. Its transfer costs are not current API guarantees.
+Below, &amp;ldquo;current&amp;rdquo; means that measured candidate rather than today&amp;rsquo;s checkout.&lt;/p&gt;
+&lt;h2&gt;Resource execution&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;resource-execution&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#resource-execution&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;resource_execution_benchmark.mojo&lt;/code&gt; uses the current execution API. Compare the
+same workload against the base library, adapting only backend call spelling
+when the base predates &lt;code&gt;ExecutionBackend&lt;/code&gt;. It measures complete calls over 512 Int32 rows with either no
+resources or one legacy scalar resource. &lt;code&gt;resource_adapter_benchmark.mojo&lt;/code&gt;
+measures current read-only adapters over the same rows and 4,096 initial Int32
+samples. Only the first sample is read; the entire source is uploaded. Each timed
+adapter call edits that sample, and growth cases append one sample per call.
+Host calls use 10,000 iterations; GPU calls use 100. One warmup invocation precedes
+each timer. Construction and final checks are excluded; validation, leases,
+component transfers, resource uploads/downloads, allocation growth, and
+synchronization are included when applicable. Exact outputs, row counts, source
+values, and final sample lengths are checked outside timing.&lt;/p&gt;
+&lt;p&gt;Copy the current driver for the baseline build:&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cp benchmark/resource_execution_benchmark.mojo /tmp/resource_base.mojo&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;If the base accepts &lt;code&gt;on_device: Bool&lt;/code&gt; rather than &lt;code&gt;backend: ExecutionBackend&lt;/code&gt;,
+adapt only that copy before compiling it:&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;python - &lt;span class=&#34;s&#34;&gt;&amp;lt;&amp;lt;&amp;#39;PYCODE&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;from pathlib import Path
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;import re
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;path = Path(&amp;#34;/tmp/resource_base.mojo&amp;#34;)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;source = path.read_text().replace(&amp;#34;    ExecutionBackend,\n&amp;#34;, &amp;#34;&amp;#34;)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;source, count = re.subn(
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;    r&amp;#34;backend=\(\s*ExecutionBackend\.DEVICE if device else ExecutionBackend\.HOST\s*\)&amp;#34;,
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;    &amp;#34;on_device=device&amp;#34;,
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;    source,
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;assert count == 4, &amp;#34;Review the driver before adapting a changed call matrix&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;assert &amp;#34;ExecutionBackend&amp;#34; not in source.split(&amp;#39;from std.time&amp;#39;, 1)[1]
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;path.write_text(source)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s&#34;&gt;PYCODE&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;This maps the same compile-time &lt;code&gt;device&lt;/code&gt; boolean to the older keyword; kernels,
+row counts, iterations, warmup, validation, and timing boundaries stay identical.
+Do not substitute a historical driver with different workloads. Device comparisons
+require a working accelerator on both sides; an older host fallback is not a
+device measurement. For a base using &lt;code&gt;on_gpu&lt;/code&gt;, use that keyword instead.&lt;/p&gt;
+&lt;p&gt;Build optimized binaries once without debug information, sanitizers, or tracing:&lt;/p&gt;
+&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo build -I /path/to/base/src /tmp/resource_base.mojo -o /tmp/resource-base
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo build -I src benchmark/resource_execution_benchmark.mojo -o /tmp/resource-current
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo build -I src benchmark/resource_adapter_benchmark.mojo -o /tmp/resource-adapters&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;On Apple M4, macOS 27.0.1, Mojo &lt;code&gt;1.0.0 (ed45d567)&lt;/code&gt;, compare base &lt;code&gt;6a3841b&lt;/code&gt;
+against this implementation with the same driver. Warm each binary, then run five
+paired samples, alternating base/current order, with no concurrent compilation
+or benchmark jobs. Median per-call means were:&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Complete invocation&lt;/th&gt;
+          &lt;th&gt;Base&lt;/th&gt;
+          &lt;th&gt;Current&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Host, no resource&lt;/td&gt;
+          &lt;td&gt;294.2 ns&lt;/td&gt;
+          &lt;td&gt;299.6 ns&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Host, legacy scalar resource&lt;/td&gt;
+          &lt;td&gt;299.8 ns&lt;/td&gt;
+          &lt;td&gt;350.7 ns&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;GPU, no resource&lt;/td&gt;
+          &lt;td&gt;250.50 µs&lt;/td&gt;
+          &lt;td&gt;251.52 µs&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;GPU, legacy scalar resource&lt;/td&gt;
+          &lt;td&gt;243.51 µs&lt;/td&gt;
+          &lt;td&gt;268.59 µs&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Host, edited adapter&lt;/td&gt;
+          &lt;td&gt;—&lt;/td&gt;
+          &lt;td&gt;449.1 ns&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Host, edited adapter plus growth&lt;/td&gt;
+          &lt;td&gt;—&lt;/td&gt;
+          &lt;td&gt;451.4 ns&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;GPU, edited adapter&lt;/td&gt;
+          &lt;td&gt;—&lt;/td&gt;
+          &lt;td&gt;323.76 µs&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;GPU, edited adapter plus growth&lt;/td&gt;
+          &lt;td&gt;—&lt;/td&gt;
+          &lt;td&gt;303.54 µs&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;The scalar GPU case costs about 10.3% more with staged publication and lifetime
+protection. These measurements establish the cost of this synthetic workload,
+not an application speedup or Tree-D shading result. Short GPU batches are noisy;
+the growth-case ordering does not establish a growth benefit. Source/sample allocation
+and scientific preprocessing during initial construction are excluded; incremental
+host append and device allocation growth are included in growth cases. Existing
+allocation capacity is reused in nongrowing cases; contents are uploaded every run.&lt;/p&gt;
+&lt;p&gt;Sequential base/current/adapter driver builds took 1.18/3.00/3.01 seconds with
+existing compiler caches and no competing builds. These are recorded build costs,
+not comparable cold-compilation measurements.
+Linux resource timings and cold compilation remain unmeasured. These focused
+manual cases do not enlarge the normal PR performance matrix.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>AoS plotting workflow evidence</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/aos/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/aos/</guid>
+      <description>
+        
+        
+        &lt;p&gt;This is a dynamically regenerated comparison, not one fixed historical run.
+The workflow records its checkout SHA and resolves Mojo through
+&lt;code&gt;benchmark/plots/pixi.lock&lt;/code&gt;; its &lt;code&gt;ubuntu-24.04&lt;/code&gt; label does not identify a CPU
+or cache size. No numerical speedup is asserted without a selected run&amp;rsquo;s data.
+The driver defines iteration calibration and measured work; compiler generation,
+world construction, plotting, and dependency setup are outside per-entity loop
+timing. Hosted load, changing runner hardware, and artifact retention limit
+cross-run interpretation.&lt;/p&gt;
+&lt;h2&gt;Versus Array of Structs&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;versus-array-of-structs&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#versus-array-of-structs&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The publishing-run plots show iteration time per entity for a workload that
+adds velocity to position in both dimensions. Historical driver
+fields are not the tutorial&amp;rsquo;s API: the checked particle example uses
+&lt;code&gt;Position.x/y&lt;/code&gt; and &lt;code&gt;Velocity.dx/dy&lt;/code&gt;. See
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/003dea471daba8a096b7cd84bd507481ea9a39fe/benchmark/plots/src/aos.mojo&#34;&gt;the plotting driver&lt;/a&gt; for its exact data types.&lt;/p&gt;
+&lt;p&gt;The benchmark is performed with different amounts of &amp;ldquo;payload components&amp;rdquo;,
+where each of them has two &lt;code&gt;Float64&lt;/code&gt; fields, just like &lt;code&gt;Position&lt;/code&gt; and &lt;code&gt;Velocity&lt;/code&gt;.
+Further, the total number of entities is varied from 100 to 1 million.&lt;/p&gt;
+&lt;p&gt;Plots and raw data are available in the &lt;code&gt;aos-benchmark&lt;/code&gt; artifact of the
+&lt;a href=&#34;https://github.com/larecs/larecs/actions/workflows/publish.yml&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;publishing run&lt;/a&gt;
+that produced them. Select the run for the measured checkout SHA; the report
+contains no fixed checked-in plot or golden timings.&lt;/p&gt;
+&lt;p&gt;The documentation workflow (&lt;code&gt;.github/workflows/publish.yml&lt;/code&gt;) regenerates this
+plot for each published commit on a GitHub-hosted &lt;code&gt;ubuntu-24.04&lt;/code&gt; runner,
+using the Mojo version pinned in &lt;code&gt;benchmark/plots/pixi.lock&lt;/code&gt;. The workflow
+does not record the runner&amp;rsquo;s CPU or cache sizes, and the hardware behind that
+runner label can change between runs. Read the plot as a comparison on one
+machine, not as a prediction for other hardware. Each run keeps the raw
+results as its &lt;code&gt;aos-benchmark&lt;/code&gt; artifact. To measure your own machine, run
+&lt;code&gt;pixi run plots&lt;/code&gt; in &lt;code&gt;benchmark/plots&lt;/code&gt;.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Regression-check runtime evidence</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/regression/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-243/inside/development/reports/regression/</guid>
+      <description>
+        
+        
+        &lt;p&gt;These are recorded execution budgets for an unchanged-library comparison,
+not platform speed rankings. The hosted record identifies merge checkout
+&lt;code&gt;ba8b180&lt;/code&gt;; the earlier local record identifies baseline &lt;code&gt;688fb67&lt;/code&gt; but not its
+exact current checkout SHA. Hardware/compiler, method, excluded costs, and
+confirmation limits are preserved below. Current commands and failure rules
+live in &lt;a href=&#34;../../regression&#34; &gt;regression operation&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Initial gate measurements&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;initial-gate-measurements&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#initial-gate-measurements&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The initial unchanged-library comparison against &lt;code&gt;688fb67&lt;/code&gt; on Apple M4,
+macOS 27 arm64, Mojo 1.0.0 (&lt;code&gt;ed45d567&lt;/code&gt;), took &lt;strong&gt;55.3 seconds&lt;/strong&gt;: core builds
+9.3/9.6 seconds and sampling 2.6 seconds; spatial builds 5.8/5.4 seconds and
+sampling 22.2 seconds. Builds and samples ran sequentially; no concurrent
+builds or benchmark jobs ran. These are driver compilation costs in an already
+installed environment, not dependency installation time.&lt;/p&gt;
+&lt;p&gt;The first &lt;a href=&#34;https://github.com/larecs/larecs/actions/runs/37112210067&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;hosted run&lt;/a&gt;
+compared the same unchanged library against &lt;code&gt;688fb67&lt;/code&gt;, using PR merge checkout
+&lt;code&gt;ba8b180&lt;/code&gt;, Mojo 1.0.0 (&lt;code&gt;ed45d567&lt;/code&gt;), the same current driver on each side, fresh
+output binaries, sequential compilation/sampling, and five alternating pairs.
+Both suites passed without confirmation, and both artifact uploads succeeded:&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Runner&lt;/th&gt;
+          &lt;th&gt;CPU / OS&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;All driver builds&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;All sampling&lt;/th&gt;
+          &lt;th style=&#34;text-align: right&#34;&gt;Total gate&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;macos-latest&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;Apple M2 Pro (Virtual), macOS 26.6.2 arm64&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;43.1 s&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;22.1 s&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;66.1 s&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;ubuntu-latest&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;AMD EPYC 7763, Linux 6.17 x86_64 / glibc 2.39&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;50.2 s&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;24.6 s&lt;/td&gt;
+          &lt;td style=&#34;text-align: right&#34;&gt;75.3 s&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;These are one-run runtime measurements, not speed comparisons between platforms
+or evidence that the runner&amp;rsquo;s load is stable. Full correctness tests, examples,
+package checks, and environment installation are excluded from these gate
+costs. The combined check stays near a minute; further coverage requires new
+budget measurements on both platforms. Confirmation adds sampling cost for
+affected suites; command deadlines bound failures rather than promising
+a one-minute runtime for all error/confirmation paths.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+  </channel>
+</rss>
