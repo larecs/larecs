@@ -1,9 +1,9 @@
-{{- /*
-Links an API symbol: {{< api Type.method label >}}.
-The link follows the site's baseURL, so it also works in PR previews.
-*/ -}}
-{{- $text := .Get 0 -}}
-{{- $link := replace $text "." "#" -}}
+{{- $name := .Get 0 -}}
+{{- $text := $name -}}
 {{- with .Get 1 -}}{{- $text = . -}}{{- end -}}
-<a href="{{ printf "larecs/%s" $link | relURL }}"><code>{{ $text }}</code></a>
+{{- with index site.Data.api.symbols $name -}}
+<a href="{{ .target | relURL }}"><code>{{ $text }}</code></a>
+{{- else -}}
+{{- errorf "Unknown API symbol %q in %s" $name .Position -}}
+{{- end -}}
 {{- /* keep output on one line */ -}}

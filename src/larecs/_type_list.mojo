@@ -64,8 +64,8 @@ struct _TypeChecks[*Ts: Copyable & Deinitable]:
     def _name_indices(out indices: Dict[String, Int]):
         """Builds the shared index for reflected-name identity checks.
 
-        Args:
-            indices: The output mapping, with the last index for each name.
+        Returns:
+            The output mapping ``indices``, with the last index for each name.
         """
         indices = {}
         comptime for i in range(len(Self.Ts)):

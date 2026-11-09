@@ -21,8 +21,8 @@ tests: docs/test
 # Output format. One of (plain|hugo|mdbook).
 format: hugo
 
-# Re-structure docs according to package re-exports.
-exports: true
+# Keep the full module tree, including APIs not re-exported at package root.
+exports: false
 
 # Use shortened cross-ref link labels.
 short-links: true
@@ -46,9 +46,9 @@ templates:
 
 # Bash commands to run before build as well as test.
 pre-run:
-  # Modo only adds doctest files, so clear the output first. Otherwise files
-  # from renamed or removed doctests stay behind and run with the others.
-  - rm -rf docs/test
+  # Clear generated pages and examples so removed symbols cannot survive
+  # as stale output and conceal broken links.
+  - rm -rf docs/test docs/site/content
   - |
     echo Running 'mojo doc'...
     pixi run mojo doc -o docs/src/larecs.json src/larecs
@@ -74,7 +74,8 @@ post-test:
     echo Done.
 
 # Bash scripts to run after build.
-post-build: []
+post-build:
+  - pixi run python scripts/api_reference.py
 
 # Bash scripts to run after build as well as test.
 post-run: []

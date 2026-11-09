@@ -8,6 +8,8 @@ import sys
 from importlib.metadata import version
 from pathlib import Path
 
+from check_api_reference import check
+
 # modo does not set a nonzero exit code when one of its pre-run, pre-build,
 # pre-test, post-test, or post-build scripts fails (observed with modo
 # 0.11.13): the process itself still exits 0, and only stderr shows
@@ -151,6 +153,7 @@ async def main():
 
             returncode, script_error = await build_static_site("docs/site")
             _check(returncode, script_error, "hugo build")
+            check(Path(__file__).parent.parent)
 
         case "watch":
             # Both commands are long-running, but either one must be able to

@@ -129,3 +129,32 @@ osx-arm64. If the default SDK is affected and `SDKROOT` is unset, it exports
 `SDKROOT` pointing at the newest installed SDK without `arm64e.x1` (e.g.
 `MacOSX26.sdk`). This needs an older SDK to be installed; it can be removed
 once conda-forge ships an `ld64` that understands the new stubs.
+
+
+## API reference generation
+
+Run the documentation build from the repository root:
+
+```sh
+pixi run build-docs
+pixi run --manifest-path scripts/pixi.toml test-api-reference
+```
+
+The build generates declarations with `mojo doc`, renders the full module tree
+with Modo, and writes `docs/site/data/api.json` from those declarations and the
+package initializer's imports. Hugo resolves `api` shortcodes through that map;
+an unknown name fails the build. The final check rejects missing symbol pages,
+method/overload anchors and broken links in the curated reference. The additional
+integration checks exercise root aliases, module-only symbols, export drift,
+constraints, exact declarations, redirects and revision-pinned source links.
+
+Keep the initializer's `Exports:` list aligned with its imports. To link a
+module-only symbol, use its defining path, for example
+`{{< api component.ComponentType >}}`. Short names resolve when unambiguous;
+this does not imply that a symbol is imported at package root. Generated source
+links use the checkout's HEAD revision, so build a committed checkout when
+publishing. Generated Markdown, metadata and HTML are disposable build outputs.
+
+Missing-description and unresolved-reference warnings from Modo remain visible;
+this build does not enable blanket strict mode. Compiler out-result descriptions
+belong in `Returns`, because `mojo doc` does not classify them as input arguments.
