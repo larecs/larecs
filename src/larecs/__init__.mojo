@@ -8,7 +8,7 @@ stable 1.0.0 release. After that release, public APIs follow semantic
 versioning unless they are explicitly marked experimental. Device execution is
 currently such an experimental API. Threaded host execution is also experimental.
 
-Build the [particle simulation](https://larecs.github.io/larecs/start/first_simulation/)
+Build the [particle simulation](../start/first_simulation/)
 for a complete program using systems and kernels. You can find its source in
 `examples/particles/movement.mojo`.
 

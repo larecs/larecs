@@ -495,10 +495,11 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
 
         Args:
             data: The host data to upload.
-            offset: The starting row at which to write the data. Must be in
-                ``[0, valid rows]``; uploads may overwrite or append, but
-                cannot leave an uninitialized gap. Smaller uploads retain
-                the valid suffix. Empty uploads do not initialize a column.
+            offset: The starting row at which to write the data, from zero
+                through the valid row count (inclusive). Uploads may overwrite
+                or append, but cannot leave an uninitialized gap. Smaller
+                uploads retain the valid suffix. Empty uploads do not initialize
+                a column.
 
         Raises:
             Error: If offset is outside the valid rows or allocating or copying
@@ -717,9 +718,9 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
     def download[T: ResourceType](self, mut value: T) raises:
         """Copies the device buffer for ``T`` back into ``value``.
 
-        Mirrors [.upload], but in the opposite direction: after a kernel
-        that may have mutated the resource has run, this pulls its bytes
-        back from the device buffer into the host-side value.
+        Mirrors [.DeviceResourceStorage.upload] in the opposite direction:
+        after a kernel that may have mutated the resource has run, this pulls
+        its bytes back from the device buffer into the host-side value.
 
         Parameters:
             T: The type of the resource to download. Must have been

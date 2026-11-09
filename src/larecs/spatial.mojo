@@ -79,7 +79,8 @@ def grid_cell(position: Float64, cell_size: Float64) raises -> Int:
 
     Raises:
         Error: If either input is invalid or the cell is outside
-            [-1048576, 1048575]. Coordinates are never clamped or wrapped.
+            -1048576 through 1048575 (inclusive). Coordinates are never clamped
+            or wrapped.
 
     Returns:
         The cell coordinate, including floor-based negative coordinates.
@@ -102,9 +103,9 @@ def morton_key_3d(x: Int, y: Int, z: Int = 0) raises -> UInt64:
     neighborhood; exact neighbor queries need a separate spatial index.
 
     Args:
-        x: X cell in [-1048576, 1048575].
-        y: Y cell in [-1048576, 1048575].
-        z: Z cell in [-1048576, 1048575], defaulting to zero.
+        x: X cell in -1048576 through 1048575 (inclusive).
+        y: Y cell in -1048576 through 1048575 (inclusive).
+        z: Z cell in -1048576 through 1048575 (inclusive), defaulting to zero.
 
     Raises:
         Error: If any coordinate is outside the supported range.

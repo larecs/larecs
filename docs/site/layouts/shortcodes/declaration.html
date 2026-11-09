@@ -6,8 +6,15 @@ for inferred parameters and shortens parameter types that only restate
 their own parameters, such as `filter: Filter[filter._include, ...]`. When
 this changes the text, the exact declaration follows in a collapsed block.
 */ -}}
-{{- /* The template wraps the declaration in a code fence so Modo leaves it unchanged. */ -}}
-{{- $exact := strings.TrimSpace .Inner -}}
+{{- /* URL encoding protects compiler-generated backticks and brackets from
+Modo's cross-reference parser without changing the displayed declaration. */ -}}
+{{- $exact := "" -}}
+{{- with .Get "encoded" -}}
+  {{- $url := urls.Parse (printf "?code=%s" .) -}}
+  {{- $exact = $url.Query.Get "code" -}}
+{{- else -}}
+  {{- $exact = strings.TrimSpace .Inner -}}
+{{- end -}}
 {{- $exact = replaceRE "^```mojo\n" "" $exact -}}
 {{- $exact = replaceRE "\n```$" "" $exact -}}
 {{- $readable := replaceRE `\s+where \(eq .*$` "" $exact -}}
