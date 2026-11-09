@@ -41,7 +41,7 @@ jobs:
   publish:
     name: Build API docs
     if: ${{ github.event.action != 'closed' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
 

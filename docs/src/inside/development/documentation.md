@@ -21,8 +21,9 @@ pixi run --manifest-path scripts/pixi.toml playwright install chromium
 
 Generation supports Linux x86-64 and macOS Apple Silicon. `pixi.lock` pins
 Mojo, MAX, and tracing dependencies; `scripts/pixi.lock` pins Python, Modo,
-Hugo, Typst, Playwright, and the native macOS Go toolchain. Linux CI installs
-Chromium's system libraries with `playwright install --with-deps chromium`.
+Hugo, Typst, Playwright, and the native macOS Go toolchain. Linux CI uses
+Ubuntu 24.04, supported by the pinned Playwright release, and installs Chromium's
+system libraries with `playwright install --with-deps chromium`.
 On Apple Silicon, the wrapper builds the installed Modo release natively and
 caches it under `scripts/.pixi/`; Linux uses its bundled executable.
 
