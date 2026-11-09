@@ -16,7 +16,7 @@ storage API. This is useful for setup and isolated changes. In application
 logic, these operations should generally be performed by a
 [system](../systems_scheduler) through its `SystemContext`.
 
-```mojo {doctest="guide_add_remove_entities" global=true hide=true}
+```mojo {doctest="guide_add_remove_entities" global=true}
 from larecs import World, Filter, SystemContext, KernelContext
 
 @fieldwise_init
@@ -35,7 +35,7 @@ def place_batch(rows: KernelContext[Filter().include[Position]()]):
         row.get[Position]().x = Float64(row.idx)
 ```
 
-```mojo {doctest="guide_add_remove_entities" global=true hide=true}
+```mojo {doctest="guide_add_remove_entities" global=true}
 def main() raises:
     var world = World[Position, Velocity]()
 ```
@@ -71,6 +71,9 @@ exactly the new rows and owning the world's structural-change lock:
     created.run[place_batch]()
     created^.release()
 ```
+
+`place_batch` sets each `x` to `row.idx`. The index restarts at zero for
+each selected host range, so it is not unique across the batch.
 
 Use a `with` block to release the lock automatically, including when an error
 or early return exits the block:

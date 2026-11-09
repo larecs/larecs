@@ -13,16 +13,15 @@ stable 1.0.0 release. After that release, public APIs follow semantic
 versioning unless they are explicitly marked experimental. Device execution is
 currently such an experimental API.
 
-## Features
+To build your first simulation, [install Larecs](guide/installation) and
+follow [Your first simulation](start/first_simulation). Two further tutorials
+extend the same particles with
+[creation and removal](start/growing_simulation) and
+[shared configuration](start/shared_configuration).
 
-- Clean and simple API
-- High performance due to archetypes and Mojo's compile-time programming
-- Column storage: each archetype stores every component type in its own
-  contiguous column
-- Kernels that run sequentially on the host, or experimentally in parallel
-  host chunks or on an accelerator
-- Compile-time checks thanks to usage of parameters
-- Native support for [resources](https://mlange-42.github.io/arche/guide/resources/) and scheduling.
-- Tested and benchmarked
-- Packaged dependencies are installed automatically
-- More features coming soon...
+The guides explain each task in depth:
+[entities and components](guide/data_model),
+[systems and kernels](guide/systems_kernels),
+[batch creation and removal](guide/structural_changes), and
+[resources](guide/shared_resources). The [Reference](larecs) lists every
+public declaration.
