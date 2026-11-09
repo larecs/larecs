@@ -8,12 +8,7 @@ summary: Larecs🌲 – Lightweight archetype-based ECS for Mojo.
 
 Larecs🌲 is a performance-oriented archetype-based ECS for [Mojo](https://www.modular.com/mojo)🔥.
 Its architecture is based on the Go ECS [Arche](https://github.com/mlange-42/arche).
-Larecs 1.0 is currently in beta, so public APIs may still change before the
-stable 1.0.0 release. After that release, public APIs follow semantic
-versioning unless they are explicitly marked experimental. Device execution is
-currently such an experimental API.
-
-To build your first simulation, [install Larecs](guide/installation) and
+To build your first simulation, [install Larecs](start/installation) and
 follow [Your first simulation](start/first_simulation). Two further tutorials
 extend the same particles with
 [creation and removal](start/growing_simulation) and

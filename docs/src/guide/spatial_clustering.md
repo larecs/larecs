@@ -2,6 +2,8 @@
 type = "docs"
 title = "Spatial clustering"
 weight = 85
+[sidebar]
+exclude = true
 +++
 
 Spatial clustering groups equal-key entities together in memory **within each
@@ -132,6 +134,8 @@ enumeration or an index and distance checks. The dirty-maintenance benchmark com
 updates, tracking, classification, sorting, movement, and location repair against
 explicit full rebuilds; it does not establish a spatial workload speedup.
 
+
+{{< html >}}<span id="cluster-local-partition-blocks"></span>{{< /html >}}
 
 ## Growable cluster-local partitions
 

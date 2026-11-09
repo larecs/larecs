@@ -35,11 +35,7 @@ jobs:
               - 'examples/**'
               - 'README.md'
               - 'modo.yaml'
-              - 'scripts/docs.py'
-              - 'scripts/*api_reference.py'
-              - 'scripts/run_doctests.sh'
-              - 'scripts/pixi.toml'
-              - 'scripts/pixi.lock'
+              - 'scripts/**'
               - '.github/workflows/publish.yml'
 
   publish:
@@ -60,34 +56,25 @@ jobs:
         run: |
           curl -ssL https://pixi.sh/install.sh | bash
 
-      - name: Run AoS benchmarks
-        run: |
-          cd benchmark/plots
-          pixi run plots
-
-      - name: Archive benchmark results
-        uses: actions/upload-artifact@v4
-        with:
-          name: aos-benchmark
-          path: benchmark/plots/results
-
-      - name: Copy benchmark results to docs
-        run: |
-          mkdir -p docs/src/guide/images
-          cp benchmark/plots/results/aos_benchmark.svg docs/src/guide/images/
-
       - name: Use the preview base URL for pull requests
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           echo "HUGO_BASEURL=https://larecs.github.io/larecs/${PREVIEW_UMBRELLA}/pr-${{ github.event.number }}/" >> "$GITHUB_ENV"
 
-      - name: Build docs # Includes 'mojo doc', 'modo build', doctests via mogo-tester, and 'hugo -s docs/site'
+      - name: Verify documentation publishing
         run: |
           pixi install --locked
-          pixi run build-docs
+          pixi install --locked --manifest-path scripts/pixi.toml
+          pixi run --manifest-path scripts/pixi.toml playwright install --with-deps chromium
+          pixi run verify-docs
 
-      - name: Check API reference integration
-        run: pixi run --manifest-path scripts/pixi.toml test-api-reference
+      - name: Archive documentation verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-verification
+          path: output/docs
+          if-no-files-found: error
 
       - name: Archive Doc-tests
         uses: actions/upload-artifact@v4

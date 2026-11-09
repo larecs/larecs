@@ -2,6 +2,7 @@ baseURL: https://larecs.github.io/larecs/
 languageCode: en-us
 title: Larecs🌲
 disablePathToLower: true
+disableKinds: [taxonomy, term]
 
 markup:
   highlight:
@@ -38,16 +39,16 @@ menu:
       weight: 102
   main:
     - identifier: start
-      name: Get started
+      name: Start
       pageRef: /start
       weight: 0
     - identifier: guide
-      name: User guide
+      name: Guides
       pageRef: /guide
       weight: 1
-    - identifier: larecs
-      name: API
-      pageRef: /larecs
+    - identifier: reference
+      name: Reference
+      pageRef: /reference
       weight: 2
     - name: Search
       weight: 3
@@ -60,6 +61,8 @@ menu:
         icon: github
 
 params:
+  navbar:
+    displayLogo: false
   search:
     enable: true
     type: flexsearch

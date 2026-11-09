@@ -126,10 +126,11 @@ defines the bounded CPU gate and per-run evidence.
 both targets. The current host-only lexical closure form and device transfer limits
 leave gaps beyond the heap-backed resource work above.
 
-- [ ] Define how host-local closure values or an equivalent explicit binding
-  reach device kernels without requiring a second kernel body.
-- [ ] Compile and execute the same representative kernels on CPU and actual
-  GPU hardware; document type restrictions and remaining gaps.
+- [x] Provide explicit read-only and mutable capture bindings so one kernel
+  body runs on host and device; lexical closures remain sequential-host-only.
+- [x] Compile and execute the checked movement, capture, portable-resource, and
+  copy-reuse particle stages on host and Apple M4 with Mojo 1.0.0. The execution
+  guides and compatibility reference state the remaining type restrictions.
 
 ## Unscheduled — no release target
 
@@ -167,7 +168,7 @@ no safety guarantee.
 - [ ] Extend Apple GPU support to ordered add/subtract, strong CAS, and guards
   while preserving their contracts; the locked compiler lacks strong CAS and
   acquire-release read-modify-write ordering.
-- [ ] Publish user guides when the API compiles and validation passes; keep
+- [x] Publish guides for the validated standalone primitives; keep
   exchange, wider/floating/bitwise atomics, blocking waits, and collective APIs
   outside the initial scope until their semantics and backend support are designed.
 

@@ -133,28 +133,14 @@ once conda-forge ships an `ld64` that understands the new stubs.
 
 ## API reference generation
 
-Run the documentation build from the repository root:
+Run `pixi run verify-docs` from the repository root before publishing. It runs
+strict compiler/Modo/Hugo generation, checked programs and negative diagnostics,
+figure export comparisons, site-wide links and anchors, export/source checks,
+preview/browser fixtures, and clean reproducibility checks. `pixi run build-docs`
+is the shorter generation and content-check cycle.
 
-```sh
-pixi run build-docs
-pixi run --manifest-path scripts/pixi.toml test-api-reference
-```
-
-The build generates declarations with `mojo doc`, renders the full module tree
-with Modo, and writes `docs/site/data/api.json` from those declarations and the
-package initializer's imports. Hugo resolves `api` shortcodes through that map;
-an unknown name fails the build. The final check rejects missing symbol pages,
-method/overload anchors and broken links in the curated reference. The additional
-integration checks exercise root aliases, module-only symbols, export drift,
-constraints, exact declarations, redirects and revision-pinned source links.
-
-Keep the initializer's `Exports:` list aligned with its imports. To link a
-module-only symbol, use its defining path, for example
-`{{< api component.ComponentType >}}`. Short names resolve when unambiguous;
-this does not imply that a symbol is imported at package root. Generated source
-links use the checkout's HEAD revision, so build a committed checkout when
-publishing. Generated Markdown, metadata and HTML are disposable build outputs.
-
-Missing-description and unresolved-reference warnings from Modo remain visible;
-this build does not enable blanket strict mode. Compiler out-result descriptions
-belong in `Returns`, because `mojo doc` does not classify them as input arguments.
+[Build documentation and figures](src/inside/development/documentation.md)
+records supported environments, browser setup, the strict-warning transition,
+retired doctest exclusions, and source/generated boundaries. Keep the package
+initializer's `Exports:` list aligned with imports. Document `out` results under
+`Returns:`, because the compiler does not classify them as input arguments.

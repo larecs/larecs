@@ -1,6 +1,6 @@
 +++
 type = "docs"
-title = "User guide"
+title = "Guides"
 weight = -1
 
 [sidebar]

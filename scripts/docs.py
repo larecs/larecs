@@ -1,14 +1,21 @@
 import argparse
 import asyncio
+import hashlib
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 from importlib.metadata import version
 from pathlib import Path
 
-from check_api_reference import check
+from api_reference import build_reference
+from build_figures import build as build_figures
+from check_docs import Site, check
+from docs_redirects import write_case_redirects
+
+ROOT = Path(__file__).resolve().parent.parent
 
 # modo does not set a nonzero exit code when one of its pre-run, pre-build,
 # pre-test, post-test, or post-build scripts fails (observed with modo
@@ -18,6 +25,8 @@ from check_api_reference import check
 # a failing doctest) pass silently. Scanning the output for this line is
 # the only way to catch that.
 _MODO_SCRIPT_ERROR_RE = re.compile(rb"^Error: in script \S+: exit status \d+")
+_DOC_WARNING_RE = re.compile(rb"^(?:WARNING:|WARN\s|warning:|[^:\n]+:\d+:\d+: warning:)")
+_ANSI_RE = re.compile(rb"\x1b\[[0-9;]*m")
 
 
 async def _relay(stream: asyncio.StreamReader, out) -> bool:
@@ -28,18 +37,19 @@ async def _relay(stream: asyncio.StreamReader, out) -> bool:
         out: The file object (e.g. `sys.stdout`) to relay lines to.
 
     Returns:
-        Whether a modo pre-/post-processing script error line was seen.
+        Whether a Modo hook failure or documentation warning was seen.
     """
-    saw_script_error = False
+    saw_reported_error = False
     while True:
         line = await stream.readline()
         if not line:
             break
         out.buffer.write(line)
         out.flush()
-        if _MODO_SCRIPT_ERROR_RE.match(line):
-            saw_script_error = True
-    return saw_script_error
+        diagnostic = _ANSI_RE.sub(b"", line)
+        if _MODO_SCRIPT_ERROR_RE.match(diagnostic) or _DOC_WARNING_RE.match(diagnostic):
+            saw_reported_error = True
+    return saw_reported_error
 
 
 async def _run(args, cwd) -> tuple[int, bool]:
@@ -51,7 +61,7 @@ async def _run(args, cwd) -> tuple[int, bool]:
 
     Returns:
         A tuple of the process's exit code and whether a modo
-        pre-/post-processing script error line was seen in its output.
+        hook failure or documentation warning was seen in its output.
     """
     proc = await asyncio.create_subprocess_exec(
         *args,
@@ -76,19 +86,19 @@ async def _run(args, cwd) -> tuple[int, bool]:
         raise
 
 
-def _check(returncode: int, script_error: bool, description: str) -> None:
+def _check(returncode: int, reported_error: bool, description: str) -> None:
     """Exits the process if a command failed.
 
     Args:
         returncode: The command's exit code.
-        script_error: Whether a modo pre-/post-processing script error was
-            detected in the command's output (see `_MODO_SCRIPT_ERROR_RE`).
+        reported_error: Whether a hook failure or documentation warning was
+            detected in the command's output.
         description: A short label for the command, used in the error message.
     """
-    if returncode or script_error:
+    if returncode or reported_error:
         print(
             f"error: {description} failed"
-            f" (exit code {returncode}, modo script error: {script_error})",
+            f" (exit code {returncode}, documentation diagnostics: {reported_error})",
             file=sys.stderr,
         )
         sys.exit(returncode or 1)
@@ -121,19 +131,56 @@ def _modo_executable() -> str:
     return str(executable)
 
 
-async def build_docs(watch=False) -> tuple[int, bool]:
+async def build_docs(watch=False, bare=False) -> tuple[int, bool]:
     larecs_dir = Path(__file__).parent.parent
 
     args = [_modo_executable(), "build"]
     if watch:
         args.append("--watch")
+    if bare:
+        args.append("--bare")
 
     return await _run(args, cwd=larecs_dir)
 
 
 async def build_static_site(hugo_site_dir) -> tuple[int, bool]:
     larecs_dir = Path(__file__).parent.parent
-    return await _run(["hugo", "-s", hugo_site_dir], cwd=larecs_dir)
+    shutil.rmtree(larecs_dir / hugo_site_dir / "public", ignore_errors=True)
+    result = await _run(["hugo", "-s", hugo_site_dir, "--panicOnWarning"], cwd=larecs_dir)
+    if not any(result):
+        site = Site(larecs_dir)
+        write_case_redirects(larecs_dir, site.public, site.base)
+    return result
+
+
+def generated_hashes() -> dict[str, str]:
+    """Hash disposable outputs at a fixed revision and deployment URL."""
+    paths = [ROOT / "docs/src/larecs.json", ROOT / "docs/site/data/api.json"]
+    for directory in ("docs/site/content", "docs/test", "docs/site/public"):
+        paths.extend(path for path in (ROOT / directory).rglob("*") if path.is_file())
+    return {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted(paths)}
+
+
+async def verify_reproduction() -> None:
+    """Regenerate from clean outputs and compare compiler, Markdown, tests and HTML."""
+    before = generated_hashes()
+    for directory in ("docs/site/content", "docs/test", "docs/site/public"):
+        shutil.rmtree(ROOT / directory)
+    for path in ("docs/src/larecs.json", "docs/site/data/api.json"):
+        (ROOT / path).unlink()
+    result = await _run(["pixi", "run", "--manifest-path", "pixi.toml", "mojo", "doc",
+                         "-o", "docs/src/larecs.json", "src/larecs"], cwd=ROOT)
+    _check(*result, "clean compiler JSON")
+    _check(*(await build_docs(bare=True)), "clean Modo generation")
+    build_reference()
+    _check(*(await build_static_site("docs/site")), "clean Hugo generation")
+    check(ROOT)
+    after = generated_hashes()
+    changed = [path for path in before.keys() | after.keys() if before.get(path) != after.get(path)]
+    if changed:
+        raise ValueError(f"Non-reproducible documentation outputs: {sorted(changed)}")
+    print(f"Verified byte-identical clean generation of {len(after)} files")
 
 
 async def serve_docs(hugo_site_dir) -> tuple[int, bool]:
@@ -143,17 +190,25 @@ async def serve_docs(hugo_site_dir) -> tuple[int, bool]:
 
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["build", "serve", "watch"], default="build")
+    parser.add_argument("command", choices=["build", "verify", "serve", "watch"], default="build")
     args = parser.parse_args()
 
     match args.command:
-        case "build":
-            returncode, script_error = await build_docs()
-            _check(returncode, script_error, "modo build")
+        case "build" | "verify":
+            returncode, reported_error = await build_docs()
+            _check(returncode, reported_error, "modo build")
+            build_figures(check=True)
 
-            returncode, script_error = await build_static_site("docs/site")
-            _check(returncode, script_error, "hugo build")
+            returncode, reported_error = await build_static_site("docs/site")
+            _check(returncode, reported_error, "hugo build")
             check(Path(__file__).parent.parent)
+            if args.command == "verify":
+                result = await _run([sys.executable, "check_docs_browser.py"], cwd=Path(__file__).parent)
+                _check(*result, "documentation browser checks")
+                result = await _run([sys.executable, "-m", "unittest", "test_api_reference", "test_docs"],
+                                    cwd=Path(__file__).parent)
+                _check(*result, "documentation integration checks")
+                await verify_reproduction()
 
         case "watch":
             # Both commands are long-running, but either one must be able to
@@ -177,8 +232,8 @@ async def main():
                     _check(*completed_result, "hugo server")
 
         case "serve":
-            returncode, script_error = await serve_docs("docs/site")
-            _check(returncode, script_error, "hugo server")
+            returncode, reported_error = await serve_docs("docs/site")
+            _check(returncode, reported_error, "hugo server")
 
 
 if __name__ == "__main__":

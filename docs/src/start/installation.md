@@ -2,6 +2,7 @@
 type = "docs"
 title = "Install Larecs"
 weight = 1
+aliases = ["/guide/installation/"]
 +++
 
 Install the repository's locked Pixi environment and run the first particle

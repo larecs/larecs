@@ -19,7 +19,7 @@ components and returns its handle.
 ## Define components
 
 A component is a struct that conforms to
-[`ComponentType`](../../larecs#aliases), which requires `Copyable` and
+{{< api component.ComponentType >}}, which requires `Copyable` and
 `Deinitable`. `Copyable, Movable` satisfies both. An entity holds at most one
 value of each component type.
 

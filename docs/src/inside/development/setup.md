@@ -6,7 +6,7 @@ weight = 1
 
 Use a repository checkout to build Larecs and check a change against its locked
 toolchain. The supported Pixi platforms are Linux x86-64 and macOS Apple Silicon.
-Application installation has a separate [guide](../../../guide/installation).
+Application installation has a separate [guide](../../../start/installation).
 
 ## Install and smoke-test
 

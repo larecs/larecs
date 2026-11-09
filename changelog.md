@@ -67,6 +67,12 @@
 
 ### Changed
 
+- Publish task-based Start, Guides, and Reference navigation, with Architecture
+  and Development under Inside Larecs. Preserve incoming guide/API links and
+  anchors, show development/experimental context, and gate publication on
+  strict generation, checked examples, links, search, responsive layouts,
+  figure exports, and reproducible outputs.
+
 - Replace mutation-result start-index iteration with bounded `LockedEntityRange`
   storage adapters, preserving read-only queries, independent cursor/lock copies,
   and shared immutable membership metadata. Use `SystemContext` selections for

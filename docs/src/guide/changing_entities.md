@@ -2,6 +2,8 @@
 type = "docs"
 title = "Changing entities"
 weight = 30
+[sidebar]
+exclude = true
 +++
 
 Entities may be changed by altering the values / attributes
