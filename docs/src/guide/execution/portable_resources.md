@@ -118,3 +118,6 @@ cover the hooks and atomic slot-reservation pattern.
 | Adapter finalizer raises | Published outputs remain; the invocation is not a transaction. See [device failure behavior](../device#account-for-transfers-and-completion). |
 
 {{< example file="particles/portable_resources.mojo" full=true >}}
+
+[Binding internals](../../../inside/architecture/transfers#sources-and-target-local-views)
+explains leases, adapter descriptors, and source/view lifetimes.

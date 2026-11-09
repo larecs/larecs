@@ -107,3 +107,6 @@ check transfer records and bytes separately.
 this optimization.
 
 {{< example file="particles/copy_reuse.mojo" full=true >}}
+
+[Device-copy validity](../../../inside/architecture/transfers#device-copy-validity)
+explains storage identity, store incarnations, packed offsets, and failure invalidation.

@@ -541,7 +541,7 @@ valid device addresses and pointee interpretation.
 There is no adapter factory or instance. Registration happens automatically on
 `add` and insert-on-`set`; source types identify bindings, so two resources may
 share the same view type. A wrapper can adapt a third-party owner. See the
-[compiled grid example](../../design/research/resource-view-probe.mojo).
+{{< repo "docs/design/research/resource-view-probe.mojo" "historical grid probe" >}}.
 
 Adapters without mutation support accept only `read`, including on the host;
 `Resources[AdaptedSource]()` and mutable declarations fail compilation.

@@ -155,7 +155,7 @@ root. Its PASS covers host spatial execution, not device spatial validation.
 | Unexpected placement after raw writes | Mark affected live identities or fully invalidate, then maintain. Do not reuse escaped references after maintenance. |
 
 The [spatial reference](../../../reference/spatial_sync) links exact declarations;
-the [partition benchmark](../../benchmarks#partitioned-storage-comparison)
+the [partition benchmark](../../../inside/development/reports/partitions#partitioned-storage-comparison)
 records scoped measurements rather than a general speed guarantee.
 
 {{< example file="particles/spatial.mojo" full=true >}}

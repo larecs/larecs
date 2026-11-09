@@ -88,3 +88,6 @@ selection, and has no `run` method. Inside systems, use
   compares selections with queries and entity handles.
 - [Adding and removing entities](../adding_and_removing_entities) shows the
   individual storage operations.
+
+[Structural transitions](../../inside/architecture/storage#structural-transitions-and-identity)
+traces typed movement, swap-removal, and entity-location repair.

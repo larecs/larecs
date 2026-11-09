@@ -207,12 +207,12 @@ not change its membership. Release it before maintenance. Empty cluster results
 still own a lock. This is a key lookup, not a distance or neighbor query.
 
 Partition mode is opt-in and row reordering remains the default. Measure the
-[paired partition benchmark](benchmarks.md#partitioned-storage-comparison)
+[paired partition benchmark](../../inside/development/reports/partitions#partitioned-storage-comparison)
 against your entity counts, cell occupancy, component widths, and maintenance
 cadence. Many sparse cells can cost much more metadata and allocations, and
 ordinary scans pay traversal/binding cost per cluster store. Active maintenance
 still copies identity-capacity keys and rebuilds a temporary cluster directory; cluster
 selection currently scans store metadata. Empty interior slots and directory
 capacity retain high-water metadata. Structural-heavy frames still perform full
-classification. See [decision 0014](../../design/decisions/0014-growable-cluster-stores.md)
+classification. See {{< repo "docs/design/decisions/0014-growable-cluster-stores.md" "decision 0014" >}}
 for guarantees and limits.

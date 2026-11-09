@@ -106,3 +106,6 @@ or invent a `context.sync` binding. Structural locks and resource leases protect
 invocation lifetimes and do not make shared writes race-free.
 
 {{< example file="particles/shared_outputs.mojo" full=true >}}
+
+[Synchronization internals](../../../inside/architecture/synchronization) explains
+atomic scope, guard state, and why standalone views need target-local storage.
