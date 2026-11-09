@@ -65,7 +65,7 @@ count. Record compilation separately. For a comparison, keep compiler version,
 optimization flags, hardware, workload, and revision fixed, warm each variant,
 alternate their order, and collect repeated paired samples without competing
 jobs. Use optimized builds without tracing, debug info, or sanitizers for timing.
-Follow the [benchmark methodology](../../benchmarks#benchmark-methodology) for
+Follow the [benchmark methodology](../../../inside/development/benchmarks#benchmark-methodology) for
 uncertainty, retained evidence, and regression checks.
 
 ## Separate arithmetic from boundary costs
@@ -117,8 +117,8 @@ layout. Profile generated work before attributing a result to vectorization.
 Link measurements with their workload, hardware, compiler, revision, method,
 uncertainty, and excluded costs. The
 [host-dispatch investigation](https://github.com/larecs/larecs/blob/main/docs/design/research/host-thread-execution.md#measured-sequential-versus-threaded-calls),
-[partition comparison](../../benchmarks#partitioned-storage-comparison), and
-[resource execution report](../../benchmarks#resource-execution) provide scoped
+[partition comparison](../../../inside/development/reports/partitions#partitioned-storage-comparison), and
+[resource execution report](../../../inside/development/reports/resources#resource-execution) provide scoped
 evidence. They do not predict the best target or layout on another machine.
 
 | Problem | Next check |

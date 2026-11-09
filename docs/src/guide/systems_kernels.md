@@ -118,3 +118,7 @@ selections.
   kernels, and device execution.
 - {{< api HostStorage >}} and {{< api ArchetypeRowAccessor >}} document
   lower-level traversal.
+
+[Execution and ownership](../../inside/architecture/ownership) explains scheduler
+and context lifetimes; [queries and ranges](../../inside/architecture/iteration)
+explains cursor metadata and structural guards.

@@ -21,3 +21,6 @@ Each guide is an optional, independently runnable stage.
 [Compatibility and status](../../reference/compatibility) records the development
 version and experimental boundaries. [Errors and migration](../../reference/errors)
 indexes common failures; each stage gives its own restrictions and recovery steps.
+
+[Work mapping](../../inside/architecture/execution) explains physical ranges,
+threaded jobs, and packed grid-stride execution.

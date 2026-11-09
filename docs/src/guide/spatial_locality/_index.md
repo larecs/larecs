@@ -12,3 +12,6 @@ row ordering with opt-in growable cluster stores and exact maintained selection.
 For a classifier or maintenance contract, use the
 [spatial reference](../../reference/spatial_sync). The existing
 [spatial clustering page](../spatial_clustering) remains available.
+
+[Spatial maintenance internals](../../inside/architecture/spatial) explains dirty
+identity queues, classification plans, typed movement, and partition placement.

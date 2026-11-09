@@ -10,6 +10,14 @@ their physical placement.
 One contiguous row collection belonging to a logical archetype. Spatial
 partitioning can give one logical archetype multiple physical stores.
 
+**Component column**:
+A contiguous allocation of complete values of one component type in a physical
+store. Fields such as `Position.x/y` remain inside each component value.
+
+**Store incarnation**:
+A number assigned to each new physical store, never reused within its host
+storage. Device-copy records use it to distinguish recycled directory slots.
+
 **Kernel chunk**:
 A contiguous subset of one matching physical-store range or exact selected
 range, assigned to one kernel invocation.

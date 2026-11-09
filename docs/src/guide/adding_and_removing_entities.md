@@ -111,7 +111,7 @@ storage range has no `.run`, `.add`, `.remove`, or `.release` method.
 The beta concrete return type `LockedWorldEntityIterator` was renamed to
 `LockedEntityRange`; explicit `HostStorage.Iterator` specializations use
 `has_ranges=True` instead of `has_start_indices=True`. Inferred storage loops
-need no change. See [decision 0022](../../design/decisions/0024-locked-storage-ranges.md).
+need no change. See {{< repo "docs/design/decisions/0024-locked-storage-ranges.md" "decision 0024" >}}.
 
 ## Batch removal
 

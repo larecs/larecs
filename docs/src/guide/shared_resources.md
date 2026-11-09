@@ -71,3 +71,6 @@ as `ConfigureTime` does, rather than in the kernel.
 
 [Use portable resources](../execution/portable_resources) covers threaded and
 device restrictions and adapters for resources that own data.
+
+[Bindings, transfers, and revisions](../../inside/architecture/transfers) explains
+source leases, invocation-owned views, and publication.

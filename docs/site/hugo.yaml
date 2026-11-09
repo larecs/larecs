@@ -25,6 +25,17 @@ module:
       target: assets/examples
 
 menu:
+  sidebar:
+    - name: Inside Larecs
+      weight: 100
+      params:
+        type: separator
+    - name: Architecture
+      pageRef: /inside/architecture
+      weight: 101
+    - name: Development
+      pageRef: /inside/development
+      weight: 102
   main:
     - identifier: start
       name: Get started
