@@ -17,14 +17,10 @@ from docs_redirects import write_case_redirects
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# modo does not set a nonzero exit code when one of its pre-run, pre-build,
-# pre-test, post-test, or post-build scripts fails (observed with modo
-# 0.11.13): the process itself still exits 0, and only stderr shows
-# `Error: in script <phase>: exit status N`. Relying on the return code
-# alone therefore lets a broken doc build (e.g. `mojo doc` erroring out, or
-# a failing doctest) pass silently. Scanning the output for this line is
-# the only way to catch that.
-_MODO_SCRIPT_ERROR_RE = re.compile(rb"^Error: in script \S+: exit status \d+")
+# The packaged Modo 0.11.13 launcher can return zero after strict-mode or
+# hook failures. Native Modo reports a nonzero status for the same error.
+# Reject the diagnostic in either case, including errors without a warning.
+_MODO_ERROR_RE = re.compile(rb"^Error:")
 _DOC_WARNING_RE = re.compile(rb"^(?:WARNING:|WARN\s|warning:|[^:\n]+:\d+:\d+: warning:)")
 _ANSI_RE = re.compile(rb"\x1b\[[0-9;]*m")
 
@@ -37,7 +33,7 @@ async def _relay(stream: asyncio.StreamReader, out) -> bool:
         out: The file object (e.g. `sys.stdout`) to relay lines to.
 
     Returns:
-        Whether a Modo hook failure or documentation warning was seen.
+        Whether a Modo error or documentation warning was seen.
     """
     saw_reported_error = False
     while True:
@@ -47,7 +43,7 @@ async def _relay(stream: asyncio.StreamReader, out) -> bool:
         out.buffer.write(line)
         out.flush()
         diagnostic = _ANSI_RE.sub(b"", line)
-        if _MODO_SCRIPT_ERROR_RE.match(diagnostic) or _DOC_WARNING_RE.match(diagnostic):
+        if _MODO_ERROR_RE.match(diagnostic) or _DOC_WARNING_RE.match(diagnostic):
             saw_reported_error = True
     return saw_reported_error
 
@@ -60,8 +56,8 @@ async def _run(args, cwd) -> tuple[int, bool]:
         cwd: The working directory to run the command in.
 
     Returns:
-        A tuple of the process's exit code and whether a modo
-        hook failure or documentation warning was seen in its output.
+        A tuple of the process's exit code and whether a Modo error or
+        documentation warning was seen in its output.
     """
     proc = await asyncio.create_subprocess_exec(
         *args,
@@ -91,7 +87,7 @@ def _check(returncode: int, reported_error: bool, description: str) -> None:
 
     Args:
         returncode: The command's exit code.
-        reported_error: Whether a hook failure or documentation warning was
+        reported_error: Whether a Modo error or documentation warning was
             detected in the command's output.
         description: A short label for the command, used in the error message.
     """

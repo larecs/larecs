@@ -7,12 +7,13 @@ import json
 import subprocess
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from api_reference import ROOT, source_locations
 from check_docs import Page, Site, check
 from doc_examples import coverage, inventory, regions
-from docs import _modo_executable, _relay, _DOC_WARNING_RE, _check
+from docs import _modo_executable, _relay, _run, _DOC_WARNING_RE, _check
 
 
 class ExampleTests(unittest.TestCase):
@@ -100,14 +101,21 @@ class PublishingTests(unittest.TestCase):
             with self.subTest(missing_description=missing), tempfile.TemporaryDirectory() as directory:
                 fixture = Path(directory) / "fixture.json"
                 fixture.write_text(json.dumps(data))
-                result = subprocess.run(
-                    [_modo_executable(), "build", "--bare", "--input", str(fixture),
-                     "--output", str(Path(directory) / "content"), "--tests", ""],
-                    cwd=ROOT, capture_output=True, text=True,
-                )
-                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                buffer = io.BytesIO()
+                with io.TextIOWrapper(buffer) as output:
+                    with redirect_stdout(output), redirect_stderr(output):
+                        result = asyncio.run(_run(
+                            [_modo_executable(), "build", "--bare", "--input", str(fixture),
+                             "--output", str(Path(directory) / "content"), "--tests", ""],
+                            cwd=ROOT,
+                        ))
+                        with self.assertRaises(SystemExit):
+                            _check(*result, "Modo negative fixture")
+                    output.flush()
+                    diagnostic = buffer.getvalue().decode()
+                self.assertTrue(result[1], diagnostic)
                 self.assertIn("missing docstrings" if missing else "Can't resolve cross ref",
-                              result.stdout + result.stderr)
+                              diagnostic)
 
     def test_hugo_example_and_warning_failures(self):
         fixture = ROOT / "docs/site/content/negative-fixture.md"
@@ -132,7 +140,7 @@ class PublishingTests(unittest.TestCase):
             fixture.unlink(missing_ok=True)
             shortcode.unlink(missing_ok=True)
 
-    def test_wrapper_propagates_script_errors_and_doc_warnings(self):
+    def test_wrapper_propagates_errors_and_doc_warnings(self):
         async def relay(line):
             stream = asyncio.StreamReader()
             stream.feed_data(line)
@@ -140,10 +148,17 @@ class PublishingTests(unittest.TestCase):
             return await _relay(stream, io.TextIOWrapper(io.BytesIO()))
 
         for line in (b"Error: in script post-test: exit status 1\n", b"WARNING: broken cross ref\n",
+                     b"Error: Can't resolve cross ref 'UnknownDocumentationSymbol'\n",
+                     b"Error: missing docstrings in strict mode\n",
                      b"WARN  intentional documentation warning\n",
                      b"\x1b[33mWARNING: colored diagnostic\x1b[0m\n",
                      b"src/larecs/example.mojo:2:3: warning: undocumented parameter\n"):
             self.assertTrue(asyncio.run(relay(line)))
+
+        # The packaged Linux launcher returns zero for these errors. Its status
+        # cannot turn a diagnosed generator failure into a publishing success.
+        with self.assertRaises(SystemExit), redirect_stderr(io.StringIO()):
+            _check(0, asyncio.run(relay(b"Error: generator failed\n")), "Modo")
 
     def test_navigation_status_and_search_contracts(self):
         public = ROOT / "docs/site/public"

@@ -80,9 +80,10 @@ Strict checks now apply to the complete generated tree. Missing alias/field
 descriptions and malformed cross-references were repaired before enabling
 Modo's `strict: true`. Declarations are URL-encoded between Modo and Hugo so
 compiler-generated backticks cannot become false cross-references; the exact
-compiler declaration remains available. The wrapper rejects documentation
-warnings and Modo hook failures even when a tool returns zero. Hugo also runs
-with `--panicOnWarning`; its template warnings are caught by the wrapper.
+compiler declaration remains available. The wrapper rejects Modo errors,
+documentation warnings, and hook failures even when the packaged Linux launcher
+returns zero. Hugo also runs with `--panicOnWarning`; the wrapper rejects its
+template warnings.
 
 All eight historical doctest exclusions are retired:
 
