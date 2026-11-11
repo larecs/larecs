@@ -10,7 +10,7 @@
 
 {{end -}}
 ```mojo
-{{.Signature}}{{if .Type}}: {{.Type}}{{end}} = {{.Value}}
+{{.Signature}}{{if ne .Value "fn_literal"}}{{if .Type}}: {{.Type}}{{end}} = {{.Value}}{{end}}
 ```
 
 {{if .Description}}{{.Description}}
