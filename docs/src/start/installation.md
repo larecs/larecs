@@ -6,7 +6,7 @@ aliases = ["/guide/installation/"]
 +++
 
 Install the repository's locked Pixi environment and run the first particle
-program. Then use Larecs from your own project, either as source or as a
+program. Then use Larecs from your own Pixi project, either as source or as a
 precompiled package.
 
 Larecs runs on Linux x86-64 and macOS on Apple Silicon. Larecs `1.0.0b1` is a
@@ -42,20 +42,23 @@ explains this program.
 
 ## Use the source from your own project
 
-Run your program with the repository's environment and pass the absolute path
-of `src` as an include directory. From the repository root:
+Create a Pixi project next to your clone, add the same dependencies, and pass
+the clone's `src` directory as an include path. From the directory that
+contains `larecs/`:
 
 ```sh
-larecs_root="$PWD"
-particle_project="$(mktemp -d)"
-cp examples/particles/movement.mojo "$particle_project/main.mojo"
-cd "$particle_project"
-pixi run --manifest-path "$larecs_root/pixi.toml" mojo run -I "$larecs_root/src" "$particle_project/main.mojo"
+pixi init my-simulation -c conda-forge -c https://repo.prefix.dev/max -c https://prefix.dev/tree-d
+cd my-simulation
+pixi add "mojo>=1.0.0,<1.1.0" "max>=26.5.0,<27" "mojo-tracy>=1.1.0,<2"
+cp ../larecs/examples/particles/movement.mojo main.mojo
+pixi run mojo run -I ../larecs/src main.mojo
 ```
 
-This runs the same program from a directory outside the repository. For
-completion and diagnostics in your editor, add the same `src` path to the Mojo
-language server's include directories.
+`main.mojo` starts as a copy of the first simulation and prints the same line;
+replace it with your own program. Your project resolves its own environment,
+so keep its version ranges in line with Larecs's `pixi.toml` when you update
+the clone. For completion and diagnostics in your editor, add `../larecs/src`
+to the Mojo language server's include directories.
 
 ## Use a precompiled package
 
