@@ -85,14 +85,15 @@ entity's handle. A query is read-only, even when its filter uses `include`; use
 a kernel to change values. `exclusive()` restricts a query to entities with
 exactly the listed components, so the last assertion counts only `marker`.
 
-A live query holds a structural lock, even after it is exhausted or when it
-matched nothing. Consume it in a short loop, or let it go out of scope, before
+A live query holds a structural lock until it ends;
+[empty and exhausted queries still hold it](../../reference/compatibility#empty-queries-and-selections-hold-structural-locks).
+Consume it in a short loop, or let it go out of scope, before
 you create or remove entities. A copy starts at the same position with its own
 cursor and lock; a move transfers the existing lock. The example copies the
 query to show this, and consumes both with `^` so their locks end before the
 scheduler takes the world. Do not keep a row accessor beyond its query or
 across structural changes. Structural locks protect references from
-invalidation; they are not thread mutexes.
+invalidation; [they are not mutexes](../../reference/compatibility#structural-locks-are-not-mutexes).
 
 ## Compare handles, queries, and selections
 

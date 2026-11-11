@@ -62,8 +62,8 @@ Selections are movable but not copyable.
 
 ## Empty and invalid batches
 
-- `add_entities` with `count=0` returns an empty selection that still holds a
-  lock.
+- `add_entities` with `count=0` returns an empty selection that
+  [still holds a lock](../../reference/compatibility#empty-queries-and-selections-hold-structural-locks).
 - Running a kernel on an empty selection never runs the kernel body.
 - A negative `count` raises.
 

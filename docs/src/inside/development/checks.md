@@ -47,7 +47,8 @@ declaration invariant; see the
 still fail. The particle programs probe both and print explicit device PASS or
 SKIP evidence. Some older GPU tests return early on unsupported targets while
 the file still reports PASS; inspect the guard and logs, rather than counting
-file passes as device coverage. `ExecutionBackend.DEVICE` itself never falls back.
+file passes as device coverage. `ExecutionBackend.DEVICE` itself has
+[no host fallback](../../../reference/compatibility#no-device-fallback).
 
 Record compiler/build, OS, processor/device, revision, executed path, assertions,
 and skips separately. The Linux/macOS CI matrix does not imply NVIDIA, AMD, or
