@@ -10,11 +10,11 @@ Look up import paths, call forms, permissions, and lifetimes here. Each linked d
 | Topic | Contracts |
 | --- | --- |
 | [Identity and world](identity) | Entity handles, component types, world ownership, storage |
-| [Filters and inspection](inspection) | Access modes, queries, row accessors, ranges and selections |
+| [Filters, queries and selections](inspection) | Access modes, queries, row accessors, ranges and selections |
 | [Systems and execution](execution) | Scheduler lifecycle, kernel calls, overloads and targets |
 | [Resources and captures](resources) | Shared values, adapted views, local bindings |
 | [Spatial APIs and synchronization](spatial_sync) | Classification, ordering, atomics and guarded values |
-| [Compatibility](compatibility) | Sequential host, threaded host and device restrictions |
+| [Compatibility and status](compatibility) | Sequential host, threaded host and device restrictions |
 | [Errors and migration](errors) | Failure effects, recovery and obsolete spellings |
 
 ## API scope and imports

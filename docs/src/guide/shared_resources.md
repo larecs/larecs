@@ -1,7 +1,8 @@
 +++
 type = "docs"
 title = "Share values with resources"
-weight = 5
+weight = 6
+next = "/guide/execution"
 +++
 
 Store a value that exists once per world, such as the step length, as a
@@ -10,7 +11,9 @@ resource, and let kernels and systems read or change it.
 code.
 
 {{< example file="particles/configuration.mojo" region="time" >}}
+
 {{< example file="particles/configuration.mojo" region="configuration" >}}
+
 {{< example file="particles/configuration.mojo" region="world" >}}
 
 `Time` and `Configuration` are resources. `world.resources.add` stores one

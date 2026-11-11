@@ -9,7 +9,9 @@ every entity that matches a filter. This page uses the movement code from
 [Your first simulation](../../start/first_simulation).
 
 {{< example file="particles/movement.mojo" region="kernel" >}}
+
 {{< example file="particles/movement.mojo" region="system" >}}
+
 {{< example file="particles/movement.mojo" region="scheduler" >}}
 
 `move` is the kernel, `Move` is the system that runs it, and the
@@ -26,7 +28,7 @@ components:
 | `read[T]()` | Entities with `T` | Read with `get` |
 | `write[T]()` | Entities with `T` | Write with `set` only |
 | `exclude[T]()` | Entities without `T` | None |
-| [`exclusive()`](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/filter.mojo#L177) | Only entities without further components | Unchanged |
+| {{< api Filter.exclusive "exclusive()" >}} | Only entities without further components | Unchanged |
 
 The kernel's {{< api KernelContext >}} exposes only the declared access.
 Calling `get` on a component the filter does not guarantee, or writing through
@@ -46,7 +48,7 @@ the results.
 
 {{< example file="particles/lifecycle.mojo" region="write_only" >}}
 
-[`Filter.write`](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/filter.mojo#L134)
+{{< api Filter.write >}}
 permits {{< api EntityAccessor.set >}} and rejects `get`. Set the component on
 every row the kernel visits; a later kernel can then read it.
 [Create and remove particles](../../start/growing_simulation) runs this kernel
@@ -64,8 +66,9 @@ both. Write-only values are not uploaded. See
 and then finalizes them. Within each phase, systems run in the order you added
 them.
 
-An error in a hook propagates out of `run`, and `run` does not guarantee that
-`finalize` runs afterwards. To step the simulation in several batches, call
+An error in a hook propagates out of `run`, and the remaining hooks do not run:
+if `initialize` or `update` raises, `finalize` is skipped. To step the
+simulation in several batches, call
 `initialize`, `update(steps=...)`, and `finalize` yourself.
 
 ## Inspect entities outside a kernel

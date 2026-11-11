@@ -43,9 +43,9 @@ adaptation of the thesis's device-memory figure.
 *Read access supplies input; write access schedules output publication.*
 
 Readable columns upload each selected span to its packed offset. Write-only
-columns allocate output without uploading old bytes, so kernels must initialize
-every processed row before reading it. After execution, only declared written
-columns download and scatter back. Resource and explicit-capture outputs use
+columns allocate output without uploading old bytes, so kernels must `set`
+every processed row. After execution, only declared written columns download
+and scatter back. Resource and explicit-capture outputs use
 the same invocation queue. Selection gaps stay untouched.
 
 `_TransferFrame` snapshots uploads in native host buffers and retains download

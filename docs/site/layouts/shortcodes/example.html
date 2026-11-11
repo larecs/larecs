@@ -60,7 +60,7 @@ fails the build.
     {{- $code = $code | append "" -}}
   {{- end -}}
 {{- end -}}
-{{- $highlighted := transform.Highlight (strings.Trim (delimit $code "\n") "\n") "mojo" -}}
+{{- $highlighted := partial "code-block.html" (strings.Trim (delimit $code "\n") "\n") -}}
 {{- if $full -}}
 <details class="example-program">
 <summary>Complete program: <code>examples/{{ $file }}</code></summary>

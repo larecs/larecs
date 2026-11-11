@@ -1,6 +1,7 @@
 ---
 title: Systems and execution
 type: docs
+weight: 3
 ---
 
 {{< api SystemContext.run >}} executes a kernel synchronously. For a complete thin kernel named `move`, use `context.run[move]()`. The [first simulation](../../start/first_simulation) defines its filter, components, resource, system and scheduler.

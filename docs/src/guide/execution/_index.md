@@ -1,13 +1,13 @@
 +++
 type = "docs"
 title = "Execution"
-weight = 6
+weight = 7
 +++
 
-Choose how a checked particle kernel receives data and where it runs. Complete
+Choose how a particle kernel receives data and where it runs. Complete
 [Your first simulation](../../start/first_simulation) and
 [Share time and configuration](../../start/shared_configuration) first.
-Each guide is an optional, independently runnable stage.
+Each guide is optional and has its own complete program.
 
 | Task | Result |
 | --- | --- |

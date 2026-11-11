@@ -131,7 +131,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
     Access it through `world.storage`, for example
     `var entity = world.storage.add_entity(Position(10.0, 20.0))`.
-    [Entities, components and the world](../../../guide/entities_components_world)
+    [Change one entity's components](../../../guide/single_entity)
     shows a complete program.
     """
 
@@ -1124,6 +1124,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         Raises:
             Error: If the [..entity.Entity] does not exist.
+            Error: If the entity does not have the component.
         """
         with Zone(
             function_name=(

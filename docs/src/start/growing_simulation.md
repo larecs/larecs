@@ -60,7 +60,8 @@ block ends, also on an error.
 After the block,
 {{< api HostStorage.remove_entities "context.world[].storage.remove_entities" >}}
 deletes every entity that has a `Position` and no `Velocity`. In this world,
-that is `marker`. `Spawn` leaves `update` empty because it does all its work
+that is `marker`. `context.world` is a pointer to the scheduler's world; `[]`
+dereferences it. `Spawn` leaves `update` empty because it does all its work
 once.
 
 ## Register Spawn before Move

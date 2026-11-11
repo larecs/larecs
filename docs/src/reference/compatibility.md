@@ -1,6 +1,7 @@
 ---
 title: Compatibility and status
 type: docs
+weight: 6
 ---
 
 This reference describes the development checkout, currently Larecs 1.0 beta. Public APIs may change before stable 1.0.0. After stable release, public APIs follow semantic versioning unless explicitly experimental. Threaded host and device execution, mutable resource adapters, and device-copy reuse are experimental.
@@ -20,9 +21,9 @@ Eligibility checks run independently of threaded worker count and fallback thres
 
 The defining contracts are {{< api SystemContext.run >}}, {{< api component.constrain_device_safe_components >}}, {{< api resource.constrain_device_safe_resources >}}, and {{< api DevicePassableResource >}}. Adapter-backed sources control their view and transfer lifecycle; a component's device eligibility does not establish a resource's eligibility.
 
-Readable device data uploads when the cached copy is stale. Write-only columns skip upload and must be fully written. Read-only reuse therefore depends on revision tracking, not merely on calling the same kernel again.
+By default, readable device data uploads on every call. With `world.reuse_device_copies(True)`, it uploads only when the cached copy is stale. Write-only columns skip upload and must be fully written. Read-only reuse therefore depends on revision tracking, not merely on calling the same kernel again.
 
-Device-copy reuse is off by default and never skips written output copy-back.
+Device-copy reuse never skips written output copy-back.
 Standalone atomic/guard primitives exist, with Apple device restrictions;
 automatic kernel synchronization bindings and deferred retries are unimplemented.
 The [execution guides](../../guide/execution) keep each restriction beside its

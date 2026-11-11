@@ -1,7 +1,6 @@
 """Moves particles with constant velocities for a fixed number of steps.
 
-This is the complete program of the "Your first simulation" tutorial. The
-`# region` and `# endregion` markers delimit the excerpts the tutorial shows.
+This is the complete program of the "Your first simulation" tutorial.
 """
 
 # region imports

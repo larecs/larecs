@@ -1,9 +1,10 @@
 ---
 title: Filters, queries and selections
 type: docs
+weight: 2
 ---
 
-{{< api Filter >}} combines membership and kernel permissions at compile time. The common form `Filter().include[Position].read[Velocity]()` requires `Position` and `Velocity`, grants read-write access to `Position`, and grants read-only access to `Velocity`. The trailing `()` constructs the final filter value.
+{{< api Filter >}} combines membership and kernel permissions at compile time. The common form `Filter().include[Position]().read[Velocity]()` requires `Position` and `Velocity`, grants read-write access to `Position`, and grants read-only access to `Velocity`. `include[Position]` names a filter type and `()` constructs it; the shorter spelling `Filter().include[Position].read[Velocity]()` builds the same filter.
 
 | API | Contract |
 | --- | --- |
@@ -12,7 +13,7 @@ type: docs
 | {{< api HostStorage.query >}} | `world.storage.query[filter]()` creates a read-only query holding a structural lock. Release it before structural mutations. |
 | {{< api ArchetypeRowAccessor >}} | A borrowed row view; `get_entity()` returns a durable handle. Component references remain tied to the row and storage lifetime. |
 | {{< api EntityRange >}} | A physical store index, first row, and row count; it describes a bounded interval, not a list of handles. |
-| {{< api SystemContext.add_entities >}} | `with context.add_entities[Position](count) as selected:` creates an exact scoped selection. Negative counts raise; zero creates an empty selection. |
+| {{< api SystemContext.add_entities >}} | `with context.add_entities(Position(0, 0), count=count) as selected:` creates an exact scoped selection. Negative counts raise; zero creates an empty selection. |
 | {{< api EntitySelection.run >}} | Runs only the selection's retained ranges. Exiting the scope releases its structural locks, including when the body raises. |
 
-Queries inspect rows; kernels mutate components according to their filter. Selections restrict kernel work to the rows returned by the structural operation. See [queries and iteration](../../guide/queries_iteration) for complete examples and query copy/move behavior.
+Queries inspect rows; kernels mutate components according to their filter. Selections restrict kernel work to the rows returned by the structural operation. See [inspect entities outside a kernel](../../guide/systems_kernels#inspect-entities-outside-a-kernel) for a complete example.

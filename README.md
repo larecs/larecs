@@ -4,18 +4,16 @@ Larecs🌲 is a performance-oriented archetype-based ECS for [Mojo](https://www.
 Its architecture is based on the Go ECS [Arche](https://github.com/mlange-42/arche).
 Larecs 1.0 is currently in beta, so public APIs may still change before the
 stable 1.0.0 release. After that release, public APIs follow semantic
-versioning unless they are explicitly marked experimental. Device execution is
-currently such an experimental API.
+versioning unless they are explicitly marked experimental. See
+[compatibility and status](https://larecs.github.io/larecs/reference/compatibility/)
+for the experimental features.
 
 ## Features
 
-- Clean and simple API
-- High performance due to archetypes and Mojo's compile-time programming
-- Compile-time checks thanks to usage of parameters
+- Archetype storage and compile-time access checks through Mojo parameters
 - Native support for [resources](https://larecs.github.io/larecs/guide/shared_resources/) and scheduling
 - Systems can run their component-processing kernels on the host or (experimentally) on an accelerator device via `SystemContext.run(..., backend=ExecutionBackend.DEVICE)`
 - Tested and benchmarked
-- More features coming soon...
 
 Larecs🌲 depends on [Tracy](https://github.com/wolfpld/tracy) via the
 [Mojo Tracy bindings](https://github.com/moseschmiedel/mojo-tracy) for its
@@ -134,8 +132,8 @@ such values qualify without declaring `TrivialRegisterPassable`. A resource
 that owns data, such as a `List`, can still reach threaded and device kernels
 through an adapter like `BufferResource`, which exposes a read-only view. A
 kernel that accesses an ineligible type fails to compile. See the
-[resources guide](https://larecs.github.io/larecs/guide/resources/) for
-details.
+[portable resources guide](https://larecs.github.io/larecs/guide/execution/portable_resources/)
+for details.
 
 Heap-owning components are a newer and less exercised path than plain-value
 components. Prefer plain values unless you need owned data.

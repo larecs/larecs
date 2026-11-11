@@ -1,6 +1,7 @@
 ---
 title: Identity and world
 type: docs
+weight: 1
 ---
 
 {{< api World >}} owns the component storage and shared resource storage for a fixed compile-time component type pack. Use `World[Position, Velocity]()` during setup, then pass `world^` to {{< api Scheduler >}} to transfer ownership. The [first simulation](../../start/first_simulation) supplies the complete definitions and an asserted result.

@@ -55,6 +55,23 @@ html,
   overflow-wrap: anywhere;
 }
 
+/* Scroll wide tables instead of shrinking cells to one letter per line. */
+.content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-wrap: break-word;
+}
+
+.content table th,
+.content table td {
+  min-width: 8rem;
+}
+
+.content table code {
+  overflow-wrap: anywhere;
+}
+
 .hextra-code-block pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -140,10 +157,10 @@ html:not(.dark) .chroma {
 /* Other */
 html:not(.dark) .chroma .x {}
 
-/* Error */
-html:not(.dark) .chroma .err {
-  color: #f6f8fa;
-  background-color: #82071e
+/* Error: the Mojo lexer flags valid newer syntax, such as `var *args`. */
+html:not(.dark) .highlight .chroma .err {
+  color: inherit;
+  background-color: transparent;
 }
 
 /* CodeLine */
@@ -563,9 +580,10 @@ html.dark .chroma {
 /* Other */
 html.dark .chroma .x {}
 
-/* Error */
-html.dark .chroma .err {
-  color: #f85149
+/* Error: the Mojo lexer flags valid newer syntax, such as `var *args`. */
+html.dark .highlight .chroma .err {
+  color: inherit;
+  background-color: transparent;
 }
 
 /* CodeLine */
