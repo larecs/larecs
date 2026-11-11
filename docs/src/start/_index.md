@@ -19,7 +19,7 @@ program in `examples/particles/`.
 4. [Share time and configuration](shared_configuration): set the step length
    from a configuration resource before each movement step.
 
-After the first program, [Entities, components and the world](../guide/entities_components_world)
+After the first program, [Model data with entities and components](../guide/data_model)
 explains how ECS identities and data fit the simulation.
 
 The guides cover each topic in depth:

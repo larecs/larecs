@@ -8,7 +8,7 @@ open = true
 +++
 
 Complete [Your first simulation](../start/first_simulation) before choosing a
-task. Each group below leads to implemented guides and checked particle stages.
+task. Each guide extends the particle simulation with one feature.
 
 | Group | Tasks |
 | --- | --- |

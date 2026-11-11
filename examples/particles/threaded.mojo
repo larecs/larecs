@@ -2,7 +2,6 @@
 
 from std.testing import assert_almost_equal, assert_equal
 from larecs import (
-    ExecutionBackend,
     Filter,
     KernelContext,
     Resources,

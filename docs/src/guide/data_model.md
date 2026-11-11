@@ -44,8 +44,9 @@ An {{< api Entity >}} is a copyable ID and generation, not the address of its
 components. Keep the handle to find the entity again, for example with
 {{< api HostStorage.get >}}.
 
-- Removing an entity invalidates its handle. Larecs increments the generation
-  before it reuses the ID, so an old handle never refers to a new entity.
+- Removing an entity invalidates its handle. Larecs increments the 32-bit
+  generation before it reuses the ID, so an old handle refers to a new entity
+  only after the same ID has been reused 2³² times.
 - A handle belongs to the world that created it. Do not use it with another
   world.
 - Structural changes can move an entity's components in memory. Keep the

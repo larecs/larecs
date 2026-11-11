@@ -31,9 +31,15 @@ Ordinary mutable resources, including the `Resources[Time]()` read-write
 default, are rejected even when a configuration uses sequential fallback.
 [Adapter views](../portable_resources) can expose owning read inputs.
 
-Opt in per invocation; configuring the world alone does not enable threading.
+Threading needs two settings. Opt in per kernel call with `threaded=True`:
 
 {{< example file="particles/threaded.mojo" region="system" >}}
+
+Then give the world a worker budget, as the driver below does with
+`World[Position, Velocity](execution_config=ThreadedExecutionConfig(workers=4, ...))`.
+The default configuration has one worker and a 65,536-row cutoff, so a
+`threaded=True` call on a default world, or on fewer matched rows than the
+cutoff, runs sequentially.
 
 `context.run[move, threaded=True]()` requires a nonraising thin kernel and HOST.
 Lexical closures, explicit captures, and `threaded=True` with DEVICE fail at
