@@ -10,8 +10,8 @@ the kernel runs sequentially on the host, and explicit capture slots when the
 same kernel must also run on a device. Threaded execution accepts neither; pass
 its inputs through read-only resources or components.
 
-Start with [Execute on a device](../device), which introduces thin kernels and
-the backend parameter.
+Start with [Execute on a device](../device), which introduces the backend
+parameter. [Run threaded host kernels](../threaded) defines thin kernels.
 
 ## Borrow locals with a closure on the host
 
@@ -39,8 +39,11 @@ The driver puts the two particles into different physical stores:
 The extra `Int32` component gives `climber` a different composition and
 therefore its own physical store; it does not change which entities `move`
 matches. Both particles move once, and `visits` counts rows across both calls.
-From the repository root, run
-`pixi run mojo run -I src examples/particles/lexical_closure.mojo`.
+From the repository root, run:
+
+```sh
+pixi run mojo run -I src examples/particles/lexical_closure.mojo
+```
 
 ## Declare explicit slots for a thin kernel
 
@@ -110,6 +113,8 @@ Keep references from capture slots and closure borrows inside the kernel; they
 must not outlive the call. The
 [capture reference](../../../reference/resources#explicit-captures) lists the
 remaining binding rules.
+
+## Complete program
 
 {{< example file="particles/lexical_closure.mojo" full=true >}}
 

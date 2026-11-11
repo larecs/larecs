@@ -22,9 +22,9 @@ The generated `run` entry keeps overload anchors, access constraints, preparatio
 | {{< api Scheduler >}} | Owns the world and registered systems; `run(steps)` initializes, updates for the requested steps, and finalizes. Individual lifecycle methods are also available. |
 | {{< api KernelContext >}} | Borrows the current component and resource view; iterate it for row access. [Row indices are not entity IDs](../compatibility#row-indices-are-not-entity-ids). |
 | {{< api ExecutionBackend >}} | Compile-time `HOST` or `DEVICE`; HOST is the default. |
-| {{< api ThreadedExecutionConfig >}} | Worker/chunk settings and minimum row threshold; configuration alone does not enable threading. |
+| {{< api ThreadedExecutionConfig >}} | Worker count, chunks per worker, and minimum row threshold; configuration alone does not enable threading. |
 
-See [Execution](../../guide/execution) for complete particle programs per target. Kernels cannot perform arbitrary structural changes while execution holds structural locks. [Limits on every target](../compatibility#limits-on-every-target) covers device fallback, locks of empty queries, row indices, and locks versus mutexes.
+See [Execution](../../guide/execution) for complete particle programs per target. Kernels cannot perform arbitrary structural changes while execution holds structural locks. [Cross-cutting limits](../compatibility#cross-cutting-limits) covers device fallback, locks of empty queries, row indices, and locks versus mutexes.
 
 ## Threaded execution
 
@@ -35,7 +35,7 @@ See [Execution](../../guide/execution) for complete particle programs per target
 | Kernel and target | A nonraising thin kernel on `ExecutionBackend.HOST`. Lexical closures, explicit captures, and `threaded=True` with `DEVICE` fail at compile time. {{< api EntitySelection.run >}} supports the same engine on exact selected ranges. |
 | Components | Accessed components must be pointer-free trivial plain values. Unaccessed owning components can coexist in the world. A `PlainValue` declaration admits opaque scalar-only `StaticTuple` or `InlineArray` fields; its author guarantees the whole representation is pointer-free and trivial. |
 | Ordinary resources | Explicit `read` access and a pointer-free plain value. Writable access, including the `Resources[T]()` read-write default, is rejected even when the configuration selects sequential execution. |
-| Adapted resources | Read views bind once on the coordinating caller and are shared until all workers join. Mutable views require `supports_concurrent_mutation`; the race-free write contract belongs to the adapter author. |
+| Portable resources | Read views bind once on the coordinating caller and are shared until all workers join. Mutable views require `supports_concurrent_mutation`; the race-free write contract belongs to the adapter author. |
 | Configuration | {{< api ThreadedExecutionConfig >}} defaults to one worker, four chunks per worker, and a 65,536 matched-row cutoff. `workers` is a submitted-task budget, not reserved cores or guaranteed OS-thread overlap. Worker and chunk counts must be positive and their product representable; the cutoff must be nonnegative, and zero disables it. |
 | Sequential path | With one worker, or fewer matched rows than the cutoff, calls keep whole-range sequential granularity after all eligibility checks. Empty matches invoke no kernel. |
 | Chunking | Each physical store or selected range splits independently. Workers claim chunks dynamically in unspecified order. Code outside the row loop runs once per chunk, `idx` starts at zero in each chunk, and `KernelContext.thread_count` is one. Dependencies between chunks need a later `run`. |
@@ -71,6 +71,6 @@ See [Execution](../../guide/execution) for complete particle programs per target
 
 - `read`, read-only queries, and `read` access in kernels preserve reusable copies. A mutable `get` advances the revision even when the caller only reads.
 - A component copy is reused only for the same store incarnation, contiguous row range, packed offset, and revision. Alternating filters or selections can change packed offsets and cause uploads of unchanged values.
-- Read-only adapted resources still validate and lease their sources; a current copy skips `prepare_device` and reuses its view. Mutable adapters always prepare. Explicit captures upload on every call.
+- Read-only portable resources still validate and lease their sources; a current copy skips `prepare_device` and reuses its view. Mutable adapters always prepare. Explicit captures upload on every call.
 - Failed invocations invalidate the copies they touched. A world copy starts with independent host owners and empty device records. Disabling reuse discards records; completion stays synchronous.
 - Invalidation does not permit mutation during a live invocation and does not make an invalid reference safe.

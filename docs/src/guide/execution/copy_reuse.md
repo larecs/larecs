@@ -39,8 +39,8 @@ the current one. In the sequence:
 
 - `read` calls leave the revisions unchanged, so the second step reuses every
   input.
-- `get` through mutable storage advances the revision even if you only read the
-  value, so the step after `get[Time]()` uploads `Time` again.
+- `get` through mutable storage advances the revision whether or not you
+  write, so the step after `get[Time]().delta = 0.5` uploads `Time` again.
 - A successful device call leaves the written `Position` current on both sides,
   so the next call can skip its upload too.
 
@@ -71,8 +71,13 @@ transfers, and on the device with reuse:
 
 {{< example file="particles/copy_reuse.mojo" region="check" >}}
 
-Every run ends at `(4.5, 7.0)`. From the repository root, run
-`pixi run mojo run -I src examples/particles/copy_reuse.mojo`. A PASS line for
+Every run ends at `(4.5, 7.0)`. From the repository root, run:
+
+```sh
+pixi run mojo run -I src examples/particles/copy_reuse.mojo
+```
+
+A PASS line for
 the device means both transfer policies ran on the accelerator and matched the
 host; a SKIP line means only the host sequence ran.
 
@@ -93,11 +98,13 @@ call uploads every input again. Calls stay synchronous either way.
 | Symptom | Cause and fix |
 | --- | --- |
 | The device reads old values | A write went through a reference kept from before a run, or a raw pointer. Reacquire references with `get` after each run, or invalidate the copy. Turn reuse off to confirm the diagnosis. |
-| Inputs still upload on most calls | Something advances their revisions: a mutable `get`, a writable kernel declaration, a structural change, spatial maintenance, or a filter or selection that packs rows at a different offset. Use `read` for observation. |
+| Inputs still upload on most calls | Something advances their revisions: a mutable `get`, a host or threaded kernel that declares a write, a structural change, spatial maintenance, or a filter or selection that packs rows at a different offset. Use `read` for observation. |
 | Written data still downloads | Larecs copies written outputs back after every call; reuse skips only uploads. |
 
 The [copy-reuse reference](../../../reference/execution#device-copy-reuse) lists
 every operation that advances a revision.
+
+## Complete program
 
 {{< example file="particles/copy_reuse.mojo" full=true >}}
 

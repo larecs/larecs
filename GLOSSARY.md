@@ -57,6 +57,11 @@ _Avoid_: Resource owner, when referring to the view.
 The host-owned value stored under a resource type. An adapter binds its kernel
 view for the selected target and declared access.
 
+**Portable resource**:
+A resource source that names a `ResourceAdapter`, which builds a kernel view
+for the selected target, so owning data can reach threaded and device kernels.
+_Avoid_: Adapted resource, adapter-backed resource.
+
 **Resource lease**:
 An invocation's retained access to a source, preventing reentrant lookup,
 replacement, or removal until completion. It does not synchronize workers'
@@ -78,6 +83,10 @@ eligible entity during spatial maintenance.
 **Cluster key**:
 An application classifier's UInt64 identity for a locality group. Equal keys
 identify a cluster; key proximity does not establish exact spatial neighbors.
+
+**Partition**:
+In partition mode (`partitioned=True`), the growable physical store that holds
+one cluster of one logical archetype.
 
 **Staging store**:
 A partitioned logical archetype's physical store for rows awaiting explicit

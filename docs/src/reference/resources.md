@@ -10,9 +10,9 @@ weight = 4
 | --- | --- |
 | {{< api ResourceStorage.add >}}, {{< api ResourceStorage.set >}}, {{< api ResourceStorage.remove >}} | Insert, replace or remove a value; generated entries state presence requirements and failure behavior. |
 | {{< api Resources >}} | {{< api Resources.read read >}} grants immutable access, {{< api Resources.write write >}} fresh output access, and {{< api Resources.read_write read_write >}} mutable access preserving existing contents. |
-| {{< api DevicePassableResource >}} | Owning resource sources opt into adapted kernel views. The selected view depends on declared access and execution target. |
+| {{< api DevicePassableResource >}} | Owning resource sources opt into adapter-built kernel views and become portable resources. The selected view depends on declared access and execution target. |
 | {{< api ResourceAdapter >}}, {{< api ResourceAccess >}} | Adapter protocol and `READ`, `WRITE`, `READ_WRITE` modes; fresh WRITE does not preserve prior contents. |
-| {{< api BufferResource >}}, {{< api ReadBuffer >}} | Buffer source and immutable view for adapter-backed resources. |
+| {{< api BufferResource >}}, {{< api ReadBuffer >}} | Buffer source and immutable view for portable resources. |
 | {{< api ResourceDeviceCache >}} | Allocation cache used by the adapter protocol; it does not replace a source's ownership or revision contract. |
 | {{< api Captures >}}, {{< api ReadCapture >}}, {{< api MutCapture >}} | Ordered declarations for explicitly bound host-local values, independent of resource types. |
 | {{< api read_capture >}}, {{< api mut_capture >}} | Bind borrowed values in declaration order; keep their owners alive through the synchronous call. |
@@ -49,9 +49,9 @@ A {{< api DevicePassableResource >}} source names a stateless {{< api ResourceAd
 
 ## Mutable adapters
 
-Mutable adapted resources are experimental.
+Mutable portable resources are experimental.
 
-- `supports_mutation` permits writable views on sequential host calls; `supports_concurrent_mutation` additionally permits them on threaded and device calls. Both are author guarantees: a source lease does not prevent races among the workers of one invocation.
+- `supports_mutation` permits writable views on sequential host calls; `supports_concurrent_mutation` additionally permits them on threaded and device calls. Both are author guarantees: a source lease does not prevent races among the workers of one invocation, because [leases are not mutexes](../compatibility#structural-locks-are-not-mutexes).
 - `write` selects fresh, adapter-initialized output; `read_write` preserves existing contents. The descriptor itself stays immutable; its methods control writes to backing storage.
 - Preparation and finalization run once per invocation, even for empty matches. Mutable adapters prepare on every call, even with device-copy reuse.
 - `Resources[T]()` without a mode means read-write and fails to compile for an adapter without `supports_mutation`.

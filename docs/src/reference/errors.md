@@ -9,12 +9,12 @@ Read each generated operation's **Raises** and **Constraints** before handling a
 | API or condition | Meaning and response |
 | --- | --- |
 | {{< api LarecsError >}} | Variant containing typed ECS errors and general `Error` failures. Inspect the specific error rather than assuming every failure is an invalid entity. |
-| {{< api EntityError >}}, {{< api ComponentError >}} | Invalid/stale entity or component membership errors. Recheck the handle generation and requested composition. |
+| {{< api EntityError >}}, {{< api ComponentError >}} | Invalid or stale entity, or wrong component membership. Recheck the handle generation and requested composition. |
 | {{< api WorldError >}} | Includes structural lock exhaustion, a locked world and negative batch counts. Release queries and selections before structural changes, even [empty ones](../compatibility#empty-queries-and-selections-hold-structural-locks); pass a nonnegative count. |
 | Device setup or synchronization failure | `run` raises; there is [no host fallback](../compatibility#no-device-fallback). Fix device availability or explicitly select HOST. See [device failure behavior](../execution#device-execution). |
-| Invalid resource/capture access | Check declarations, presence, access modes and binding order. Synchronization cannot repair a declaration mismatch. |
+| Invalid resource or capture access | Check declarations, presence, access modes and binding order. Synchronization cannot repair a declaration mismatch. |
 | `Threaded resources require explicit read access` (compile error) | Ordinary threaded resources must declare `read`; mutable adapters need concurrent-mutation support. See [threaded failures](../../guide/execution/threaded#failures-and-limits). |
-| `Cluster selection requires clean spatial maintenance` | Release live selections/queries and maintain explicitly before selecting the next cluster. See [spatial failures](../../guide/spatial_locality/maintain#failures-and-limits). |
+| `Cluster selection requires clean spatial maintenance` | Release live selections and queries and maintain explicitly before selecting the next cluster. See [spatial failures](../../guide/spatial_locality/maintain#failures-and-limits). |
 | Device reads stale data with reuse enabled | Reacquire mutable references after each run or invalidate after escaped writes. See [copy-reuse failures](../../guide/execution/copy_reuse#failures-and-limits). |
 | `TryAccess.is_acquired()` is false | The guard attempt is Busy. Record required unfinished work for a later pass; there is no automatic retry. See [shared-write alternatives](../../guide/execution/shared_writes). |
 

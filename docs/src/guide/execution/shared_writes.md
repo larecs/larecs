@@ -43,8 +43,13 @@ shown later on this page:
 
 {{< example file="particles/shared_outputs.mojo" region="check" >}}
 
-From the repository root, run
-`pixi run mojo run -I src examples/particles/shared_outputs.mojo`. The PASS
+From the repository root, run:
+
+```sh
+pixi run mojo run -I src examples/particles/shared_outputs.mojo
+```
+
+The PASS
 line means the host reduction and the host primitive checks succeeded.
 
 ## Variations
@@ -79,8 +84,9 @@ These primitives work on storage you own, outside the world:
   with `take`. Several readers may hold the value at once; a writer excludes
   everyone else. The guard releases at scope exit or through `release`.
 
-A false `is_acquired` means *Busy*: another guard holds the value. Larecs does
-not retry. Record the unfinished work for a later pass, or skip the update only
+A false `is_acquired` means *Busy*: the single attempt met a conflicting
+guard, a state that changed during the attempt, or the maximum reader count.
+Larecs does not retry. Record the unfinished work for a later pass, or skip the update only
 if your application can lose it.
 
 ## Failures and limits
@@ -88,8 +94,8 @@ if your application can lose it.
 | Failure | Cause and fix |
 | --- | --- |
 | Wrong totals from a shared resource or capture | Several invocations wrote one value. Write per-particle output and reduce after `run`. |
-| `try_read` or `try_write` keeps returning Busy | Another guard is held. Do not spin; defer the work to a later pass. |
-| Compile error for an ordering, compare-exchange, or guard on an Apple GPU | Apple devices support only relaxed add and subtract and limited load and store orderings. Use per-particle output instead. |
+| `try_read` or `try_write` returns Busy | The attempt met a conflicting guard, a concurrently changed state, or the reader limit. Do not spin; defer the work to a later pass. |
+| Compile error for an ordering, compare-exchange, or guard on an Apple GPU | Apple devices support only relaxed or acquire loads, relaxed or release stores, and relaxed add and subtract. Use per-particle output instead. |
 | Compile error when an `AtomicView` or `SyncView` is in a resource or capture | Views do not transfer to kernels. Use per-particle output, or a [mutable adapter](../../../reference/resources#mutable-adapters) that manages its own atomic buffer. |
 | Ordinary data written next to a relaxed counter is not visible | Relaxed operations order nothing else. Use release stores and acquire loads to publish data. |
 
@@ -98,6 +104,8 @@ neither are resource leases. The
 [synchronization reference](../../../reference/spatial_sync#synchronization-primitives)
 lists supported orderings per backend, guard rules, and device memory
 requirements.
+
+## Complete program
 
 {{< example file="particles/shared_outputs.mojo" full=true >}}
 

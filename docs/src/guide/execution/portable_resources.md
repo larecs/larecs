@@ -7,12 +7,12 @@ weight = 4
 Read an owning collection, such as a list of samples, from the particle kernel
 on both the host and a device. An ordinary resource that owns memory works on
 the sequential host only, because Larecs cannot copy its heap data to a device
-byte by byte. A portable resource keeps the owner on the host and gives each
-kernel a *kernel view*: a plain value that points to the data on the kernel's
+byte by byte. A *portable resource* is a resource source with an adapter: it
+keeps the owner on the host and gives each kernel a *kernel view*: a plain value that points to the data on the kernel's
 target.
 
 Start with [Share values with resources](../../shared_resources) and
-[Execute on a device](../device). Mutable adapted resources are
+[Execute on a device](../device). Mutable portable resources are
 [experimental](../../../reference/compatibility); this page uses read-only
 views.
 
@@ -69,8 +69,15 @@ validation also runs without matching entities:
 
 The first step scales movement by `1 + 2` and ends at `x=0.75`. The edit changes
 the last grid sample, so the second step scales by `1 + 3` and ends at
-`(1.75, 3.5)`. From the repository root, run
-`pixi run mojo run -I src examples/particles/portable_resources.mojo`. A PASS
+`(1.75, 3.5)`.
+
+From the repository root, run:
+
+```sh
+pixi run mojo run -I src examples/particles/portable_resources.mojo
+```
+
+A PASS
 line for the device means the kernel read both views on the accelerator; a SKIP
 line means only the host ran.
 
@@ -118,6 +125,8 @@ changed since the last device call skips `prepare_device` and reuses its view.
 | Compile error: mutable access requires `Adapter.supports_mutation` | The source is declared writable. Declare it with `read`, or implement a writer view. |
 | Crash or wrong values from a view pointer | The view points to memory that does not belong to the owner or the device cache, or an earlier reference changed the owner during the call. Return owner-backed or cache-backed memory only. |
 | Stale samples with copy reuse enabled | The owner changed through a reference that Larecs does not track. Reacquire it with `get` after each run, or [invalidate it](../copy_reuse#invalidate-a-write-larecs-cannot-see). |
+
+## Complete program
 
 {{< example file="particles/portable_resources.mojo" full=true >}}
 

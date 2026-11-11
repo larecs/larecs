@@ -14,22 +14,20 @@ This reference describes the development checkout, currently Larecs 1.0 beta. Pu
 | Value-taking callable | Supported, including lexical captures | Rejected at compile time | Rejected at compile time |
 | Components | Host `ComponentType`, including nontrivial ownership | Pointer-free trivial plain values | `TrivialRegisterPassable` transfer check |
 | Ordinary resources | Host resource traits; declared access | Explicit read-only pointer-free plain values | Recursively checked pointer-free plain values |
-| Adapted resources | Access-selected host views | Mutable views require concurrent-mutation support | Access-selected device views and adapter-managed transfers |
+| Portable resources | Access-selected host views | Mutable views require concurrent-mutation support | Access-selected device views and adapter-managed transfers |
 | Explicit captures | Read-only and mutable slots | Unsupported | Device-safe values and synchronous copy-back |
 | Scheduling | One invocation per nonempty matching store | Concurrent chunks; sequential below threshold or with one worker | One launch across matching rows |
 | Completion | Synchronous | Synchronous | Synchronous, including written data copied back |
 
 A *thin kernel* is a named `def` function, such as `move`, that `run` receives as a compile-time parameter (`context.run[move]()`); it captures no local variables. Eligibility checks run independently of threaded worker count and fallback thresholds. Setting one worker does not allow nontrivial components, mutable ordinary resources, or captures through the threaded path.
 
-The defining contracts are {{< api SystemContext.run >}}, {{< api component.constrain_device_safe_components >}}, {{< api resource.constrain_device_safe_resources >}}, and {{< api DevicePassableResource >}}. Adapter-backed sources control their view and transfer lifecycle; a component's device eligibility does not establish a resource's eligibility.
+The defining contracts are {{< api SystemContext.run >}}, {{< api component.constrain_device_safe_components >}}, {{< api resource.constrain_device_safe_resources >}}, and {{< api DevicePassableResource >}}. Portable resource sources control their view and transfer lifecycle; a component's device eligibility does not establish a resource's eligibility.
 
 By default, readable device data uploads on every call. With `world.reuse_device_copies(True)`, it uploads only when the cached copy is stale. Write-only columns skip upload and must be fully written. Read-only reuse therefore depends on revision tracking, not merely on calling the same kernel again. Device-copy reuse never skips written output copy-back.
 
 Standalone atomic and guard primitives exist, with Apple device restrictions. Automatic kernel synchronization bindings and deferred retries are unimplemented.
 
-## Limits on every target
-
-These limits apply to every page that uses the constrained feature; the guides link here instead of restating them.
+## Cross-cutting limits
 
 ### No device fallback
 
@@ -37,7 +35,7 @@ These limits apply to every page that uses the constrained feature; the guides l
 
 ### Empty queries and selections hold structural locks
 
-A live query, storage batch range, or entity selection holds a structural lock even when it matched nothing or its cursor is exhausted. While any lock is held, entity creation and deletion, component additions and removals, spatial maintenance, and cluster selection raise a locked-world error. End the lock first: consume the query with `^`, let it go out of scope, or close the selection's `with` block.
+A live query, storage batch range, or entity selection holds a structural lock even when it matched nothing or its cursor is exhausted. While any lock is held, unrelated entity creation and deletion, component additions and removals, spatial maintenance, and cluster selection raise a locked-world error. A selection's own `add`, `remove`, and `replace` methods still change its members; see {{< api EntitySelection >}}. End the lock first: consume the query with `^`, let it go out of scope, or close the selection's `with` block.
 
 ### Row indices are not entity IDs
 

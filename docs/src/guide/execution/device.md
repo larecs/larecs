@@ -24,8 +24,8 @@ The kernel is the movement kernel from the first simulation, unchanged.
 
 {{< example file="particles/device.mojo" region="kernel" >}}
 
-`move` is a *thin kernel*: a named `def` function that `run` receives as a
-compile-time parameter. Device execution accepts only thin kernels. The system
+`move` is a [thin kernel](../threaded#move-particles-in-threaded-chunks), the
+only kind of kernel device execution accepts. The system
 chooses the target with the `backend` parameter of {{< api SystemContext.run >}}:
 
 {{< example file="particles/device.mojo" region="system" >}}
@@ -140,6 +140,8 @@ covers empty matches, transfer and synchronization failures, and when a world
 rejects further device work. Transfers and preparation can dominate a small
 kernel; [measure complete simulation steps](../../performance/measure) before
 choosing a backend.
+
+## Complete program
 
 {{< example file="particles/device.mojo" full=true >}}
 

@@ -24,7 +24,7 @@ and the movement kernel from the first simulation.
 
 `move` is a *thin kernel*: a named `def` function that `run` receives as a
 compile-time parameter, as in `context.run[move]()`. It captures no local
-variables, which threaded execution requires. Each row writes only its own
+variables and declares no capture slots; threaded execution requires both. Each row writes only its own
 `Position`, so no two chunks write the same data. `Resources().read[Time]()`
 declares `Time` read-only, so all chunks share one immutable value.
 
@@ -74,7 +74,7 @@ explains how Larecs sizes chunks.
 The default configuration has one worker, four chunks per worker, and a cutoff
 of 65,536 matched rows. With one worker, or with fewer matched rows than
 `min_parallel_rows`, a `threaded=True` call runs sequentially, once per
-physical store. Keep `threaded=True` in the system and set the worker budget
+physical store or selected range. Keep `threaded=True` in the system and set the worker budget
 per world; the compile-time eligibility checks apply either way.
 
 ### Run threaded on a selection
@@ -86,17 +86,18 @@ splits only the selection's rows.
 
 Ordinary resources in a threaded call must be read-only values without
 pointers or owned memory. To read a list or buffer, wrap it in an
-[adapted resource](../portable_resources).
+[portable resource](../portable_resources).
 
 ## Failures and limits
 
 | Failure | Cause and fix |
 | --- | --- |
-| `Threaded components require pointer-free trivial plain values` | An accessed component holds a pointer or owns memory, such as a `List`. Remove it from the filter, or keep that data in an adapted resource. |
+| `Threaded components require pointer-free trivial plain values` | An accessed component holds a pointer or owns memory, such as a `List`. Remove it from the filter, or keep that data in a portable resource. |
+| `Threaded resources require pointer-free plain values or DevicePassableResource adapters` | A `read` resource owns memory or holds a pointer. Use a [portable resource](../portable_resources). |
 | `Threaded resources require explicit read access` | The kernel declares an ordinary resource as writable, including through the `Resources[Time]()` read-write default. Declare it with `read`, or write per-row output as in [Coordinate shared writes](../shared_writes). |
 | Compile error for a lexical closure, captures, or `DEVICE` | Threaded execution requires a thin kernel without capture slots on `ExecutionBackend.HOST`. |
 | `ThreadedExecutionConfig` raises | `workers` and `chunks_per_worker` must be positive, their product must fit in an `Int`, and `min_parallel_rows` must not be negative. |
-| Locked-world error or lock exhaustion | Each threaded call takes one extra structural lock, even when it runs sequentially. [Empty queries and selections hold locks](../../../reference/compatibility#empty-queries-and-selections-hold-structural-locks); end them before the call. |
+| Structural lock exhaustion | Each threaded call adds one structural lock to those already held, even when it runs sequentially. Live queries and selections, [even empty ones](../../../reference/compatibility#empty-queries-and-selections-hold-structural-locks), hold the others; end those you no longer need. |
 | No speedup | Dispatch costs time; [measure complete steps](../../performance/measure) before you change the cutoff. |
 
 Chunks are independent only in the rows they visit. [Structural locks are not
@@ -104,6 +105,8 @@ mutexes](../../../reference/compatibility#structural-locks-are-not-mutexes):
 shared state still needs a race-free write strategy. The
 [threaded execution reference](../../../reference/execution#threaded-execution)
 lists the remaining lock, alias, and failure rules.
+
+## Complete program
 
 {{< example file="particles/threaded.mojo" full=true >}}
 

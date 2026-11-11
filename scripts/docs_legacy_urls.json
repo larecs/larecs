@@ -37,6 +37,7 @@
   ],
   "guide/execution/captures/": [
     "borrow-locals-with-a-closure-on-the-host",
+    "complete-program",
     "declare-explicit-slots-for-a-thin-kernel",
     "failures-and-limits",
     "next-steps",
@@ -44,6 +45,7 @@
   ],
   "guide/execution/copy_reuse/": [
     "check-both-transfer-policies",
+    "complete-program",
     "enable-reuse-for-a-world",
     "failures-and-limits",
     "invalidate-a-write-larecs-cannot-see",
@@ -52,6 +54,7 @@
   ],
   "guide/execution/device/": [
     "compare-the-device-with-the-host",
+    "complete-program",
     "failures-and-limits",
     "how-device-threads-visit-rows",
     "let-the-filter-decide-what-moves",
@@ -61,6 +64,7 @@
   ],
   "guide/execution/": [],
   "guide/execution/portable_resources/": [
+    "complete-program",
     "failures-and-limits",
     "keep-sources-and-views-valid-during-a-call",
     "next-steps",
@@ -70,6 +74,7 @@
     "variations"
   ],
   "guide/execution/shared_writes/": [
+    "complete-program",
     "failures-and-limits",
     "next-steps",
     "reduce-after-the-kernel-returns",
@@ -77,6 +82,7 @@
     "write-a-separate-output-for-each-particle"
   ],
   "guide/execution/threaded/": [
+    "complete-program",
     "failures-and-limits",
     "how-larecs-splits-the-rows",
     "move-particles-in-threaded-chunks",
@@ -135,6 +141,7 @@
   "guide/spatial_locality/maintain/": [
     "choose-a-placement-policy",
     "classify-particles-by-grid-cell",
+    "complete-program",
     "failures-and-limits",
     "maintain-placement-after-movement",
     "next-steps",

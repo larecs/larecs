@@ -66,7 +66,7 @@ rows by itself. The driver runs the same setup under both policies:
 | Policy | Placement after maintenance |
 | --- | --- |
 | `partitioned=False` (default) | Larecs sorts the classified rows of each physical store by key, so equal keys become contiguous. The order of equal keys is unspecified. |
-| `partitioned=True` | Each cluster of each logical archetype gets its own physical store, which starts with room for one row and doubles as it fills. |
+| `partitioned=True`, called *partition mode* | Each cluster of each logical archetype gets its own physical store, a *partition*, which starts with room for one row and doubles as it fills. |
 
 ![Row ordering groups equal-key identities in one store; partitions move a staged identity into its growable cluster store while keeping the other cluster separate.](/images/spatial-placement.svg)
 
@@ -98,8 +98,13 @@ The driver checks the grid bounds and both policies:
 
 {{< example file="particles/spatial.mojo" region="check" >}}
 
-From the repository root, run
-`pixi run mojo run -I src examples/particles/spatial.mojo`. The PASS line means
+From the repository root, run:
+
+```sh
+pixi run mojo run -I src examples/particles/spatial.mojo
+```
+
+The PASS line means
 both policies placed and selected the particles as expected on the host.
 
 ## Variations
@@ -143,6 +148,8 @@ The [spatial reference](../../../reference/spatial_sync) lists classifier rules,
 key bounds, and the exact maintenance contract. The
 [partition benchmark](../../../inside/development/reports/partitions#partitioned-storage-comparison)
 records measurements for one workload, not a general speed guarantee.
+
+## Complete program
 
 {{< example file="particles/spatial.mojo" full=true >}}
 
