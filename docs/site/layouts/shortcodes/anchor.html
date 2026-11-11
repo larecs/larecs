@@ -1,0 +1,11 @@
+{{- /*
+Emits an explicit anchor for a generated API entry, such as an alias, so links
+can use its exact, case-sensitive name. The following heading already carries
+`anchorize NAME` as its ID; the explicit anchor is omitted when the two IDs
+are equal, which keeps element IDs unique.
+
+Usage:
+  {{< anchor "NAME" >}}
+*/ -}}
+{{- $id := .Get 0 -}}
+{{- if ne $id (anchorize $id) -}}<a id="{{ $id }}"></a>{{- end -}}

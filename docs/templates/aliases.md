@@ -2,7 +2,7 @@
 {{if .Aliases}}## Aliases
 
 {{range .Aliases -}}
-{{`{{<html>}}`}}<a id="{{.Name}}"></a>{{`{{</html>}}`}}
+{{`{{< anchor "`}}{{.Name}}{{`" >}}`}}
 
 ### `{{.Name}}`
 
