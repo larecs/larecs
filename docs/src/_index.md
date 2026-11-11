@@ -1,12 +1,12 @@
----
-title: "Larecs🌲"
-type: docs
-summary: Larecs🌲 – Lightweight archetype-based ECS for Mojo.
----
++++
+type = "docs"
+title = "Larecs🌲"
+summary = "Larecs🌲 – Lightweight archetype-based ECS for Mojo."
+breadcrumbs = false
++++
 
-## A lightweight archetype-based ECS for Mojo
-
-Larecs🌲 is a performance-oriented archetype-based ECS for [Mojo](https://www.modular.com/mojo)🔥.
+Larecs🌲 is a lightweight, performance-oriented archetype-based ECS for
+[Mojo](https://www.modular.com/mojo)🔥.
 Its architecture is based on the Go ECS [Arche](https://github.com/mlange-42/arche).
 To build your first simulation, [install Larecs](start/installation) and
 follow [Your first simulation](start/first_simulation). Two further tutorials
