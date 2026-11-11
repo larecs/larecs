@@ -35,8 +35,8 @@ Threading needs two settings. Opt in per kernel call with `threaded=True`:
 
 {{< example file="particles/threaded.mojo" region="system" >}}
 
-Then give the world a worker budget, as the driver below does with
-`World[Position, Velocity](execution_config=ThreadedExecutionConfig(workers=4, ...))`.
+Then give the world a worker budget: the driver below passes
+`execution_config=ThreadedExecutionConfig(workers=workers, ...)` to `World`.
 The default configuration has one worker and a 65,536-row cutoff, so a
 `threaded=True` call on a default world, or on fewer matched rows than the
 cutoff, runs sequentially.

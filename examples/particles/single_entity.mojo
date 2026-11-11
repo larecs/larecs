@@ -11,7 +11,7 @@ from std.testing import (
     assert_true,
 )
 
-from larecs import World
+from larecs import Filter, World
 
 
 # region components
@@ -96,6 +96,12 @@ def main() raises:
     # region failures
     with assert_raises():
         world.storage.set(marker, Velocity(1, 1))
+    with assert_raises():
+        world.storage.remove[Velocity](marker)
+    var positions = world.storage.query[Filter().include[Position]()]()
+    with assert_raises():
+        world.storage.add(marker, Velocity(1, 1))
+    assert_equal(len(positions), 2)
     world.storage.remove_entity(marker)
     with assert_raises():
         _ = world.storage.get[Position](marker)

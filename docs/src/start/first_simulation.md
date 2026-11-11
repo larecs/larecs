@@ -106,8 +106,9 @@ you add them:
 
 `Scheduler[Position, Velocity]` repeats the world's component types because the
 scheduler's type must match the world it owns. `world^` transfers ownership of
-the world to the scheduler; `world` is no longer usable afterwards. `run(steps=10)` initializes every system, calls each
-`update` ten times, and finalizes every system.
+the world to the scheduler; `world` is no longer usable afterwards.
+`run(steps=10)` initializes every system, calls each `update` ten times, and
+finalizes every system.
 
 ## Check the result
 
