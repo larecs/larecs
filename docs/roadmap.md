@@ -255,7 +255,7 @@ complete application benefits remain unmeasured.
 - [ ] Improve system control APIs, including a way for systems to stop execution.
 - [ ] Revisit value unpacking in queries when Mojo supports the needed form.
 - [ ] Add a tabular overview of typical ECS operation costs to the
-  [benchmark guide](src/guide/benchmarks.md), using
+  [benchmark guide](src/inside/development/benchmarks.md), using
   [Arche's benchmarks](https://mlange-42.github.io/arche/background/benchmarks/)
   as a reference.
 

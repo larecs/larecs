@@ -23,7 +23,7 @@ The defining contracts are {{< api SystemContext.run >}}, {{< api component.cons
 
 By default, readable device data uploads on every call. With `world.reuse_device_copies(True)`, it uploads only when the cached copy is stale. Write-only columns skip upload and must be fully written. Read-only reuse therefore depends on revision tracking, not merely on calling the same kernel again.
 
-Device-copy reuse is off by default and never skips written output copy-back.
+Device-copy reuse never skips written output copy-back.
 Standalone atomic/guard primitives exist, with Apple device restrictions;
 automatic kernel synchronization bindings and deferred retries are unimplemented.
 The [execution guides](../../guide/execution) keep each restriction beside its

@@ -30,6 +30,6 @@ Resource adapters written for the read-only adapter API need three changes:
 2. Change `bind_host` and `prepare_device` to return `Self.View[False]`.
 3. Remove `comptime KernelView = MyView` from the source. `KernelView` remains an alias for `View[False]`.
 
-Adapters that do not opt into mutation keep their behavior; mutable declarations of them fail with "mutable access requires Adapter.supports_mutation".
+Adapters that do not opt into mutation keep their behavior; mutable declarations of them fail to compile with "DevicePassableResource mutable access requires Adapter.supports_mutation".
 
 The [changelog](https://github.com/larecs/larecs/blob/main/changelog.md) records release changes. The development reference does not imply that an unreleased declaration exists in a previously installed package.

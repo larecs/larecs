@@ -1124,6 +1124,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
         Raises:
             Error: If the [..entity.Entity] does not exist.
+            Error: If the entity does not have the component.
         """
         with Zone(
             function_name=(

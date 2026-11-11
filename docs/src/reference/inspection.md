@@ -4,7 +4,7 @@ type: docs
 weight: 2
 ---
 
-{{< api Filter >}} combines membership and kernel permissions at compile time. The common form `Filter().include[Position]().read[Velocity]()` requires `Position` and `Velocity`, grants read-write access to `Position`, and grants read-only access to `Velocity`. Each step returns a filter value; the shorter spelling `Filter().include[Position].read[Velocity]()` builds the same filter.
+{{< api Filter >}} combines membership and kernel permissions at compile time. The common form `Filter().include[Position]().read[Velocity]()` requires `Position` and `Velocity`, grants read-write access to `Position`, and grants read-only access to `Velocity`. `include[Position]` names a filter type and `()` constructs it; the shorter spelling `Filter().include[Position].read[Velocity]()` builds the same filter.
 
 | API | Contract |
 | --- | --- |

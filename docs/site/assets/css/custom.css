@@ -68,6 +68,10 @@ html,
   min-width: 8rem;
 }
 
+.content table code {
+  overflow-wrap: anywhere;
+}
+
 .hextra-code-block pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -579,6 +583,7 @@ html.dark .chroma .x {}
 /* Error: the Mojo lexer flags valid newer syntax, such as `var *args`. */
 html.dark .highlight .chroma .err {
   color: inherit;
+  background-color: transparent;
 }
 
 /* CodeLine */
