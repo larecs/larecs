@@ -1,6 +1,7 @@
 ---
 title: Errors and migration
 type: docs
+weight: 7
 ---
 
 Read each generated operation's **Raises** and **Constraints** before handling a failure. Constraints reject invalid programs at compile time; runtime errors report invalid state or execution failures.

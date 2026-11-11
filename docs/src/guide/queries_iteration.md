@@ -2,6 +2,8 @@
 type = "docs"
 title = "Queries and iteration"
 weight = 40
+prev = false
+next = false
 [sidebar]
 exclude = true
 +++

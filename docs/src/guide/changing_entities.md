@@ -2,6 +2,8 @@
 type = "docs"
 title = "Changing entities"
 weight = 30
+prev = false
+next = false
 [sidebar]
 exclude = true
 +++

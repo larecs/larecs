@@ -2,6 +2,8 @@
 type = "docs"
 title = "Entities, components and the world"
 weight = 10
+prev = false
+next = false
 [sidebar]
 exclude = true
 +++

@@ -2,6 +2,8 @@
 type = "docs"
 title = "Spatial clustering"
 weight = 85
+prev = false
+next = false
 [sidebar]
 exclude = true
 +++

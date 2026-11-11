@@ -1,6 +1,7 @@
 ---
 title: Compatibility and status
 type: docs
+weight: 6
 ---
 
 This reference describes the development checkout, currently Larecs 1.0 beta. Public APIs may change before stable 1.0.0. After stable release, public APIs follow semantic versioning unless explicitly experimental. Threaded host and device execution, mutable resource adapters, and device-copy reuse are experimental.

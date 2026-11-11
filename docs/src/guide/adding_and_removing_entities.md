@@ -2,6 +2,8 @@
 type = "docs"
 title = "Adding and removing entities"
 weight = 20
+prev = false
+next = false
 [sidebar]
 exclude = true
 +++

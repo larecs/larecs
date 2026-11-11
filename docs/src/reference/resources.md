@@ -1,6 +1,7 @@
 ---
 title: Resources and captures
 type: docs
+weight: 4
 ---
 
 {{< api ResourceStorage >}} stores one shared value per resource type. Add values during setup with `world.resources.add(Time(0.25))`. Declare a kernel's access with {{< api Resources >}}, for example `Resources().read[Time]()`; undeclared access fails at compile time.

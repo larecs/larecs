@@ -2,6 +2,8 @@
 type = "docs"
 title = "Systems and the scheduler"
 weight = 60
+prev = false
+next = false
 [sidebar]
 exclude = true
 +++

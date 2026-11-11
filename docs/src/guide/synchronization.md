@@ -2,6 +2,8 @@
 type = "docs"
 title = "Synchronization"
 weight = 55
+prev = false
+next = false
 [sidebar]
 exclude = true
 +++

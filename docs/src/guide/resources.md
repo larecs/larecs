@@ -2,6 +2,8 @@
 type = "docs"
 title = "Resource operations and adapters"
 weight = 50
+prev = false
+next = false
 [sidebar]
 exclude = true
 +++

@@ -2,6 +2,8 @@
 type = "docs"
 title = "Benchmark index"
 weight = 100
+prev = false
+next = false
 [sidebar]
 exclude = true
 +++
