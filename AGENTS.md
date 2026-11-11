@@ -43,7 +43,7 @@ Use the `pr-description` skill to write or revise a description; `.github/pull_r
   and use the `mojo-syntax` skill.
 - When changing storage, queries, classification, row movement, or execution costs,
   add or update representative benchmarks. Read the
-  [benchmark methodology](docs/src/guide/benchmarks.md#benchmark-methodology) and
+  [benchmark methodology](docs/src/inside/development/benchmarks.md#benchmark-methodology) and
   relevant workload sections before changing benchmarks or reporting performance.
 - Before writing, restructuring, or reviewing guide pages, the README, API
   docstrings, or docs navigation, read the `larecs-docs` skill at
@@ -71,4 +71,4 @@ Use the `pr-description` skill to write or revise a description; `.github/pull_r
 - Format code: `pixi run mojo format src test benchmark`
 - Generate API docs: `pixi run mojo doc -o docs/src/larecs.json src/larecs`
 - Benchmark commands, baseline selection, and regression thresholds:
-  [benchmark guide](docs/src/guide/benchmarks.md).
+  [benchmark guide](docs/src/inside/development/benchmarks.md).

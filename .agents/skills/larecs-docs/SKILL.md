@@ -105,7 +105,7 @@ drifted before: component and resource eligibility per execution target,
 kernel invocation granularity (per physical store, selected range, or threaded
 chunk), device transfers and copy reuse, synchronization bindings (standalone
 primitives only), exports from the `larecs` root, and performance claims
-(link `docs/src/guide/benchmarks.md` measurements with their environment).
+(link the `docs/src/inside/development/reports/` measurements with their environment).
 
 ## API docstrings
 

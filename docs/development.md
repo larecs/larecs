@@ -1,7 +1,7 @@
 # Development reference
 
 Read the [design index](design/README.md) before changing ECS semantics and the
-[benchmark guide](src/guide/benchmarks.md#benchmark-methodology) before changing
+[benchmark guide](src/inside/development/benchmarks.md#benchmark-methodology) before changing
 performance-sensitive code or benchmark checks.
 
 ## Coding standards
