@@ -40,7 +40,7 @@ return nothing; `remove` removes components, not entities. Its `run` method
 visits the members that also match the kernel's filter, and never other
 entities with the same components.
 
-[`EntitySelection`](https://github.com/larecs/larecs/blob/d7629334a68981f32c0399e5e4be5496256b7ae5/src/larecs/system.mojo#L568)
+{{< api EntitySelection >}}
 documents every selection method.
 
 ## End the structural lock with `with`

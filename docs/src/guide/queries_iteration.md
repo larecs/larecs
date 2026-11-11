@@ -114,8 +114,8 @@ we can do this as follows:
 > Determining the length of a query is not a trivial operation
 > and may require an internal iteration if the ECS involves many components.
 > Therefore, it is advisable to avoid applying the `len` function
-> to queries in "hot" code. Nonetheless, the `len` function
-> is much faster than counting entities manually by iterating over a query.
+> to queries in "hot" code. Nonetheless, `len` sums the row counts of the
+> matching archetypes, which is cheaper than iterating over every entity.
 
 ## Iterating over queries
 

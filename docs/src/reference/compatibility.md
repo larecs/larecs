@@ -20,7 +20,7 @@ Eligibility checks run independently of threaded worker count and fallback thres
 
 The defining contracts are {{< api SystemContext.run >}}, {{< api component.constrain_device_safe_components >}}, {{< api resource.constrain_device_safe_resources >}}, and {{< api DevicePassableResource >}}. Adapter-backed sources control their view and transfer lifecycle; a component's device eligibility does not establish a resource's eligibility.
 
-Readable device data uploads when the cached copy is stale. Write-only columns skip upload and must be fully written. Read-only reuse therefore depends on revision tracking, not merely on calling the same kernel again.
+By default, readable device data uploads on every call. With `world.reuse_device_copies(True)`, it uploads only when the cached copy is stale. Write-only columns skip upload and must be fully written. Read-only reuse therefore depends on revision tracking, not merely on calling the same kernel again.
 
 Device-copy reuse is off by default and never skips written output copy-back.
 Standalone atomic/guard primitives exist, with Apple device restrictions;

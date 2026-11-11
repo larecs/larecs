@@ -245,8 +245,11 @@ For device execution, components must conform to `TrivialRegisterPassable`.
 Ordinary resources need a supported pointer-free representation with trivial
 copy, move, and destruction. Numeric values, `Bool`, and aggregates of those
 values are accepted without declaring `TrivialRegisterPassable`. Owning
-collections, host pointers, and opaque representations (including fixed `Array`
-fields in this increment) are rejected. Host kernels still support owning resources.
+collections, host pointers, and undeclared opaque representations, such as
+`StaticTuple` or `InlineArray` fields, are rejected. A type whose opaque fields
+hold only scalars can conform to `PlainValue`; you then guarantee that no field
+holds a pointer, because Larecs cannot verify it. Host kernels still support
+owning resources.
 
 ## Resource permissions
 
@@ -269,9 +272,10 @@ backends:
 
 {{< example file="particles/portable_resources.mojo" region="kernel" >}}
 
-`Samples` is `BufferResource[DType.float64]` in this checked particle stage.
+`Samples` is `BufferResource[DType.float32]` in this particle stage.
 The kernel requests the owning `Samples` type and reads the prepared view.
-It combines sample zero with the custom grid view to update particle velocity.
+It combines sample zero with the custom grid view to scale each particle's
+position step.
 The [portable-resource guide](../execution/portable_resources) shows the
 owner, view, adapter, setup, and assertions beside their explanations.
 
@@ -500,7 +504,7 @@ relocate, or free backing data before invocation completion; immutable pointer
 fields alone do not establish this guarantee. This is a universal adapter
 contract, with no capability marker.
 
-Threaded host calls accept adapted sources only through explicit `read`
+Threaded host calls accept read-only adapted sources through explicit `read`
 declarations. The caller validates and binds each source once, then shares the
 same descriptor and sample storage across jobs. Resource leases and descriptor
 owners remain alive until all workers join, including whole-range fallback.

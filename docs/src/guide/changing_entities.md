@@ -137,19 +137,15 @@ components, so we can replace any number of components with
 any other number of new components.
 
 > [!Tip]
-> Replacing components in one go is significantly
-> more efficient than removing and adding components separately.
+> `replace` moves the entity to its new archetype once. A separate `remove`
+> followed by `add` moves it twice and copies its remaining components both times.
 
 ### Batch operations
 
 Sometimes you need to add or remove components from multiple entities at once.
-Larecs🌲 provides batch operations that are more efficient than performing
-individual operations on each entity.
-
-> [!Tip]
-> Batch operations are significantly more efficient than individual operations
-> when working with large numbers of entities, as they minimize memory
-> reorganization and improve cache locality.
+Batch operations look up the target archetype once per matching source
+archetype and move all of its rows together, instead of looking up the target
+and moving each entity separately.
 
 Use {{< api SystemContext.add add >}}, {{< api SystemContext.remove remove >}},
 and {{< api SystemContext.replace replace >}} for filtered batch changes.
