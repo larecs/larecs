@@ -131,7 +131,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
     Access it through `world.storage`, for example
     `var entity = world.storage.add_entity(Position(10.0, 20.0))`.
-    [Entities, components and the world](../../../guide/entities_components_world)
+    [Change one entity's components](../../../guide/single_entity)
     shows a complete program.
     """
 

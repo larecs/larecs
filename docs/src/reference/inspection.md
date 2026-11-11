@@ -16,4 +16,4 @@ weight: 2
 | {{< api SystemContext.add_entities >}} | `with context.add_entities(Position(0, 0), count=count) as selected:` creates an exact scoped selection. Negative counts raise; zero creates an empty selection. |
 | {{< api EntitySelection.run >}} | Runs only the selection's retained ranges. Exiting the scope releases its structural locks, including when the body raises. |
 
-Queries inspect rows; kernels mutate components according to their filter. Selections restrict kernel work to the rows returned by the structural operation. See [queries and iteration](../../guide/queries_iteration) for complete examples and query copy/move behavior.
+Queries inspect rows; kernels mutate components according to their filter. Selections restrict kernel work to the rows returned by the structural operation. See [inspect entities outside a kernel](../../guide/systems_kernels#inspect-entities-outside-a-kernel) for a complete example.

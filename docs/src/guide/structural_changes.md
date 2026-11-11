@@ -1,7 +1,7 @@
 +++
 type = "docs"
 title = "Create and remove entities in batches"
-weight = 4
+weight = 5
 +++
 
 Create a batch of entities, change their components, and run kernels on only
@@ -87,8 +87,8 @@ selection, and has no `run` method. Inside systems, use
 
 - [Update entities with systems and kernels](../systems_kernels#compare-handles-queries-and-selections)
   compares selections with queries and entity handles.
-- [Adding and removing entities](../adding_and_removing_entities) shows the
-  individual storage operations.
+- [Change one entity's components](../single_entity) shows the
+  single-entity storage operations.
 
 [Structural transitions](../../inside/architecture/storage#structural-transitions-and-identity)
 traces typed movement, swap-removal, and entity-location repair.

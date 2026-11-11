@@ -1,7 +1,7 @@
 +++
 type = "docs"
 title = "Execution"
-weight = 6
+weight = 7
 +++
 
 Choose how a particle kernel receives data and where it runs. Complete

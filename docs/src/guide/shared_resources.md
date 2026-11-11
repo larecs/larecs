@@ -1,7 +1,7 @@
 +++
 type = "docs"
 title = "Share values with resources"
-weight = 5
+weight = 6
 next = "/guide/execution"
 +++
 

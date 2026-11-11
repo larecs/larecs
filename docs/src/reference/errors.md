@@ -24,4 +24,12 @@ A failing kernel call is not a transaction: do not infer rollback of writes alre
 
 Older examples may use direct `World` entity operations or boolean execution-target flags. Current single-entity setup uses `world.storage`; scheduled application updates use `SystemContext`. Select targets with `backend=ExecutionBackend.HOST` or `backend=ExecutionBackend.DEVICE`. Consult {{< api SystemContext.run >}} for the current overloads.
 
+Resource adapters written for the read-only adapter API need three changes:
+
+1. Replace `comptime View = MyView` with `comptime View[mut: Bool] = MyView`.
+2. Change `bind_host` and `prepare_device` to return `Self.View[False]`.
+3. Remove `comptime KernelView = MyView` from the source. `KernelView` remains an alias for `View[False]`.
+
+Adapters that do not opt into mutation keep their behavior; mutable declarations of them fail with "mutable access requires Adapter.supports_mutation".
+
 The [changelog](https://github.com/larecs/larecs/blob/main/changelog.md) records release changes. The development reference does not imply that an unreleased declaration exists in a previously installed package.

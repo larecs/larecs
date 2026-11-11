@@ -132,8 +132,8 @@ such values qualify without declaring `TrivialRegisterPassable`. A resource
 that owns data, such as a `List`, can still reach threaded and device kernels
 through an adapter like `BufferResource`, which exposes a read-only view. A
 kernel that accesses an ineligible type fails to compile. See the
-[resources guide](https://larecs.github.io/larecs/guide/resources/) for
-details.
+[portable resources guide](https://larecs.github.io/larecs/guide/execution/portable_resources/)
+for details.
 
 Heap-owning components are a newer and less exercised path than plain-value
 components. Prefer plain values unless you need owned data.

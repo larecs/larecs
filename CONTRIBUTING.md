@@ -23,8 +23,8 @@ or supersede one. Unfinished work is tracked in the [roadmap](docs/roadmap.md);
 completed changes go into the [changelog](changelog.md).
 
 Performance-relevant changes need representative benchmarks; the
-[benchmark guide](docs/src/guide/benchmarks.md) describes the cases and the
-measurement method.
+[benchmark guide](docs/src/inside/development/benchmarks.md) describes the cases
+and the measurement method.
 
 ## Write documentation
 
