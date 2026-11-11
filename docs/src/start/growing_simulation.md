@@ -64,6 +64,23 @@ that is `marker`. `context.world` is a pointer to the scheduler's world; `[]`
 dereferences it. `Spawn` leaves `update` empty because it does all its work
 once.
 
+## Inspect the world before it starts
+
+Before the scheduler takes the world, `main` reads it with queries:
+
+{{< example file="particles/lifecycle.mojo" region="inspection" >}}
+
+The first query visits every entity with a `Position` and no `Velocity`; here
+that is only `marker`. Each row reads the components the filter names, and
+`get_entity()` returns the row's entity handle. A query holds a structural lock
+while it lives. `for row in query^` consumes the query with `^`, so the loop
+ends it and its lock. `query.copy()` makes a second query with its own cursor
+and lock, which the empty loop ends the same way. Every query must end before
+`world^` moves the world into the scheduler. `exclusive()` matches only
+entities with exactly the listed components, so the count is 1.
+[Inspect entities outside a kernel](../../guide/systems_kernels#inspect-entities-outside-a-kernel)
+covers queries in detail.
+
 ## Register Spawn before Move
 
 {{< example file="particles/lifecycle.mojo" region="scheduler" >}}
