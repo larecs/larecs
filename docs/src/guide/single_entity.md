@@ -71,6 +71,18 @@ new storage once. A separate `remove` followed by `add` moves it twice.
 | `add` names a component the entity already has | The call raises. |
 | A query or selection holds a structural lock | `add`, `remove`, and `replace` raise; release the query or close the `with` block first. |
 
+## Run the complete program
+
+{{< example file="particles/single_entity.mojo" full=true >}}
+
+Run it from the repository root:
+
+```sh
+pixi run mojo run -I src examples/particles/single_entity.mojo
+```
+
+It prints `PASS: single-particle reads, changes, and composition changes`.
+
 ## Next steps
 
 - [Create and remove entities in batches](../structural_changes) changes many
