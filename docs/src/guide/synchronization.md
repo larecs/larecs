@@ -13,12 +13,12 @@ the page that covers the topic now.
 
 ## Atomic updates
 
-See [Use standalone host primitives when you own the storage](../execution/shared_writes#use-standalone-host-primitives-when-you-own-the-storage).
+See [Update data you own with atomic or guarded values](../execution/shared_writes#update-data-you-own-with-atomic-or-guarded-values).
 
 ## Scoped access and contention
 
-See [Use standalone host primitives when you own the storage](../execution/shared_writes#use-standalone-host-primitives-when-you-own-the-storage).
+See [Update data you own with atomic or guarded values](../execution/shared_writes#update-data-you-own-with-atomic-or-guarded-values).
 
 ## Host and device use
 
-See [Match ordering and backend support](../execution/shared_writes#match-ordering-and-backend-support).
+See [Synchronization primitives](../../reference/spatial_sync#synchronization-primitives).

@@ -13,8 +13,8 @@ the page that covers the topic now.
 
 ## Growable cluster-local partitions
 
-See [Compare row ordering with growable partitions](../spatial_locality/maintain#compare-row-ordering-with-growable-partitions).
+See [Choose a placement policy](../spatial_locality/maintain#choose-a-placement-policy).
 
 ## Cluster-local partition blocks
 
-See [Compare row ordering with growable partitions](../spatial_locality/maintain#compare-row-ordering-with-growable-partitions).
+See [Choose a placement policy](../spatial_locality/maintain#choose-a-placement-policy).

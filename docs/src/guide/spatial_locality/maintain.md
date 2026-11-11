@@ -4,158 +4,151 @@ title = "Maintain particle locality"
 weight = 1
 +++
 
-Group particles by a bounded grid cell when profiling shows a locality-sensitive
-access pattern. Start with [systems and kernels](../../systems_kernels) and
-[selections](../../structural_changes). This stage executes on host; device
-movement follows [experimental device rules](../../execution/device), and
-spatial classification and maintenance still run on host after copy-back.
-Locality optimization does not supply an exact neighbor query.
+Keep particles of the same grid cell next to each other in memory, and select
+exactly the particles of one cell. Use this when [profiling](../../performance)
+shows that a pass reads nearby particles together and suffers from scattered
+rows. Grouping changes only where rows live; entity handles and component
+values stay the same. It does not find exact neighbors.
 
-## Declare eligible classifier inputs
+Start with [Update entities with systems and kernels](../../systems_kernels)
+and [Create and remove entities in batches](../../structural_changes).
 
-Keep position, velocity, and time separate from placement policy.
+## Classify particles by grid cell
+
+The stage uses the
+[portable particle model](../../execution/#the-portable-particle-model) and an
+`Int32` marker for particles that should not be grouped.
 
 {{< example file="particles/spatial.mojo" region="model" >}}
 
-The classifier below reads `Position`; movement can write it without changing
-the entity's component composition. Stable entity handles survive placement
-changes, while component references and row indices do not.
-
-Define a deterministic {{< api SpatialClassifier >}} and a matching read-only
-accessor.
+A *classifier* computes a *cluster key* for each entity: a `UInt64` that names
+its group. Entities with equal keys belong to the same cluster. This classifier
+uses one cluster per grid cell:
 
 {{< example file="particles/spatial.mojo" region="classifier" >}}
 
-`spatial_filter` classifies entities with `Position` and no `Int32` marker.
-Only matching archetypes participate. `Accessor` must exactly match the
-registration filter, all filter types must belong to the world, and writable
-`include`/`write` inputs are rejected. Ordinary include/exclude/exclusive
-membership rules still apply. The world owns one copyable classifier value;
-a second registration raises. Do not mutate the world or retain accessors or
-references from `classify`.
+`spatial_filter` decides which entities Larecs classifies: those with a
+`Position` and no `Int32` marker. `Grid` implements {{< api SpatialClassifier >}};
+its `Accessor` must use exactly that filter, with read-only access.
+{{< api grid_cell >}} rounds a coordinate down to its cell, so `-0.1` with cell
+width 1 lies in cell -1. {{< api morton_key_3d >}} combines the cell coordinates
+into one key; the planar simulation leaves z at 0. Both raise for coordinates
+outside their documented bounds instead of clamping.
 
-{{< api grid_cell >}} uses floor: `-0.1` at cell width 1 becomes cell -1.
-Coordinates and cell width must be finite, width positive, and resulting cells
-in `[-1048576, 1048575]`. {{< api morton_key_3d >}} biases each signed 21-bit
-axis and interleaves its bits into a collision-free 63-bit key, with z=0 for
-this planar simulation. Invalid inputs raise; they never clamp or wrap. Use
-an application encoding if these bounds do not fit.
+## Maintain placement after movement
 
-## Run movement before explicit maintenance
-
-The movement filter and kernel stay visible alongside their classifier.
+Movement and maintenance stay separate steps:
 
 {{< example file="particles/spatial.mojo" region="kernel" >}}
 
-Movement declares `Position` writable, so Larecs marks eligible matching
-identities dirty. Read-only declarations or unrelated component writes do not
-invalidate classifier inputs. Values change immediately; placement waits.
-
-Call {{< api World.maintain_spatial >}} at the chosen boundary after execution.
-
 {{< example file="particles/spatial.mojo" region="system" >}}
 
-`Move.update` waits for the synchronous kernel, then classifies dirty inputs
-using their final host values. Kernel completion and system completion do not
-invoke maintenance automatically. End every query/selection first, including
-empty or exhausted cursors. Discard component references before maintenance,
-even when you expect a clean no-op, and reacquire them by entity handle.
+`move` declares `Position` writable, so Larecs marks every classified particle
+it visits as *dirty*: its key may be out of date. Positions change immediately,
+but rows move only when you call {{< api World.maintain_spatial >}}. Then
+Larecs classifies each dirty particle once, using its final position, and moves
+rows to match the new keys. Kernels and systems never run maintenance by
+themselves.
 
-## Compare row ordering with growable partitions
+Maintenance moves rows, so the world must be unlocked. End every query and
+selection first, because [empty queries and selections hold
+locks](../../../reference/compatibility#empty-queries-and-selections-hold-structural-locks).
+Discard component references before maintenance, and look components up again
+by entity handle afterwards.
 
-Registration chooses the placement policy; it does not classify or move rows.
-The checked driver runs the same setup under each policy.
+## Choose a placement policy
+
+Registering the classifier chooses how Larecs groups rows; it does not move
+rows by itself. The driver runs the same setup under both policies:
 
 {{< example file="particles/spatial.mojo" region="registration" >}}
 
-`partitioned=False` is the default: maintenance sorts eligible rows by ascending
-numeric key within their component-defined stores. Equal keys become contiguous;
-tie order is not guaranteed. `partitioned=True` keeps one growable dense SoA
-store per `(logical archetype, cluster key)`. Capacity starts at one row and
-doubles as needed. There is no fixed partition row limit or separate chunk-size
-setting; key/cell policy controls population. Store traversal is not globally
-key-sorted, and separate clusters need not have adjacent allocations.
-
-The figure contrasts the two layouts after explicit maintenance.
+| Policy | Placement after maintenance |
+| --- | --- |
+| `partitioned=False` (default) | Larecs sorts the classified rows of each physical store by key, so equal keys become contiguous. The order of equal keys is unspecified. |
+| `partitioned=True` | Each cluster of each logical archetype gets its own physical store, which starts with room for one row and doubles as it fills. |
 
 ![Row ordering groups equal-key identities in one store; partitions move a staged identity into its growable cluster store while keeping the other cluster separate.](/images/spatial-placement.svg)
 
 *The same logical archetype supports two placement policies.*
 
-Letter labels are identities and colors plus key labels identify clusters.
-All component columns and entity IDs move together. Row ordering can move
-unchanged entities to restore contiguous groups. Partition mode moves a changed
-identity into its destination cluster and repairs a source swap-removal;
-growing the destination can relocate its existing rows too. Creation and
-component transitions stage rows until maintenance; ordinary queries and
-host/device kernels still visit matching staged rows. Same-composition
-replacement stays in its current physical store until refreshed. Maintenance
-releases empty cluster/staging row allocations; nonempty stores retain capacity.
+Letters label entities, and colors and key labels mark clusters. All components
+and the entity ID of a row move together. In partition mode, a new particle, or
+one whose components changed, waits in a *staging store*: a physical store for
+rows that the next maintenance pass will place. Queries and kernels still visit
+staged rows.
 
-## Select exact maintained cluster membership
+## Select one cluster
 
-The driver captures key `(0, 0)` after maintenance, intersecting it with a
-component filter across logical archetypes.
+Partition mode can select exactly the particles with one key:
 
 {{< example file="particles/spatial.mojo" region="cluster" >}}
 
-{{< api SystemContext.select_cluster >}} requires partition mode, clean
-maintenance, and an unlocked world. Its selection initially contains `walker`
-and `staged`, even though only `walker` has `Velocity` and matches `move`.
-Movement changes `walker`'s cell, but the selection's membership stays fixed
-until release; refresh placement before acquiring the next cluster selection.
-Even an empty result owns a structural lock. This is exact equality to the
-maintained key, not a radius query. Morton key adjacency does not guarantee
-spatial adjacency. Enumerate relevant cells and check actual distances, or
-build a separate spatial index, for exact neighbors.
+{{< api SystemContext.select_cluster >}} needs partition mode, a clean
+maintenance state, and an unlocked world; that is why the first attempt, made
+while `staged` waits in the staging store, raises. The selection contains
+`walker` and `staged`, which share key `(0, 0)` but belong to different logical
+archetypes; only `walker` has a `Velocity` and matches `move`. The membership
+stays fixed until you release the selection, even after `walker` moves to
+another cell. The selection matches the key exactly, not a radius, and adjacent
+keys need not be adjacent cells. For exact neighbors, check the actual distances
+in the cells you need, or build a separate spatial index.
 
-## Track dirty inputs and choose a cadence
-
-A maintenance pass classifies each distinct dirty eligible identity once.
-Repeated writes deduplicate; a clean pass scans no rows. Registration,
-structural changes, and full invalidation request a full rebuild. If every
-allocated identity is dirty, maintenance uses contiguous full classification.
-
-Mutable `storage.get[Position]` marks inputs even if you only read; use `read`
-or read-only queries for observation. Setters, declared writable host/threaded
-ranges, and device copy-back mark affected inputs conservatively. Raw pointers
-or low-level storage writes bypass tracking: call
-`world.storage.mark_spatial_dirty(entity)` for each affected live identity or
-{{< api World.invalidate_spatial >}} for a full rebuild. External policy changes
-also need full invalidation. These calls invalidate without moving rows.
-
-Classifier errors preserve committed keys and row order and retain dirty state
-for retry. All fallible classification and reorder planning precedes movement;
-fatal allocation/lifecycle failures offer no rollback. Fix the input or policy
-and retry at an unlocked boundary.
-
-Measure maintenance together with your workload. Wide component rows increase
-bytes moved; sparse partitions add allocations and metadata; ordinary scans
-pay binding/traversal per physical store. Active maintenance still copies
-identity-capacity keys and rebuilds a temporary cluster directory, and cluster
-selection scans store metadata. Structural-heavy steps request full rebuilds.
-A locality-sensitive pass can benefit without improving a full step; compare
-both [complete-step costs](../../performance/measure).
-
-## Execute and troubleshoot
-
-The final driver checks negative flooring and bounds, both placement policies,
-staging, fixed selection membership, and positions retrieved by stable handle.
+The driver checks the grid bounds and both policies:
 
 {{< example file="particles/spatial.mojo" region="check" >}}
 
-Run `pixi run mojo run -I src examples/particles/spatial.mojo` from the repository
-root. Its PASS covers host spatial execution, not device spatial validation.
+From the repository root, run
+`pixi run mojo run -I src examples/particles/spatial.mojo`. The PASS line means
+both policies placed and selected the particles as expected on the host.
 
-| Failure | Recovery |
+## Variations
+
+### Choose a maintenance cadence
+
+A pass with no dirty particles returns without touching rows. Otherwise it
+classifies only the dirty particles, but it still copies one key per entity
+slot, scans store metadata, and moves every row whose placement changes, with
+all of its components. Structural changes make the next pass reclassify every
+particle. Maintaining every few steps instead of every step trades placement
+accuracy for fewer row moves.
+[Measure complete steps](../../performance/measure) to choose, and compare the
+locality-sensitive pass on its own as well.
+
+### Report writes that Larecs cannot see
+
+Larecs marks particles dirty when you write positions through `set`, a mutable
+`get`, or a kernel that declares the write. Use `read` or read-only queries to
+look at positions without marking them. After a write through a raw pointer,
+call `world.storage.mark_spatial_dirty(entity)` for each changed particle, or
+{{< api World.invalidate_spatial >}} to reclassify everything.
+
+### Move particles on a device
+
+Device movement marks the same particles dirty when it copies `Position` back.
+Maintenance and classification still run on the host afterwards.
+
+## Failures and limits
+
+| Failure | Cause and fix |
 | --- | --- |
-| Dirty cluster selection | Release old selections, finish explicit maintenance, then select again. |
-| Locked-world maintenance/selection | End live queries, selections, and storage ranges, even if exhausted or empty. |
-| Invalid grid/Morton coordinate | Check finite inputs, positive width and bounds; change the application encoding if needed. |
-| Unexpected placement after raw writes | Mark affected live identities or fully invalidate, then maintain. Do not reuse escaped references after maintenance. |
+| `maintain_spatial` or `select_cluster` raises a locked-world error | A query, selection, or storage range is still alive, possibly an [empty one](../../../reference/compatibility#empty-queries-and-selections-hold-structural-locks). End it first. |
+| `Cluster selection requires clean spatial maintenance` | Particles are dirty or staged. Release old selections, call `maintain_spatial`, then select again. |
+| `Cluster selection requires partitioned spatial storage` | Register the classifier with `partitioned=True`. |
+| `grid_cell` or `morton_key_3d` raises | A coordinate is not finite, the cell width is not positive, or a cell lies outside the supported range. Change the cell width or the key encoding. |
+| `maintain_spatial` raises a classifier error | Larecs keeps the previous rows, keys, and dirty marks. Fix the input and call it again. |
+| Particles stay in old clusters after raw writes | Larecs could not see the write. Mark the particles dirty or invalidate, then maintain. |
 
-The [spatial reference](../../../reference/spatial_sync) links exact declarations;
-the [partition benchmark](../../../inside/development/reports/partitions#partitioned-storage-comparison)
-records scoped measurements rather than a general speed guarantee.
+The [spatial reference](../../../reference/spatial_sync) lists classifier rules,
+key bounds, and the exact maintenance contract. The
+[partition benchmark](../../../inside/development/reports/partitions#partitioned-storage-comparison)
+records measurements for one workload, not a general speed guarantee.
 
 {{< example file="particles/spatial.mojo" full=true >}}
+
+## Next steps
+
+- [Spatial maintenance internals](../../../inside/architecture/spatial)
+  explains dirty tracking, classification, and partition placement.
+- [Measure complete simulation steps](../../performance/measure) to decide
+  whether locality pays off.

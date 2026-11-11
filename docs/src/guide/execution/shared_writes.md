@@ -4,108 +4,106 @@ title = "Coordinate shared writes"
 weight = 6
 +++
 
-Produce race-free shared results by writing per-particle output first and
-reducing it after `run` completes. Start with [kernel access](../../systems_kernels)
-and read the [execution restrictions](../../../reference/compatibility) before
-changing targets. Standalone synchronization primitives exist; automatic
-`KernelContext.sync` bindings and deferred retries do not.
+Compute one shared result, the total displacement of all particles, without a
+data race. Each particle writes its own output in the kernel, and one caller
+sums the outputs after `run` returns. This works on every target, including
+[threaded chunks](../threaded) and [device threads](../device), where many
+invocations run at once. For data you own outside the world, Larecs also
+provides standalone atomic values and guarded values.
+
+Start with [Update entities with systems and kernels](../../systems_kernels).
+Larecs does not bind synchronization primitives to kernels automatically; see
+[compatibility and status](../../../reference/compatibility).
 
 ## Write a separate output for each particle
 
-The stage uses the same particle types and shared time.
+The stage uses the [portable particle model](../#the-portable-particle-model)
+and adds a `Displacement` component that belongs to each particle.
 
 {{< example file="particles/shared_outputs.mojo" region="model" >}}
 
-A resource or mutable capture would be one shared value for every worker.
-The additional `Displacement` below instead belongs to each entity.
-
-Write all output fields before a later step reads them.
-
 {{< example file="particles/shared_outputs.mojo" region="kernel" >}}
 
-The filter grants read-write `Position`, read-only `Velocity`, and set-only
-`Displacement`. Every visited row initializes its output. The same row-local
-work can satisfy device/threaded restrictions without a shared increment.
+`write[Displacement]()` grants set-only access, so the kernel must `set` the
+output on every row it visits. No two rows share an output, so the kernel needs
+no synchronization on any target. A resource or a mutable capture slot, by
+contrast, is one value that every invocation would write.
 
-Reduce the completed output on the coordinating host caller.
+## Reduce after the kernel returns
+
+The system sums the outputs once `run` has returned:
 
 {{< example file="particles/shared_outputs.mojo" region="reduction" >}}
 
-The query starts after synchronous kernel completion. One caller sums all 37
-outputs, obtaining `(9.25, 18.5)`; there is no concurrent write to `total`.
-For a fully parallel reduction, use disjoint partial-output components and
-later passes with explicit dependencies. A single designated writer is also
-valid when it need not read unfinished work from other threads, as in the
-[capture count example](../captures#declare-explicit-slots-for-a-thin-kernel).
-A thread-zero branch alone is not a global barrier.
+`run` is synchronous, so the query sees every written `Displacement`. One caller
+sums all 37 outputs to `(9.25, 18.5)`; nothing writes `total` concurrently.
 
-## Use standalone host primitives when you own the storage
-
-This independent check demonstrates atomic scalars and scoped guarded access
-outside ECS kernels.
-
-{{< example file="particles/shared_outputs.mojo" region="primitives" >}}
-
-{{< api AtomicValue >}} owns a scalar; {{< api AtomicView >}} borrows it.
-`fetch_add` returns the old value, and strong `compare_exchange` returns both
-success and the observed value. Only `UInt32` and `Int32` scalars are supported;
-add/subtract wrap at that width. Read views allow loads only.
-
-{{< api Synchronized >}} owns guarded data; {{< api SyncView >}} borrows its
-canonical protection state. Multiple read guards may coexist, while a writer
-excludes all guards. `try_read`/`try_write` make at most one compare-exchange
-attempt. Test {{< api TryAccess.is_acquired is_acquired >}} before consuming the
-result with `take`. A false result means Busy, including a changed state or
-reader saturation. It is not an automatic wait or a successful skipped update.
-
-References from `guard.value()` stay within the guard's lifetime. Owners and
-guards are noncopyable; copied views share protection identity. Release by
-scope exit, including error unwinding, or by consuming `guard^.release()`.
-Errors do not roll back payload writes. There is no fairness, blocking wait,
-lock upgrade, or automatic retry: record required unfinished work for a later
-pass, or skip only if the application permits losing that update.
-
-## Match ordering and backend support
-
-Public atomic operations default to relaxed ordering. Loads additionally accept
-acquire, stores release, and updates acquire, release, or acquire-release.
-Pass ordering at compile time. Relaxed counters do not publish adjacent ordinary
-data. Guards use acquire/release internally.
-
-| Target | Available behavior |
-| --- | --- |
-| CPU, NVIDIA, AMD | Full initial scalar/guard operation set, with CPU-wide or whole-device scope. Backend compilation does not establish hardware correctness. |
-| Apple device | Relaxed/acquire loads, relaxed/release stores, relaxed add/subtract. Strong CAS, ordered add/subtract, and guards are explicitly rejected. |
-
-Device primitives need aligned, initialized device-accessible payload/state that
-stays alive until completion. Low-level unsafe view constructors do not allocate,
-transfer, or validate that memory. A canonical unlocked state must protect every
-overlapping guarded payload. Host/device allocations are separate domains;
-these primitives do not permit concurrent CPU/GPU access to one allocation.
-
-Do not put an `AtomicView` or `SyncView` into an ordinary resource/capture and
-expect pointer transfer or automatic synchronization binding. Those raw-byte
-paths reject these views and aggregates containing them. Kernel binding adapters
-for these standalone owners remain unimplemented. A custom mutable resource
-adapter may implement a supported atomic protocol over its own target-local
-buffers; the [checked scatter example](https://github.com/larecs/larecs/blob/main/examples/scatter_resource.mojo)
-demonstrates that separate contract.
-
-## Run and troubleshoot
-
-The driver creates 37 movers, checks the reduction, and checks the standalone
-host operations.
+The driver creates the particles and also runs the atomic and guard checks
+shown later on this page:
 
 {{< example file="particles/shared_outputs.mojo" region="check" >}}
 
 From the repository root, run
-`pixi run mojo run -I src examples/particles/shared_outputs.mojo`. Its PASS
-covers host reduction and primitives, not GPU synchronization. Use per-row or
-multi-pass output if a target lacks the operation you need; do not spin on Busy
-or invent a `context.sync` binding. Structural locks and resource leases protect
-invocation lifetimes and do not make shared writes race-free.
+`pixi run mojo run -I src examples/particles/shared_outputs.mojo`. The PASS
+line means the host reduction and the host primitive checks succeeded.
+
+## Variations
+
+### Reduce in several passes
+
+For a parallel reduction, write partial results to disjoint per-particle or
+per-group components, then combine them in a later `run` or on the host. Each
+pass reads only output that an earlier, finished call wrote.
+
+### Use a single writer
+
+One designated writer may update a shared value when it does not need other
+threads' unfinished results, as the
+[capture count](../captures#declare-explicit-slots-for-a-thin-kernel) does with
+global thread zero. A thread-zero branch is not a barrier.
+
+### Update data you own with atomic or guarded values
+
+These primitives work on storage you own, outside the world:
+
+{{< example file="particles/shared_outputs.mojo" region="primitives" >}}
+
+- {{< api AtomicValue >}} owns a `UInt32` or `Int32` scalar, and
+  {{< api AtomicView >}} borrows it. `fetch_add` returns the previous value.
+  `compare_exchange` reports whether it exchanged and which value it observed.
+  Operations use relaxed ordering unless you pass an ordering, such as
+  `store[Ordering.RELEASE]` and `load[Ordering.ACQUIRE]`, at compile time.
+- {{< api Synchronized >}} owns guarded data, and {{< api SyncView >}} borrows
+  it. `try_read` and `try_write` make one attempt and never wait. Check
+  {{< api TryAccess.is_acquired is_acquired >}} before you consume the attempt
+  with `take`. Several readers may hold the value at once; a writer excludes
+  everyone else. The guard releases at scope exit or through `release`.
+
+A false `is_acquired` means *Busy*: another guard holds the value. Larecs does
+not retry. Record the unfinished work for a later pass, or skip the update only
+if your application can lose it.
+
+## Failures and limits
+
+| Failure | Cause and fix |
+| --- | --- |
+| Wrong totals from a shared resource or capture | Several invocations wrote one value. Write per-particle output and reduce after `run`. |
+| `try_read` or `try_write` keeps returning Busy | Another guard is held. Do not spin; defer the work to a later pass. |
+| Compile error for an ordering, compare-exchange, or guard on an Apple GPU | Apple devices support only relaxed add and subtract and limited load and store orderings. Use per-particle output instead. |
+| Compile error when an `AtomicView` or `SyncView` is in a resource or capture | Views do not transfer to kernels. Use per-particle output, or a [mutable adapter](../../../reference/resources#mutable-adapters) that manages its own atomic buffer. |
+| Ordinary data written next to a relaxed counter is not visible | Relaxed operations order nothing else. Use release stores and acquire loads to publish data. |
+
+[Structural locks are not mutexes](../../../reference/compatibility#structural-locks-are-not-mutexes);
+neither are resource leases. The
+[synchronization reference](../../../reference/spatial_sync#synchronization-primitives)
+lists supported orderings per backend, guard rules, and device memory
+requirements.
 
 {{< example file="particles/shared_outputs.mojo" full=true >}}
 
-[Synchronization internals](../../../inside/architecture/synchronization) explains
-atomic scope, guard state, and why standalone views need target-local storage.
+## Next steps
+
+- [Run threaded host kernels](../threaded) and [Execute on a device](../device)
+  run the per-particle kernel concurrently.
+- [Synchronization internals](../../../inside/architecture/synchronization)
+  explains atomic scope and guard state.

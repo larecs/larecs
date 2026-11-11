@@ -1,126 +1,153 @@
 +++
 type = "docs"
 title = "Execute on a device"
-weight = 1
+weight = 2
 +++
 
-Run the particle movement kernel on an explicitly selected accelerator, then
-check the result against an independent host run. Start with
-[systems and kernel access](../../systems_kernels) and
-[shared time](../../../start/shared_configuration). Device execution is
-[experimental](../../../reference/compatibility); use the pinned Mojo/MAX
-environment and a working supported accelerator.
+Run the particle movement kernel on an accelerator, such as a GPU, and check
+that it produces the same positions as the host. Use this when a kernel does
+enough arithmetic per particle to outweigh copying data to the device and back.
+Device execution is [experimental](../../../reference/compatibility); it needs
+the repository's pinned Mojo and MAX environment and a supported accelerator.
 
-## Define a transferable movement stage
+Start with [Update entities with systems and kernels](../../systems_kernels)
+and [Share time and configuration](../../../start/shared_configuration).
 
-This stage keeps the particle names and uses `Float32` arithmetic, including on
-host, so its arithmetic also compiles for Apple GPUs.
+## Select the device in the system
+
+The stage uses the [portable particle model](../#the-portable-particle-model),
+whose components Larecs can copy to the device byte by byte.
 
 {{< example file="particles/device.mojo" region="model" >}}
 
-`Position` and `Velocity` declare `TrivialRegisterPassable`, the component
-transfer requirement. `Time` is an ordinary resource: its recursively checked,
-pointer-free representation qualifies without that trait. A component trait
-check does not establish resource eligibility, and a host pointer field does
-not become a device allocation through byte copying.
-
-Declare the readable inputs and writable position before selecting a target.
+The kernel is the movement kernel from the first simulation, unchanged.
 
 {{< example file="particles/device.mojo" region="kernel" >}}
 
-`move` reads `Velocity` and `Time` and updates `Position`. The filter controls
-component matching and access; `Resources` separately declares resource access.
-`include` uploads and downloads the component, `read` uploads only, and `write`
-downloads only. A write-only component supports `set`, not `get`; initialize it
-for every visited row because its previous host bytes are not uploaded.
-
-## Select the target in the system
-
-The system specializes {{< api SystemContext.run >}} for a
-{{< api ExecutionBackend >}} value.
+`move` is a *thin kernel*: a named `def` function that `run` receives as a
+compile-time parameter. Device execution accepts only thin kernels. The system
+chooses the target with the `backend` parameter of {{< api SystemContext.run >}}:
 
 {{< example file="particles/device.mojo" region="system" >}}
 
-`Move[ExecutionBackend.HOST]()` uses sequential host execution, also the default
-when `backend` is omitted. `Move[ExecutionBackend.DEVICE]()` requests a device.
-The choice is compile-time; a runtime choice needs an explicit branch calling
-each specialization. The same choice is available on
-{{< api EntitySelection.run >}} for exact selected ranges.
+`Move[ExecutionBackend.DEVICE]()` runs `move` on the device, and
+`Move[ExecutionBackend.HOST]()` runs it sequentially on the host, which is also
+the default when you omit `backend`. The {{< api ExecutionBackend >}} value is a
+compile-time parameter, so each system specialization runs on one target.
 
-The execution mapping changes how often code outside the entity loop runs.
+## Let the filter decide what moves
 
-![Sequential host calls each matching store, threaded host calls disjoint chunks, and device threads stride through packed matching rows.](/images/execution-mapping.svg)
-
-*One row loop, three invocation mappings.*
-
-Store A and Store B are physical stores, which can belong to the same logical
-archetype. Sequential host calls cover stores or exact selected ranges;
-threaded calls may split those ranges. Device threads divide the packed rows
-in one launch using grid-stride iteration. Each matched row is visited once;
-row indices are local to the prepared context, never stable entity IDs.
-
-## Account for transfers and completion
-
-By default, every device call uploads all readable columns and resources.
-The transfer path packs only matching ranges and scatters writable results
-back to their original host stores.
+Larecs copies only the data the kernel declares. For each call, it packs the
+matching rows of every physical store into contiguous device columns, runs the
+kernel once over all of them, and copies written columns back to their original
+rows.
 
 ![Readable Position and Velocity ranges pack from two host stores into device columns; only written Position scatters back after synchronization.](/images/device-transfer.svg)
 
 *Access declarations determine transfer directions.*
 
-The upload arrows carry both readable columns; the return arrows carry only
-`Position`. Gaps outside a selection remain untouched. Resource views and
-capture values bind separately from these columns. Allocation capacity can
-persist between calls; skipping unchanged data uploads requires the separate
-[copy-reuse option](../copy_reuse).
+| Declaration | Upload before the kernel | Copy back after the kernel |
+| --- | --- | --- |
+| `include[Position]()` | Yes | Yes |
+| `read[Velocity]()`, `Resources().read[Time]()` | Yes | No |
+| `write[T]()` | No; the kernel must `set` every row it visits | Yes |
 
-`run` returns after the launch, synchronization, and writable component,
-read-write resource, and mutable-capture copy-back finish. The next system sees
-those host values. Downloads use owned staging and publish after successful
-synchronization. A transfer or synchronization failure discards unpublished
-staged outputs and drains the queue; if completion remains unknown, the world
-rejects further execution. Host effects are not rolled back. An adapter finalizer
-can raise after publication; its published outputs remain.
+`run` returns after the kernel finishes and Larecs has copied every written
+component, read-write resource, and mutable capture back to the host. The next
+system sees the new values on the host. Rows that the filter does not match
+stay untouched.
 
-## Execute and compare independent runs
+## Compare the device with the host
 
-The checked driver seeds 37 movers and an unmatched marker, runs two steps per
-target, and checks every coordinate before comparing sums.
+The driver runs two steps on 37 moving particles and one unmatched marker,
+once per target, each in a fresh world.
 
 {{< example file="particles/device.mojo" region="parity" >}}
 
-Each mover ends at `(0.5, 1.0)` and the marker stays at `(-3, -3)`. The non-block
-multiple exercises device iteration beyond a trivial single-row launch.
-`has_accelerator()` gates this program's optional validation; it is not a Larecs
-fallback. Once the program attempts DEVICE, initialization or execution errors
-propagate. The no-support branch instead checks that even an empty DEVICE
-request raises.
+Every mover ends at `(0.5, 1.0)`, the marker stays at `(-3, -3)`, and the
+device sums match the host sums. `has_accelerator()` decides whether the
+program attempts the device at all; without support, it checks that a device
+call raises instead of falling back.
 
-From the repository root, run the checked source:
+From the repository root, run:
 
 ```sh
 pixi run mojo run -I src examples/particles/device.mojo
 ```
 
-`PASS: actual device execution and host/device parity` confirms executed device
-work. `SKIP: device parity ...` confirms only the host path; compilation or a
-hardware skip does not validate the accelerator result.
+A PASS line for the device means the kernel ran on the accelerator and matched
+the host; a SKIP line means this machine has no supported accelerator and only
+the host ran.
 
-## Troubleshooting and limits
+## How device threads visit rows
 
-| Failure or restriction | Response |
+On the host, a kernel invocation covers one physical store or one
+[threaded chunk](../threaded#how-larecs-splits-the-rows). On a device, one
+launch covers all packed rows, and each device thread runs the kernel body.
+The `for` loop over the context uses *grid-stride iteration*: each thread
+starts at its global thread index and advances by the total number of launched
+threads, so every row is visited exactly once, even when there are more rows
+than threads.
+
+![Sequential host calls each matching store, threaded host calls disjoint chunks, and device threads stride through packed matching rows.](/images/execution-mapping.svg)
+
+*One row loop, three invocation mappings.*
+
+Code outside the `for` loop runs once per device thread. A row's `idx` is its
+offset in the packed rows, and [row indices are not entity
+IDs](../../../reference/compatibility#row-indices-are-not-entity-ids).
+
+## Variations
+
+### Choose the target at run time
+
+The backend is a compile-time parameter. To choose at run time, branch and call
+each specialization explicitly, for example add `Move[ExecutionBackend.DEVICE]()`
+when `has_accelerator()` is true and `Move[ExecutionBackend.HOST]()` otherwise.
+Larecs itself has [no device fallback](../../../reference/compatibility#no-device-fallback).
+
+### Run on a selection
+
+{{< api EntitySelection.run >}} accepts the same `backend` parameter and packs
+only the selection's rows.
+
+### Pass local values or owning data
+
+Use [explicit capture slots](../captures#declare-explicit-slots-for-a-thin-kernel)
+for a step-local value and [portable resources](../portable_resources) for an
+owning collection.
+
+### Skip unchanged uploads
+
+By default, every device call uploads all readable columns and resources.
+[Reuse unchanged device copies](../copy_reuse) skips uploads of data that has
+not changed since the last call.
+
+## Failures and limits
+
+| Failure | Cause and fix |
 | --- | --- |
-| DEVICE unavailable | DEVICE raises even with no matching rows. Fix the accelerator/toolchain or explicitly choose HOST. There is no automatic fallback. |
-| Empty match on a working device | Required resources and adapters still validate; no device allocation, upload, or launch occurs. Captures stay unchanged. Mutable adapters still prepare/finalize host output. |
-| Component transfer rejection | Use components satisfying the device transfer check; keep owning collections on the host. Only accessed component types are checked. |
-| Ordinary resource rejection | Use recursively pointer-free trivial values, or an [adapter](../portable_resources) for an owner. `PlainValue` is a trusted declaration for opaque pointer-free trivial fields, not permission to transfer pointers. |
-| Resource access rejection | Ordinary device resources allow `read` and `read_write`, not `write`. Mutable shared values require race-free writes. |
-| Closure or threaded/device combination rejected | Device entry points are thin kernels. Lexical callables require sequential HOST; `threaded=True` requires HOST. |
-| Missing resource, including on an empty match | Add every declared source during setup. Device availability is checked before resource preparation. |
+| `run` raises that DEVICE requires accelerator support or a working device context | No usable accelerator. Fix the accelerator or toolchain, or select `ExecutionBackend.HOST`; there is [no device fallback](../../../reference/compatibility#no-device-fallback). |
+| Compile error: every accessed component type must be device-safe | Make the component `TrivialRegisterPassable`, as in the portable model. Only accessed components are checked. |
+| Compile error: device resources require pointer-free trivial plain values | The resource owns memory or holds a pointer. Use a [portable resource](../portable_resources) for owning data. |
+| Compile error: device write-only resources are unsupported | Declare an ordinary device resource with `read` or `read_write`. |
+| Compile error for a lexical closure or `threaded=True` | Device execution needs a thin kernel and cannot be combined with threaded host execution. |
+| `run` raises about a missing resource, even with no matching rows | Add every declared resource during setup. |
 
-Keep expensive work per particle; transfers and preparation can dominate a small
-kernel. [Measure complete simulation steps](../../performance/measure) before
+A failed device call does not roll back host writes that already happened. The
+[device execution reference](../../../reference/execution#device-execution)
+covers empty matches, transfer and synchronization failures, and when a world
+rejects further device work. Transfers and preparation can dominate a small
+kernel; [measure complete simulation steps](../../performance/measure) before
 choosing a backend.
 
 {{< example file="particles/device.mojo" full=true >}}
+
+## Next steps
+
+- [Pass local values to kernels](../captures) binds a scale and a counter for
+  host and device runs.
+- [Use portable resources](../portable_resources) reads owning collections on
+  the device.
+- [Bindings, transfers, and revisions](../../../inside/architecture/transfers)
+  explains packing and copy-back.

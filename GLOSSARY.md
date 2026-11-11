@@ -23,6 +23,26 @@ A contiguous subset of one matching physical-store range or exact selected
 range, assigned to one kernel invocation.
 _Avoid_: Archetype, when referring to only part of a store.
 
+**Thin kernel**:
+A named `def` function that `run` receives as a compile-time parameter, as in
+`context.run[move]()`, and that captures no local variables. Threaded host and
+device execution accept only thin kernels.
+_Avoid_: Kernel function, when the distinction from a closure matters.
+
+**Lexical closure**:
+A nested `def` that borrows local variables through a capture list, such as
+`{imm scale, mut visits}`, and is passed to `run` as a value. Lexical closures
+run only on the sequential host.
+
+**Capture slot**:
+One ordered entry of a kernel's `Captures` declaration, bound to a local value
+with `read_capture` or `mut_capture` when the kernel runs.
+
+**Grid-stride iteration**:
+The device row loop in which each thread starts at its global thread index and
+advances by the number of launched threads, so every packed row is visited
+exactly once.
+
 **Threaded host execution**:
 Host kernel execution whose independent chunks may run concurrently, with the
 enclosing run completing only after all its chunks finish.
@@ -42,6 +62,19 @@ An invocation's retained access to a source, preventing reentrant lookup,
 replacement, or removal until completion. It does not synchronize workers'
 shared writes or protect against previously escaped aliases.
 
+**Staging buffer**:
+Invocation-owned host memory that holds upload snapshots or downloaded device
+output until publication.
+_Avoid_: Staging store, which holds rows awaiting spatial maintenance.
+
+**Publication**:
+Writing a device call's downloaded outputs from staging buffers to their host
+destinations, after successful synchronization.
+
+**Spatial classifier**:
+A world's registered `SpatialClassifier` that computes a cluster key for each
+eligible entity during spatial maintenance.
+
 **Cluster key**:
 An application classifier's UInt64 identity for a locality group. Equal keys
 identify a cluster; key proximity does not establish exact spatial neighbors.
@@ -49,6 +82,10 @@ identify a cluster; key proximity does not establish exact spatial neighbors.
 **Staging store**:
 A partitioned logical archetype's physical store for rows awaiting explicit
 spatial maintenance. Ordinary matching queries and kernels still visit them.
+
+**Dirty entity**:
+An entity whose classifier inputs may have changed since its key was last
+computed. The next spatial maintenance pass reclassifies it.
 
 **Device copy**:
 The device-held bytes of one resource or of one store's component column,

@@ -4,109 +4,106 @@ title = "Reuse unchanged device copies"
 weight = 5
 +++
 
-Skip unchanged uploads only after the particle kernel passes
-[host/device parity checks](../device). The per-world option is off by default
-and [experimental](../../../reference/compatibility). It preserves synchronous
-completion and eager copy-back of every written output.
+Skip uploading particle data that has not changed since the last device call.
+Use this after the kernel already passes the
+[host and device comparison](../device#compare-the-device-with-the-host) and a
+[measurement](../../performance/measure) shows that uploads matter. Reuse is
+off by default, set per world, and
+[experimental](../../../reference/compatibility). Written outputs still copy
+back to the host after every call.
 
-## Keep the kernel independent of transfer policy
+Start with [Execute on a device](../device).
 
-The stage uses plain particle types and the same read-only time resource.
+## Enable reuse for a world
+
+The stage uses the [portable particle model](../#the-portable-particle-model)
+and the unchanged movement kernel and system.
 
 {{< example file="particles/copy_reuse.mojo" region="model" >}}
 
-`Time` is one resource value; `Position` and `Velocity` have separate columns in
-each physical store. Reuse tracks those units, not individual scalar fields.
-
-The kernel remains unchanged when you enable reuse.
-
 {{< example file="particles/copy_reuse.mojo" region="kernel" >}}
-
-`Position` is readable and writable, `Velocity` and `Time` are read-only.
-A successful device call makes host and device copies current even for the
-written `Position`, so the next identical call may skip its upload too.
-Written output still downloads after every run; this is not persistent
-unsynchronized device state.
-
-The system chooses the target independently of the world's transfer policy.
 
 {{< example file="particles/copy_reuse.mojo" region="system" >}}
 
-Both default-transfer and reuse runs execute the same `Move` specialization.
-This keeps the comparison's semantic work equal.
-
-## Enable reuse and invalidate escaped writes
-
-The sequence below enables {{< api World.reuse_device_copies >}}, reads without
-invalidating, and then changes resource and component inputs.
+The kernel and system do not know about the transfer policy. You enable it on
+the world with {{< api World.reuse_device_copies >}}, as the sequence below
+does before it moves `walker` six times:
 
 {{< example file="particles/copy_reuse.mojo" region="sequence" >}}
 
-`read` and read-only queries preserve reusable copies. `get` through mutable
-storage conservatively advances a revision even if you only read it. The pointer
-obtained before a later run does not trigger tracking when you subsequently
-write through it. `invalidate_device[Time]()` after that write forces a refresh.
-Reacquiring with `get` after each run is the preferred alternative. Neither
-invalidation path permits mutation during a live invocation or makes an invalid
-reference safe.
+Larecs keeps a *revision* for each resource and for each component column of a
+physical store, and advances it whenever the host may have changed that data.
+With reuse enabled, a device call uploads a resource or column only when the
+revision of its *device copy*, the bytes already on the device, differs from
+the current one. In the sequence:
 
-The data-validity sequence differs from allocation reuse.
+- `read` calls leave the revisions unchanged, so the second step reuses every
+  input.
+- `get` through mutable storage advances the revision even if you only read the
+  value, so the step after `get[Time]()` uploads `Time` again.
+- A successful device call leaves the written `Position` current on both sides,
+  so the next call can skip its upload too.
 
 ![First use uploads, an unchanged revision reuses bytes, and a tracked write or explicit invalidation makes the next call upload again; allocation capacity persists.](/images/device-copy-reuse.svg)
 
 *Retained capacity does not prove that its contents are current.*
 
-The revision labels identify host data states. A current record skips an upload;
-a changed record requires one. Downloaded outputs become current after successful
-completion. A revision mismatch does not require discarding a large enough
-allocation. This also applies to read-only adapted resources: validation and
-leases still run, but a current copy skips the whole `prepare_device` hook and
-reuses its descriptor and samples. Mutable adapters always prepare; explicit
-captures upload every call.
+Larecs keeps device allocations between calls whether or not reuse is enabled;
+a kept allocation says nothing about whether its bytes are current. With reuse
+enabled, a read-only [portable resource](../portable_resources) whose source is
+current skips `prepare_device` and reuses its view.
 
-## Know which operations advance revisions
+## Invalidate a write Larecs cannot see
 
-| Data | Operations that can invalidate reusable bytes |
-| --- | --- |
-| Resource | Add/set, mutable `get`, and host/threaded/device runs declaring writable access. Removal discards its records. |
-| Component type in a physical store | Mutable storage/row access, setters and kernels declaring writes, including exact selected ranges. |
-| All columns affected by placement | Structural changes, spatial row permutations, partition transfers and store growth/replacement. |
-| Escaped references or raw pointers | Untracked writes require resource-specific `invalidate_device[T]()` or {{< api World.invalidate_device_copies >}} for all copies. |
-
-Component reuse also requires the same store incarnation, contiguous row range,
-packed offset, and revision. Alternating filters or selections can change pack
-offsets and cause reuploads despite unchanged host values. A world copy starts
-with independent host owners and empty device records. Disabling reuse clears
-records; it does not turn completion asynchronous. Failed queued invocations
-invalidate their touched copies; an unusable world must still be replaced.
+Larecs advances a revision when you call `get`, not when you later write through
+the reference it returned. The sequence keeps `time_ptr` across a run and then
+writes through it, so Larecs cannot see that write.
+`scheduler.world.resources.invalidate_device[Time]()` marks the device copy of
+`Time` stale, and the next call uploads it again. For writes through raw
+pointers to several resources or columns,
+{{< api World.invalidate_device_copies >}} marks every device copy stale.
+Reacquiring a reference with `get` after each run avoids the problem.
 
 ## Check both transfer policies
 
-The driver compares the full mutation sequence, including eager host results,
-against default device transfers and a host baseline.
+The driver runs the same sequence on the host, on the device with default
+transfers, and on the device with reuse:
 
 {{< example file="particles/copy_reuse.mojo" region="check" >}}
 
-Every executed path ends at `(4.5, 7.0)`. From the repository root, run
-`pixi run mojo run -I src examples/particles/copy_reuse.mojo`. A device PASS
-confirms actual default/reuse execution and parity; a hardware SKIP covers only
-the host mutation sequence. This example checks correctness, not upload-byte
-counts. The [device-copy tests](https://github.com/larecs/larecs/blob/main/test/device_copy_reuse_test.mojo)
-and [column tests](https://github.com/larecs/larecs/blob/main/test/device_column_reuse_test.mojo)
-check transfer records and bytes separately.
+Every run ends at `(4.5, 7.0)`. From the repository root, run
+`pixi run mojo run -I src examples/particles/copy_reuse.mojo`. A PASS line for
+the device means both transfer policies ran on the accelerator and matched the
+host; a SKIP line means only the host sequence ran.
 
-## Troubleshooting
+## Variations
 
-| Symptom | Fix |
+### Observe values without forcing an upload
+
+Use `read` on storage and resources, or read-only queries, when you only look
+at values. They keep device copies current.
+
+### Turn reuse off
+
+`world.reuse_device_copies(False)` discards the reuse records; the next device
+call uploads every input again. Calls stay synchronous either way.
+
+## Failures and limits
+
+| Symptom | Cause and fix |
 | --- | --- |
-| Device reads old values | Reacquire mutable references after each run, or invalidate after an escaped write. Disable reuse while diagnosing parity. |
-| Uploads remain frequent | Use `read` for observation; inspect declared writes, changing filters/ranges, and spatial maintenance. A stable allocation is not a stable data record. |
-| Written data still downloads | This is required eager copy-back. Measure complete calls, including downloads and synchronization. |
+| The device reads old values | A write went through a reference kept from before a run, or a raw pointer. Reacquire references with `get` after each run, or invalidate the copy. Turn reuse off to confirm the diagnosis. |
+| Inputs still upload on most calls | Something advances their revisions: a mutable `get`, a writable kernel declaration, a structural change, spatial maintenance, or a filter or selection that packs rows at a different offset. Use `read` for observation. |
+| Written data still downloads | Larecs copies written outputs back after every call; reuse skips only uploads. |
 
-[Measure complete simulation steps](../../performance/measure) before retaining
-this optimization.
+The [copy-reuse reference](../../../reference/execution#device-copy-reuse) lists
+every operation that advances a revision.
 
 {{< example file="particles/copy_reuse.mojo" full=true >}}
 
-[Device-copy validity](../../../inside/architecture/transfers#device-copy-validity)
-explains storage identity, store incarnations, packed offsets, and failure invalidation.
+## Next steps
+
+- [Measure complete simulation steps](../../performance/measure) before you
+  keep this option.
+- [Device-copy validity](../../../inside/architecture/transfers#device-copy-validity)
+  explains how Larecs records which device copies are current.

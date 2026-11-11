@@ -37,15 +37,15 @@ See [Separate the owner from the kernel view](../execution/portable_resources#se
 
 ## Registering and using the custom resource
 
-See [Request the source type and receive its view](../execution/portable_resources#request-the-source-type-and-receive-its-view).
+See [Request the source type in the kernel](../execution/portable_resources#request-the-source-type-in-the-kernel).
 
 ## Adapter allocation and access rules
 
-See [Keep sources and views valid until completion](../execution/portable_resources#keep-sources-and-views-valid-until-completion).
+See [Keep sources and views valid during a call](../execution/portable_resources#keep-sources-and-views-valid-during-a-call).
 
 ## Mutable adapted resources (experimental)
 
-See [Use a writer view only when the adapter supports it](../execution/portable_resources#use-a-writer-view-only-when-the-adapter-supports-it).
+See [Write through an adapter](../execution/portable_resources#write-through-an-adapter).
 
 ## Migrating existing adapters
 
@@ -53,7 +53,7 @@ See [Migration spellings](../../reference/errors#migration-spellings).
 
 ## Invocation lifetime and failures
 
-See [Keep sources and views valid until completion](../execution/portable_resources#keep-sources-and-views-valid-until-completion).
+See [Adapter contracts](../../reference/resources#adapter-contracts).
 
 ## Reusing unchanged device copies (experimental)
 

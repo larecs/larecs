@@ -29,7 +29,7 @@ See [Run threaded host kernels](../execution/threaded).
 
 ## Capturing host kernels
 
-See [Borrow locals on the host](../execution/captures#borrow-locals-on-the-host).
+See [Borrow locals with a closure on the host](../execution/captures#borrow-locals-with-a-closure-on-the-host).
 
 ## Passing host-local values to a device kernel
 
