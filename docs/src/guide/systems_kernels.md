@@ -9,7 +9,9 @@ every entity that matches a filter. This page uses the movement code from
 [Your first simulation](../../start/first_simulation).
 
 {{< example file="particles/movement.mojo" region="kernel" >}}
+
 {{< example file="particles/movement.mojo" region="system" >}}
+
 {{< example file="particles/movement.mojo" region="scheduler" >}}
 
 `move` is the kernel, `Move` is the system that runs it, and the

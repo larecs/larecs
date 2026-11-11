@@ -5,6 +5,10 @@ disablePathToLower: true
 disableKinds: [taxonomy, term]
 
 markup:
+  goldmark:
+    parser:
+      # Figures render as block elements, which a paragraph cannot contain.
+      wrapStandAloneImageWithinParagraph: false
   highlight:
     noClasses: false
 

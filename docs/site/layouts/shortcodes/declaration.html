@@ -19,10 +19,10 @@ Modo's cross-reference parser without changing the displayed declaration. */ -}}
 {{- $exact = replaceRE "\n```$" "" $exact -}}
 {{- $readable := replaceRE `\s+where \(eq .*$` "" $exact -}}
 {{- $readable = replaceRE `: (\w+)\[[a-z_]\w*\.\w+[^\[\]]*\]` ": $1" $readable -}}
-{{- transform.Highlight $readable "mojo" -}}
+{{- partial "code-block.html" $readable -}}
 {{- if ne $readable $exact }}
 <details class="exact-declaration">
 <summary>Exact declaration</summary>
-{{ transform.Highlight $exact "mojo" }}
+{{ partial "code-block.html" $exact }}
 </details>
 {{- end -}}

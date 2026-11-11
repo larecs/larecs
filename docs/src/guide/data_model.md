@@ -9,6 +9,7 @@ components. This page uses the particles from
 [Your first simulation](../../start/first_simulation).
 
 {{< example file="particles/movement.mojo" region="components" >}}
+
 {{< example file="particles/movement.mojo" region="world" >}}
 
 `Position` and `Velocity` are components. `World[Position, Velocity]` declares

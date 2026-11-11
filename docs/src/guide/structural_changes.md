@@ -10,6 +10,7 @@ ends. [Create and remove particles](../../start/growing_simulation) runs this
 code and checks the result.
 
 {{< example file="particles/lifecycle.mojo" region="write_only" >}}
+
 {{< example file="particles/lifecycle.mojo" region="lifecycle" >}}
 
 `context.add_entities` creates three particles and returns a selection of

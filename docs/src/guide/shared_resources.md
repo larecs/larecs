@@ -11,7 +11,9 @@ code.
 
 {{< example file="particles/configuration.mojo" region="time" >}}
 {{< example file="particles/configuration.mojo" region="configuration" >}}
+
 {{< example file="particles/configuration.mojo" region="world" >}}
+
 
 `Time` and `Configuration` are resources. `world.resources.add` stores one
 value of each, and `ConfigureTime` changes `Time` through
