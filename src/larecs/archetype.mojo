@@ -1760,8 +1760,9 @@ struct Archetype[
         """Overwrites the component with the given Type T for multiple consecutive, already-initialized entities starting with the given index.
 
         Caution: This destroys the existing value at each target row before
-        writing the new one, so every row in `[start_entity_idx, start_entity_idx
-        + count)` must already hold a valid, initialized `T` value. Use
+        writing the new one, so every row in
+        `[start_entity_idx, start_entity_idx + count)` must already hold a
+        valid, initialized `T` value. Use
         [.Archetype.init_component_range] instead for rows that were just
         appended or migrated and have not been initialized for `T` yet.
 

@@ -1,7 +1,5 @@
 Mojo function{{template "source_link" .}}
 
-# `{{.Name}}`
-
 {{`{{<expand-all>}}`}}
 
 {{if .Overloads -}}
