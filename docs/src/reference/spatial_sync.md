@@ -1,8 +1,8 @@
----
-title: Spatial APIs and synchronization
-type: docs
-weight: 5
----
++++
+type = "docs"
+title = "Spatial APIs and synchronization"
+weight = 5
++++
 
 Spatial classification groups entities by application-defined keys. It changes physical placement without changing an entity's component composition or identity. Row ordering and addresses are not persistent entity identities.
 
