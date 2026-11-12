@@ -12,7 +12,7 @@
 <link fetchpriority="low" href="/larecs/pr-preview/pr-246/site.webmanifest" rel="manifest" />
 <title>Errors and migration – Larecs🌲</title>
   <meta name="description" content="Read each generated operation’s Raises and Constraints before handling a failure. Constraints reject invalid programs at compile time; runtime errors report invalid state or execution failures.
-API or condition Meaning and response LarecsError Variant containing typed ECS errors and general Error failures. Inspect the specific error rather than assuming every failure is an invalid entity. EntityError, ComponentError Invalid/stale entity or component membership errors. Recheck the handle generation and requested composition. WorldError Includes structural lock exhaustion, a locked world and negative batch counts. Release queries and selections before structural changes, even empty ones; pass a nonnegative count. Device setup or synchronization failure run raises; there is no host fallback. Fix device availability or explicitly select HOST. See device failure behavior. Invalid resource/capture access Check declarations, presence, access modes and binding order. Synchronization cannot repair a declaration mismatch. Threaded resources require explicit read access (compile error) Ordinary threaded resources must declare read; mutable adapters need concurrent-mutation support. See threaded failures. Cluster selection requires clean spatial maintenance Release live selections/queries and maintain explicitly before selecting the next cluster. See spatial failures. Device reads stale data with reuse enabled Reacquire mutable references after each run or invalidate after escaped writes. See copy-reuse failures. TryAccess.is_acquired() is false The guard attempt is Busy. Record required unfinished work for a later pass; there is no automatic retry. See shared-write alternatives. A failing kernel call is not a transaction: do not infer rollback of writes already performed. Scoped selections release locks on exit, including exceptional exit. Failure effects specific to an operation remain in its defining declaration." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-246/reference/errors/" itemprop="url" />
+API or condition Meaning and response LarecsError Variant containing typed ECS errors and general Error failures. Inspect the specific error rather than assuming every failure is an invalid entity. EntityError, ComponentError Invalid or stale entity, or wrong component membership. Recheck the handle generation and requested composition. WorldError Includes structural lock exhaustion, a locked world and negative batch counts. Release queries and selections before structural changes, even empty ones; pass a nonnegative count. Device setup or synchronization failure run raises; there is no host fallback. Fix device availability or explicitly select HOST. See device failure behavior. Invalid resource or capture access Check declarations, presence, access modes and binding order. Synchronization cannot repair a declaration mismatch. Threaded resources require explicit read access (compile error) Ordinary threaded resources must declare read; mutable adapters need concurrent-mutation support. See threaded failures. Cluster selection requires clean spatial maintenance Release live selections and queries and maintain explicitly before selecting the next cluster. See spatial failures. Device reads stale data with reuse enabled Reacquire mutable references after each run or invalidate after escaped writes. See copy-reuse failures. TryAccess.is_acquired() is false The guard attempt is Busy. Record required unfinished work for a later pass; there is no automatic retry. See shared-write alternatives. A failing kernel call is not a transaction: do not infer rollback of writes already performed. Scoped selections release locks on exit, including exceptional exit. Failure effects specific to an operation remain in its defining declaration." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-246/reference/errors/" itemprop="url" />
 
 <meta property="og:title" content="Errors and migration" />
 <meta property="og:description" content="Read each generated operation&rsquo;s Raises and Constraints before handling a failure. Constraints reject invalid programs at compile time; runtime errors report invalid state or execution failures.
@@ -30,7 +30,7 @@ API or condition Meaning and response LarecsError Variant containing typed ECS e
       
       
           EntityError, ComponentError
-          Invalid/stale entity or component membership errors. Recheck the handle generation and requested composition.
+          Invalid or stale entity, or wrong component membership. Recheck the handle generation and requested composition.
       
       
           WorldError
@@ -41,7 +41,7 @@ API or condition Meaning and response LarecsError Variant containing typed ECS e
           run raises; there is no host fallback. Fix device availability or explicitly select HOST. See device failure behavior.
       
       
-          Invalid resource/capture access
+          Invalid resource or capture access
           Check declarations, presence, access modes and binding order. Synchronization cannot repair a declaration mismatch.
       
       
@@ -50,7 +50,7 @@ API or condition Meaning and response LarecsError Variant containing typed ECS e
       
       
           Cluster selection requires clean spatial maintenance
-          Release live selections/queries and maintain explicitly before selecting the next cluster. See spatial failures.
+          Release live selections and queries and maintain explicitly before selecting the next cluster. See spatial failures.
       
       
           Device reads stale data with reuse enabled
@@ -70,12 +70,12 @@ A failing kernel call is not a transaction: do not infer rollback of writes alre
 
   <meta itemprop="name" content="Errors and migration">
   <meta itemprop="description" content="Read each generated operation’s Raises and Constraints before handling a failure. Constraints reject invalid programs at compile time; runtime errors report invalid state or execution failures.
-API or condition Meaning and response LarecsError Variant containing typed ECS errors and general Error failures. Inspect the specific error rather than assuming every failure is an invalid entity. EntityError, ComponentError Invalid/stale entity or component membership errors. Recheck the handle generation and requested composition. WorldError Includes structural lock exhaustion, a locked world and negative batch counts. Release queries and selections before structural changes, even empty ones; pass a nonnegative count. Device setup or synchronization failure run raises; there is no host fallback. Fix device availability or explicitly select HOST. See device failure behavior. Invalid resource/capture access Check declarations, presence, access modes and binding order. Synchronization cannot repair a declaration mismatch. Threaded resources require explicit read access (compile error) Ordinary threaded resources must declare read; mutable adapters need concurrent-mutation support. See threaded failures. Cluster selection requires clean spatial maintenance Release live selections/queries and maintain explicitly before selecting the next cluster. See spatial failures. Device reads stale data with reuse enabled Reacquire mutable references after each run or invalidate after escaped writes. See copy-reuse failures. TryAccess.is_acquired() is false The guard attempt is Busy. Record required unfinished work for a later pass; there is no automatic retry. See shared-write alternatives. A failing kernel call is not a transaction: do not infer rollback of writes already performed. Scoped selections release locks on exit, including exceptional exit. Failure effects specific to an operation remain in its defining declaration.">
-  <meta itemprop="wordCount" content="382">
+API or condition Meaning and response LarecsError Variant containing typed ECS errors and general Error failures. Inspect the specific error rather than assuming every failure is an invalid entity. EntityError, ComponentError Invalid or stale entity, or wrong component membership. Recheck the handle generation and requested composition. WorldError Includes structural lock exhaustion, a locked world and negative batch counts. Release queries and selections before structural changes, even empty ones; pass a nonnegative count. Device setup or synchronization failure run raises; there is no host fallback. Fix device availability or explicitly select HOST. See device failure behavior. Invalid resource or capture access Check declarations, presence, access modes and binding order. Synchronization cannot repair a declaration mismatch. Threaded resources require explicit read access (compile error) Ordinary threaded resources must declare read; mutable adapters need concurrent-mutation support. See threaded failures. Cluster selection requires clean spatial maintenance Release live selections and queries and maintain explicitly before selecting the next cluster. See spatial failures. Device reads stale data with reuse enabled Reacquire mutable references after each run or invalidate after escaped writes. See copy-reuse failures. TryAccess.is_acquired() is false The guard attempt is Busy. Record required unfinished work for a later pass; there is no automatic retry. See shared-write alternatives. A failing kernel call is not a transaction: do not infer rollback of writes already performed. Scoped selections release locks on exit, including exceptional exit. Failure effects specific to an operation remain in its defining declaration.">
+  <meta itemprop="wordCount" content="388">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Errors and migration">
   <meta name="twitter:description" content="Read each generated operation’s Raises and Constraints before handling a failure. Constraints reject invalid programs at compile time; runtime errors report invalid state or execution failures.
-API or condition Meaning and response LarecsError Variant containing typed ECS errors and general Error failures. Inspect the specific error rather than assuming every failure is an invalid entity. EntityError, ComponentError Invalid/stale entity or component membership errors. Recheck the handle generation and requested composition. WorldError Includes structural lock exhaustion, a locked world and negative batch counts. Release queries and selections before structural changes, even empty ones; pass a nonnegative count. Device setup or synchronization failure run raises; there is no host fallback. Fix device availability or explicitly select HOST. See device failure behavior. Invalid resource/capture access Check declarations, presence, access modes and binding order. Synchronization cannot repair a declaration mismatch. Threaded resources require explicit read access (compile error) Ordinary threaded resources must declare read; mutable adapters need concurrent-mutation support. See threaded failures. Cluster selection requires clean spatial maintenance Release live selections/queries and maintain explicitly before selecting the next cluster. See spatial failures. Device reads stale data with reuse enabled Reacquire mutable references after each run or invalidate after escaped writes. See copy-reuse failures. TryAccess.is_acquired() is false The guard attempt is Busy. Record required unfinished work for a later pass; there is no automatic retry. See shared-write alternatives. A failing kernel call is not a transaction: do not infer rollback of writes already performed. Scoped selections release locks on exit, including exceptional exit. Failure effects specific to an operation remain in its defining declaration.">
+API or condition Meaning and response LarecsError Variant containing typed ECS errors and general Error failures. Inspect the specific error rather than assuming every failure is an invalid entity. EntityError, ComponentError Invalid or stale entity, or wrong component membership. Recheck the handle generation and requested composition. WorldError Includes structural lock exhaustion, a locked world and negative batch counts. Release queries and selections before structural changes, even empty ones; pass a nonnegative count. Device setup or synchronization failure run raises; there is no host fallback. Fix device availability or explicitly select HOST. See device failure behavior. Invalid resource or capture access Check declarations, presence, access modes and binding order. Synchronization cannot repair a declaration mismatch. Threaded resources require explicit read access (compile error) Ordinary threaded resources must declare read; mutable adapters need concurrent-mutation support. See threaded failures. Cluster selection requires clean spatial maintenance Release live selections and queries and maintain explicitly before selecting the next cluster. See spatial failures. Device reads stale data with reuse enabled Reacquire mutable references after each run or invalidate after escaped writes. See copy-reuse failures. TryAccess.is_acquired() is false The guard attempt is Busy. Record required unfinished work for a later pass; there is no automatic retry. See shared-write alternatives. A failing kernel call is not a transaction: do not infer rollback of writes already performed. Scoped selections release locks on exit, including exceptional exit. Failure effects specific to an operation remain in its defining declaration.">
 
     <link rel="preload" href="/larecs/pr-preview/pr-246/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
     <link href="/larecs/pr-preview/pr-246/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -170,7 +170,7 @@ API or condition Meaning and response LarecsError Variant containing typed ECS e
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>a153cd8740dd</code>.
+  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -827,7 +827,7 @@ API or condition Meaning and response LarecsError Variant containing typed ECS e
       </tr>
       <tr>
           <td><a href="/larecs/pr-preview/pr-246/larecs/error/EntityError/"><code>EntityError</code></a>, <a href="/larecs/pr-preview/pr-246/larecs/error/ComponentError/"><code>ComponentError</code></a></td>
-          <td>Invalid/stale entity or component membership errors. Recheck the handle generation and requested composition.</td>
+          <td>Invalid or stale entity, or wrong component membership. Recheck the handle generation and requested composition.</td>
       </tr>
       <tr>
           <td><a href="/larecs/pr-preview/pr-246/larecs/error/WorldError/"><code>WorldError</code></a></td>
@@ -838,7 +838,7 @@ API or condition Meaning and response LarecsError Variant containing typed ECS e
           <td><code>run</code> raises; there is <a href="../compatibility#no-device-fallback" >no host fallback</a>. Fix device availability or explicitly select HOST. See <a href="../execution#device-execution" >device failure behavior</a>.</td>
       </tr>
       <tr>
-          <td>Invalid resource/capture access</td>
+          <td>Invalid resource or capture access</td>
           <td>Check declarations, presence, access modes and binding order. Synchronization cannot repair a declaration mismatch.</td>
       </tr>
       <tr>
@@ -847,7 +847,7 @@ API or condition Meaning and response LarecsError Variant containing typed ECS e
       </tr>
       <tr>
           <td><code>Cluster selection requires clean spatial maintenance</code></td>
-          <td>Release live selections/queries and maintain explicitly before selecting the next cluster. See <a href="../../guide/spatial_locality/maintain#failures-and-limits" >spatial failures</a>.</td>
+          <td>Release live selections and queries and maintain explicitly before selecting the next cluster. See <a href="../../guide/spatial_locality/maintain#failures-and-limits" >spatial failures</a>.</td>
       </tr>
       <tr>
           <td>Device reads stale data with reuse enabled</td>

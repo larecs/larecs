@@ -66,11 +66,11 @@ ownership.&lt;/p&gt;
 &lt;p&gt;The thesis architecture predates &lt;code&gt;SystemContext&lt;/code&gt;, device-copy ownership, and
 partition stores. Its mutable-World system signatures do not define today&amp;rsquo;s
 API. The adapted diagram describes roles and ownership, not object byte layout.&lt;/p&gt;
-&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/scheduler.mojo&#34;&gt;Source&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/world.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/system.mojo&#34;&gt;Source&lt;/a&gt;.
-Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/scheduler_test.mojo&#34;&gt;test/scheduler_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/threaded_execution_test.mojo&#34;&gt;test/threaded_execution_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/resource_adapter_host_test.mojo&#34;&gt;test/resource_adapter_host_test.mojo&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/scheduler.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/world.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/system.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/scheduler_test.mojo&#34;&gt;test/scheduler_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/threaded_execution_test.mojo&#34;&gt;test/threaded_execution_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/resource_adapter_host_test.mojo&#34;&gt;test/resource_adapter_host_test.mojo&lt;/a&gt;.&lt;/p&gt;
 
       </description>
     </item>
@@ -173,12 +173,12 @@ index and row. All row movement repairs that mapping, including the tail row
 used by swap-removal. A copied handle survives relocation, whereas an external
 component reference cannot survive a structural change or spatial maintenance.
 An ID from one world is not a cross-world reference.&lt;/p&gt;
-&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/archetype.mojo&#34;&gt;Source&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/host_storage.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/graph.mojo&#34;&gt;Source&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/entity.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/pool.mojo&#34;&gt;Source&lt;/a&gt;.
-Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/host_storage_lifecycle_test.mojo&#34;&gt;test/host_storage_lifecycle_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/partitioned_spatial_test.mojo&#34;&gt;test/partitioned_spatial_test.mojo&lt;/a&gt;;
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/docs/design/decisions/0009-typed-row-permutation-foundation.md&#34;&gt;decision 0009&lt;/a&gt;
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/archetype.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/host_storage.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/graph.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/entity.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/pool.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/host_storage_lifecycle_test.mojo&#34;&gt;test/host_storage_lifecycle_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/partitioned_spatial_test.mojo&#34;&gt;test/partitioned_spatial_test.mojo&lt;/a&gt;;
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0009-typed-row-permutation-foundation.md&#34;&gt;decision 0009&lt;/a&gt;
 records movement guarantees.&lt;/p&gt;
 
       </description>
@@ -269,12 +269,12 @@ Device packing concatenates selected spans and scatters outputs to their
 original locations. Thus &lt;code&gt;particle.idx&lt;/code&gt; is a context-local offset, never a
 stable handle or a full-world sequence number. See &lt;a href=&#34;../execution&#34; &gt;work mapping&lt;/a&gt;
 and &lt;a href=&#34;../transfers&#34; &gt;transfers&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/iteration.mojo&#34;&gt;Source&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/lock.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/system.mojo&#34;&gt;Source&lt;/a&gt;.
-Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/world_entity_iterator_test.mojo&#34;&gt;test/world_entity_iterator_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/entity_selection_test.mojo&#34;&gt;test/entity_selection_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/check_iteration_contracts.py&#34;&gt;test/check_iteration_contracts.py&lt;/a&gt;;
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/docs/design/decisions/0024-locked-storage-ranges.md&#34;&gt;decision 0024&lt;/a&gt;
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/iteration.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/lock.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/system.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/world_entity_iterator_test.mojo&#34;&gt;test/world_entity_iterator_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/entity_selection_test.mojo&#34;&gt;test/entity_selection_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/check_iteration_contracts.py&#34;&gt;test/check_iteration_contracts.py&lt;/a&gt;;
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0024-locked-storage-ranges.md&#34;&gt;decision 0024&lt;/a&gt;
 records the range contract.&lt;/p&gt;
 
       </description>
@@ -342,13 +342,13 @@ returns.&lt;/p&gt;
 four device threads illustrate the indexing rule rather than the actual block
 size. Public restrictions and call forms are in the
 &lt;a href=&#34;../../../reference/execution&#34; &gt;execution reference&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/system.mojo&#34;&gt;Source&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/execution.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/iteration.mojo&#34;&gt;Source&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/gpu_launch.mojo&#34;&gt;Source&lt;/a&gt;.
-Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/grid_stride_iterator_test.mojo&#34;&gt;test/grid_stride_iterator_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/threaded_execution_test.mojo&#34;&gt;test/threaded_execution_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/gpu_launch_cap_test.mojo&#34;&gt;test/gpu_launch_cap_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/check_execution_backend_contracts.py&#34;&gt;test/check_execution_backend_contracts.py&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/system.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/execution.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/iteration.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/gpu_launch.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/grid_stride_iterator_test.mojo&#34;&gt;test/grid_stride_iterator_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/threaded_execution_test.mojo&#34;&gt;test/threaded_execution_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/gpu_launch_cap_test.mojo&#34;&gt;test/gpu_launch_cap_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/check_execution_backend_contracts.py&#34;&gt;test/check_execution_backend_contracts.py&lt;/a&gt;.&lt;/p&gt;
 
       </description>
     </item>
@@ -431,13 +431,13 @@ records. Moves preserve owned state.&lt;/p&gt;
 A later edit through an escaped reference or raw pointer cannot advance the
 counter automatically: it requires explicit invalidation. Revisions are validity
 metadata, not alias tracking or a promise of persistent device-only state.&lt;/p&gt;
-&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/resource.mojo&#34;&gt;Source&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/resource_adapter.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/device_storage.mojo&#34;&gt;Source&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/system.mojo&#34;&gt;Source&lt;/a&gt;.
-Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/resource_adapter_test.mojo&#34;&gt;test/resource_adapter_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/mutable_resource_adapter_test.mojo&#34;&gt;test/mutable_resource_adapter_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/device_copy_reuse_test.mojo&#34;&gt;test/device_copy_reuse_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/device_column_reuse_test.mojo&#34;&gt;test/device_column_reuse_test.mojo&lt;/a&gt;.
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/resource.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/resource_adapter.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/device_storage.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/system.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/resource_adapter_test.mojo&#34;&gt;test/resource_adapter_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/mutable_resource_adapter_test.mojo&#34;&gt;test/mutable_resource_adapter_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/device_copy_reuse_test.mojo&#34;&gt;test/device_copy_reuse_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/device_column_reuse_test.mojo&#34;&gt;test/device_column_reuse_test.mojo&lt;/a&gt;.
 The &lt;a href=&#34;../../../reference/resources&#34; &gt;resource reference&lt;/a&gt; defines author obligations
 and the &lt;a href=&#34;../../../guide/execution/copy_reuse&#34; &gt;copy-reuse guide&lt;/a&gt; shows invalidation.&lt;/p&gt;
 
@@ -505,15 +505,15 @@ still copies identity-capacity keys and scans store metadata, so classifying
 only dirty identities does not make total maintenance O(dirty identities).&lt;/p&gt;
 &lt;p&gt;The thesis&amp;rsquo;s memory blocks and historical bounded partitions explain the
 design lineage. Current growth and reclamation follow
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/docs/design/decisions/0014-growable-cluster-stores.md&#34;&gt;decision 0014&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0014-growable-cluster-stores.md&#34;&gt;decision 0014&lt;/a&gt;,
 which supersedes 0013. The rejected special &lt;code&gt;Cluster&lt;/code&gt; component in 0007 is not
 part of placement. &lt;a href=&#34;../../development/reports/partitions&#34; &gt;Partition reports&lt;/a&gt;
 retain measurements with their layout and revision labels.&lt;/p&gt;
-&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/spatial.mojo&#34;&gt;Source&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/host_storage.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/world.mojo&#34;&gt;Source&lt;/a&gt;.
-Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/spatial_test.mojo&#34;&gt;test/spatial_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/partitioned_spatial_test.mojo&#34;&gt;test/partitioned_spatial_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/gpu_spatial_test.mojo&#34;&gt;test/gpu_spatial_test.mojo&lt;/a&gt;.
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/spatial.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/host_storage.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/world.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/spatial_test.mojo&#34;&gt;test/spatial_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/partitioned_spatial_test.mojo&#34;&gt;test/partitioned_spatial_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/gpu_spatial_test.mojo&#34;&gt;test/gpu_spatial_test.mojo&lt;/a&gt;.
 For the application boundary, use &lt;a href=&#34;../../../guide/spatial_locality/maintain&#34; &gt;Maintain particle locality&lt;/a&gt;.&lt;/p&gt;
 
       </description>
@@ -578,11 +578,11 @@ including when nested in aggregates.&lt;/p&gt;
 lifetimes; synchronization state coordinates concurrent data access. None of
 those mechanisms substitutes for the others. Adapter capability declarations
 also do not add synchronization automatically.&lt;/p&gt;
-&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/sync.mojo&#34;&gt;Source&lt;/a&gt;.
-Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/synchronization_test.mojo&#34;&gt;test/synchronization_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/check_synchronization_contracts.py&#34;&gt;test/check_synchronization_contracts.py&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/gpu_synchronization_test.mojo&#34;&gt;test/gpu_synchronization_test.mojo&lt;/a&gt;,
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/docs/design/research/apple-gpu-publication-ordering.md&#34;&gt;Apple publication research&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/sync.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/synchronization_test.mojo&#34;&gt;test/synchronization_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/check_synchronization_contracts.py&#34;&gt;test/check_synchronization_contracts.py&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/gpu_synchronization_test.mojo&#34;&gt;test/gpu_synchronization_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/apple-gpu-publication-ordering.md&#34;&gt;Apple publication research&lt;/a&gt;.&lt;/p&gt;
 
       </description>
     </item>

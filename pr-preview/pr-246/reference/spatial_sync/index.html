@@ -63,7 +63,7 @@ The generated declarations define supported value types, origins, mutation right
   <meta itemprop="name" content="Spatial APIs and synchronization">
   <meta itemprop="description" content="Spatial classification groups entities by application-defined keys. It changes physical placement without changing an entity’s component composition or identity; row indices are not entity IDs.
 API Contract SpatialClassifier Define the classification key for the registered component types. grid_cell Convert position coordinates to a grid cell using the supplied cell size. morton_key_3d Encode a three-dimensional integer cell as a Morton key within the documented coordinate limits. AtomicValue, AtomicView Own an atomic value or borrow an atomic view; operations expose their memory ordering parameters. CompareExchangeResult Reports compare-exchange success and the observed value. Synchronized, SyncView Own guarded state or borrow its view. Use nonblocking try_read or try_write and check acquisition. TryAccess Test is_acquired() before consuming the result with take(). Keep access within the acquired guard’s lifetime. The generated declarations define supported value types, origins, mutation rights and memory orderings. See maintaining particle locality and coordinating shared writes for complete examples. Synchronization does not grant undeclared component/resource access or permit structural mutation during kernel execution.">
-  <meta itemprop="wordCount" content="979">
+  <meta itemprop="wordCount" content="1000">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Spatial APIs and synchronization">
   <meta name="twitter:description" content="Spatial classification groups entities by application-defined keys. It changes physical placement without changing an entity’s component composition or identity; row indices are not entity IDs.
@@ -162,7 +162,7 @@ API Contract SpatialClassifier Define the classification key for the registered 
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>a153cd8740dd</code>.
+  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -904,7 +904,7 @@ API Contract SpatialClassifier Define the classification key for the registered 
       </tr>
       <tr>
           <td>Partitions (<code>partitioned=True</code>)</td>
-          <td>One growable dense store per logical archetype and cluster key. Capacity starts at one row and doubles; there is no fixed row limit or chunk-size setting. Store traversal is not globally key-sorted, and clusters need not have adjacent allocations.</td>
+          <td>One growable dense store per logical archetype and cluster key. Capacity starts at one row and doubles; there is no fixed row limit or chunk-size setting. Store traversal is not globally key-sorted, and clusters need not have adjacent allocations. Sparse clusters add allocations and store metadata, and ordinary queries and kernels pay binding and traversal costs once per physical store.</td>
       </tr>
       <tr>
           <td>Staging</td>
@@ -930,7 +930,7 @@ API Contract SpatialClassifier Define the classification key for the registered 
 </table>
 <h2>Cluster selection<span class="hx-absolute -hx-mt-20" id="cluster-selection"></span>
     <a href="#cluster-selection" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
-<p><a href="/larecs/pr-preview/pr-246/larecs/system/SystemContext/#select_cluster"><code>SystemContext.select_cluster</code></a> returns an <a href="/larecs/pr-preview/pr-246/larecs/system/EntitySelection/"><code>EntitySelection</code></a> of the rows whose maintained key equals the requested key, across logical archetypes and intersected with the given filter. It raises without partition mode, without clean maintenance, or on a locked world. Membership stays fixed until release, even after member positions change. Even an empty selection holds a structural lock. Cluster selection scans store metadata; it is exact key equality, not a radius query, and Morton key adjacency does not imply spatial adjacency.</p>
+<p><a href="/larecs/pr-preview/pr-246/larecs/system/SystemContext/#select_cluster"><code>SystemContext.select_cluster</code></a> returns an <a href="/larecs/pr-preview/pr-246/larecs/system/EntitySelection/"><code>EntitySelection</code></a> of the rows whose maintained key equals the requested key, across logical archetypes and intersected with the given filter. It raises without partition mode, without clean maintenance, or on a locked world. Membership stays fixed until release, even after member positions change. <a href="../compatibility#empty-queries-and-selections-hold-structural-locks" >Even an empty selection holds a structural lock</a>. Cluster selection scans store metadata; it is exact key equality, not a radius query, and Morton key adjacency does not imply spatial adjacency.</p>
 <h2>Synchronization primitives<span class="hx-absolute -hx-mt-20" id="synchronization-primitives"></span>
     <a href="#synchronization-primitives" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <p>These standalone primitives operate on storage you own. Larecs does not bind them to kernels: an <code>AtomicView</code> or <code>SyncView</code>, or an aggregate containing one, is rejected as an ordinary resource or capture. A custom mutable adapter may implement an atomic protocol over its own target-local buffers.</p>

@@ -30,7 +30,7 @@ and Create and remove entities in batches." />
   <meta itemprop="name" content="Maintain particle locality">
   <meta itemprop="description" content="Keep particles of the same grid cell next to each other in memory, and select exactly the particles of one cell. Use this when profiling shows that a pass reads nearby particles together and suffers from scattered rows. Grouping changes only where rows live; entity handles and component values stay the same. It does not find exact neighbors.
 Start with Update entities with systems and kernels and Create and remove entities in batches.">
-  <meta itemprop="wordCount" content="1845">
+  <meta itemprop="wordCount" content="1852">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Maintain particle locality">
   <meta name="twitter:description" content="Keep particles of the same grid cell next to each other in memory, and select exactly the particles of one cell. Use this when profiling shows that a pass reads nearby particles together and suffers from scattered rows. Grouping changes only where rows live; entity handles and component values stay the same. It does not find exact neighbors.
@@ -129,7 +129,7 @@ Start with Update entities with systems and kernels and Create and remove entiti
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>a153cd8740dd</code>.
+  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -368,6 +368,12 @@ Start with Update entities with systems and kernels and Create and remove entiti
                 href="#failures-and-limits"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
               >Failures and limits</a>
+            </li>
+          <li>
+              <a
+                href="#complete-program"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Complete program</a>
             </li>
           <li>
               <a
@@ -817,6 +823,10 @@ Start with Update entities with systems and kernels and Create and remove entiti
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#complete-program">Complete program
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
         <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#next-steps">Next steps
         </a>
       </li></ul>
@@ -1058,8 +1068,8 @@ rows by itself. The driver runs the same setup under both policies:</p>
           <td>Larecs sorts the classified rows of each physical store by key, so equal keys become contiguous. The order of equal keys is unspecified.</td>
       </tr>
       <tr>
-          <td><code>partitioned=True</code></td>
-          <td>Each cluster of each logical archetype gets its own physical store, which starts with room for one row and doubles as it fills.</td>
+          <td><code>partitioned=True</code>, called <em>partition mode</em></td>
+          <td>Each cluster of each logical archetype gets its own physical store, a <em>partition</em>, which starts with room for one row and doubles as it fills.</td>
       </tr>
   </tbody>
 </table>
@@ -1146,8 +1156,20 @@ in the cells you need, or build a separate spatial index.</p>
 </div>
 </div>
 
-<p>From the repository root, run
-<code>pixi run mojo run -I src examples/particles/spatial.mojo</code>. The PASS line means
+<p>From the repository root, run:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">pixi run mojo run -I src examples/particles/spatial.mojo</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>The PASS line means
 both policies placed and selected the particles as expected on the host.</p>
 <h2>Variations<span class="hx-absolute -hx-mt-20" id="variations"></span>
     <a href="#variations" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
@@ -1212,6 +1234,8 @@ Maintenance and classification still run on the host afterwards.</p>
 key bounds, and the exact maintenance contract. The
 <a href="../../../inside/development/reports/partitions#partitioned-storage-comparison" >partition benchmark</a>
 records measurements for one workload, not a general speed guarantee.</p>
+<h2>Complete program<span class="hx-absolute -hx-mt-20" id="complete-program"></span>
+    <a href="#complete-program" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <details class="example-program">
 <summary>Complete program: <code>examples/particles/spatial.mojo</code></summary>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
@@ -1404,7 +1428,7 @@ records measurements for one workload, not a general speed guarantee.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/examples/particles/spatial.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/spatial.mojo">View the source on GitHub</a></p>
 </details>
 <h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
     <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>

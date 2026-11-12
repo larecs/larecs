@@ -135,7 +135,7 @@ Invalidations before movement The storage owns a queue of full ID/generation ide
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>a153cd8740dd</code>.
+  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -827,15 +827,15 @@ still copies identity-capacity keys and scans store metadata, so classifying
 only dirty identities does not make total maintenance O(dirty identities).</p>
 <p>The thesis&rsquo;s memory blocks and historical bounded partitions explain the
 design lineage. Current growth and reclamation follow
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/docs/design/decisions/0014-growable-cluster-stores.md">decision 0014</a>,
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0014-growable-cluster-stores.md">decision 0014</a>,
 which supersedes 0013. The rejected special <code>Cluster</code> component in 0007 is not
 part of placement. <a href="../../development/reports/partitions" >Partition reports</a>
 retain measurements with their layout and revision labels.</p>
-<p>Implementation: <a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/spatial.mojo">Source</a>,
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/host_storage.mojo">Source</a>, <a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/world.mojo">Source</a>.
-Evidence: <a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/spatial_test.mojo">test/spatial_test.mojo</a>,
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/partitioned_spatial_test.mojo">test/partitioned_spatial_test.mojo</a>,
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/gpu_spatial_test.mojo">test/gpu_spatial_test.mojo</a>.
+<p>Implementation: <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/spatial.mojo">Source</a>,
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/host_storage.mojo">Source</a>, <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/world.mojo">Source</a>.
+Evidence: <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/spatial_test.mojo">test/spatial_test.mojo</a>,
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/partitioned_spatial_test.mojo">test/partitioned_spatial_test.mojo</a>,
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/gpu_spatial_test.mojo">test/gpu_spatial_test.mojo</a>.
 For the application boundary, use <a href="../../../guide/spatial_locality/maintain" >Maintain particle locality</a>.</p>
 
         </div>

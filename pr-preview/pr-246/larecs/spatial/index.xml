@@ -23,7 +23,7 @@
       <description>
         
         
-        &lt;p&gt;Mojo function · &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/spatial.mojo#L73&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+        &lt;p&gt;Mojo function · &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/spatial.mojo#L73&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
 &lt;script lang=&#34;JS&#34;&gt;
 function expandAll() {
     var inputs = document.getElementsByTagName(&#39;details&#39;);
@@ -81,7 +81,7 @@ or wrapped.&lt;/p&gt;
       <description>
         
         
-        &lt;p&gt;Mojo function · &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/spatial.mojo#L98&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+        &lt;p&gt;Mojo function · &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/spatial.mojo#L98&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
 &lt;script lang=&#34;JS&#34;&gt;
 function expandAll() {
     var inputs = document.getElementsByTagName(&#39;details&#39;);
@@ -141,7 +141,7 @@ neighborhood; exact neighbor queries need a separate spatial index.&lt;/p&gt;
       <description>
         
         
-        &lt;p&gt;Mojo trait · &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/spatial.mojo#L45&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+        &lt;p&gt;Mojo trait · &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/spatial.mojo#L45&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;Read-only spatial policy with owned, copyable configuration.&lt;/p&gt;
 &lt;p&gt;Implementations must be deterministic for unchanged declared components
 and configuration, must not mutate the world, and must not retain accessors

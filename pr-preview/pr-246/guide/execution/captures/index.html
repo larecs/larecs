@@ -12,7 +12,7 @@
 <link fetchpriority="low" href="/larecs/pr-preview/pr-246/site.webmanifest" rel="manifest" />
 <title>Pass local values to kernels – Larecs🌲</title>
   <meta name="description" content="Give the particle kernel a step-local scale and get a particle count back, without storing either value as a world resource. Use a lexical closure when the kernel runs sequentially on the host, and explicit capture slots when the same kernel must also run on a device. Threaded execution accepts neither; pass its inputs through read-only resources or components.
-Start with Execute on a device, which introduces thin kernels and the backend parameter." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-246/guide/execution/captures/" itemprop="url" />
+Start with Execute on a device, which introduces the backend parameter. Run threaded host kernels defines thin kernels." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-246/guide/execution/captures/" itemprop="url" />
 
 <meta property="og:title" content="Pass local values to kernels" />
 <meta property="og:description" content="Give the particle kernel a step-local scale and get a particle count back,
@@ -20,8 +20,8 @@ without storing either value as a world resource. Use a lexical closure when
 the kernel runs sequentially on the host, and explicit capture slots when the
 same kernel must also run on a device. Threaded execution accepts neither; pass
 its inputs through read-only resources or components.
-Start with Execute on a device, which introduces thin kernels and
-the backend parameter." />
+Start with Execute on a device, which introduces the backend
+parameter. Run threaded host kernels defines thin kernels." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://larecs.github.io/larecs/pr-preview/pr-246/guide/execution/captures/" /><meta property="article:section" content="guide" />
 
@@ -29,12 +29,12 @@ the backend parameter." />
 
   <meta itemprop="name" content="Pass local values to kernels">
   <meta itemprop="description" content="Give the particle kernel a step-local scale and get a particle count back, without storing either value as a world resource. Use a lexical closure when the kernel runs sequentially on the host, and explicit capture slots when the same kernel must also run on a device. Threaded execution accepts neither; pass its inputs through read-only resources or components.
-Start with Execute on a device, which introduces thin kernels and the backend parameter.">
-  <meta itemprop="wordCount" content="1795">
+Start with Execute on a device, which introduces the backend parameter. Run threaded host kernels defines thin kernels.">
+  <meta itemprop="wordCount" content="1801">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Pass local values to kernels">
   <meta name="twitter:description" content="Give the particle kernel a step-local scale and get a particle count back, without storing either value as a world resource. Use a lexical closure when the kernel runs sequentially on the host, and explicit capture slots when the same kernel must also run on a device. Threaded execution accepts neither; pass its inputs through read-only resources or components.
-Start with Execute on a device, which introduces thin kernels and the backend parameter.">
+Start with Execute on a device, which introduces the backend parameter. Run threaded host kernels defines thin kernels.">
 
     <link rel="preload" href="/larecs/pr-preview/pr-246/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
     <link href="/larecs/pr-preview/pr-246/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -129,7 +129,7 @@ Start with Execute on a device, which introduces thin kernels and the backend pa
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>a153cd8740dd</code>.
+  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -313,6 +313,12 @@ Start with Execute on a device, which introduces thin kernels and the backend pa
                 href="#failures-and-limits"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
               >Failures and limits</a>
+            </li>
+          <li>
+              <a
+                href="#complete-program"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Complete program</a>
             </li>
           <li>
               <a
@@ -793,6 +799,10 @@ Start with Execute on a device, which introduces thin kernels and the backend pa
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#complete-program">Complete program
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
         <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#next-steps">Next steps
         </a>
       </li></ul>
@@ -827,8 +837,8 @@ without storing either value as a world resource. Use a lexical closure when
 the kernel runs sequentially on the host, and explicit capture slots when the
 same kernel must also run on a device. Threaded execution accepts neither; pass
 its inputs through read-only resources or components.</p>
-<p>Start with <a href="../device" >Execute on a device</a>, which introduces thin kernels and
-the backend parameter.</p>
+<p>Start with <a href="../device" >Execute on a device</a>, which introduces the backend
+parameter. <a href="../threaded" >Run threaded host kernels</a> defines thin kernels.</p>
 <h2>Borrow locals with a closure on the host<span class="hx-absolute -hx-mt-20" id="borrow-locals-with-a-closure-on-the-host"></span>
     <a href="#borrow-locals-with-a-closure-on-the-host" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <p>Both programs on this page use the
@@ -957,8 +967,19 @@ after the last call, so the assertion sees the final count.</p>
 <p>The extra <code>Int32</code> component gives <code>climber</code> a different composition and
 therefore its own physical store; it does not change which entities <code>move</code>
 matches. Both particles move once, and <code>visits</code> counts rows across both calls.
-From the repository root, run
-<code>pixi run mojo run -I src examples/particles/lexical_closure.mojo</code>.</p>
+From the repository root, run:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">pixi run mojo run -I src examples/particles/lexical_closure.mojo</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
 <h2>Declare explicit slots for a thin kernel<span class="hx-absolute -hx-mt-20" id="declare-explicit-slots-for-a-thin-kernel"></span>
     <a href="#declare-explicit-slots-for-a-thin-kernel" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <p>A thin kernel cannot borrow locals, but it can declare ordered <em>capture slots</em>
@@ -1112,6 +1133,8 @@ component and reduce it after <code>run</code>, as in
 must not outlive the call. The
 <a href="../../../reference/resources#explicit-captures" >capture reference</a> lists the
 remaining binding rules.</p>
+<h2>Complete program<span class="hx-absolute -hx-mt-20" id="complete-program"></span>
+    <a href="#complete-program" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <details class="example-program">
 <summary>Complete program: <code>examples/particles/lexical_closure.mojo</code></summary>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
@@ -1223,7 +1246,7 @@ remaining binding rules.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/examples/particles/lexical_closure.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/lexical_closure.mojo">View the source on GitHub</a></p>
 </details>
 <p>The program above checks the lexical closure on the host.</p>
 <details class="example-program">
@@ -1377,7 +1400,7 @@ remaining binding rules.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/examples/particles/captures.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/captures.mojo">View the source on GitHub</a></p>
 </details>
 <p>The program above checks explicit slots on the host and, when available, on a
 device.</p>

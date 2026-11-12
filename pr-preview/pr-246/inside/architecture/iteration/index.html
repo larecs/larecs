@@ -135,7 +135,7 @@ Guard ownership and cursor ownership query returns a read-only LockedEntityRange
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>a153cd8740dd</code>.
+  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -855,12 +855,12 @@ Device packing concatenates selected spans and scatters outputs to their
 original locations. Thus <code>particle.idx</code> is a context-local offset, never a
 stable handle or a full-world sequence number. See <a href="../execution" >work mapping</a>
 and <a href="../transfers" >transfers</a>.</p>
-<p>Implementation: <a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/iteration.mojo">Source</a>,
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/lock.mojo">Source</a>, <a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/system.mojo">Source</a>.
-Evidence: <a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/world_entity_iterator_test.mojo">test/world_entity_iterator_test.mojo</a>,
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/entity_selection_test.mojo">test/entity_selection_test.mojo</a>,
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/check_iteration_contracts.py">test/check_iteration_contracts.py</a>;
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/docs/design/decisions/0024-locked-storage-ranges.md">decision 0024</a>
+<p>Implementation: <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/iteration.mojo">Source</a>,
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/lock.mojo">Source</a>, <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/system.mojo">Source</a>.
+Evidence: <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/world_entity_iterator_test.mojo">test/world_entity_iterator_test.mojo</a>,
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/entity_selection_test.mojo">test/entity_selection_test.mojo</a>,
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/check_iteration_contracts.py">test/check_iteration_contracts.py</a>;
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0024-locked-storage-ranges.md">decision 0024</a>
 records the range contract.</p>
 
         </div>

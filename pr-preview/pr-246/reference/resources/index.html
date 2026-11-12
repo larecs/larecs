@@ -12,7 +12,7 @@
 <link fetchpriority="low" href="/larecs/pr-preview/pr-246/site.webmanifest" rel="manifest" />
 <title>Resources and captures – Larecs🌲</title>
   <meta name="description" content="ResourceStorage stores one shared value per resource type. Add values during setup with world.resources.add(Time(0.25)). Declare a kernel’s access with Resources, for example Resources().read[Time](); undeclared access fails at compile time.
-API Contract ResourceStorage.add, ResourceStorage.set, ResourceStorage.remove Insert, replace or remove a value; generated entries state presence requirements and failure behavior. Resources read grants immutable access, write fresh output access, and read_write mutable access preserving existing contents. DevicePassableResource Owning resource sources opt into adapted kernel views. The selected view depends on declared access and execution target. ResourceAdapter, ResourceAccess Adapter protocol and READ, WRITE, READ_WRITE modes; fresh WRITE does not preserve prior contents. BufferResource, ReadBuffer Buffer source and immutable view for adapter-backed resources. ResourceDeviceCache Allocation cache used by the adapter protocol; it does not replace a source’s ownership or revision contract. Captures, ReadCapture, MutCapture Ordered declarations for explicitly bound host-local values, independent of resource types. read_capture, mut_capture Bind borrowed values in declaration order; keep their owners alive through the synchronous call. Ordinary resources can own heap data on sequential host execution. Device plain resources require a recursively checked pointer-free representation; an owning resource instead needs an adapter. These rules differ from the component transfer check; see compatibility." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-246/reference/resources/" itemprop="url" />
+API Contract ResourceStorage.add, ResourceStorage.set, ResourceStorage.remove Insert, replace or remove a value; generated entries state presence requirements and failure behavior. Resources read grants immutable access, write fresh output access, and read_write mutable access preserving existing contents. DevicePassableResource Owning resource sources opt into adapter-built kernel views and become portable resources. The selected view depends on declared access and execution target. ResourceAdapter, ResourceAccess Adapter protocol and READ, WRITE, READ_WRITE modes; fresh WRITE does not preserve prior contents. BufferResource, ReadBuffer Buffer source and immutable view for portable resources. ResourceDeviceCache Allocation cache used by the adapter protocol; it does not replace a source’s ownership or revision contract. Captures, ReadCapture, MutCapture Ordered declarations for explicitly bound host-local values, independent of resource types. read_capture, mut_capture Bind borrowed values in declaration order; keep their owners alive through the synchronous call. Ordinary resources can own heap data on sequential host execution. Device plain resources require a recursively checked pointer-free representation; an owning resource instead needs an adapter. These rules differ from the component transfer check; see compatibility." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-246/reference/resources/" itemprop="url" />
 
 <meta property="og:title" content="Resources and captures" />
 <meta property="og:description" content="ResourceStorage stores one shared value per resource type. Add values during setup with world.resources.add(Time(0.25)). Declare a kernel&rsquo;s access with Resources, for example Resources().read[Time](); undeclared access fails at compile time.
@@ -34,7 +34,7 @@ API Contract ResourceStorage.add, ResourceStorage.set, ResourceStorage.remove In
       
       
           DevicePassableResource
-          Owning resource sources opt into adapted kernel views. The selected view depends on declared access and execution target.
+          Owning resource sources opt into adapter-built kernel views and become portable resources. The selected view depends on declared access and execution target.
       
       
           ResourceAdapter, ResourceAccess
@@ -42,7 +42,7 @@ API Contract ResourceStorage.add, ResourceStorage.set, ResourceStorage.remove In
       
       
           BufferResource, ReadBuffer
-          Buffer source and immutable view for adapter-backed resources.
+          Buffer source and immutable view for portable resources.
       
       
           ResourceDeviceCache
@@ -66,12 +66,12 @@ Ordinary resources can own heap data on sequential host execution. Device plain 
 
   <meta itemprop="name" content="Resources and captures">
   <meta itemprop="description" content="ResourceStorage stores one shared value per resource type. Add values during setup with world.resources.add(Time(0.25)). Declare a kernel’s access with Resources, for example Resources().read[Time](); undeclared access fails at compile time.
-API Contract ResourceStorage.add, ResourceStorage.set, ResourceStorage.remove Insert, replace or remove a value; generated entries state presence requirements and failure behavior. Resources read grants immutable access, write fresh output access, and read_write mutable access preserving existing contents. DevicePassableResource Owning resource sources opt into adapted kernel views. The selected view depends on declared access and execution target. ResourceAdapter, ResourceAccess Adapter protocol and READ, WRITE, READ_WRITE modes; fresh WRITE does not preserve prior contents. BufferResource, ReadBuffer Buffer source and immutable view for adapter-backed resources. ResourceDeviceCache Allocation cache used by the adapter protocol; it does not replace a source’s ownership or revision contract. Captures, ReadCapture, MutCapture Ordered declarations for explicitly bound host-local values, independent of resource types. read_capture, mut_capture Bind borrowed values in declaration order; keep their owners alive through the synchronous call. Ordinary resources can own heap data on sequential host execution. Device plain resources require a recursively checked pointer-free representation; an owning resource instead needs an adapter. These rules differ from the component transfer check; see compatibility.">
-  <meta itemprop="wordCount" content="756">
+API Contract ResourceStorage.add, ResourceStorage.set, ResourceStorage.remove Insert, replace or remove a value; generated entries state presence requirements and failure behavior. Resources read grants immutable access, write fresh output access, and read_write mutable access preserving existing contents. DevicePassableResource Owning resource sources opt into adapter-built kernel views and become portable resources. The selected view depends on declared access and execution target. ResourceAdapter, ResourceAccess Adapter protocol and READ, WRITE, READ_WRITE modes; fresh WRITE does not preserve prior contents. BufferResource, ReadBuffer Buffer source and immutable view for portable resources. ResourceDeviceCache Allocation cache used by the adapter protocol; it does not replace a source’s ownership or revision contract. Captures, ReadCapture, MutCapture Ordered declarations for explicitly bound host-local values, independent of resource types. read_capture, mut_capture Bind borrowed values in declaration order; keep their owners alive through the synchronous call. Ordinary resources can own heap data on sequential host execution. Device plain resources require a recursively checked pointer-free representation; an owning resource instead needs an adapter. These rules differ from the component transfer check; see compatibility.">
+  <meta itemprop="wordCount" content="765">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Resources and captures">
   <meta name="twitter:description" content="ResourceStorage stores one shared value per resource type. Add values during setup with world.resources.add(Time(0.25)). Declare a kernel’s access with Resources, for example Resources().read[Time](); undeclared access fails at compile time.
-API Contract ResourceStorage.add, ResourceStorage.set, ResourceStorage.remove Insert, replace or remove a value; generated entries state presence requirements and failure behavior. Resources read grants immutable access, write fresh output access, and read_write mutable access preserving existing contents. DevicePassableResource Owning resource sources opt into adapted kernel views. The selected view depends on declared access and execution target. ResourceAdapter, ResourceAccess Adapter protocol and READ, WRITE, READ_WRITE modes; fresh WRITE does not preserve prior contents. BufferResource, ReadBuffer Buffer source and immutable view for adapter-backed resources. ResourceDeviceCache Allocation cache used by the adapter protocol; it does not replace a source’s ownership or revision contract. Captures, ReadCapture, MutCapture Ordered declarations for explicitly bound host-local values, independent of resource types. read_capture, mut_capture Bind borrowed values in declaration order; keep their owners alive through the synchronous call. Ordinary resources can own heap data on sequential host execution. Device plain resources require a recursively checked pointer-free representation; an owning resource instead needs an adapter. These rules differ from the component transfer check; see compatibility.">
+API Contract ResourceStorage.add, ResourceStorage.set, ResourceStorage.remove Insert, replace or remove a value; generated entries state presence requirements and failure behavior. Resources read grants immutable access, write fresh output access, and read_write mutable access preserving existing contents. DevicePassableResource Owning resource sources opt into adapter-built kernel views and become portable resources. The selected view depends on declared access and execution target. ResourceAdapter, ResourceAccess Adapter protocol and READ, WRITE, READ_WRITE modes; fresh WRITE does not preserve prior contents. BufferResource, ReadBuffer Buffer source and immutable view for portable resources. ResourceDeviceCache Allocation cache used by the adapter protocol; it does not replace a source’s ownership or revision contract. Captures, ReadCapture, MutCapture Ordered declarations for explicitly bound host-local values, independent of resource types. read_capture, mut_capture Bind borrowed values in declaration order; keep their owners alive through the synchronous call. Ordinary resources can own heap data on sequential host execution. Device plain resources require a recursively checked pointer-free representation; an owning resource instead needs an adapter. These rules differ from the component transfer check; see compatibility.">
 
     <link rel="preload" href="/larecs/pr-preview/pr-246/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
     <link href="/larecs/pr-preview/pr-246/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -166,7 +166,7 @@ API Contract ResourceStorage.add, ResourceStorage.set, ResourceStorage.remove In
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>a153cd8740dd</code>.
+  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -847,7 +847,7 @@ API Contract ResourceStorage.add, ResourceStorage.set, ResourceStorage.remove In
       </tr>
       <tr>
           <td><a href="/larecs/pr-preview/pr-246/larecs/resource_adapter/DevicePassableResource/"><code>DevicePassableResource</code></a></td>
-          <td>Owning resource sources opt into adapted kernel views. The selected view depends on declared access and execution target.</td>
+          <td>Owning resource sources opt into adapter-built kernel views and become portable resources. The selected view depends on declared access and execution target.</td>
       </tr>
       <tr>
           <td><a href="/larecs/pr-preview/pr-246/larecs/resource_adapter/ResourceAdapter/"><code>ResourceAdapter</code></a>, <a href="/larecs/pr-preview/pr-246/larecs/resource_adapter/ResourceAccess/"><code>ResourceAccess</code></a></td>
@@ -855,7 +855,7 @@ API Contract ResourceStorage.add, ResourceStorage.set, ResourceStorage.remove In
       </tr>
       <tr>
           <td><a href="/larecs/pr-preview/pr-246/larecs/resource_adapter/BufferResource/"><code>BufferResource</code></a>, <a href="/larecs/pr-preview/pr-246/larecs/resource_adapter/ReadBuffer/"><code>ReadBuffer</code></a></td>
-          <td>Buffer source and immutable view for adapter-backed resources.</td>
+          <td>Buffer source and immutable view for portable resources.</td>
       </tr>
       <tr>
           <td><a href="/larecs/pr-preview/pr-246/larecs/resource_adapter/ResourceDeviceCache/"><code>ResourceDeviceCache</code></a></td>
@@ -956,9 +956,9 @@ API Contract ResourceStorage.add, ResourceStorage.set, ResourceStorage.remove In
 </table>
 <h2>Mutable adapters<span class="hx-absolute -hx-mt-20" id="mutable-adapters"></span>
     <a href="#mutable-adapters" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
-<p>Mutable adapted resources are experimental.</p>
+<p>Mutable portable resources are experimental.</p>
 <ul>
-<li><code>supports_mutation</code> permits writable views on sequential host calls; <code>supports_concurrent_mutation</code> additionally permits them on threaded and device calls. Both are author guarantees: a source lease does not prevent races among the workers of one invocation.</li>
+<li><code>supports_mutation</code> permits writable views on sequential host calls; <code>supports_concurrent_mutation</code> additionally permits them on threaded and device calls. Both are author guarantees: a source lease does not prevent races among the workers of one invocation, because <a href="../compatibility#structural-locks-are-not-mutexes" >leases are not mutexes</a>.</li>
 <li><code>write</code> selects fresh, adapter-initialized output; <code>read_write</code> preserves existing contents. The descriptor itself stays immutable; its methods control writes to backing storage.</li>
 <li>Preparation and finalization run once per invocation, even for empty matches. Mutable adapters prepare on every call, even with device-copy reuse.</li>
 <li><code>Resources[T]()</code> without a mode means read-write and fails to compile for an adapter without <code>supports_mutation</code>.</li>

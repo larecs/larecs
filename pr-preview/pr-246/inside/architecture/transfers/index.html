@@ -134,7 +134,7 @@ Sources and target-local views Ordinary resources bind directly on the host. Dev
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>a153cd8740dd</code>.
+  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -847,13 +847,13 @@ records. Moves preserve owned state.</p>
 A later edit through an escaped reference or raw pointer cannot advance the
 counter automatically: it requires explicit invalidation. Revisions are validity
 metadata, not alias tracking or a promise of persistent device-only state.</p>
-<p>Implementation: <a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/resource.mojo">Source</a>,
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/resource_adapter.mojo">Source</a>, <a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/device_storage.mojo">Source</a>,
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/system.mojo">Source</a>.
-Evidence: <a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/resource_adapter_test.mojo">test/resource_adapter_test.mojo</a>,
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/mutable_resource_adapter_test.mojo">test/mutable_resource_adapter_test.mojo</a>,
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/device_copy_reuse_test.mojo">test/device_copy_reuse_test.mojo</a>,
-<a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/test/device_column_reuse_test.mojo">test/device_column_reuse_test.mojo</a>.
+<p>Implementation: <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/resource.mojo">Source</a>,
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/resource_adapter.mojo">Source</a>, <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/device_storage.mojo">Source</a>,
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/system.mojo">Source</a>.
+Evidence: <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/resource_adapter_test.mojo">test/resource_adapter_test.mojo</a>,
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/mutable_resource_adapter_test.mojo">test/mutable_resource_adapter_test.mojo</a>,
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/device_copy_reuse_test.mojo">test/device_copy_reuse_test.mojo</a>,
+<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/device_column_reuse_test.mojo">test/device_column_reuse_test.mojo</a>.
 The <a href="../../../reference/resources" >resource reference</a> defines author obligations
 and the <a href="../../../guide/execution/copy_reuse" >copy-reuse guide</a> shows invalidation.</p>
 

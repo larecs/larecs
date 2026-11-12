@@ -30,7 +30,7 @@ and Share time and configuration." />
   <meta itemprop="name" content="Execute on a device">
   <meta itemprop="description" content="Run the particle movement kernel on an accelerator, such as a GPU, and check that it produces the same positions as the host. Use this when a kernel does enough arithmetic per particle to outweigh copying data to the device and back. Device execution is experimental; it needs the repository’s pinned Mojo and MAX environment and a supported accelerator.
 Start with Update entities with systems and kernels and Share time and configuration.">
-  <meta itemprop="wordCount" content="1565">
+  <meta itemprop="wordCount" content="1558">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Execute on a device">
   <meta name="twitter:description" content="Run the particle movement kernel on an accelerator, such as a GPU, and check that it produces the same positions as the host. Use this when a kernel does enough arithmetic per particle to outweigh copying data to the device and back. Device execution is experimental; it needs the repository’s pinned Mojo and MAX environment and a supported accelerator.
@@ -129,7 +129,7 @@ Start with Update entities with systems and kernels and Share time and configura
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>a153cd8740dd</code>.
+  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -317,6 +317,12 @@ Start with Update entities with systems and kernels and Share time and configura
                 href="#failures-and-limits"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
               >Failures and limits</a>
+            </li>
+          <li>
+              <a
+                href="#complete-program"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Complete program</a>
             </li>
           <li>
               <a
@@ -821,6 +827,10 @@ Start with Update entities with systems and kernels and Share time and configura
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#complete-program">Complete program
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
         <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#next-steps">Next steps
         </a>
       </li></ul>
@@ -923,8 +933,8 @@ whose components Larecs can copy to the device byte by byte.</p>
 </div>
 </div>
 
-<p><code>move</code> is a <em>thin kernel</em>: a named <code>def</code> function that <code>run</code> receives as a
-compile-time parameter. Device execution accepts only thin kernels. The system
+<p><code>move</code> is a <a href="../threaded#move-particles-in-threaded-chunks" >thin kernel</a>, the
+only kind of kernel device execution accepts. The system
 chooses the target with the <code>backend</code> parameter of <a href="/larecs/pr-preview/pr-246/larecs/system/SystemContext/#run"><code>SystemContext.run</code></a>:</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
@@ -1165,6 +1175,8 @@ covers empty matches, transfer and synchronization failures, and when a world
 rejects further device work. Transfers and preparation can dominate a small
 kernel; <a href="../../performance/measure" >measure complete simulation steps</a> before
 choosing a backend.</p>
+<h2>Complete program<span class="hx-absolute -hx-mt-20" id="complete-program"></span>
+    <a href="#complete-program" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <details class="example-program">
 <summary>Complete program: <code>examples/particles/device.mojo</code></summary>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
@@ -1313,7 +1325,7 @@ choosing a backend.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/examples/particles/device.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/device.mojo">View the source on GitHub</a></p>
 </details>
 <h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
     <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>

@@ -36,7 +36,7 @@ and the movement kernel from the first simulation." />
   <meta itemprop="description" content="Split one particle movement call into chunks that run concurrently on host worker threads. Use this when a single kernel call covers many independent rows and profiling shows that the call dominates a step. Only the rows of one call are split; systems still run one after another in registration order. Threaded execution is experimental.
 Start with Update entities with systems and kernels.
 Move particles in threaded chunks The stage uses the portable particle model and the movement kernel from the first simulation.">
-  <meta itemprop="wordCount" content="1296">
+  <meta itemprop="wordCount" content="1334">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Run threaded host kernels">
   <meta name="twitter:description" content="Split one particle movement call into chunks that run concurrently on host worker threads. Use this when a single kernel call covers many independent rows and profiling shows that the call dominates a step. Only the rows of one call are split; systems still run one after another in registration order. Threaded execution is experimental.
@@ -136,7 +136,7 @@ Move particles in threaded chunks The stage uses the portable particle model and
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>a153cd8740dd</code>.
+  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -304,6 +304,12 @@ Move particles in threaded chunks The stage uses the portable particle model and
                 href="#failures-and-limits"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
               >Failures and limits</a>
+            </li>
+          <li>
+              <a
+                href="#complete-program"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Complete program</a>
             </li>
           <li>
               <a
@@ -804,6 +810,10 @@ Move particles in threaded chunks The stage uses the portable particle model and
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#complete-program">Complete program
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
         <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#next-steps">Next steps
         </a>
       </li></ul>
@@ -907,7 +917,7 @@ and the movement kernel from the first simulation.</p>
 
 <p><code>move</code> is a <em>thin kernel</em>: a named <code>def</code> function that <code>run</code> receives as a
 compile-time parameter, as in <code>context.run[move]()</code>. It captures no local
-variables, which threaded execution requires. Each row writes only its own
+variables and declares no capture slots; threaded execution requires both. Each row writes only its own
 <code>Position</code>, so no two chunks write the same data. <code>Resources().read[Time]()</code>
 declares <code>Time</code> read-only, so all chunks share one immutable value.</p>
 <p>Opt in for one call with <code>threaded=True</code>:</p>
@@ -1043,7 +1053,7 @@ explains how Larecs sizes chunks.</p>
 <p>The default configuration has one worker, four chunks per worker, and a cutoff
 of 65,536 matched rows. With one worker, or with fewer matched rows than
 <code>min_parallel_rows</code>, a <code>threaded=True</code> call runs sequentially, once per
-physical store. Keep <code>threaded=True</code> in the system and set the worker budget
+physical store or selected range. Keep <code>threaded=True</code> in the system and set the worker budget
 per world; the compile-time eligibility checks apply either way.</p>
 <h3>Run threaded on a selection<span class="hx-absolute -hx-mt-20" id="run-threaded-on-a-selection"></span>
     <a href="#run-threaded-on-a-selection" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
@@ -1053,7 +1063,7 @@ splits only the selection&rsquo;s rows.</p>
     <a href="#read-an-owning-collection" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
 <p>Ordinary resources in a threaded call must be read-only values without
 pointers or owned memory. To read a list or buffer, wrap it in an
-<a href="../portable_resources" >adapted resource</a>.</p>
+<a href="../portable_resources" >portable resource</a>.</p>
 <h2>Failures and limits<span class="hx-absolute -hx-mt-20" id="failures-and-limits"></span>
     <a href="#failures-and-limits" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <table>
@@ -1066,7 +1076,11 @@ pointers or owned memory. To read a list or buffer, wrap it in an
   <tbody>
       <tr>
           <td><code>Threaded components require pointer-free trivial plain values</code></td>
-          <td>An accessed component holds a pointer or owns memory, such as a <code>List</code>. Remove it from the filter, or keep that data in an adapted resource.</td>
+          <td>An accessed component holds a pointer or owns memory, such as a <code>List</code>. Remove it from the filter, or keep that data in a portable resource.</td>
+      </tr>
+      <tr>
+          <td><code>Threaded resources require pointer-free plain values or DevicePassableResource adapters</code></td>
+          <td>A <code>read</code> resource owns memory or holds a pointer. Use a <a href="../portable_resources" >portable resource</a>.</td>
       </tr>
       <tr>
           <td><code>Threaded resources require explicit read access</code></td>
@@ -1081,8 +1095,8 @@ pointers or owned memory. To read a list or buffer, wrap it in an
           <td><code>workers</code> and <code>chunks_per_worker</code> must be positive, their product must fit in an <code>Int</code>, and <code>min_parallel_rows</code> must not be negative.</td>
       </tr>
       <tr>
-          <td>Locked-world error or lock exhaustion</td>
-          <td>Each threaded call takes one extra structural lock, even when it runs sequentially. <a href="../../../reference/compatibility#empty-queries-and-selections-hold-structural-locks" >Empty queries and selections hold locks</a>; end them before the call.</td>
+          <td>Structural lock exhaustion</td>
+          <td>Each threaded call adds one structural lock to those already held, even when it runs sequentially. Live queries and selections, <a href="../../../reference/compatibility#empty-queries-and-selections-hold-structural-locks" >even empty ones</a>, hold the others; end those you no longer need.</td>
       </tr>
       <tr>
           <td>No speedup</td>
@@ -1095,6 +1109,8 @@ mutexes</a>:
 shared state still needs a race-free write strategy. The
 <a href="../../../reference/execution#threaded-execution" >threaded execution reference</a>
 lists the remaining lock, alias, and failure rules.</p>
+<h2>Complete program<span class="hx-absolute -hx-mt-20" id="complete-program"></span>
+    <a href="#complete-program" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <details class="example-program">
 <summary>Complete program: <code>examples/particles/threaded.mojo</code></summary>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
@@ -1236,7 +1252,7 @@ lists the remaining lock, alias, and failure rules.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/examples/particles/threaded.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/threaded.mojo">View the source on GitHub</a></p>
 </details>
 <h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
     <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>

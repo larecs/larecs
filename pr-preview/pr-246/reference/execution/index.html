@@ -55,7 +55,7 @@ The generated run entry keeps overload anchors, access constraints, preparation 
   <meta itemprop="name" content="Systems and execution">
   <meta itemprop="description" content="SystemContext.run executes a kernel synchronously. For a complete thin kernel named move, use context.run[move](). The first simulation defines its filter, components, resource, system and scheduler.
 Call form Behavior context.run[move]() Default sequential host execution; one kernel call per matching nonempty physical store. context.run[move, threaded=True]() Experimental host chunks; eligibility checks still apply when configuration selects sequential execution. context.run[move, backend=ExecutionBackend.DEVICE]() Experimental accelerator execution with no host fallback. context.run(kernel_func) Value-taking callable overload; lexical host captures are allowed, but the target must be sequential HOST. context.run[move](read_capture(x), mut_capture(y)) Thin kernel with explicitly declared capture slots; bindings must follow the declared order. The generated run entry keeps overload anchors, access constraints, preparation errors, and both readable and exact compiler declarations. Read the compatibility matrix before changing targets.">
-  <meta itemprop="wordCount" content="1090">
+  <meta itemprop="wordCount" content="1091">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Systems and execution">
   <meta name="twitter:description" content="SystemContext.run executes a kernel synchronously. For a complete thin kernel named move, use context.run[move](). The first simulation defines its filter, components, resource, system and scheduler.
@@ -154,7 +154,7 @@ Call form Behavior context.run[move]() Default sequential host execution; one ke
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>a153cd8740dd</code>.
+  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -874,11 +874,11 @@ Call form Behavior context.run[move]() Default sequential host execution; one ke
       </tr>
       <tr>
           <td><a href="/larecs/pr-preview/pr-246/larecs/execution/ThreadedExecutionConfig/"><code>ThreadedExecutionConfig</code></a></td>
-          <td>Worker/chunk settings and minimum row threshold; configuration alone does not enable threading.</td>
+          <td>Worker count, chunks per worker, and minimum row threshold; configuration alone does not enable threading.</td>
       </tr>
   </tbody>
 </table>
-<p>See <a href="../../guide/execution" >Execution</a> for complete particle programs per target. Kernels cannot perform arbitrary structural changes while execution holds structural locks. <a href="../compatibility#limits-on-every-target" >Limits on every target</a> covers device fallback, locks of empty queries, row indices, and locks versus mutexes.</p>
+<p>See <a href="../../guide/execution" >Execution</a> for complete particle programs per target. Kernels cannot perform arbitrary structural changes while execution holds structural locks. <a href="../compatibility#cross-cutting-limits" >Cross-cutting limits</a> covers device fallback, locks of empty queries, row indices, and locks versus mutexes.</p>
 <h2>Threaded execution<span class="hx-absolute -hx-mt-20" id="threaded-execution"></span>
     <a href="#threaded-execution" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <p><code>threaded=True</code> splits the rows of one call into kernel chunks; systems still run in registration order.</p>
@@ -903,7 +903,7 @@ Call form Behavior context.run[move]() Default sequential host execution; one ke
           <td>Explicit <code>read</code> access and a pointer-free plain value. Writable access, including the <code>Resources[T]()</code> read-write default, is rejected even when the configuration selects sequential execution.</td>
       </tr>
       <tr>
-          <td>Adapted resources</td>
+          <td>Portable resources</td>
           <td>Read views bind once on the coordinating caller and are shared until all workers join. Mutable views require <code>supports_concurrent_mutation</code>; the race-free write contract belongs to the adapter author.</td>
       </tr>
       <tr>
@@ -1009,7 +1009,7 @@ Call form Behavior context.run[move]() Default sequential host execution; one ke
 <ul>
 <li><code>read</code>, read-only queries, and <code>read</code> access in kernels preserve reusable copies. A mutable <code>get</code> advances the revision even when the caller only reads.</li>
 <li>A component copy is reused only for the same store incarnation, contiguous row range, packed offset, and revision. Alternating filters or selections can change packed offsets and cause uploads of unchanged values.</li>
-<li>Read-only adapted resources still validate and lease their sources; a current copy skips <code>prepare_device</code> and reuses its view. Mutable adapters always prepare. Explicit captures upload on every call.</li>
+<li>Read-only portable resources still validate and lease their sources; a current copy skips <code>prepare_device</code> and reuses its view. Mutable adapters always prepare. Explicit captures upload on every call.</li>
 <li>Failed invocations invalidate the copies they touched. A world copy starts with independent host owners and empty device records. Disabling reuse discards records; completion stays synchronous.</li>
 <li>Invalidation does not permit mutation during a live invocation and does not make an invalid reference safe.</li>
 </ul>

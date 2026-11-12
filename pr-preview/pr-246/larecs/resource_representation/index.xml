@@ -23,7 +23,7 @@
       <description>
         
         
-        &lt;p&gt;Mojo trait · &lt;a href=&#34;https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/src/larecs/resource_representation.mojo#L10&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+        &lt;p&gt;Mojo trait · &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/src/larecs/resource_representation.mojo#L10&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;Declares that a trivial type stores only plain numeric values.&lt;/p&gt;
 &lt;p&gt;Conform when reflection cannot inspect a pointer-free representation,
 such as a &lt;code&gt;StaticTuple&lt;/code&gt; or &lt;code&gt;InlineArray&lt;/code&gt; field of scalars. The declaring

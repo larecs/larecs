@@ -32,7 +32,7 @@ compatibility and status." />
   <meta itemprop="name" content="Coordinate shared writes">
   <meta itemprop="description" content="Compute one shared result, the total displacement of all particles, without a data race. Each particle writes its own output in the kernel, and one caller sums the outputs after run returns. This works on every target, including threaded chunks and device threads, where many invocations run at once. For data you own outside the world, Larecs also provides standalone atomic values and guarded values.
 Start with Update entities with systems and kernels. Larecs does not bind synchronization primitives to kernels automatically; see compatibility and status.">
-  <meta itemprop="wordCount" content="1383">
+  <meta itemprop="wordCount" content="1411">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Coordinate shared writes">
   <meta name="twitter:description" content="Compute one shared result, the total displacement of all particles, without a data race. Each particle writes its own output in the kernel, and one caller sums the outputs after run returns. This works on every target, including threaded chunks and device threads, where many invocations run at once. For data you own outside the world, Larecs also provides standalone atomic values and guarded values.
@@ -131,7 +131,7 @@ Start with Update entities with systems and kernels. Larecs does not bind synchr
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>a153cd8740dd</code>.
+  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -339,6 +339,12 @@ Start with Update entities with systems and kernels. Larecs does not bind synchr
                 href="#failures-and-limits"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
               >Failures and limits</a>
+            </li>
+          <li>
+              <a
+                href="#complete-program"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Complete program</a>
             </li>
           <li>
               <a
@@ -799,6 +805,10 @@ Start with Update entities with systems and kernels. Larecs does not bind synchr
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#complete-program">Complete program
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
         <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#next-steps">Next steps
         </a>
       </li></ul>
@@ -991,8 +1001,20 @@ shown later on this page:</p>
 </div>
 </div>
 
-<p>From the repository root, run
-<code>pixi run mojo run -I src examples/particles/shared_outputs.mojo</code>. The PASS
+<p>From the repository root, run:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">pixi run mojo run -I src examples/particles/shared_outputs.mojo</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>The PASS
 line means the host reduction and the host primitive checks succeeded.</p>
 <h2>Variations<span class="hx-absolute -hx-mt-20" id="variations"></span>
     <a href="#variations" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
@@ -1066,8 +1088,9 @@ it. <code>try_read</code> and <code>try_write</code> make one attempt and never 
 with <code>take</code>. Several readers may hold the value at once; a writer excludes
 everyone else. The guard releases at scope exit or through <code>release</code>.</li>
 </ul>
-<p>A false <code>is_acquired</code> means <em>Busy</em>: another guard holds the value. Larecs does
-not retry. Record the unfinished work for a later pass, or skip the update only
+<p>A false <code>is_acquired</code> means <em>Busy</em>: the single attempt met a conflicting
+guard, a state that changed during the attempt, or the maximum reader count.
+Larecs does not retry. Record the unfinished work for a later pass, or skip the update only
 if your application can lose it.</p>
 <h2>Failures and limits<span class="hx-absolute -hx-mt-20" id="failures-and-limits"></span>
     <a href="#failures-and-limits" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
@@ -1084,12 +1107,12 @@ if your application can lose it.</p>
           <td>Several invocations wrote one value. Write per-particle output and reduce after <code>run</code>.</td>
       </tr>
       <tr>
-          <td><code>try_read</code> or <code>try_write</code> keeps returning Busy</td>
-          <td>Another guard is held. Do not spin; defer the work to a later pass.</td>
+          <td><code>try_read</code> or <code>try_write</code> returns Busy</td>
+          <td>The attempt met a conflicting guard, a concurrently changed state, or the reader limit. Do not spin; defer the work to a later pass.</td>
       </tr>
       <tr>
           <td>Compile error for an ordering, compare-exchange, or guard on an Apple GPU</td>
-          <td>Apple devices support only relaxed add and subtract and limited load and store orderings. Use per-particle output instead.</td>
+          <td>Apple devices support only relaxed or acquire loads, relaxed or release stores, and relaxed add and subtract. Use per-particle output instead.</td>
       </tr>
       <tr>
           <td>Compile error when an <code>AtomicView</code> or <code>SyncView</code> is in a resource or capture</td>
@@ -1106,6 +1129,8 @@ neither are resource leases. The
 <a href="../../../reference/spatial_sync#synchronization-primitives" >synchronization reference</a>
 lists supported orderings per backend, guard rules, and device memory
 requirements.</p>
+<h2>Complete program<span class="hx-absolute -hx-mt-20" id="complete-program"></span>
+    <a href="#complete-program" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <details class="example-program">
 <summary>Complete program: <code>examples/particles/shared_outputs.mojo</code></summary>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
@@ -1271,7 +1296,7 @@ requirements.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/a153cd8740dda2c6086998059b9d479a694892ff/examples/particles/shared_outputs.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/shared_outputs.mojo">View the source on GitHub</a></p>
 </details>
 <h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
     <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
