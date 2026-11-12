@@ -6,8 +6,8 @@ weight = 1
 
 Split one particle movement call into chunks that run concurrently on host
 worker threads. Use this when a single kernel call covers many independent rows
-and [profiling](../../performance) shows that the call dominates a step. Only the
-rows of one call are split; systems still run one after another in
+and [profiling](../../performance) shows that the call dominates a step. Only
+the rows of one call are split; systems still run one after another in
 registration order. Threaded execution is
 [experimental](../../../reference/compatibility).
 
@@ -24,9 +24,10 @@ and the movement kernel from the first simulation.
 
 `move` is a *thin kernel*: a named `def` function that `run` receives as a
 compile-time parameter, as in `context.run[move]()`. It captures no local
-variables and declares no capture slots; threaded execution requires both. Each row writes only its own
-`Position`, so no two chunks write the same data. `Resources().read[Time]()`
-declares `Time` read-only, so all chunks share one immutable value.
+variables and declares no capture slots; threaded execution requires both. Each
+row writes only its own `Position`, so no two chunks write the same data.
+`Resources().read[Time]()` declares `Time` read-only, so all chunks share one
+immutable value.
 
 Opt in for one call with `threaded=True`:
 
@@ -64,7 +65,8 @@ changes what code outside the row loop sees:
 - Work that reads rows of other chunks needs a later `run`, after this call
   returns.
 
-[Work mapping](../../../inside/architecture/execution#preparing-and-draining-threaded-jobs)
+[Work
+mapping](../../../inside/architecture/execution#preparing-and-draining-threaded-jobs)
 explains how Larecs sizes chunks.
 
 ## Variations
@@ -73,9 +75,9 @@ explains how Larecs sizes chunks.
 
 The default configuration has one worker, four chunks per worker, and a cutoff
 of 65,536 matched rows. With one worker, or with fewer matched rows than
-`min_parallel_rows`, a `threaded=True` call runs sequentially, once per
-physical store or selected range. Keep `threaded=True` in the system and set the worker budget
-per world; the compile-time eligibility checks apply either way.
+`min_parallel_rows`, a `threaded=True` call runs sequentially, once per physical
+store or selected range. Keep `threaded=True` in the system and set the worker
+budget per world; the compile-time eligibility checks apply either way.
 
 ### Run threaded on a selection
 
@@ -85,7 +87,7 @@ splits only the selection's rows.
 ### Read an owning collection
 
 Ordinary resources in a threaded call must be read-only values without
-pointers or owned memory. To read a list or buffer, wrap it in an
+pointers or owned memory. To read a list or buffer, wrap it in a
 [portable resource](../portable_resources).
 
 ## Failures and limits

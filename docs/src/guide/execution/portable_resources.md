@@ -7,9 +7,9 @@ weight = 4
 Read an owning collection, such as a list of samples, from the particle kernel
 on both the host and a device. An ordinary resource that owns memory works on
 the sequential host only, because Larecs cannot copy its heap data to a device
-byte by byte. A *portable resource* is a resource source with an adapter: it
-keeps the owner on the host and gives each kernel a *kernel view*: a plain value that points to the data on the kernel's
-target.
+byte by byte. A *portable resource* is a resource source with an adapter. It
+keeps the owner on the host and gives each kernel a *kernel view*, a plain value
+that points to the data on the kernel's target.
 
 Start with [Share values with resources](../../shared_resources) and
 [Execute on a device](../device). Mutable portable resources are
@@ -18,8 +18,9 @@ views.
 
 ## Separate the owner from the kernel view
 
-The particle types follow the [portable particle model](../#the-portable-particle-model),
-and `Time` stays an ordinary read-only resource.
+The particle types follow the [portable particle
+model](../#the-portable-particle-model), and `Time` stays an ordinary read-only
+resource.
 
 {{< example file="particles/portable_resources.mojo" region="model" >}}
 
@@ -77,9 +78,8 @@ From the repository root, run:
 pixi run mojo run -I src examples/particles/portable_resources.mojo
 ```
 
-A PASS
-line for the device means the kernel read both views on the accelerator; a SKIP
-line means only the host ran.
+A PASS line for the device means the kernel read both views on the accelerator;
+a SKIP line means only the host ran.
 
 ## Keep sources and views valid during a call
 
@@ -93,10 +93,11 @@ removing it from inside the call raises. Two rules keep views valid:
   before the call while the call runs.
 
 A lease protects the source's lifetime; it does not synchronize threads.
-[Structural locks are not mutexes](../../../reference/compatibility#structural-locks-are-not-mutexes),
-and neither are leases. The
-[adapter reference](../../../reference/resources#adapter-contracts) lists the
-remaining rules for adapter authors.
+[Structural locks are not
+mutexes](../../../reference/compatibility#structural-locks-are-not-mutexes), and
+neither are leases. The [adapter
+reference](../../../reference/resources#adapter-contracts) lists the remaining
+rules for adapter authors.
 
 ## Variations
 
@@ -106,9 +107,9 @@ remaining rules for adapter authors.
 `Resources[Grid]()` default means read-write and fails to compile. An adapter
 that sets `supports_mutation` can provide a writable view for sequential host
 calls, and one that also sets `supports_concurrent_mutation` can provide it for
-threaded and device calls. The
-[mutable adapter reference](../../../reference/resources#mutable-adapters)
-and the [scatter example](https://github.com/larecs/larecs/blob/main/examples/scatter_resource.mojo)
+threaded and device calls. The [mutable adapter
+reference](../../../reference/resources#mutable-adapters) and the [scatter
+example](https://github.com/larecs/larecs/blob/main/examples/scatter_resource.mojo)
 show the hooks and an atomic slot reservation. For most shared output, prefer
 [per-particle results](../shared_writes).
 

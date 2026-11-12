@@ -25,8 +25,8 @@ The kernel is the movement kernel from the first simulation, unchanged.
 {{< example file="particles/device.mojo" region="kernel" >}}
 
 `move` is a [thin kernel](../threaded#move-particles-in-threaded-chunks), the
-only kind of kernel device execution accepts. The system
-chooses the target with the `backend` parameter of {{< api SystemContext.run >}}:
+only kind of kernel device execution accepts. The system chooses the target with
+the `backend` parameter of {{< api SystemContext.run >}}:
 
 {{< example file="particles/device.mojo" region="system" >}}
 
@@ -102,9 +102,10 @@ IDs](../../../reference/compatibility#row-indices-are-not-entity-ids).
 ### Choose the target at run time
 
 The backend is a compile-time parameter. To choose at run time, branch and call
-each specialization explicitly, for example add `Move[ExecutionBackend.DEVICE]()`
-when `has_accelerator()` is true and `Move[ExecutionBackend.HOST]()` otherwise.
-Larecs itself has [no device fallback](../../../reference/compatibility#no-device-fallback).
+each specialization explicitly, for example add
+`Move[ExecutionBackend.DEVICE]()` when `has_accelerator()` is true and
+`Move[ExecutionBackend.HOST]()` otherwise. Larecs itself has [no device
+fallback](../../../reference/compatibility#no-device-fallback).
 
 ### Run on a selection
 
@@ -113,9 +114,9 @@ only the selection's rows.
 
 ### Pass local values or owning data
 
-Use [explicit capture slots](../captures#declare-explicit-slots-for-a-thin-kernel)
-for a step-local value and [portable resources](../portable_resources) for an
-owning collection.
+Use [explicit capture
+slots](../captures#declare-explicit-slots-for-a-thin-kernel) for a step-local
+value and [portable resources](../portable_resources) for an owning collection.
 
 ### Skip unchanged uploads
 

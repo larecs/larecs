@@ -60,6 +60,15 @@ so keep its version ranges in line with Larecs's `pixi.toml` when you update
 the clone. For completion and diagnostics in your editor, add `../larecs/src`
 to the Mojo language server's include directories.
 
+On macOS, the repository's environment runs a script on activation that selects
+a macOS SDK the linker accepts; your project does not inherit it. Add it to
+your project's `pixi.toml`:
+
+```toml
+[target.osx-arm64.activation]
+scripts = ["../larecs/scripts/activate_macos_sdk.sh"]
+```
+
 ## Use a precompiled package
 
 Build the package with the toolchain your application uses. From the repository
@@ -82,4 +91,4 @@ Larecs revision.
 | --- | --- |
 | Import error for `larecs` | Point `-I` at a directory that contains `larecs/` source or `larecs.mojoc`. |
 | Compiler errors after a toolchain upgrade | Restore the locked environment with `pixi install --locked` and rebuild the package. |
-| macOS linker error mentioning `arm64e.x1` or `libSystem.tbd` | Install an older macOS SDK. With `SDKROOT` unset, the repository's activation script selects a compatible one. See the [SDK workaround](https://github.com/larecs/larecs/blob/main/docs/development.md#macos-sdk-linking). |
+| macOS linker error mentioning `arm64e.x1` or `libSystem.tbd` | Install an older macOS SDK. With `SDKROOT` unset, the repository's activation script selects a compatible one; your own project needs the [activation entry above](#use-the-source-from-your-own-project). See the [SDK workaround](https://github.com/larecs/larecs/blob/main/docs/development.md#macos-sdk-linking). |

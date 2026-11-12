@@ -15,9 +15,9 @@ and [Create and remove entities in batches](../../structural_changes).
 
 ## Classify particles by grid cell
 
-The stage uses the
-[portable particle model](../../execution/#the-portable-particle-model) and an
-`Int32` marker for particles that should not be grouped.
+The stage uses the [portable particle
+model](../../execution/#the-portable-particle-model) and an `Int32` marker for
+particles that should not be grouped.
 
 {{< example file="particles/spatial.mojo" region="model" >}}
 
@@ -28,8 +28,8 @@ uses one cluster per grid cell:
 {{< example file="particles/spatial.mojo" region="classifier" >}}
 
 `spatial_filter` decides which entities Larecs classifies: those with a
-`Position` and no `Int32` marker. `Grid` implements {{< api SpatialClassifier >}};
-its `Accessor` must use exactly that filter, with read-only access.
+`Position` and no `Int32` marker. `Grid` implements {{< api SpatialClassifier
+>}}; its `Accessor` must use exactly that filter, with read-only access.
 {{< api grid_cell >}} rounds a coordinate down to its cell, so `-0.1` with cell
 width 1 lies in cell -1. {{< api morton_key_3d >}} combines the cell coordinates
 into one key; the planar simulation leaves z at 0. Both raise for coordinates
@@ -53,8 +53,8 @@ themselves.
 Maintenance moves rows, so the world must be unlocked. End every query and
 selection first, because [empty queries and selections hold
 locks](../../../reference/compatibility#empty-queries-and-selections-hold-structural-locks).
-Discard component references before maintenance, and look components up again
-by entity handle afterwards.
+Discard component references before maintenance, and look components up again by
+entity handle afterwards.
 
 ## Choose a placement policy
 
@@ -104,8 +104,8 @@ From the repository root, run:
 pixi run mojo run -I src examples/particles/spatial.mojo
 ```
 
-The PASS line means
-both policies placed and selected the particles as expected on the host.
+The PASS line means both policies placed and selected the particles as expected
+on the host.
 
 ## Variations
 
@@ -116,9 +116,9 @@ classifies only the dirty particles, but it still copies one key per entity
 slot, scans store metadata, and moves every row whose placement changes, with
 all of its components. Structural changes make the next pass reclassify every
 particle. Maintaining every few steps instead of every step trades placement
-accuracy for fewer row moves.
-[Measure complete steps](../../performance/measure) to choose, and compare the
-locality-sensitive pass on its own as well.
+accuracy for fewer row moves. [Measure complete
+steps](../../performance/measure) to choose, and compare the locality-sensitive
+pass on its own as well.
 
 ### Report writes that Larecs cannot see
 
@@ -145,8 +145,8 @@ Maintenance and classification still run on the host afterwards.
 | Particles stay in old clusters after raw writes | Larecs could not see the write. Mark the particles dirty or invalidate, then maintain. |
 
 The [spatial reference](../../../reference/spatial_sync) lists classifier rules,
-key bounds, and the exact maintenance contract. The
-[partition benchmark](../../../inside/development/reports/partitions#partitioned-storage-comparison)
+key bounds, and the exact maintenance contract. The [partition
+benchmark](../../../inside/development/reports/partitions#partitioned-storage-comparison)
 records measurements for one workload, not a general speed guarantee.
 
 ## Complete program

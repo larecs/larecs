@@ -5,12 +5,11 @@ weight = 5
 +++
 
 Skip uploading particle data that has not changed since the last device call.
-Use this after the kernel already passes the
-[host and device comparison](../device#compare-the-device-with-the-host) and a
-[measurement](../../performance/measure) shows that uploads matter. Reuse is
-off by default, set per world, and
-[experimental](../../../reference/compatibility). Written outputs still copy
-back to the host after every call.
+Use this after the kernel already passes the [host and device
+comparison](../device#compare-the-device-with-the-host) and a
+[measurement](../../performance/measure) shows that uploads matter. Reuse is off
+by default, set per world, and [experimental](../../../reference/compatibility).
+Written outputs still copy back to the host after every call.
 
 Start with [Execute on a device](../device).
 
@@ -71,15 +70,16 @@ transfers, and on the device with reuse:
 
 {{< example file="particles/copy_reuse.mojo" region="check" >}}
 
-Every run ends at `(4.5, 7.0)`. From the repository root, run:
+Every run ends at `(4.5, 7.0)`.
+
+From the repository root, run:
 
 ```sh
 pixi run mojo run -I src examples/particles/copy_reuse.mojo
 ```
 
-A PASS line for
-the device means both transfer policies ran on the accelerator and matched the
-host; a SKIP line means only the host sequence ran.
+A PASS line for the device means both transfer policies ran on the accelerator
+and matched the host; a SKIP line means only the host sequence ran.
 
 ## Variations
 

@@ -15,8 +15,8 @@ parameter. [Run threaded host kernels](../threaded) defines thin kernels.
 
 ## Borrow locals with a closure on the host
 
-Both programs on this page use the
-[portable particle model](../#the-portable-particle-model).
+Both programs on this page use the [portable particle
+model](../#the-portable-particle-model).
 
 {{< example file="particles/lexical_closure.mojo" region="model" >}}
 
@@ -39,6 +39,7 @@ The driver puts the two particles into different physical stores:
 The extra `Int32` component gives `climber` a different composition and
 therefore its own physical store; it does not change which entities `move`
 matches. Both particles move once, and `visits` counts rows across both calls.
+
 From the repository root, run:
 
 ```sh
@@ -96,8 +97,8 @@ that owns memory, belongs in a [resource](../../shared_resources) or a
 ### Produce one result per particle
 
 When many invocations or threads contribute to a result, write a per-particle
-component and reduce it after `run`, as in
-[Coordinate shared writes](../shared_writes).
+component and reduce it after `run`, as in [Coordinate shared
+writes](../shared_writes).
 
 ## Failures and limits
 
@@ -110,9 +111,9 @@ component and reduce it after `run`, as in
 | Compile error for a closure with `DEVICE` or `threaded=True` | Lexical closures run only sequentially on the host. Use explicit slots for a device. |
 
 Keep references from capture slots and closure borrows inside the kernel; they
-must not outlive the call. The
-[capture reference](../../../reference/resources#explicit-captures) lists the
-remaining binding rules.
+must not outlive the call. The [capture
+reference](../../../reference/resources#explicit-captures) lists the remaining
+binding rules.
 
 ## Complete program
 

@@ -35,7 +35,7 @@ Standalone atomic and guard primitives exist, with Apple device restrictions. Au
 
 ### Empty queries and selections hold structural locks
 
-A live query, storage batch range, or entity selection holds a structural lock even when it matched nothing or its cursor is exhausted. While any lock is held, unrelated entity creation and deletion, component additions and removals, spatial maintenance, and cluster selection raise a locked-world error. A selection's own `add`, `remove`, and `replace` methods still change its members; see {{< api EntitySelection >}}. End the lock first: consume the query with `^`, let it go out of scope, or close the selection's `with` block.
+A live query, storage batch range, or entity selection holds a structural lock even when it matched nothing or its cursor is exhausted. While any lock is held, entity creation and deletion, component additions and removals, spatial maintenance, and cluster selection raise a locked-world error. The exception is a selection's own `add`, `remove`, and `replace`, which work while that selection holds the world's only lock; see {{< api EntitySelection >}}. End the lock first: consume the query with `^`, let it go out of scope, or close the selection's `with` block.
 
 ### Row indices are not entity IDs
 

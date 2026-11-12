@@ -49,8 +49,7 @@ From the repository root, run:
 pixi run mojo run -I src examples/particles/shared_outputs.mojo
 ```
 
-The PASS
-line means the host reduction and the host primitive checks succeeded.
+The PASS line means the host reduction and the host primitive checks succeeded.
 
 ## Variations
 
@@ -63,9 +62,9 @@ pass reads only output that an earlier, finished call wrote.
 ### Use a single writer
 
 One designated writer may update a shared value when it does not need other
-threads' unfinished results, as the
-[capture count](../captures#declare-explicit-slots-for-a-thin-kernel) does with
-global thread zero. A thread-zero branch is not a barrier.
+threads' unfinished results, as the [capture
+count](../captures#declare-explicit-slots-for-a-thin-kernel) does with global
+thread zero. A thread-zero branch is not a barrier.
 
 ### Update data you own with atomic or guarded values
 
@@ -84,10 +83,10 @@ These primitives work on storage you own, outside the world:
   with `take`. Several readers may hold the value at once; a writer excludes
   everyone else. The guard releases at scope exit or through `release`.
 
-A false `is_acquired` means *Busy*: the single attempt met a conflicting
-guard, a state that changed during the attempt, or the maximum reader count.
-Larecs does not retry. Record the unfinished work for a later pass, or skip the update only
-if your application can lose it.
+A false `is_acquired` means *Busy*: the single attempt met a conflicting guard,
+a state that changed during the attempt, or the maximum reader count. Larecs
+does not retry. Record the unfinished work for a later pass, or skip the update
+only if your application can lose it.
 
 ## Failures and limits
 
@@ -99,11 +98,11 @@ if your application can lose it.
 | Compile error when an `AtomicView` or `SyncView` is in a resource or capture | Views do not transfer to kernels. Use per-particle output, or a [mutable adapter](../../../reference/resources#mutable-adapters) that manages its own atomic buffer. |
 | Ordinary data written next to a relaxed counter is not visible | Relaxed operations order nothing else. Use release stores and acquire loads to publish data. |
 
-[Structural locks are not mutexes](../../../reference/compatibility#structural-locks-are-not-mutexes);
-neither are resource leases. The
-[synchronization reference](../../../reference/spatial_sync#synchronization-primitives)
-lists supported orderings per backend, guard rules, and device memory
-requirements.
+[Structural locks are not
+mutexes](../../../reference/compatibility#structural-locks-are-not-mutexes);
+neither are resource leases. The [synchronization
+reference](../../../reference/spatial_sync#synchronization-primitives) lists
+supported orderings per backend, guard rules, and device memory requirements.
 
 ## Complete program
 
