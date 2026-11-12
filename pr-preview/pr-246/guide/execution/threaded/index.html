@@ -18,8 +18,8 @@ Move particles in threaded chunks The stage uses the portable particle model and
 <meta property="og:title" content="Run threaded host kernels" />
 <meta property="og:description" content="Split one particle movement call into chunks that run concurrently on host
 worker threads. Use this when a single kernel call covers many independent rows
-and profiling shows that the call dominates a step. Only the
-rows of one call are split; systems still run one after another in
+and profiling shows that the call dominates a step. Only
+the rows of one call are split; systems still run one after another in
 registration order. Threaded execution is
 experimental.
 Start with Update entities with systems and kernels.
@@ -136,7 +136,7 @@ Move particles in threaded chunks The stage uses the portable particle model and
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
+  Development · Larecs 1.0.0b1 · revision <code>e2c969b59b96</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -845,8 +845,8 @@ Move particles in threaded chunks The stage uses the portable particle model and
           <h1>Run threaded host kernels</h1>
           <p>Split one particle movement call into chunks that run concurrently on host
 worker threads. Use this when a single kernel call covers many independent rows
-and <a href="../../performance" >profiling</a> shows that the call dominates a step. Only the
-rows of one call are split; systems still run one after another in
+and <a href="../../performance" >profiling</a> shows that the call dominates a step. Only
+the rows of one call are split; systems still run one after another in
 registration order. Threaded execution is
 <a href="../../../reference/compatibility" >experimental</a>.</p>
 <p>Start with <a href="../../systems_kernels" >Update entities with systems and kernels</a>.</p>
@@ -917,9 +917,10 @@ and the movement kernel from the first simulation.</p>
 
 <p><code>move</code> is a <em>thin kernel</em>: a named <code>def</code> function that <code>run</code> receives as a
 compile-time parameter, as in <code>context.run[move]()</code>. It captures no local
-variables and declares no capture slots; threaded execution requires both. Each row writes only its own
-<code>Position</code>, so no two chunks write the same data. <code>Resources().read[Time]()</code>
-declares <code>Time</code> read-only, so all chunks share one immutable value.</p>
+variables and declares no capture slots; threaded execution requires both. Each
+row writes only its own <code>Position</code>, so no two chunks write the same data.
+<code>Resources().read[Time]()</code> declares <code>Time</code> read-only, so all chunks share one
+immutable value.</p>
 <p>Opt in for one call with <code>threaded=True</code>:</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
@@ -1044,7 +1045,8 @@ IDs</a>.</li>
 <li>Work that reads rows of other chunks needs a later <code>run</code>, after this call
 returns.</li>
 </ul>
-<p><a href="../../../inside/architecture/execution#preparing-and-draining-threaded-jobs" >Work mapping</a>
+<p><a href="../../../inside/architecture/execution#preparing-and-draining-threaded-jobs" >Work
+mapping</a>
 explains how Larecs sizes chunks.</p>
 <h2>Variations<span class="hx-absolute -hx-mt-20" id="variations"></span>
     <a href="#variations" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
@@ -1052,9 +1054,9 @@ explains how Larecs sizes chunks.</p>
     <a href="#keep-small-calls-sequential" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
 <p>The default configuration has one worker, four chunks per worker, and a cutoff
 of 65,536 matched rows. With one worker, or with fewer matched rows than
-<code>min_parallel_rows</code>, a <code>threaded=True</code> call runs sequentially, once per
-physical store or selected range. Keep <code>threaded=True</code> in the system and set the worker budget
-per world; the compile-time eligibility checks apply either way.</p>
+<code>min_parallel_rows</code>, a <code>threaded=True</code> call runs sequentially, once per physical
+store or selected range. Keep <code>threaded=True</code> in the system and set the worker
+budget per world; the compile-time eligibility checks apply either way.</p>
 <h3>Run threaded on a selection<span class="hx-absolute -hx-mt-20" id="run-threaded-on-a-selection"></span>
     <a href="#run-threaded-on-a-selection" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
 <p><a href="/larecs/pr-preview/pr-246/larecs/system/EntitySelection/#run"><code>EntitySelection.run</code></a> accepts the same <code>threaded=True</code> parameter and
@@ -1062,7 +1064,7 @@ splits only the selection&rsquo;s rows.</p>
 <h3>Read an owning collection<span class="hx-absolute -hx-mt-20" id="read-an-owning-collection"></span>
     <a href="#read-an-owning-collection" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
 <p>Ordinary resources in a threaded call must be read-only values without
-pointers or owned memory. To read a list or buffer, wrap it in an
+pointers or owned memory. To read a list or buffer, wrap it in a
 <a href="../portable_resources" >portable resource</a>.</p>
 <h2>Failures and limits<span class="hx-absolute -hx-mt-20" id="failures-and-limits"></span>
     <a href="#failures-and-limits" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
@@ -1252,7 +1254,7 @@ lists the remaining lock, alias, and failure rules.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/threaded.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/threaded.mojo">View the source on GitHub</a></p>
 </details>
 <h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
     <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>

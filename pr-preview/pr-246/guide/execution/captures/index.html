@@ -129,7 +129,7 @@ Start with Execute on a device, which introduces the backend parameter. Run thre
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
+  Development · Larecs 1.0.0b1 · revision <code>e2c969b59b96</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -841,8 +841,8 @@ its inputs through read-only resources or components.</p>
 parameter. <a href="../threaded" >Run threaded host kernels</a> defines thin kernels.</p>
 <h2>Borrow locals with a closure on the host<span class="hx-absolute -hx-mt-20" id="borrow-locals-with-a-closure-on-the-host"></span>
     <a href="#borrow-locals-with-a-closure-on-the-host" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
-<p>Both programs on this page use the
-<a href="../#the-portable-particle-model" >portable particle model</a>.</p>
+<p>Both programs on this page use the <a href="../#the-portable-particle-model" >portable particle
+model</a>.</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="nd">@fieldwise_init</span><span class="w">
@@ -966,8 +966,8 @@ after the last call, so the assertion sees the final count.</p>
 
 <p>The extra <code>Int32</code> component gives <code>climber</code> a different composition and
 therefore its own physical store; it does not change which entities <code>move</code>
-matches. Both particles move once, and <code>visits</code> counts rows across both calls.
-From the repository root, run:</p>
+matches. Both particles move once, and <code>visits</code> counts rows across both calls.</p>
+<p>From the repository root, run:</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">pixi run mojo run -I src examples/particles/lexical_closure.mojo</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
@@ -1095,8 +1095,8 @@ that owns memory, belongs in a <a href="../../shared_resources" >resource</a> or
 <h3>Produce one result per particle<span class="hx-absolute -hx-mt-20" id="produce-one-result-per-particle"></span>
     <a href="#produce-one-result-per-particle" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
 <p>When many invocations or threads contribute to a result, write a per-particle
-component and reduce it after <code>run</code>, as in
-<a href="../shared_writes" >Coordinate shared writes</a>.</p>
+component and reduce it after <code>run</code>, as in <a href="../shared_writes" >Coordinate shared
+writes</a>.</p>
 <h2>Failures and limits<span class="hx-absolute -hx-mt-20" id="failures-and-limits"></span>
     <a href="#failures-and-limits" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <table>
@@ -1130,9 +1130,9 @@ component and reduce it after <code>run</code>, as in
   </tbody>
 </table>
 <p>Keep references from capture slots and closure borrows inside the kernel; they
-must not outlive the call. The
-<a href="../../../reference/resources#explicit-captures" >capture reference</a> lists the
-remaining binding rules.</p>
+must not outlive the call. The <a href="../../../reference/resources#explicit-captures" >capture
+reference</a> lists the remaining
+binding rules.</p>
 <h2>Complete program<span class="hx-absolute -hx-mt-20" id="complete-program"></span>
     <a href="#complete-program" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <details class="example-program">
@@ -1246,7 +1246,7 @@ remaining binding rules.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/lexical_closure.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/lexical_closure.mojo">View the source on GitHub</a></p>
 </details>
 <p>The program above checks the lexical closure on the host.</p>
 <details class="example-program">
@@ -1400,7 +1400,7 @@ remaining binding rules.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/captures.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/captures.mojo">View the source on GitHub</a></p>
 </details>
 <p>The program above checks explicit slots on the host and, when available, on a
 device.</p>

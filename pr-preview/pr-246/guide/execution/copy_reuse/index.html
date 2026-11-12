@@ -17,12 +17,11 @@ Enable reuse for a world The stage uses the portable particle model and the unch
 
 <meta property="og:title" content="Reuse unchanged device copies" />
 <meta property="og:description" content="Skip uploading particle data that has not changed since the last device call.
-Use this after the kernel already passes the
-host and device comparison and a
-measurement shows that uploads matter. Reuse is
-off by default, set per world, and
-experimental. Written outputs still copy
-back to the host after every call.
+Use this after the kernel already passes the host and device
+comparison and a
+measurement shows that uploads matter. Reuse is off
+by default, set per world, and experimental.
+Written outputs still copy back to the host after every call.
 Start with Execute on a device.
 Enable reuse for a world
     
@@ -137,7 +136,7 @@ Enable reuse for a world The stage uses the portable particle model and the unch
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
+  Development · Larecs 1.0.0b1 · revision <code>e2c969b59b96</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -851,12 +850,11 @@ Enable reuse for a world The stage uses the portable particle model and the unch
         <div class="content">
           <h1>Reuse unchanged device copies</h1>
           <p>Skip uploading particle data that has not changed since the last device call.
-Use this after the kernel already passes the
-<a href="../device#compare-the-device-with-the-host" >host and device comparison</a> and a
-<a href="../../performance/measure" >measurement</a> shows that uploads matter. Reuse is
-off by default, set per world, and
-<a href="../../../reference/compatibility" >experimental</a>. Written outputs still copy
-back to the host after every call.</p>
+Use this after the kernel already passes the <a href="../device#compare-the-device-with-the-host" >host and device
+comparison</a> and a
+<a href="../../performance/measure" >measurement</a> shows that uploads matter. Reuse is off
+by default, set per world, and <a href="../../../reference/compatibility" >experimental</a>.
+Written outputs still copy back to the host after every call.</p>
 <p>Start with <a href="../device" >Execute on a device</a>.</p>
 <h2>Enable reuse for a world<span class="hx-absolute -hx-mt-20" id="enable-reuse-for-a-world"></span>
     <a href="#enable-reuse-for-a-world" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
@@ -1074,7 +1072,8 @@ transfers, and on the device with reuse:</p>
 </div>
 </div>
 
-<p>Every run ends at <code>(4.5, 7.0)</code>. From the repository root, run:</p>
+<p>Every run ends at <code>(4.5, 7.0)</code>.</p>
+<p>From the repository root, run:</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">pixi run mojo run -I src examples/particles/copy_reuse.mojo</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
@@ -1087,9 +1086,8 @@ transfers, and on the device with reuse:</p>
   </button>
 </div>
 </div>
-<p>A PASS line for
-the device means both transfer policies ran on the accelerator and matched the
-host; a SKIP line means only the host sequence ran.</p>
+<p>A PASS line for the device means both transfer policies ran on the accelerator
+and matched the host; a SKIP line means only the host sequence ran.</p>
 <h2>Variations<span class="hx-absolute -hx-mt-20" id="variations"></span>
     <a href="#variations" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <h3>Observe values without forcing an upload<span class="hx-absolute -hx-mt-20" id="observe-values-without-forcing-an-upload"></span>
@@ -1287,7 +1285,7 @@ every operation that advances a revision.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/copy_reuse.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/copy_reuse.mojo">View the source on GitHub</a></p>
 </details>
 <h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
     <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>

@@ -183,7 +183,7 @@ Contract Command Type-only struct invariants and exclusions pixi run -e test pyt
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
+  Development · Larecs 1.0.0b1 · revision <code>e2c969b59b96</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -881,10 +881,10 @@ and intentional exclusions must remain accepted.</p>
 thread-capacity Python tests. Focused <code>world_entity_iterator</code>,
 <code>execution_backend</code>, <code>threaded_execution</code>, <code>resource_adapter</code>, and
 <code>synchronization</code> test files trigger their corresponding family. The last
-table row is separate. The <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/check_struct_constraints.py">struct checker</a>
+table row is separate. The <a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/test/check_struct_constraints.py">struct checker</a>
 uses type-only bindings so constructor checks cannot conceal a missing
 declaration invariant; see the
-<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/struct-constraints.md">constraint audit</a>.</p>
+<a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/struct-constraints.md">constraint audit</a>.</p>
 <h2>Runtime evidence<span class="hx-absolute -hx-mt-20" id="runtime-evidence"></span>
     <a href="#runtime-evidence" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <table>
@@ -930,14 +930,14 @@ investigations remain in the <a href="../design" >evidence map</a>.</p>
 <p><code>test/run_tests.sh</code> enables ASAN, <code>-g</code>, <code>-DASSERT=all</code>, and Tracy linkage.
 <code># SKIP_ASAN</code> opts a file out of sanitization; <code># SKIP_DEBUG</code> omits debug info.
 Every test that launches a GPU kernel needs <code># SKIP_DEBUG</code> because of the
-<a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/development.md#metal-debug-info">Metal compiler failure</a>.
+<a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/development.md#metal-debug-info">Metal compiler failure</a>.
 Neither marker means that the test may skip its assertions. The doctest runner
 uses assertions and Tracy linkage, but does not enable the test wrapper&rsquo;s
 ASAN/debug defaults.</p>
 <p>CI bounds test compilation concurrency with <code>--parallel 2</code> and retains
 <code>output/memory/</code> diagnostics. An interrupted runner or missing artifact is not
-a correctness pass. See <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/.github/workflows/main.yml">the CI workflow</a>
-and <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/scripts/monitor_ci_memory.py">the memory monitor</a> for the
+a correctness pass. See <a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/.github/workflows/main.yml">the CI workflow</a>
+and <a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/scripts/monitor_ci_memory.py">the memory monitor</a> for the
 recorded process boundary; keep performance measurements isolated from builds.</p>
 
         </div>

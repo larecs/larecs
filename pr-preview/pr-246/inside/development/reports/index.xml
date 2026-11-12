@@ -42,7 +42,7 @@ host path, 0.0000664 ms for the contiguous selection, 0.000556 ms for 64 disjoin
 single-row ranges, 0.00727 ms for the add/remove chain, and 0.379 ms for the device
 selection. These are development measurements, not a cross-version historical
 baseline; use the benchmark on target hardware for regression decisions.&lt;/p&gt;
-&lt;p&gt;The manual &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/host-thread-execution.md#measured-sequential-versus-threaded-calls&#34;&gt;host thread dispatch experiment&lt;/a&gt;
+&lt;p&gt;The manual &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/host-thread-execution.md#measured-sequential-versus-threaded-calls&#34;&gt;host thread dispatch experiment&lt;/a&gt;
 compares complete sequential kernel calls with dynamically claimed whole-store
 and contiguous chunk jobs at 1/2/4 worker tasks, including small and large
 increment/compute workloads and single-store cases. Its driver, timing
@@ -132,7 +132,7 @@ remain unmeasured locally.&lt;/p&gt;
 &lt;/div&gt;
 &lt;h2&gt;Storage range migration&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;storage-range-migration&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#storage-range-migration&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/entity-range-migration.md&#34;&gt;#170 comparison&lt;/a&gt; uses the
+&lt;p&gt;The &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/entity-range-migration.md&#34;&gt;#170 comparison&lt;/a&gt; uses the
 current selection and migration drivers against PR212, including the 100k-row
 ordinary host path and 65,536-row whole-archetype batches. Concurrent sibling
 builds overlapped every sample, so these results support no controlled
@@ -288,7 +288,7 @@ spatial maintenance, or partitioned layouts. The engine remains experimental.&lt
         &lt;p&gt;This record preserves the standalone driver protocol. No hardware, compiler,
 run revision, or timing results were recorded with this section, so it makes
 no measured performance claim. The driver is available at the documentation
-revision through &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/benchmark/synchronization_benchmark.mojo&#34;&gt;its source&lt;/a&gt;.
+revision through &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/benchmark/synchronization_benchmark.mojo&#34;&gt;its source&lt;/a&gt;.
 Current implementation details are in &lt;a href=&#34;../../../architecture/synchronization&#34; &gt;synchronization internals&lt;/a&gt;.&lt;/p&gt;
 &lt;h2&gt;Synchronization primitives&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;synchronization-primitives&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#synchronization-primitives&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
@@ -1014,7 +1014,7 @@ cross-run interpretation.&lt;/p&gt;
 adds velocity to position in both dimensions. Historical driver
 fields are not the tutorial&amp;rsquo;s API: the checked particle example uses
 &lt;code&gt;Position.x/y&lt;/code&gt; and &lt;code&gt;Velocity.dx/dy&lt;/code&gt;. See
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/benchmark/plots/src/aos.mojo&#34;&gt;the plotting driver&lt;/a&gt; for its exact data types.&lt;/p&gt;
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/benchmark/plots/src/aos.mojo&#34;&gt;the plotting driver&lt;/a&gt; for its exact data types.&lt;/p&gt;
 &lt;p&gt;The benchmark is performed with different amounts of &amp;ldquo;payload components&amp;rdquo;,
 where each of them has two &lt;code&gt;Float64&lt;/code&gt; fields, just like &lt;code&gt;Position&lt;/code&gt; and &lt;code&gt;Velocity&lt;/code&gt;.
 Further, the total number of entities is varied from 100 to 1 million.&lt;/p&gt;

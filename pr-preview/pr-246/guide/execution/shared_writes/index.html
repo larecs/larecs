@@ -131,7 +131,7 @@ Start with Update entities with systems and kernels. Larecs does not bind synchr
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
+  Development · Larecs 1.0.0b1 · revision <code>e2c969b59b96</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -1014,8 +1014,7 @@ shown later on this page:</p>
   </button>
 </div>
 </div>
-<p>The PASS
-line means the host reduction and the host primitive checks succeeded.</p>
+<p>The PASS line means the host reduction and the host primitive checks succeeded.</p>
 <h2>Variations<span class="hx-absolute -hx-mt-20" id="variations"></span>
     <a href="#variations" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <h3>Reduce in several passes<span class="hx-absolute -hx-mt-20" id="reduce-in-several-passes"></span>
@@ -1026,9 +1025,9 @@ pass reads only output that an earlier, finished call wrote.</p>
 <h3>Use a single writer<span class="hx-absolute -hx-mt-20" id="use-a-single-writer"></span>
     <a href="#use-a-single-writer" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
 <p>One designated writer may update a shared value when it does not need other
-threads&rsquo; unfinished results, as the
-<a href="../captures#declare-explicit-slots-for-a-thin-kernel" >capture count</a> does with
-global thread zero. A thread-zero branch is not a barrier.</p>
+threads&rsquo; unfinished results, as the <a href="../captures#declare-explicit-slots-for-a-thin-kernel" >capture
+count</a> does with global
+thread zero. A thread-zero branch is not a barrier.</p>
 <h3>Update data you own with atomic or guarded values<span class="hx-absolute -hx-mt-20" id="update-data-you-own-with-atomic-or-guarded-values"></span>
     <a href="#update-data-you-own-with-atomic-or-guarded-values" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
 <p>These primitives work on storage you own, outside the world:</p>
@@ -1088,10 +1087,10 @@ it. <code>try_read</code> and <code>try_write</code> make one attempt and never 
 with <code>take</code>. Several readers may hold the value at once; a writer excludes
 everyone else. The guard releases at scope exit or through <code>release</code>.</li>
 </ul>
-<p>A false <code>is_acquired</code> means <em>Busy</em>: the single attempt met a conflicting
-guard, a state that changed during the attempt, or the maximum reader count.
-Larecs does not retry. Record the unfinished work for a later pass, or skip the update only
-if your application can lose it.</p>
+<p>A false <code>is_acquired</code> means <em>Busy</em>: the single attempt met a conflicting guard,
+a state that changed during the attempt, or the maximum reader count. Larecs
+does not retry. Record the unfinished work for a later pass, or skip the update
+only if your application can lose it.</p>
 <h2>Failures and limits<span class="hx-absolute -hx-mt-20" id="failures-and-limits"></span>
     <a href="#failures-and-limits" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <table>
@@ -1124,11 +1123,11 @@ if your application can lose it.</p>
       </tr>
   </tbody>
 </table>
-<p><a href="../../../reference/compatibility#structural-locks-are-not-mutexes" >Structural locks are not mutexes</a>;
-neither are resource leases. The
-<a href="../../../reference/spatial_sync#synchronization-primitives" >synchronization reference</a>
-lists supported orderings per backend, guard rules, and device memory
-requirements.</p>
+<p><a href="../../../reference/compatibility#structural-locks-are-not-mutexes" >Structural locks are not
+mutexes</a>;
+neither are resource leases. The <a href="../../../reference/spatial_sync#synchronization-primitives" >synchronization
+reference</a> lists
+supported orderings per backend, guard rules, and device memory requirements.</p>
 <h2>Complete program<span class="hx-absolute -hx-mt-20" id="complete-program"></span>
     <a href="#complete-program" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <details class="example-program">
@@ -1296,7 +1295,7 @@ requirements.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/shared_outputs.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/shared_outputs.mojo">View the source on GitHub</a></p>
 </details>
 <h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
     <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>

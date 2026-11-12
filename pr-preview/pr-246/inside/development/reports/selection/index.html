@@ -132,7 +132,7 @@ Early selection sample The following sample was recorded in documentation commit
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
+  Development · Larecs 1.0.0b1 · revision <code>e2c969b59b96</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -798,7 +798,7 @@ host path, 0.0000664 ms for the contiguous selection, 0.000556 ms for 64 disjoin
 single-row ranges, 0.00727 ms for the add/remove chain, and 0.379 ms for the device
 selection. These are development measurements, not a cross-version historical
 baseline; use the benchmark on target hardware for regression decisions.</p>
-<p>The manual <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/host-thread-execution.md#measured-sequential-versus-threaded-calls">host thread dispatch experiment</a>
+<p>The manual <a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/host-thread-execution.md#measured-sequential-versus-threaded-calls">host thread dispatch experiment</a>
 compares complete sequential kernel calls with dynamically claimed whole-store
 and contiguous chunk jobs at 1/2/4 worker tasks, including small and large
 increment/compute workloads and single-store cases. Its driver, timing
@@ -888,7 +888,7 @@ remain unmeasured locally.</p>
 </div>
 <h2>Storage range migration<span class="hx-absolute -hx-mt-20" id="storage-range-migration"></span>
     <a href="#storage-range-migration" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
-<p>The <a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/entity-range-migration.md">#170 comparison</a> uses the
+<p>The <a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/entity-range-migration.md">#170 comparison</a> uses the
 current selection and migration drivers against PR212, including the 100k-row
 ordinary host path and 65,536-row whole-archetype batches. Concurrent sibling
 builds overlapped every sample, so these results support no controlled

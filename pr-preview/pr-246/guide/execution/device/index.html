@@ -129,7 +129,7 @@ Start with Update entities with systems and kernels and Share time and configura
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
+  Development · Larecs 1.0.0b1 · revision <code>e2c969b59b96</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -934,8 +934,8 @@ whose components Larecs can copy to the device byte by byte.</p>
 </div>
 
 <p><code>move</code> is a <a href="../threaded#move-particles-in-threaded-chunks" >thin kernel</a>, the
-only kind of kernel device execution accepts. The system
-chooses the target with the <code>backend</code> parameter of <a href="/larecs/pr-preview/pr-246/larecs/system/SystemContext/#run"><code>SystemContext.run</code></a>:</p>
+only kind of kernel device execution accepts. The system chooses the target with
+the <code>backend</code> parameter of <a href="/larecs/pr-preview/pr-246/larecs/system/SystemContext/#run"><code>SystemContext.run</code></a>:</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="nd">@fieldwise_init</span><span class="w">
@@ -1116,18 +1116,19 @@ IDs</a>.</p>
 <h3>Choose the target at run time<span class="hx-absolute -hx-mt-20" id="choose-the-target-at-run-time"></span>
     <a href="#choose-the-target-at-run-time" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
 <p>The backend is a compile-time parameter. To choose at run time, branch and call
-each specialization explicitly, for example add <code>Move[ExecutionBackend.DEVICE]()</code>
-when <code>has_accelerator()</code> is true and <code>Move[ExecutionBackend.HOST]()</code> otherwise.
-Larecs itself has <a href="../../../reference/compatibility#no-device-fallback" >no device fallback</a>.</p>
+each specialization explicitly, for example add
+<code>Move[ExecutionBackend.DEVICE]()</code> when <code>has_accelerator()</code> is true and
+<code>Move[ExecutionBackend.HOST]()</code> otherwise. Larecs itself has <a href="../../../reference/compatibility#no-device-fallback" >no device
+fallback</a>.</p>
 <h3>Run on a selection<span class="hx-absolute -hx-mt-20" id="run-on-a-selection"></span>
     <a href="#run-on-a-selection" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
 <p><a href="/larecs/pr-preview/pr-246/larecs/system/EntitySelection/#run"><code>EntitySelection.run</code></a> accepts the same <code>backend</code> parameter and packs
 only the selection&rsquo;s rows.</p>
 <h3>Pass local values or owning data<span class="hx-absolute -hx-mt-20" id="pass-local-values-or-owning-data"></span>
     <a href="#pass-local-values-or-owning-data" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
-<p>Use <a href="../captures#declare-explicit-slots-for-a-thin-kernel" >explicit capture slots</a>
-for a step-local value and <a href="../portable_resources" >portable resources</a> for an
-owning collection.</p>
+<p>Use <a href="../captures#declare-explicit-slots-for-a-thin-kernel" >explicit capture
+slots</a> for a step-local
+value and <a href="../portable_resources" >portable resources</a> for an owning collection.</p>
 <h3>Skip unchanged uploads<span class="hx-absolute -hx-mt-20" id="skip-unchanged-uploads"></span>
     <a href="#skip-unchanged-uploads" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
 <p>By default, every device call uploads all readable columns and resources.
@@ -1325,7 +1326,7 @@ choosing a backend.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/device.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/device.mojo">View the source on GitHub</a></p>
 </details>
 <h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
     <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>

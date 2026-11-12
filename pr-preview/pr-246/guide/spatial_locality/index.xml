@@ -32,9 +32,9 @@ values stay the same. It does not find exact neighbors.&lt;/p&gt;
 and &lt;a href=&#34;../../structural_changes&#34; &gt;Create and remove entities in batches&lt;/a&gt;.&lt;/p&gt;
 &lt;h2&gt;Classify particles by grid cell&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;classify-particles-by-grid-cell&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#classify-particles-by-grid-cell&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The stage uses the
-&lt;a href=&#34;../../execution/#the-portable-particle-model&#34; &gt;portable particle model&lt;/a&gt; and an
-&lt;code&gt;Int32&lt;/code&gt; marker for particles that should not be grouped.&lt;/p&gt;
+&lt;p&gt;The stage uses the &lt;a href=&#34;../../execution/#the-portable-particle-model&#34; &gt;portable particle
+model&lt;/a&gt; and an &lt;code&gt;Int32&lt;/code&gt; marker for
+particles that should not be grouped.&lt;/p&gt;
 &lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
 
 &lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nd&#34;&gt;@fieldwise_init&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
@@ -111,8 +111,7 @@ uses one cluster per grid cell:&lt;/p&gt;
 &lt;/div&gt;
 
 &lt;p&gt;&lt;code&gt;spatial_filter&lt;/code&gt; decides which entities Larecs classifies: those with a
-&lt;code&gt;Position&lt;/code&gt; and no &lt;code&gt;Int32&lt;/code&gt; marker. &lt;code&gt;Grid&lt;/code&gt; implements &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/spatial/SpatialClassifier/&#34;&gt;&lt;code&gt;SpatialClassifier&lt;/code&gt;&lt;/a&gt;;
-its &lt;code&gt;Accessor&lt;/code&gt; must use exactly that filter, with read-only access.
+&lt;code&gt;Position&lt;/code&gt; and no &lt;code&gt;Int32&lt;/code&gt; marker. &lt;code&gt;Grid&lt;/code&gt; implements &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/spatial/SpatialClassifier/&#34;&gt;&lt;code&gt;SpatialClassifier&lt;/code&gt;&lt;/a&gt;; its &lt;code&gt;Accessor&lt;/code&gt; must use exactly that filter, with read-only access.
 &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/spatial/grid_cell/&#34;&gt;&lt;code&gt;grid_cell&lt;/code&gt;&lt;/a&gt; rounds a coordinate down to its cell, so &lt;code&gt;-0.1&lt;/code&gt; with cell
 width 1 lies in cell -1. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/spatial/morton_key_3d/&#34;&gt;&lt;code&gt;morton_key_3d&lt;/code&gt;&lt;/a&gt; combines the cell coordinates
 into one key; the planar simulation leaves z at 0. Both raise for coordinates
@@ -184,8 +183,8 @@ themselves.&lt;/p&gt;
 &lt;p&gt;Maintenance moves rows, so the world must be unlocked. End every query and
 selection first, because &lt;a href=&#34;../../../reference/compatibility#empty-queries-and-selections-hold-structural-locks&#34; &gt;empty queries and selections hold
 locks&lt;/a&gt;.
-Discard component references before maintenance, and look components up again
-by entity handle afterwards.&lt;/p&gt;
+Discard component references before maintenance, and look components up again by
+entity handle afterwards.&lt;/p&gt;
 &lt;h2&gt;Choose a placement policy&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;choose-a-placement-policy&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#choose-a-placement-policy&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Registering the classifier chooses how Larecs groups rows; it does not move
@@ -336,8 +335,8 @@ in the cells you need, or build a separate spatial index.&lt;/p&gt;
   &lt;/button&gt;
 &lt;/div&gt;
 &lt;/div&gt;
-&lt;p&gt;The PASS line means
-both policies placed and selected the particles as expected on the host.&lt;/p&gt;
+&lt;p&gt;The PASS line means both policies placed and selected the particles as expected
+on the host.&lt;/p&gt;
 &lt;h2&gt;Variations&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;variations&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#variations&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;h3&gt;Choose a maintenance cadence&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;choose-a-maintenance-cadence&#34;&gt;&lt;/span&gt;
@@ -347,9 +346,9 @@ classifies only the dirty particles, but it still copies one key per entity
 slot, scans store metadata, and moves every row whose placement changes, with
 all of its components. Structural changes make the next pass reclassify every
 particle. Maintaining every few steps instead of every step trades placement
-accuracy for fewer row moves.
-&lt;a href=&#34;../../performance/measure&#34; &gt;Measure complete steps&lt;/a&gt; to choose, and compare the
-locality-sensitive pass on its own as well.&lt;/p&gt;
+accuracy for fewer row moves. &lt;a href=&#34;../../performance/measure&#34; &gt;Measure complete
+steps&lt;/a&gt; to choose, and compare the locality-sensitive
+pass on its own as well.&lt;/p&gt;
 &lt;h3&gt;Report writes that Larecs cannot see&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;report-writes-that-larecs-cannot-see&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#report-writes-that-larecs-cannot-see&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
 &lt;p&gt;Larecs marks particles dirty when you write positions through &lt;code&gt;set&lt;/code&gt;, a mutable
@@ -398,8 +397,8 @@ Maintenance and classification still run on the host afterwards.&lt;/p&gt;
   &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;p&gt;The &lt;a href=&#34;../../../reference/spatial_sync&#34; &gt;spatial reference&lt;/a&gt; lists classifier rules,
-key bounds, and the exact maintenance contract. The
-&lt;a href=&#34;../../../inside/development/reports/partitions#partitioned-storage-comparison&#34; &gt;partition benchmark&lt;/a&gt;
+key bounds, and the exact maintenance contract. The &lt;a href=&#34;../../../inside/development/reports/partitions#partitioned-storage-comparison&#34; &gt;partition
+benchmark&lt;/a&gt;
 records measurements for one workload, not a general speed guarantee.&lt;/p&gt;
 &lt;h2&gt;Complete program&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;complete-program&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#complete-program&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
@@ -595,7 +594,7 @@ records measurements for one workload, not a general speed guarantee.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/spatial.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/spatial.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
 &lt;/details&gt;
 &lt;h2&gt;Next steps&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;next-steps&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#next-steps&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;

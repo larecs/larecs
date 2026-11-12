@@ -106,11 +106,11 @@ untraced, unsanitized binaries.&lt;/p&gt;
   &lt;tbody&gt;
       &lt;tr&gt;
           &lt;td&gt;Metal compiler crashes compiling a GPU iterator with &lt;code&gt;-g&lt;/code&gt;&lt;/td&gt;
-          &lt;td&gt;Add &lt;code&gt;# SKIP_DEBUG&lt;/code&gt; to every GPU-launching test. Keep the actual GPU path; see the &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/development.md#metal-debug-info&#34;&gt;Metal compiler workaround&lt;/a&gt;.&lt;/td&gt;
+          &lt;td&gt;Add &lt;code&gt;# SKIP_DEBUG&lt;/code&gt; to every GPU-launching test. Keep the actual GPU path; see the &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/development.md#metal-debug-info&#34;&gt;Metal compiler workaround&lt;/a&gt;.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
           &lt;td&gt;&lt;code&gt;libSystem.tbd&lt;/code&gt; reports unknown &lt;code&gt;arm64e.x1&lt;/code&gt; architecture&lt;/td&gt;
-          &lt;td&gt;Install an older compatible macOS SDK and leave &lt;code&gt;SDKROOT&lt;/code&gt; unset so Pixi activation can choose it. An explicit &lt;code&gt;SDKROOT&lt;/code&gt; is respected; see the &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/development.md#macos-sdk-linking&#34;&gt;SDK workaround&lt;/a&gt;.&lt;/td&gt;
+          &lt;td&gt;Install an older compatible macOS SDK and leave &lt;code&gt;SDKROOT&lt;/code&gt; unset so Pixi activation can choose it. An explicit &lt;code&gt;SDKROOT&lt;/code&gt; is respected; see the &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/development.md#macos-sdk-linking&#34;&gt;SDK workaround&lt;/a&gt;.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
           &lt;td&gt;A focused test needs a custom invocation&lt;/td&gt;
@@ -118,8 +118,8 @@ untraced, unsanitized binaries.&lt;/p&gt;
       &lt;/tr&gt;
   &lt;/tbody&gt;
 &lt;/table&gt;
-&lt;p&gt;The canonical &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/development.md#coding-standards&#34;&gt;coding standards&lt;/a&gt;
-and &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/run_tests.sh&#34;&gt;test wrapper&lt;/a&gt; remain at their repository
+&lt;p&gt;The canonical &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/development.md#coding-standards&#34;&gt;coding standards&lt;/a&gt;
+and &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/test/run_tests.sh&#34;&gt;test wrapper&lt;/a&gt; remain at their repository
 paths. &lt;a href=&#34;../documentation&#34; &gt;Build documentation&lt;/a&gt; when examples or contracts change.&lt;/p&gt;
 
       </description>
@@ -188,10 +188,10 @@ and intentional exclusions must remain accepted.&lt;/p&gt;
 thread-capacity Python tests. Focused &lt;code&gt;world_entity_iterator&lt;/code&gt;,
 &lt;code&gt;execution_backend&lt;/code&gt;, &lt;code&gt;threaded_execution&lt;/code&gt;, &lt;code&gt;resource_adapter&lt;/code&gt;, and
 &lt;code&gt;synchronization&lt;/code&gt; test files trigger their corresponding family. The last
-table row is separate. The &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/test/check_struct_constraints.py&#34;&gt;struct checker&lt;/a&gt;
+table row is separate. The &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/test/check_struct_constraints.py&#34;&gt;struct checker&lt;/a&gt;
 uses type-only bindings so constructor checks cannot conceal a missing
 declaration invariant; see the
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/struct-constraints.md&#34;&gt;constraint audit&lt;/a&gt;.&lt;/p&gt;
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/struct-constraints.md&#34;&gt;constraint audit&lt;/a&gt;.&lt;/p&gt;
 &lt;h2&gt;Runtime evidence&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;runtime-evidence&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#runtime-evidence&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;table&gt;
@@ -237,14 +237,14 @@ investigations remain in the &lt;a href=&#34;../design&#34; &gt;evidence map&lt;
 &lt;p&gt;&lt;code&gt;test/run_tests.sh&lt;/code&gt; enables ASAN, &lt;code&gt;-g&lt;/code&gt;, &lt;code&gt;-DASSERT=all&lt;/code&gt;, and Tracy linkage.
 &lt;code&gt;# SKIP_ASAN&lt;/code&gt; opts a file out of sanitization; &lt;code&gt;# SKIP_DEBUG&lt;/code&gt; omits debug info.
 Every test that launches a GPU kernel needs &lt;code&gt;# SKIP_DEBUG&lt;/code&gt; because of the
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/development.md#metal-debug-info&#34;&gt;Metal compiler failure&lt;/a&gt;.
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/development.md#metal-debug-info&#34;&gt;Metal compiler failure&lt;/a&gt;.
 Neither marker means that the test may skip its assertions. The doctest runner
 uses assertions and Tracy linkage, but does not enable the test wrapper&amp;rsquo;s
 ASAN/debug defaults.&lt;/p&gt;
 &lt;p&gt;CI bounds test compilation concurrency with &lt;code&gt;--parallel 2&lt;/code&gt; and retains
 &lt;code&gt;output/memory/&lt;/code&gt; diagnostics. An interrupted runner or missing artifact is not
-a correctness pass. See &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/.github/workflows/main.yml&#34;&gt;the CI workflow&lt;/a&gt;
-and &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/scripts/monitor_ci_memory.py&#34;&gt;the memory monitor&lt;/a&gt; for the
+a correctness pass. See &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/.github/workflows/main.yml&#34;&gt;the CI workflow&lt;/a&gt;
+and &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/scripts/monitor_ci_memory.py&#34;&gt;the memory monitor&lt;/a&gt; for the
 recorded process boundary; keep performance measurements isolated from builds.&lt;/p&gt;
 
       </description>
@@ -261,8 +261,8 @@ recorded process boundary; keep performance measurements isolated from builds.&l
         
         &lt;p&gt;Use this workflow when a change affects ownership, storage, query membership,
 execution, safety, compatibility, or measured costs. It follows the existing
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/AGENTS.md&#34;&gt;repository guidelines&lt;/a&gt; and
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/README.md#recording-a-change&#34;&gt;ADR workflow&lt;/a&gt;.&lt;/p&gt;
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/AGENTS.md&#34;&gt;repository guidelines&lt;/a&gt; and
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/README.md#recording-a-change&#34;&gt;ADR workflow&lt;/a&gt;.&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;Locate the current requirement and relevant decisions in the
 &lt;a href=&#34;../design&#34; &gt;design map&lt;/a&gt;. Check status and supersession before treating a
@@ -287,11 +287,11 @@ reference/docstrings, and changed mechanisms in architecture. Extract
 runnable listings from checked sources, regenerate affected figures, and
 run the &lt;a href=&#34;../documentation&#34; &gt;documentation build&lt;/a&gt;.&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;Keep unfinished tasks and priorities in &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/roadmap.md&#34;&gt;the roadmap&lt;/a&gt;,
-and completed release history in &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/changelog.md&#34;&gt;the changelog&lt;/a&gt;.
+&lt;p&gt;Keep unfinished tasks and priorities in &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/roadmap.md&#34;&gt;the roadmap&lt;/a&gt;,
+and completed release history in &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/changelog.md&#34;&gt;the changelog&lt;/a&gt;.
 Research notes and thesis alternatives remain evidence with their original
 status; they do not create a second requirements or documentation-policy system.
-The canonical &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/development.md#coding-standards&#34;&gt;coding standards&lt;/a&gt;
+The canonical &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/development.md#coding-standards&#34;&gt;coding standards&lt;/a&gt;
 also govern listings and API docstrings.&lt;/p&gt;
 
       </description>
@@ -487,12 +487,12 @@ Inter fonts, and exports every non-helper &lt;code&gt;docs/figures/*.typ&lt;/cod
 source and &lt;code&gt;docs/site/static/images/&amp;lt;name&amp;gt;.svg&lt;/code&gt; together. Keep its caption,
 alt text, and interpretation aligned. SVGs retain a light canvas in both
 themes and scroll within the reading column on narrow screens. The
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/figures/README.md&#34;&gt;figure catalog&lt;/a&gt; records provenance.&lt;/p&gt;
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/figures/README.md&#34;&gt;figure catalog&lt;/a&gt; records provenance.&lt;/p&gt;
 &lt;p&gt;Use &lt;code&gt;pixi run serve-docs&lt;/code&gt; after a build, or &lt;code&gt;pixi run watch-docs&lt;/code&gt; while editing.
 The watch loop supports iteration; &lt;code&gt;verify-docs&lt;/code&gt; is the publishing gate.
 Repository PR previews use
 &lt;code&gt;https://larecs.github.io/larecs/pr-preview/pr-&amp;lt;number&amp;gt;/&lt;/code&gt; through
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/.github/workflows/publish.yml&#34;&gt;the publishing workflow&lt;/a&gt;.&lt;/p&gt;
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/.github/workflows/publish.yml&#34;&gt;the publishing workflow&lt;/a&gt;.&lt;/p&gt;
 &lt;h2&gt;Keep links and incoming URLs working&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;keep-links-and-incoming-urls-working&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#keep-links-and-incoming-urls-working&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Use &lt;code&gt;api&lt;/code&gt; for symbols, built-site paths for pages, and &lt;code&gt;repo&lt;/code&gt; for repository
@@ -501,7 +501,7 @@ HEAD revision; publish a committed checkout. Keep the initializer&amp;rsquo;s &l
 list aligned with imports. Inherited or compiler-synthesized members link to
 their owning source declaration.&lt;/p&gt;
 &lt;p&gt;Guide compatibility routes and heading IDs are checked against
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/scripts/docs_legacy_urls.json&#34;&gt;the incoming-URL fixture&lt;/a&gt;.
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/scripts/docs_legacy_urls.json&#34;&gt;the incoming-URL fixture&lt;/a&gt;.
 Generated API aliases also retain method and overload fragments. On a
 case-sensitive host, &lt;code&gt;System/&lt;/code&gt; redirects independently of the &lt;code&gt;system/&lt;/code&gt; module.
 On a case-insensitive filesystem, the module landing page handles the legacy
@@ -718,8 +718,8 @@ compatible. Compiler upgrades do not measure compiler-to-compiler changes.
 These broad thresholds target substantial regressions on shared runners;
 smaller or cumulative regressions, larger worlds, heap-backed payloads, disjoint
 selections, and device costs need focused measurements or future coverage. See
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0011-pr-performance-regression-checks.md&#34;&gt;decision 0011&lt;/a&gt;
-and the &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/roadmap.md#performance-regression-coverage&#34;&gt;roadmap&lt;/a&gt;.&lt;/p&gt;
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0011-pr-performance-regression-checks.md&#34;&gt;decision 0011&lt;/a&gt;
+and the &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/roadmap.md#performance-regression-coverage&#34;&gt;roadmap&lt;/a&gt;.&lt;/p&gt;
 &lt;h2&gt;Small spatial benchmarks on every PR&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;small-spatial-benchmarks-on-every-pr&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#small-spatial-benchmarks-on-every-pr&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Run &lt;code&gt;pixi run spatial-benchmarks&lt;/code&gt; for one bounded CPU-only comparison, or
@@ -823,31 +823,31 @@ cross-links, and durable evidence. We do not infer implementation from acceptanc
   &lt;/thead&gt;
   &lt;tbody&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/README.md&#34;&gt;Design index&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/README.md&#34;&gt;Design index&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Complete ADR index, lifecycle meanings, metadata schema, and recording workflow.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/requirements.md&#34;&gt;ECS requirements&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/requirements.md&#34;&gt;ECS requirements&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Accepted contracts with evidence and explicit implementation gaps.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/architecture.md&#34;&gt;Repository architecture map&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/architecture.md&#34;&gt;Repository architecture map&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Source-level overview; &lt;a href=&#34;../../architecture&#34; &gt;published architecture&lt;/a&gt; expands current mechanisms.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/development.md&#34;&gt;Development reference&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/development.md&#34;&gt;Development reference&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Canonical coding/docstring standards and detailed platform workarounds.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/GLOSSARY.md&#34;&gt;Glossary&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/GLOSSARY.md&#34;&gt;Glossary&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Shared terminology for composition, storage, execution, and ownership.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/roadmap.md&#34;&gt;Roadmap&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/roadmap.md&#34;&gt;Roadmap&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Unfinished work and priorities.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/changelog.md&#34;&gt;Changelog&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/changelog.md&#34;&gt;Changelog&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Completed release history.&lt;/td&gt;
       &lt;/tr&gt;
   &lt;/tbody&gt;
@@ -866,63 +866,63 @@ and tests in &lt;a href=&#34;../../architecture&#34; &gt;architecture&lt;/a&gt;.
   &lt;/thead&gt;
   &lt;tbody&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0001-locked-entity-selections.md&#34;&gt;0001 selections&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0002-gpu-system-execution.md&#34;&gt;0002 device execution&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0003-grid-stride-entity-iteration.md&#34;&gt;0003 grid stride&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0004-scoped-selection-errors.md&#34;&gt;0004 errors&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0001-locked-entity-selections.md&#34;&gt;0001 selections&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0002-gpu-system-execution.md&#34;&gt;0002 device execution&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0003-grid-stride-entity-iteration.md&#34;&gt;0003 grid stride&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0004-scoped-selection-errors.md&#34;&gt;0004 errors&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Accepted; current selection/execution foundations.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0005-filtered-spatial-row-reordering.md&#34;&gt;0005 spatial ordering&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0010-spatial-classifier-maintenance.md&#34;&gt;0010 full maintenance&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0005-filtered-spatial-row-reordering.md&#34;&gt;0005 spatial ordering&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0010-spatial-classifier-maintenance.md&#34;&gt;0010 full maintenance&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Superseded by 0012; retain historical classification/movement rationale.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0006-partitioned-spatial-archetype-storage.md&#34;&gt;0006 partitions&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0008-dirty-entity-spatial-classification.md&#34;&gt;0008 dirty identities&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0009-typed-row-permutation-foundation.md&#34;&gt;0009 typed movement&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0012-deferred-spatial-maintenance.md&#34;&gt;0012 deferred maintenance&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0006-partitioned-spatial-archetype-storage.md&#34;&gt;0006 partitions&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0008-dirty-entity-spatial-classification.md&#34;&gt;0008 dirty identities&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0009-typed-row-permutation-foundation.md&#34;&gt;0009 typed movement&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0012-deferred-spatial-maintenance.md&#34;&gt;0012 deferred maintenance&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Accepted; current spatial foundations.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0007-special-cluster-component.md&#34;&gt;0007 special Cluster component&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0007-special-cluster-component.md&#34;&gt;0007 special Cluster component&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Rejected; not a component users must add.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0011-pr-performance-regression-checks.md&#34;&gt;0011 regression checks&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0011-pr-performance-regression-checks.md&#34;&gt;0011 regression checks&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Accepted; &lt;a href=&#34;../regression&#34; &gt;gate operation&lt;/a&gt; describes the implemented checker.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0013-cluster-local-partition-blocks.md&#34;&gt;0013 bounded blocks&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0013-cluster-local-partition-blocks.md&#34;&gt;0013 bounded blocks&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Superseded by 0014; the historical 256-row cap is not current.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0014-growable-cluster-stores.md&#34;&gt;0014 growable stores&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0014-growable-cluster-stores.md&#34;&gt;0014 growable stores&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Accepted; current partition layout.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0015-host-device-execution-terminology.md&#34;&gt;0015 terminology&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0015-host-device-execution-terminology.md&#34;&gt;0015 terminology&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Superseded by 0023; preserves beta spelling migration.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0016-kernel-memory-synchronization.md&#34;&gt;0016 synchronization&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0016-kernel-memory-synchronization.md&#34;&gt;0016 synchronization&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Accepted, partially implemented; standalone primitives exist, dedicated kernel bindings and collection domains do not.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0017-deferred-kernel-access.md&#34;&gt;0017 deferred access&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0017-deferred-kernel-access.md&#34;&gt;0017 deferred access&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Proposed; no callable deferred-access API.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0018-portable-resource-adapters.md&#34;&gt;0018 adapters&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0018-portable-resource-adapters.md&#34;&gt;0018 adapters&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Superseded by 0020 and extended by 0022; preserve source/view and lifetime rationale.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0019-threaded-host-execution.md&#34;&gt;0019 threaded execution&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0019-threaded-host-execution.md&#34;&gt;0019 threaded execution&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Superseded by 0020; its feasibility evidence is historical.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0020-declared-plain-values.md&#34;&gt;0020 plain values&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0020-declared-plain-values.md&#34;&gt;0020 plain values&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Accepted; threaded execution remains experimental.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0021-skip-unchanged-device-uploads.md&#34;&gt;0021 device-copy reuse&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0022-mutable-adapted-resources.md&#34;&gt;0022 mutable adapters&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0021-skip-unchanged-device-uploads.md&#34;&gt;0021 device-copy reuse&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0022-mutable-adapted-resources.md&#34;&gt;0022 mutable adapters&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Accepted, experimental; implemented contracts are checked against transfer and adapter tests.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0023-explicit-execution-backend.md&#34;&gt;0023 explicit targets&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/decisions/0024-locked-storage-ranges.md&#34;&gt;0024 storage ranges&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0023-explicit-execution-backend.md&#34;&gt;0023 explicit targets&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/decisions/0024-locked-storage-ranges.md&#34;&gt;0024 storage ranges&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Accepted; current target selection and bounded ranges.&lt;/td&gt;
       &lt;/tr&gt;
   &lt;/tbody&gt;
@@ -941,31 +941,31 @@ APIs. A probe may depend on its recorded toolchain rather than the current one.&
   &lt;/thead&gt;
   &lt;tbody&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/host-thread-execution.md&#34;&gt;Host-thread investigation&lt;/a&gt;&lt;/td&gt;
-          &lt;td&gt;Feasibility findings and prototype measurements; not the implemented engine. Companion &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/host-thread-dispatch-probe.mojo&#34;&gt;dispatch probe&lt;/a&gt; and &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/host-thread-benchmark.mojo&#34;&gt;benchmark&lt;/a&gt; retain that experiment.&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/host-thread-execution.md&#34;&gt;Host-thread investigation&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;Feasibility findings and prototype measurements; not the implemented engine. Companion &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/host-thread-dispatch-probe.mojo&#34;&gt;dispatch probe&lt;/a&gt; and &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/host-thread-benchmark.mojo&#34;&gt;benchmark&lt;/a&gt; retain that experiment.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/gpu-synchronization.md&#34;&gt;GPU synchronization survey&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/gpu-synchronization.md&#34;&gt;GPU synchronization survey&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Upstream primitive/backend evidence supporting 0016, with coverage limitations.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/apple-gpu-publication-ordering.md&#34;&gt;Apple publication ordering&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/apple-gpu-publication-ordering.md&#34;&gt;Apple publication ordering&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;M4 correctness/performance evidence for release-store/acquire-load publication.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/entity-range-migration.md&#34;&gt;Storage range migration&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/entity-range-migration.md&#34;&gt;Storage range migration&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Cursor-sharing evidence and timing samples affected by concurrent builds; no controlled speedup claim.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/struct-constraints.md&#34;&gt;Struct constraint audit&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/struct-constraints.md&#34;&gt;Struct constraint audit&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Mojo 1.0 declaration invariants, proof limits, and intentional exclusions.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/reference-invalidation-probe.mojo&#34;&gt;Reference invalidation probe&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/reference-invalidation-probe.mojo&#34;&gt;Reference invalidation probe&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Escaped-reference behavior motivating explicit device-copy invalidation.&lt;/td&gt;
       &lt;/tr&gt;
       &lt;tr&gt;
-          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/resource-view-probe.mojo&#34;&gt;Resource-view probe&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/design/research/resource-trait-dispatch-probe.mojo&#34;&gt;trait-dispatch probe&lt;/a&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/resource-view-probe.mojo&#34;&gt;Resource-view probe&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/design/research/resource-trait-dispatch-probe.mojo&#34;&gt;trait-dispatch probe&lt;/a&gt;&lt;/td&gt;
           &lt;td&gt;Resource descriptor and trait-dispatch experiments; production behavior comes from current adapters/tests.&lt;/td&gt;
       &lt;/tr&gt;
   &lt;/tbody&gt;
@@ -973,7 +973,7 @@ APIs. A probe may depend on its recorded toolchain rather than the current one.&
 &lt;p&gt;&lt;a href=&#34;../reports&#34; &gt;Measurement reports&lt;/a&gt; preserve historical benchmark material with
 its environment, method, and missing metadata called out. Thesis figures supply
 visual vocabulary; their adaptation is recorded in the
-&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/docs/figures/README.md&#34;&gt;figure catalog&lt;/a&gt;. Thesis-specific systems,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/docs/figures/README.md&#34;&gt;figure catalog&lt;/a&gt;. Thesis-specific systems,
 memory headers, bounded layouts, or branch experiments establish no current
 Larecs guarantee.&lt;/p&gt;
 

@@ -38,7 +38,7 @@ builds." />
   <meta itemprop="description" content="Install the repository’s locked Pixi environment and run the first particle program. Then use Larecs from your own Pixi project, either as source or as a precompiled package.
 Larecs runs on Linux x86-64 and macOS on Apple Silicon. Larecs 1.0.0b1 is a beta, so its APIs can still change. Pixi installs these dependencies:
 Mojo &gt;=1.0.0,&lt;1.1.0 MAX &gt;=26.5.0,&lt;27 mojo-tracy &gt;=1.1.0,&lt;2 It resolves them from the channels conda-forge, https://repo.prefix.dev/max, and https://prefix.dev/tree-d (for mojo-tracy). pixi.lock pins the exact builds.">
-  <meta itemprop="wordCount" content="403">
+  <meta itemprop="wordCount" content="445">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Install Larecs">
   <meta name="twitter:description" content="Install the repository’s locked Pixi environment and run the first particle program. Then use Larecs from your own Pixi project, either as source or as a precompiled package.
@@ -138,7 +138,7 @@ Mojo &gt;=1.0.0,&lt;1.1.0 MAX &gt;=26.5.0,&lt;27 mojo-tracy &gt;=1.1.0,&lt;2 It 
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
+  Development · Larecs 1.0.0b1 · revision <code>e2c969b59b96</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -874,6 +874,22 @@ replace it with your own program. Your project resolves its own environment,
 so keep its version ranges in line with Larecs&rsquo;s <code>pixi.toml</code> when you update
 the clone. For completion and diagnostics in your editor, add <code>../larecs/src</code>
 to the Mojo language server&rsquo;s include directories.</p>
+<p>On macOS, the repository&rsquo;s environment runs a script on activation that selects
+a macOS SDK the linker accepts; your project does not inherit it. Add it to
+your project&rsquo;s <code>pixi.toml</code>:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-toml" data-lang="toml"><span class="line"><span class="cl"><span class="p">[</span><span class="nx">target</span><span class="p">.</span><span class="nx">osx-arm64</span><span class="p">.</span><span class="nx">activation</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="nx">scripts</span> <span class="p">=</span> <span class="p">[</span><span class="s2">&#34;../larecs/scripts/activate_macos_sdk.sh&#34;</span><span class="p">]</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
 <h2>Use a precompiled package<span class="hx-absolute -hx-mt-20" id="use-a-precompiled-package"></span>
     <a href="#use-a-precompiled-package" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <p>Build the package with the toolchain your application uses. From the repository
@@ -916,7 +932,7 @@ Larecs revision.</p>
       </tr>
       <tr>
           <td>macOS linker error mentioning <code>arm64e.x1</code> or <code>libSystem.tbd</code></td>
-          <td>Install an older macOS SDK. With <code>SDKROOT</code> unset, the repository&rsquo;s activation script selects a compatible one. See the <a href="https://github.com/larecs/larecs/blob/main/docs/development.md#macos-sdk-linking" target="_blank" rel="noopener">SDK workaround</a>.</td>
+          <td>Install an older macOS SDK. With <code>SDKROOT</code> unset, the repository&rsquo;s activation script selects a compatible one; your own project needs the <a href="#use-the-source-from-your-own-project" >activation entry above</a>. See the <a href="https://github.com/larecs/larecs/blob/main/docs/development.md#macos-sdk-linking" target="_blank" rel="noopener">SDK workaround</a>.</td>
       </tr>
   </tbody>
 </table>

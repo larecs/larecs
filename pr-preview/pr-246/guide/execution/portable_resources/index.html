@@ -11,26 +11,26 @@
 <link rel="apple-touch-icon" href="/larecs/pr-preview/pr-246/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/larecs/pr-preview/pr-246/site.webmanifest" rel="manifest" />
 <title>Use portable resources – Larecs🌲</title>
-  <meta name="description" content="Read an owning collection, such as a list of samples, from the particle kernel on both the host and a device. An ordinary resource that owns memory works on the sequential host only, because Larecs cannot copy its heap data to a device byte by byte. A portable resource is a resource source with an adapter: it keeps the owner on the host and gives each kernel a kernel view: a plain value that points to the data on the kernel’s target." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-246/guide/execution/portable_resources/" itemprop="url" />
+  <meta name="description" content="Read an owning collection, such as a list of samples, from the particle kernel on both the host and a device. An ordinary resource that owns memory works on the sequential host only, because Larecs cannot copy its heap data to a device byte by byte. A portable resource is a resource source with an adapter. It keeps the owner on the host and gives each kernel a kernel view, a plain value that points to the data on the kernel’s target." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-246/guide/execution/portable_resources/" itemprop="url" />
 
 <meta property="og:title" content="Use portable resources" />
 <meta property="og:description" content="Read an owning collection, such as a list of samples, from the particle kernel
 on both the host and a device. An ordinary resource that owns memory works on
 the sequential host only, because Larecs cannot copy its heap data to a device
-byte by byte. A portable resource is a resource source with an adapter: it
-keeps the owner on the host and gives each kernel a kernel view: a plain value that points to the data on the kernel&rsquo;s
-target." />
+byte by byte. A portable resource is a resource source with an adapter. It
+keeps the owner on the host and gives each kernel a kernel view, a plain value
+that points to the data on the kernel&rsquo;s target." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://larecs.github.io/larecs/pr-preview/pr-246/guide/execution/portable_resources/" /><meta property="article:section" content="guide" />
 
 
 
   <meta itemprop="name" content="Use portable resources">
-  <meta itemprop="description" content="Read an owning collection, such as a list of samples, from the particle kernel on both the host and a device. An ordinary resource that owns memory works on the sequential host only, because Larecs cannot copy its heap data to a device byte by byte. A portable resource is a resource source with an adapter: it keeps the owner on the host and gives each kernel a kernel view: a plain value that points to the data on the kernel’s target.">
+  <meta itemprop="description" content="Read an owning collection, such as a list of samples, from the particle kernel on both the host and a device. An ordinary resource that owns memory works on the sequential host only, because Larecs cannot copy its heap data to a device byte by byte. A portable resource is a resource source with an adapter. It keeps the owner on the host and gives each kernel a kernel view, a plain value that points to the data on the kernel’s target.">
   <meta itemprop="wordCount" content="1975">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Use portable resources">
-  <meta name="twitter:description" content="Read an owning collection, such as a list of samples, from the particle kernel on both the host and a device. An ordinary resource that owns memory works on the sequential host only, because Larecs cannot copy its heap data to a device byte by byte. A portable resource is a resource source with an adapter: it keeps the owner on the host and gives each kernel a kernel view: a plain value that points to the data on the kernel’s target.">
+  <meta name="twitter:description" content="Read an owning collection, such as a list of samples, from the particle kernel on both the host and a device. An ordinary resource that owns memory works on the sequential host only, because Larecs cannot copy its heap data to a device byte by byte. A portable resource is a resource source with an adapter. It keeps the owner on the host and gives each kernel a kernel view, a plain value that points to the data on the kernel’s target.">
 
     <link rel="preload" href="/larecs/pr-preview/pr-246/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
     <link href="/larecs/pr-preview/pr-246/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -125,7 +125,7 @@ target." />
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
+  Development · Larecs 1.0.0b1 · revision <code>e2c969b59b96</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -851,17 +851,18 @@ target." />
           <p>Read an owning collection, such as a list of samples, from the particle kernel
 on both the host and a device. An ordinary resource that owns memory works on
 the sequential host only, because Larecs cannot copy its heap data to a device
-byte by byte. A <em>portable resource</em> is a resource source with an adapter: it
-keeps the owner on the host and gives each kernel a <em>kernel view</em>: a plain value that points to the data on the kernel&rsquo;s
-target.</p>
+byte by byte. A <em>portable resource</em> is a resource source with an adapter. It
+keeps the owner on the host and gives each kernel a <em>kernel view</em>, a plain value
+that points to the data on the kernel&rsquo;s target.</p>
 <p>Start with <a href="../../shared_resources" >Share values with resources</a> and
 <a href="../device" >Execute on a device</a>. Mutable portable resources are
 <a href="../../../reference/compatibility" >experimental</a>; this page uses read-only
 views.</p>
 <h2>Separate the owner from the kernel view<span class="hx-absolute -hx-mt-20" id="separate-the-owner-from-the-kernel-view"></span>
     <a href="#separate-the-owner-from-the-kernel-view" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
-<p>The particle types follow the <a href="../#the-portable-particle-model" >portable particle model</a>,
-and <code>Time</code> stays an ordinary read-only resource.</p>
+<p>The particle types follow the <a href="../#the-portable-particle-model" >portable particle
+model</a>, and <code>Time</code> stays an ordinary read-only
+resource.</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="nd">@fieldwise_init</span><span class="w">
@@ -1166,9 +1167,8 @@ the last grid sample, so the second step scales by <code>1 + 3</code> and ends a
   </button>
 </div>
 </div>
-<p>A PASS
-line for the device means the kernel read both views on the accelerator; a SKIP
-line means only the host ran.</p>
+<p>A PASS line for the device means the kernel read both views on the accelerator;
+a SKIP line means only the host ran.</p>
 <h2>Keep sources and views valid during a call<span class="hx-absolute -hx-mt-20" id="keep-sources-and-views-valid-during-a-call"></span>
     <a href="#keep-sources-and-views-valid-during-a-call" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <p>For the duration of a call, Larecs holds a <em>lease</em> on every bound source: it
@@ -1181,10 +1181,11 @@ kernel invocation.</li>
 before the call while the call runs.</li>
 </ul>
 <p>A lease protects the source&rsquo;s lifetime; it does not synchronize threads.
-<a href="../../../reference/compatibility#structural-locks-are-not-mutexes" >Structural locks are not mutexes</a>,
-and neither are leases. The
-<a href="../../../reference/resources#adapter-contracts" >adapter reference</a> lists the
-remaining rules for adapter authors.</p>
+<a href="../../../reference/compatibility#structural-locks-are-not-mutexes" >Structural locks are not
+mutexes</a>, and
+neither are leases. The <a href="../../../reference/resources#adapter-contracts" >adapter
+reference</a> lists the remaining
+rules for adapter authors.</p>
 <h2>Variations<span class="hx-absolute -hx-mt-20" id="variations"></span>
     <a href="#variations" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <h3>Write through an adapter<span class="hx-absolute -hx-mt-20" id="write-through-an-adapter"></span>
@@ -1193,9 +1194,9 @@ remaining rules for adapter authors.</p>
 <code>Resources[Grid]()</code> default means read-write and fails to compile. An adapter
 that sets <code>supports_mutation</code> can provide a writable view for sequential host
 calls, and one that also sets <code>supports_concurrent_mutation</code> can provide it for
-threaded and device calls. The
-<a href="../../../reference/resources#mutable-adapters" >mutable adapter reference</a>
-and the <a href="https://github.com/larecs/larecs/blob/main/examples/scatter_resource.mojo" target="_blank" rel="noopener">scatter example</a>
+threaded and device calls. The <a href="../../../reference/resources#mutable-adapters" >mutable adapter
+reference</a> and the <a href="https://github.com/larecs/larecs/blob/main/examples/scatter_resource.mojo" target="_blank" rel="noopener">scatter
+example</a>
 show the hooks and an atomic slot reservation. For most shared output, prefer
 <a href="../shared_writes" >per-particle results</a>.</p>
 <h3>Skip unchanged uploads<span class="hx-absolute -hx-mt-20" id="skip-unchanged-uploads"></span>
@@ -1479,7 +1480,7 @@ changed since the last device call skips <code>prepare_device</code> and reuses 
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/portable_resources.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/portable_resources.mojo">View the source on GitHub</a></p>
 </details>
 <h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
     <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>

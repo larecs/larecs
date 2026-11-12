@@ -129,7 +129,7 @@ Start with Update entities with systems and kernels and Create and remove entiti
   </nav>
 </div>
 <aside class="docs-context" aria-label="Documentation version">
-  Development · Larecs 1.0.0b1 · revision <code>719a3b2f1947</code>.
+  Development · Larecs 1.0.0b1 · revision <code>e2c969b59b96</code>.
   <a href="/larecs/pr-preview/pr-246/reference/compatibility/">Compatibility and experimental APIs</a>
 </aside>
 
@@ -865,9 +865,9 @@ values stay the same. It does not find exact neighbors.</p>
 and <a href="../../structural_changes" >Create and remove entities in batches</a>.</p>
 <h2>Classify particles by grid cell<span class="hx-absolute -hx-mt-20" id="classify-particles-by-grid-cell"></span>
     <a href="#classify-particles-by-grid-cell" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
-<p>The stage uses the
-<a href="../../execution/#the-portable-particle-model" >portable particle model</a> and an
-<code>Int32</code> marker for particles that should not be grouped.</p>
+<p>The stage uses the <a href="../../execution/#the-portable-particle-model" >portable particle
+model</a> and an <code>Int32</code> marker for
+particles that should not be grouped.</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="nd">@fieldwise_init</span><span class="w">
@@ -944,8 +944,7 @@ uses one cluster per grid cell:</p>
 </div>
 
 <p><code>spatial_filter</code> decides which entities Larecs classifies: those with a
-<code>Position</code> and no <code>Int32</code> marker. <code>Grid</code> implements <a href="/larecs/pr-preview/pr-246/larecs/spatial/SpatialClassifier/"><code>SpatialClassifier</code></a>;
-its <code>Accessor</code> must use exactly that filter, with read-only access.
+<code>Position</code> and no <code>Int32</code> marker. <code>Grid</code> implements <a href="/larecs/pr-preview/pr-246/larecs/spatial/SpatialClassifier/"><code>SpatialClassifier</code></a>; its <code>Accessor</code> must use exactly that filter, with read-only access.
 <a href="/larecs/pr-preview/pr-246/larecs/spatial/grid_cell/"><code>grid_cell</code></a> rounds a coordinate down to its cell, so <code>-0.1</code> with cell
 width 1 lies in cell -1. <a href="/larecs/pr-preview/pr-246/larecs/spatial/morton_key_3d/"><code>morton_key_3d</code></a> combines the cell coordinates
 into one key; the planar simulation leaves z at 0. Both raise for coordinates
@@ -1017,8 +1016,8 @@ themselves.</p>
 <p>Maintenance moves rows, so the world must be unlocked. End every query and
 selection first, because <a href="../../../reference/compatibility#empty-queries-and-selections-hold-structural-locks" >empty queries and selections hold
 locks</a>.
-Discard component references before maintenance, and look components up again
-by entity handle afterwards.</p>
+Discard component references before maintenance, and look components up again by
+entity handle afterwards.</p>
 <h2>Choose a placement policy<span class="hx-absolute -hx-mt-20" id="choose-a-placement-policy"></span>
     <a href="#choose-a-placement-policy" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <p>Registering the classifier chooses how Larecs groups rows; it does not move
@@ -1169,8 +1168,8 @@ in the cells you need, or build a separate spatial index.</p>
   </button>
 </div>
 </div>
-<p>The PASS line means
-both policies placed and selected the particles as expected on the host.</p>
+<p>The PASS line means both policies placed and selected the particles as expected
+on the host.</p>
 <h2>Variations<span class="hx-absolute -hx-mt-20" id="variations"></span>
     <a href="#variations" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
 <h3>Choose a maintenance cadence<span class="hx-absolute -hx-mt-20" id="choose-a-maintenance-cadence"></span>
@@ -1180,9 +1179,9 @@ classifies only the dirty particles, but it still copies one key per entity
 slot, scans store metadata, and moves every row whose placement changes, with
 all of its components. Structural changes make the next pass reclassify every
 particle. Maintaining every few steps instead of every step trades placement
-accuracy for fewer row moves.
-<a href="../../performance/measure" >Measure complete steps</a> to choose, and compare the
-locality-sensitive pass on its own as well.</p>
+accuracy for fewer row moves. <a href="../../performance/measure" >Measure complete
+steps</a> to choose, and compare the locality-sensitive
+pass on its own as well.</p>
 <h3>Report writes that Larecs cannot see<span class="hx-absolute -hx-mt-20" id="report-writes-that-larecs-cannot-see"></span>
     <a href="#report-writes-that-larecs-cannot-see" class="subheading-anchor" aria-label="Permalink for this section"></a></h3>
 <p>Larecs marks particles dirty when you write positions through <code>set</code>, a mutable
@@ -1231,8 +1230,8 @@ Maintenance and classification still run on the host afterwards.</p>
   </tbody>
 </table>
 <p>The <a href="../../../reference/spatial_sync" >spatial reference</a> lists classifier rules,
-key bounds, and the exact maintenance contract. The
-<a href="../../../inside/development/reports/partitions#partitioned-storage-comparison" >partition benchmark</a>
+key bounds, and the exact maintenance contract. The <a href="../../../inside/development/reports/partitions#partitioned-storage-comparison" >partition
+benchmark</a>
 records measurements for one workload, not a general speed guarantee.</p>
 <h2>Complete program<span class="hx-absolute -hx-mt-20" id="complete-program"></span>
     <a href="#complete-program" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>
@@ -1428,7 +1427,7 @@ records measurements for one workload, not a general speed guarantee.</p>
 </div>
 </div>
 
-<p><a href="https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/spatial.mojo">View the source on GitHub</a></p>
+<p><a href="https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/spatial.mojo">View the source on GitHub</a></p>
 </details>
 <h2>Next steps<span class="hx-absolute -hx-mt-20" id="next-steps"></span>
     <a href="#next-steps" class="subheading-anchor" aria-label="Permalink for this section"></a></h2>

@@ -25,8 +25,8 @@
         
         &lt;p&gt;Split one particle movement call into chunks that run concurrently on host
 worker threads. Use this when a single kernel call covers many independent rows
-and &lt;a href=&#34;../../performance&#34; &gt;profiling&lt;/a&gt; shows that the call dominates a step. Only the
-rows of one call are split; systems still run one after another in
+and &lt;a href=&#34;../../performance&#34; &gt;profiling&lt;/a&gt; shows that the call dominates a step. Only
+the rows of one call are split; systems still run one after another in
 registration order. Threaded execution is
 &lt;a href=&#34;../../../reference/compatibility&#34; &gt;experimental&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;Start with &lt;a href=&#34;../../systems_kernels&#34; &gt;Update entities with systems and kernels&lt;/a&gt;.&lt;/p&gt;
@@ -97,9 +97,10 @@ and the movement kernel from the first simulation.&lt;/p&gt;
 
 &lt;p&gt;&lt;code&gt;move&lt;/code&gt; is a &lt;em&gt;thin kernel&lt;/em&gt;: a named &lt;code&gt;def&lt;/code&gt; function that &lt;code&gt;run&lt;/code&gt; receives as a
 compile-time parameter, as in &lt;code&gt;context.run[move]()&lt;/code&gt;. It captures no local
-variables and declares no capture slots; threaded execution requires both. Each row writes only its own
-&lt;code&gt;Position&lt;/code&gt;, so no two chunks write the same data. &lt;code&gt;Resources().read[Time]()&lt;/code&gt;
-declares &lt;code&gt;Time&lt;/code&gt; read-only, so all chunks share one immutable value.&lt;/p&gt;
+variables and declares no capture slots; threaded execution requires both. Each
+row writes only its own &lt;code&gt;Position&lt;/code&gt;, so no two chunks write the same data.
+&lt;code&gt;Resources().read[Time]()&lt;/code&gt; declares &lt;code&gt;Time&lt;/code&gt; read-only, so all chunks share one
+immutable value.&lt;/p&gt;
 &lt;p&gt;Opt in for one call with &lt;code&gt;threaded=True&lt;/code&gt;:&lt;/p&gt;
 &lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
 
@@ -224,7 +225,8 @@ IDs&lt;/a&gt;.&lt;/li&gt;
 &lt;li&gt;Work that reads rows of other chunks needs a later &lt;code&gt;run&lt;/code&gt;, after this call
 returns.&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;a href=&#34;../../../inside/architecture/execution#preparing-and-draining-threaded-jobs&#34; &gt;Work mapping&lt;/a&gt;
+&lt;p&gt;&lt;a href=&#34;../../../inside/architecture/execution#preparing-and-draining-threaded-jobs&#34; &gt;Work
+mapping&lt;/a&gt;
 explains how Larecs sizes chunks.&lt;/p&gt;
 &lt;h2&gt;Variations&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;variations&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#variations&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
@@ -232,9 +234,9 @@ explains how Larecs sizes chunks.&lt;/p&gt;
     &lt;a href=&#34;#keep-small-calls-sequential&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
 &lt;p&gt;The default configuration has one worker, four chunks per worker, and a cutoff
 of 65,536 matched rows. With one worker, or with fewer matched rows than
-&lt;code&gt;min_parallel_rows&lt;/code&gt;, a &lt;code&gt;threaded=True&lt;/code&gt; call runs sequentially, once per
-physical store or selected range. Keep &lt;code&gt;threaded=True&lt;/code&gt; in the system and set the worker budget
-per world; the compile-time eligibility checks apply either way.&lt;/p&gt;
+&lt;code&gt;min_parallel_rows&lt;/code&gt;, a &lt;code&gt;threaded=True&lt;/code&gt; call runs sequentially, once per physical
+store or selected range. Keep &lt;code&gt;threaded=True&lt;/code&gt; in the system and set the worker
+budget per world; the compile-time eligibility checks apply either way.&lt;/p&gt;
 &lt;h3&gt;Run threaded on a selection&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;run-threaded-on-a-selection&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#run-threaded-on-a-selection&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
 &lt;p&gt;&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/system/EntitySelection/#run&#34;&gt;&lt;code&gt;EntitySelection.run&lt;/code&gt;&lt;/a&gt; accepts the same &lt;code&gt;threaded=True&lt;/code&gt; parameter and
@@ -242,7 +244,7 @@ splits only the selection&amp;rsquo;s rows.&lt;/p&gt;
 &lt;h3&gt;Read an owning collection&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;read-an-owning-collection&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#read-an-owning-collection&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
 &lt;p&gt;Ordinary resources in a threaded call must be read-only values without
-pointers or owned memory. To read a list or buffer, wrap it in an
+pointers or owned memory. To read a list or buffer, wrap it in a
 &lt;a href=&#34;../portable_resources&#34; &gt;portable resource&lt;/a&gt;.&lt;/p&gt;
 &lt;h2&gt;Failures and limits&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;failures-and-limits&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#failures-and-limits&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
@@ -432,7 +434,7 @@ lists the remaining lock, alias, and failure rules.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/threaded.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/threaded.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
 &lt;/details&gt;
 &lt;h2&gt;Next steps&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;next-steps&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#next-steps&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
@@ -530,8 +532,8 @@ whose components Larecs can copy to the device byte by byte.&lt;/p&gt;
 &lt;/div&gt;
 
 &lt;p&gt;&lt;code&gt;move&lt;/code&gt; is a &lt;a href=&#34;../threaded#move-particles-in-threaded-chunks&#34; &gt;thin kernel&lt;/a&gt;, the
-only kind of kernel device execution accepts. The system
-chooses the target with the &lt;code&gt;backend&lt;/code&gt; parameter of &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/system/SystemContext/#run&#34;&gt;&lt;code&gt;SystemContext.run&lt;/code&gt;&lt;/a&gt;:&lt;/p&gt;
+only kind of kernel device execution accepts. The system chooses the target with
+the &lt;code&gt;backend&lt;/code&gt; parameter of &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/system/SystemContext/#run&#34;&gt;&lt;code&gt;SystemContext.run&lt;/code&gt;&lt;/a&gt;:&lt;/p&gt;
 &lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
 
 &lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nd&#34;&gt;@fieldwise_init&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
@@ -712,18 +714,19 @@ IDs&lt;/a&gt;.&lt;/p&gt;
 &lt;h3&gt;Choose the target at run time&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;choose-the-target-at-run-time&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#choose-the-target-at-run-time&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
 &lt;p&gt;The backend is a compile-time parameter. To choose at run time, branch and call
-each specialization explicitly, for example add &lt;code&gt;Move[ExecutionBackend.DEVICE]()&lt;/code&gt;
-when &lt;code&gt;has_accelerator()&lt;/code&gt; is true and &lt;code&gt;Move[ExecutionBackend.HOST]()&lt;/code&gt; otherwise.
-Larecs itself has &lt;a href=&#34;../../../reference/compatibility#no-device-fallback&#34; &gt;no device fallback&lt;/a&gt;.&lt;/p&gt;
+each specialization explicitly, for example add
+&lt;code&gt;Move[ExecutionBackend.DEVICE]()&lt;/code&gt; when &lt;code&gt;has_accelerator()&lt;/code&gt; is true and
+&lt;code&gt;Move[ExecutionBackend.HOST]()&lt;/code&gt; otherwise. Larecs itself has &lt;a href=&#34;../../../reference/compatibility#no-device-fallback&#34; &gt;no device
+fallback&lt;/a&gt;.&lt;/p&gt;
 &lt;h3&gt;Run on a selection&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;run-on-a-selection&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#run-on-a-selection&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
 &lt;p&gt;&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/system/EntitySelection/#run&#34;&gt;&lt;code&gt;EntitySelection.run&lt;/code&gt;&lt;/a&gt; accepts the same &lt;code&gt;backend&lt;/code&gt; parameter and packs
 only the selection&amp;rsquo;s rows.&lt;/p&gt;
 &lt;h3&gt;Pass local values or owning data&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;pass-local-values-or-owning-data&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#pass-local-values-or-owning-data&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Use &lt;a href=&#34;../captures#declare-explicit-slots-for-a-thin-kernel&#34; &gt;explicit capture slots&lt;/a&gt;
-for a step-local value and &lt;a href=&#34;../portable_resources&#34; &gt;portable resources&lt;/a&gt; for an
-owning collection.&lt;/p&gt;
+&lt;p&gt;Use &lt;a href=&#34;../captures#declare-explicit-slots-for-a-thin-kernel&#34; &gt;explicit capture
+slots&lt;/a&gt; for a step-local
+value and &lt;a href=&#34;../portable_resources&#34; &gt;portable resources&lt;/a&gt; for an owning collection.&lt;/p&gt;
 &lt;h3&gt;Skip unchanged uploads&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;skip-unchanged-uploads&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#skip-unchanged-uploads&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
 &lt;p&gt;By default, every device call uploads all readable columns and resources.
@@ -921,7 +924,7 @@ choosing a backend.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/device.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/device.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
 &lt;/details&gt;
 &lt;h2&gt;Next steps&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;next-steps&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#next-steps&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
@@ -955,8 +958,8 @@ its inputs through read-only resources or components.&lt;/p&gt;
 parameter. &lt;a href=&#34;../threaded&#34; &gt;Run threaded host kernels&lt;/a&gt; defines thin kernels.&lt;/p&gt;
 &lt;h2&gt;Borrow locals with a closure on the host&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;borrow-locals-with-a-closure-on-the-host&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#borrow-locals-with-a-closure-on-the-host&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Both programs on this page use the
-&lt;a href=&#34;../#the-portable-particle-model&#34; &gt;portable particle model&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Both programs on this page use the &lt;a href=&#34;../#the-portable-particle-model&#34; &gt;portable particle
+model&lt;/a&gt;.&lt;/p&gt;
 &lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
 
 &lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nd&#34;&gt;@fieldwise_init&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
@@ -1080,8 +1083,8 @@ after the last call, so the assertion sees the final count.&lt;/p&gt;
 
 &lt;p&gt;The extra &lt;code&gt;Int32&lt;/code&gt; component gives &lt;code&gt;climber&lt;/code&gt; a different composition and
 therefore its own physical store; it does not change which entities &lt;code&gt;move&lt;/code&gt;
-matches. Both particles move once, and &lt;code&gt;visits&lt;/code&gt; counts rows across both calls.
-From the repository root, run:&lt;/p&gt;
+matches. Both particles move once, and &lt;code&gt;visits&lt;/code&gt; counts rows across both calls.&lt;/p&gt;
+&lt;p&gt;From the repository root, run:&lt;/p&gt;
 &lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
 
 &lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo run -I src examples/particles/lexical_closure.mojo&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
@@ -1209,8 +1212,8 @@ that owns memory, belongs in a &lt;a href=&#34;../../shared_resources&#34; &gt;r
 &lt;h3&gt;Produce one result per particle&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;produce-one-result-per-particle&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#produce-one-result-per-particle&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
 &lt;p&gt;When many invocations or threads contribute to a result, write a per-particle
-component and reduce it after &lt;code&gt;run&lt;/code&gt;, as in
-&lt;a href=&#34;../shared_writes&#34; &gt;Coordinate shared writes&lt;/a&gt;.&lt;/p&gt;
+component and reduce it after &lt;code&gt;run&lt;/code&gt;, as in &lt;a href=&#34;../shared_writes&#34; &gt;Coordinate shared
+writes&lt;/a&gt;.&lt;/p&gt;
 &lt;h2&gt;Failures and limits&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;failures-and-limits&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#failures-and-limits&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;table&gt;
@@ -1244,9 +1247,9 @@ component and reduce it after &lt;code&gt;run&lt;/code&gt;, as in
   &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;p&gt;Keep references from capture slots and closure borrows inside the kernel; they
-must not outlive the call. The
-&lt;a href=&#34;../../../reference/resources#explicit-captures&#34; &gt;capture reference&lt;/a&gt; lists the
-remaining binding rules.&lt;/p&gt;
+must not outlive the call. The &lt;a href=&#34;../../../reference/resources#explicit-captures&#34; &gt;capture
+reference&lt;/a&gt; lists the remaining
+binding rules.&lt;/p&gt;
 &lt;h2&gt;Complete program&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;complete-program&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#complete-program&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;details class=&#34;example-program&#34;&gt;
@@ -1360,7 +1363,7 @@ remaining binding rules.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/lexical_closure.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/lexical_closure.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
 &lt;/details&gt;
 &lt;p&gt;The program above checks the lexical closure on the host.&lt;/p&gt;
 &lt;details class=&#34;example-program&#34;&gt;
@@ -1514,7 +1517,7 @@ remaining binding rules.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/captures.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/captures.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
 &lt;/details&gt;
 &lt;p&gt;The program above checks explicit slots on the host and, when available, on a
 device.&lt;/p&gt;
@@ -1542,17 +1545,18 @@ writers.&lt;/li&gt;
         &lt;p&gt;Read an owning collection, such as a list of samples, from the particle kernel
 on both the host and a device. An ordinary resource that owns memory works on
 the sequential host only, because Larecs cannot copy its heap data to a device
-byte by byte. A &lt;em&gt;portable resource&lt;/em&gt; is a resource source with an adapter: it
-keeps the owner on the host and gives each kernel a &lt;em&gt;kernel view&lt;/em&gt;: a plain value that points to the data on the kernel&amp;rsquo;s
-target.&lt;/p&gt;
+byte by byte. A &lt;em&gt;portable resource&lt;/em&gt; is a resource source with an adapter. It
+keeps the owner on the host and gives each kernel a &lt;em&gt;kernel view&lt;/em&gt;, a plain value
+that points to the data on the kernel&amp;rsquo;s target.&lt;/p&gt;
 &lt;p&gt;Start with &lt;a href=&#34;../../shared_resources&#34; &gt;Share values with resources&lt;/a&gt; and
 &lt;a href=&#34;../device&#34; &gt;Execute on a device&lt;/a&gt;. Mutable portable resources are
 &lt;a href=&#34;../../../reference/compatibility&#34; &gt;experimental&lt;/a&gt;; this page uses read-only
 views.&lt;/p&gt;
 &lt;h2&gt;Separate the owner from the kernel view&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;separate-the-owner-from-the-kernel-view&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#separate-the-owner-from-the-kernel-view&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The particle types follow the &lt;a href=&#34;../#the-portable-particle-model&#34; &gt;portable particle model&lt;/a&gt;,
-and &lt;code&gt;Time&lt;/code&gt; stays an ordinary read-only resource.&lt;/p&gt;
+&lt;p&gt;The particle types follow the &lt;a href=&#34;../#the-portable-particle-model&#34; &gt;portable particle
+model&lt;/a&gt;, and &lt;code&gt;Time&lt;/code&gt; stays an ordinary read-only
+resource.&lt;/p&gt;
 &lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
 
 &lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nd&#34;&gt;@fieldwise_init&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
@@ -1857,9 +1861,8 @@ the last grid sample, so the second step scales by &lt;code&gt;1 + 3&lt;/code&gt
   &lt;/button&gt;
 &lt;/div&gt;
 &lt;/div&gt;
-&lt;p&gt;A PASS
-line for the device means the kernel read both views on the accelerator; a SKIP
-line means only the host ran.&lt;/p&gt;
+&lt;p&gt;A PASS line for the device means the kernel read both views on the accelerator;
+a SKIP line means only the host ran.&lt;/p&gt;
 &lt;h2&gt;Keep sources and views valid during a call&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;keep-sources-and-views-valid-during-a-call&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#keep-sources-and-views-valid-during-a-call&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;For the duration of a call, Larecs holds a &lt;em&gt;lease&lt;/em&gt; on every bound source: it
@@ -1872,10 +1875,11 @@ kernel invocation.&lt;/li&gt;
 before the call while the call runs.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;A lease protects the source&amp;rsquo;s lifetime; it does not synchronize threads.
-&lt;a href=&#34;../../../reference/compatibility#structural-locks-are-not-mutexes&#34; &gt;Structural locks are not mutexes&lt;/a&gt;,
-and neither are leases. The
-&lt;a href=&#34;../../../reference/resources#adapter-contracts&#34; &gt;adapter reference&lt;/a&gt; lists the
-remaining rules for adapter authors.&lt;/p&gt;
+&lt;a href=&#34;../../../reference/compatibility#structural-locks-are-not-mutexes&#34; &gt;Structural locks are not
+mutexes&lt;/a&gt;, and
+neither are leases. The &lt;a href=&#34;../../../reference/resources#adapter-contracts&#34; &gt;adapter
+reference&lt;/a&gt; lists the remaining
+rules for adapter authors.&lt;/p&gt;
 &lt;h2&gt;Variations&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;variations&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#variations&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;h3&gt;Write through an adapter&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;write-through-an-adapter&#34;&gt;&lt;/span&gt;
@@ -1884,9 +1888,9 @@ remaining rules for adapter authors.&lt;/p&gt;
 &lt;code&gt;Resources[Grid]()&lt;/code&gt; default means read-write and fails to compile. An adapter
 that sets &lt;code&gt;supports_mutation&lt;/code&gt; can provide a writable view for sequential host
 calls, and one that also sets &lt;code&gt;supports_concurrent_mutation&lt;/code&gt; can provide it for
-threaded and device calls. The
-&lt;a href=&#34;../../../reference/resources#mutable-adapters&#34; &gt;mutable adapter reference&lt;/a&gt;
-and the &lt;a href=&#34;https://github.com/larecs/larecs/blob/main/examples/scatter_resource.mojo&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;scatter example&lt;/a&gt;
+threaded and device calls. The &lt;a href=&#34;../../../reference/resources#mutable-adapters&#34; &gt;mutable adapter
+reference&lt;/a&gt; and the &lt;a href=&#34;https://github.com/larecs/larecs/blob/main/examples/scatter_resource.mojo&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;scatter
+example&lt;/a&gt;
 show the hooks and an atomic slot reservation. For most shared output, prefer
 &lt;a href=&#34;../shared_writes&#34; &gt;per-particle results&lt;/a&gt;.&lt;/p&gt;
 &lt;h3&gt;Skip unchanged uploads&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;skip-unchanged-uploads&#34;&gt;&lt;/span&gt;
@@ -2170,7 +2174,7 @@ changed since the last device call skips &lt;code&gt;prepare_device&lt;/code&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/portable_resources.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/portable_resources.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
 &lt;/details&gt;
 &lt;h2&gt;Next steps&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;next-steps&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#next-steps&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
@@ -2193,12 +2197,11 @@ explains leases, adapter views, and their lifetimes.&lt;/li&gt;
         
         
         &lt;p&gt;Skip uploading particle data that has not changed since the last device call.
-Use this after the kernel already passes the
-&lt;a href=&#34;../device#compare-the-device-with-the-host&#34; &gt;host and device comparison&lt;/a&gt; and a
-&lt;a href=&#34;../../performance/measure&#34; &gt;measurement&lt;/a&gt; shows that uploads matter. Reuse is
-off by default, set per world, and
-&lt;a href=&#34;../../../reference/compatibility&#34; &gt;experimental&lt;/a&gt;. Written outputs still copy
-back to the host after every call.&lt;/p&gt;
+Use this after the kernel already passes the &lt;a href=&#34;../device#compare-the-device-with-the-host&#34; &gt;host and device
+comparison&lt;/a&gt; and a
+&lt;a href=&#34;../../performance/measure&#34; &gt;measurement&lt;/a&gt; shows that uploads matter. Reuse is off
+by default, set per world, and &lt;a href=&#34;../../../reference/compatibility&#34; &gt;experimental&lt;/a&gt;.
+Written outputs still copy back to the host after every call.&lt;/p&gt;
 &lt;p&gt;Start with &lt;a href=&#34;../device&#34; &gt;Execute on a device&lt;/a&gt;.&lt;/p&gt;
 &lt;h2&gt;Enable reuse for a world&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;enable-reuse-for-a-world&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#enable-reuse-for-a-world&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
@@ -2416,7 +2419,8 @@ transfers, and on the device with reuse:&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;p&gt;Every run ends at &lt;code&gt;(4.5, 7.0)&lt;/code&gt;. From the repository root, run:&lt;/p&gt;
+&lt;p&gt;Every run ends at &lt;code&gt;(4.5, 7.0)&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;From the repository root, run:&lt;/p&gt;
 &lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
 
 &lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pixi run mojo run -I src examples/particles/copy_reuse.mojo&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
@@ -2429,9 +2433,8 @@ transfers, and on the device with reuse:&lt;/p&gt;
   &lt;/button&gt;
 &lt;/div&gt;
 &lt;/div&gt;
-&lt;p&gt;A PASS line for
-the device means both transfer policies ran on the accelerator and matched the
-host; a SKIP line means only the host sequence ran.&lt;/p&gt;
+&lt;p&gt;A PASS line for the device means both transfer policies ran on the accelerator
+and matched the host; a SKIP line means only the host sequence ran.&lt;/p&gt;
 &lt;h2&gt;Variations&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;variations&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#variations&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;h3&gt;Observe values without forcing an upload&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;observe-values-without-forcing-an-upload&#34;&gt;&lt;/span&gt;
@@ -2629,7 +2632,7 @@ every operation that advances a revision.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/copy_reuse.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/copy_reuse.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
 &lt;/details&gt;
 &lt;h2&gt;Next steps&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;next-steps&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#next-steps&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
@@ -2828,8 +2831,7 @@ shown later on this page:&lt;/p&gt;
   &lt;/button&gt;
 &lt;/div&gt;
 &lt;/div&gt;
-&lt;p&gt;The PASS
-line means the host reduction and the host primitive checks succeeded.&lt;/p&gt;
+&lt;p&gt;The PASS line means the host reduction and the host primitive checks succeeded.&lt;/p&gt;
 &lt;h2&gt;Variations&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;variations&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#variations&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;h3&gt;Reduce in several passes&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;reduce-in-several-passes&#34;&gt;&lt;/span&gt;
@@ -2840,9 +2842,9 @@ pass reads only output that an earlier, finished call wrote.&lt;/p&gt;
 &lt;h3&gt;Use a single writer&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;use-a-single-writer&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#use-a-single-writer&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
 &lt;p&gt;One designated writer may update a shared value when it does not need other
-threads&amp;rsquo; unfinished results, as the
-&lt;a href=&#34;../captures#declare-explicit-slots-for-a-thin-kernel&#34; &gt;capture count&lt;/a&gt; does with
-global thread zero. A thread-zero branch is not a barrier.&lt;/p&gt;
+threads&amp;rsquo; unfinished results, as the &lt;a href=&#34;../captures#declare-explicit-slots-for-a-thin-kernel&#34; &gt;capture
+count&lt;/a&gt; does with global
+thread zero. A thread-zero branch is not a barrier.&lt;/p&gt;
 &lt;h3&gt;Update data you own with atomic or guarded values&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;update-data-you-own-with-atomic-or-guarded-values&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#update-data-you-own-with-atomic-or-guarded-values&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;
 &lt;p&gt;These primitives work on storage you own, outside the world:&lt;/p&gt;
@@ -2902,10 +2904,10 @@ it. &lt;code&gt;try_read&lt;/code&gt; and &lt;code&gt;try_write&lt;/code&gt; mak
 with &lt;code&gt;take&lt;/code&gt;. Several readers may hold the value at once; a writer excludes
 everyone else. The guard releases at scope exit or through &lt;code&gt;release&lt;/code&gt;.&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;A false &lt;code&gt;is_acquired&lt;/code&gt; means &lt;em&gt;Busy&lt;/em&gt;: the single attempt met a conflicting
-guard, a state that changed during the attempt, or the maximum reader count.
-Larecs does not retry. Record the unfinished work for a later pass, or skip the update only
-if your application can lose it.&lt;/p&gt;
+&lt;p&gt;A false &lt;code&gt;is_acquired&lt;/code&gt; means &lt;em&gt;Busy&lt;/em&gt;: the single attempt met a conflicting guard,
+a state that changed during the attempt, or the maximum reader count. Larecs
+does not retry. Record the unfinished work for a later pass, or skip the update
+only if your application can lose it.&lt;/p&gt;
 &lt;h2&gt;Failures and limits&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;failures-and-limits&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#failures-and-limits&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;table&gt;
@@ -2938,11 +2940,11 @@ if your application can lose it.&lt;/p&gt;
       &lt;/tr&gt;
   &lt;/tbody&gt;
 &lt;/table&gt;
-&lt;p&gt;&lt;a href=&#34;../../../reference/compatibility#structural-locks-are-not-mutexes&#34; &gt;Structural locks are not mutexes&lt;/a&gt;;
-neither are resource leases. The
-&lt;a href=&#34;../../../reference/spatial_sync#synchronization-primitives&#34; &gt;synchronization reference&lt;/a&gt;
-lists supported orderings per backend, guard rules, and device memory
-requirements.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;../../../reference/compatibility#structural-locks-are-not-mutexes&#34; &gt;Structural locks are not
+mutexes&lt;/a&gt;;
+neither are resource leases. The &lt;a href=&#34;../../../reference/spatial_sync#synchronization-primitives&#34; &gt;synchronization
+reference&lt;/a&gt; lists
+supported orderings per backend, guard rules, and device memory requirements.&lt;/p&gt;
 &lt;h2&gt;Complete program&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;complete-program&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#complete-program&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
 &lt;details class=&#34;example-program&#34;&gt;
@@ -3110,7 +3112,7 @@ requirements.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/719a3b2f194706458765a85f28510482d015f287/examples/particles/shared_outputs.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/larecs/larecs/blob/e2c969b59b9660899459b9fda8501b085b4eb4c1/examples/particles/shared_outputs.mojo&#34;&gt;View the source on GitHub&lt;/a&gt;&lt;/p&gt;
 &lt;/details&gt;
 &lt;h2&gt;Next steps&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;next-steps&#34;&gt;&lt;/span&gt;
     &lt;a href=&#34;#next-steps&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
