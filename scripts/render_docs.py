@@ -1,4 +1,5 @@
 """Generate Starlight pages and executable doctests directly from source."""
+import html
 import json
 import os
 import re
@@ -20,11 +21,81 @@ def fence(code):
     return '\n```mojo-render\n' + code.strip() + '\n```\n'
 
 
+def declaration(code):
+    return '\n<div class="api-declaration">\n' + fence(code) + '\n</div>\n'
+
+
+def code_text(text):
+    # Inline HTML code still passes through Markdown's inline parser. Escape
+    # its punctuation as character references so type syntax stays literal.
+    return html.escape(text).translate({ord(char): f'&#{ord(char)};' for char in r'\`*_[]()'})
+
+
+def transform_prose(text, transform):
+    """Keep code literal when resolving prose references and Markdown links."""
+    pieces = re.split(r'(```.*?```|`[^`\n]+`|<code\b[^>]*>.*?</code>)', text, flags=re.S)
+    return ''.join(part if part.startswith(('`', '<code')) else transform(part) for part in pieces)
+
+
 class Renderer:
     def __init__(self):
         self.api = build_reference()
         self.tests = {}
         self.redirects = dict(self.api['redirects'])
+        self.type_targets = {}
+        self.compiler_types = {}
+        modules = json.loads((ROOT / 'docs/src/larecs.json').read_text())['decl']['modules']
+        for module in modules:
+            if module['name'] == '__init__':
+                continue
+            for group in ('structs', 'traits', 'aliases'):
+                for item in module.get(group, []):
+                    name = module['name'] + '.' + item['name']
+                    self.register_type(name)
+                    for alias in item.get('aliases', []):
+                        self.register_type(name + '.' + alias['name'])
+
+    def register_type(self, name):
+        target = self.api['symbols'][name]['target']
+        self.type_targets[name] = target
+        # Compiler type paths use lowercase alias fragments.
+        self.compiler_types['/' + target.rstrip('/').casefold()] = target
+        for short in (name.split('.', 1)[1], name.rsplit('.', 1)[-1]):
+            metadata = self.api['symbols'].get(short)
+            if metadata and metadata['target'] == target:
+                self.type_targets[short] = target
+
+    def type_annotation(self, value, context):
+        """Link owned type names while retaining the complete compiler expression."""
+        expression = value['type']
+        compiler_path = value.get('path', '').rstrip('/').casefold()
+        compiler_target = self.compiler_types.get(compiler_path)
+        # A compiler path identifies the outer type even when its short name
+        # is ambiguous. Nested generic and callable types resolve in context.
+        compiler_name = compiler_path.rsplit('/', 1)[-1].removeprefix('#')
+
+        def token(match):
+            name = match[0]
+            escaped = code_text(name)
+            if name.startswith(('"', "'")):
+                return escaped
+            local_name = context + name[4:] if name.startswith('Self') and (name == 'Self' or name.startswith('Self.')) else context + '.' + name
+            candidates = (local_name, context.split('.')[0] + '.' + name, name.removeprefix('larecs.'))
+            target = next((self.type_targets[key] for key in candidates if key in self.type_targets), None)
+            if compiler_target and name.rsplit('.', 1)[-1].casefold() == compiler_name:
+                target = compiler_target
+            if not target:
+                return escaped
+            return f'<a href="{html.escape(BASE + target, quote=True)}">{escaped}</a>'
+
+        pattern = r""""(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*"""
+        parts = []
+        end = 0
+        for match in re.finditer(pattern, expression):
+            parts.extend((code_text(expression[end:match.start()]), token(match)))
+            end = match.end()
+        parts.append(code_text(expression[end:]))
+        return '<code class="api-type">' + ''.join(parts) + '</code>'
 
     def link(self, symbol, context=''):
         symbol = symbol.removeprefix('larecs.')
@@ -94,7 +165,7 @@ class Renderer:
             if not Path(path).suffix and not path.endswith('/'):
                 path += '/'
             return '](' + resolved._replace(path=path).geturl() + ')'
-        body = re.sub(r'\]\(([^\s)]+)\)', destination, body)
+        body = transform_prose(body, lambda text: re.sub(r'\]\(([^\s)]+)\)', destination, text))
         path = CONTENT / (route + '.md' if route else 'index.md')
         path.parent.mkdir(parents=True, exist_ok=True)
         metadata = {'title': title, 'slug': route, 'sidebar': {'order': weight, 'hidden': hidden}}
@@ -125,9 +196,9 @@ class Renderer:
         if exact:
             readable = re.sub(r'\s+where \(eq .*$', '', exact)
             readable = re.sub(r': (\w+)\[[a-z_]\w*\.\w+[^\[\]]*\]', r': \1', readable)
-            text += fence(readable)
+            text += declaration(readable)
             if exact != readable:
-                text += '\n<details><summary>Exact declaration</summary>\n' + fence(exact) + '\n</details>\n'
+                text += '\n<details><summary>Exact declaration</summary>\n' + declaration(exact) + '\n</details>\n'
         text += '\n' + item.get('description', '') + '\n'
         if item.get('parentTraits'):
             text += '\n**Traits**\n\n' + ', '.join('`' + trait['name'] + '`' for trait in item['parentTraits']) + '\n'
@@ -138,18 +209,19 @@ class Renderer:
                 for value in values:
                     text += '- `' + value['name'] + '`'
                     if value.get('type'):
-                        text += ': `' + value['type'] + '`'
+                        text += ': ' + self.type_annotation(value, context)
                     text += ' — ' + value.get('description', '') + '\n'
         for key, label in [('returns', 'Returns'), ('raisesDoc', 'Raises'), ('constraints', 'Constraints')]:
             value = item.get(key)
             if isinstance(value, dict):
-                value = value.get('doc', '')
+                has_result = value.get('type') and (value['type'] != 'None' or value.get('doc'))
+                annotation = self.type_annotation(value, context) if has_result else ''
+                value = annotation + (' — ' if annotation and value.get('doc') else '') + value.get('doc', '')
             if value:
                 text += f'\n**{label}**\n\n{value}\n'
         # Cross references are prose only, never declarations or executable code.
         text = self.extract(text, owner)
-        pieces = re.split(r'(```.*?```|`[^`\n]+`)', text, flags=re.S)
-        return ''.join(part if part.startswith('`') else self.prose(part, context) for part in pieces)
+        return transform_prose(text, lambda prose: self.prose(prose, context))
 
     def api_pages(self):
         decl = json.loads((ROOT / 'docs/src/larecs.json').read_text())['decl']

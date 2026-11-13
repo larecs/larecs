@@ -16,6 +16,54 @@ from check_api_reference import Page, check
 from check_docs import check as check_site, Page as SitePage
 from docs_redirects import write_case_redirects
 from check_docs_browser import check_browser
+from render_docs import BASE, Renderer
+
+
+class TypeAnnotationTests(unittest.TestCase):
+    """Keep compiler type expressions intact while linking their owned types."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.renderer = Renderer()
+
+    def test_nested_callable_and_qualified_types(self):
+        expression = 'def(List[larecs.entity.Entity], KernelContext[filter]) -> Optional[Entity]'
+        rendered = self.renderer.type_annotation({'type': expression}, 'system.SystemContext')
+        self.assertEqual(''.join(SitePage(rendered).text), expression)
+        self.assertEqual(Page(rendered).links, [
+            BASE + 'larecs/entity/Entity/', BASE + 'larecs/system/KernelContext/',
+            BASE + 'larecs/entity/Entity/',
+        ])
+
+    def test_alias_paths_and_self(self):
+        rendered = self.renderer.type_annotation({
+            'type': 'ComponentType', 'path': '/larecs/component/#componenttype',
+        }, 'world.World')
+        self.assertEqual(Page(rendered).links, [BASE + 'larecs/component/#ComponentType'])
+        rendered = self.renderer.type_annotation({'type': 'Self'}, 'world.World')
+        self.assertEqual(Page(rendered).links, [BASE + 'larecs/world/World/'])
+
+    def test_reference_qualifier_and_literals_are_not_type_links(self):
+        expression = 'ref["Entity"] Entity'
+        rendered = self.renderer.type_annotation({
+            'type': expression, 'path': '/larecs/entity/Entity',
+        }, 'world.World')
+        self.assertEqual(''.join(SitePage(rendered).text), expression)
+        self.assertEqual(Page(rendered).links, [BASE + 'larecs/entity/Entity/'])
+
+    def test_contract_links_arguments_parameters_and_returns(self):
+        declaration = json.loads((ROOT / 'docs/src/larecs.json').read_text())['decl']
+        module = next(m for m in declaration['modules'] if m['name'] == 'host_storage')
+        storage = next(s for s in module['structs'] if s['name'] == 'HostStorage')
+        add_entity = next(f for f in storage['functions'] if f['name'] == 'add_entity')['overloads'][0]
+        contract = self.renderer.contract(add_entity, 'host_storage.HostStorage', Path('fixture'))
+        self.assertIn(BASE + 'larecs/component/#ComponentType', contract)
+        self.assertIn('**Returns**\n\n<code class="api-type"><a href="' + BASE + 'larecs/entity/Entity/">Entity</a></code>', contract)
+        module = next(m for m in declaration['modules'] if m['name'] == 'world')
+        world = next(s for s in module['structs'] if s['name'] == 'World')
+        initializer = next(f for f in world['functions'] if f['name'] == '__init__')['overloads'][0]
+        contract = self.renderer.contract(initializer, 'world.World', Path('fixture'))
+        self.assertIn('`execution_config`: <code class="api-type"><a href="' + BASE + 'larecs/execution/ThreadedExecutionConfig/">', contract)
 
 
 class ReferenceTests(unittest.TestCase):
@@ -79,6 +127,11 @@ class ReferenceTests(unittest.TestCase):
         run = next(f for f in context["functions"] if f["name"] == "run")
         text = "".join(SitePage(html).text)
         self.assertIn(run["overloads"][1]["signature"], text)
+        module = next(m for m in declaration["modules"] if m["name"] == "filter")
+        filter_type = next(s for s in module["structs"] if s["name"] == "Filter")
+        get_mask = next(f for f in filter_type["functions"] if f["name"] == "get_bitmask_filter")
+        filter_html = (ROOT / "docs/site/public/larecs/filter/Filter/index.html").read_text()
+        self.assertIn(get_mask["overloads"][0]["signature"], ''.join(SitePage(filter_html).text))
         resources = (ROOT / "docs/site/public/larecs/resource/ResourceStorage/index.html").read_text()
         self.assertIn("Note:", resources)
         self.assertIn("re-obtain it", resources)

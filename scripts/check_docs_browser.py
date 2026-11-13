@@ -52,6 +52,13 @@ def check_browser(public=None, base=None):
                 overflow = page.evaluate("document.documentElement.scrollWidth > innerWidth + 1")
                 if overflow:
                     raise ValueError(f"Page overflows {width}px viewport: {route}")
+                if route.startswith("larecs/"):
+                    declarations = page.locator(".api-declaration pre")
+                    if not declarations.count():
+                        raise ValueError(f"Missing API declarations: {route}")
+                    for declaration in declarations.all():
+                        if declaration.evaluate("node => getComputedStyle(node).whiteSpace !== 'pre-wrap' || node.scrollWidth > node.clientWidth + 1"):
+                            raise ValueError(f"API declaration does not wrap at {width}px: {route}")
                 for image in page.locator("main img").all():
                     image.scroll_into_view_if_needed()
                     page.wait_for_function("image => image.complete && image.naturalWidth > 0", arg=image.element_handle())
