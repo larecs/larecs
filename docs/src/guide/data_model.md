@@ -21,7 +21,7 @@ components and returns its handle.
 
 A component is a struct that conforms to
 {{< api component.ComponentType >}}, which requires `Copyable` and
-`Deinitable`. `Copyable, Movable` satisfies both. An entity holds at most one
+`Deinitable`. Use `ComponentType` to name this constraint in your type declaration. An entity holds at most one
 value of each component type.
 
 A component with no fields is a *tag*. Its presence carries the information,

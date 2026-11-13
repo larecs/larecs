@@ -24,7 +24,7 @@ value of each, and `ConfigureTime` changes `Time` through
 
 A resource is a struct that conforms to
 {{< api resource.ResourceType >}}, which requires `Copyable` and
-`Deinitable`. `Copyable, Movable` satisfies both. A world holds at most one
+`Deinitable`. Use `ResourceType` to name this constraint in your type declaration. A world holds at most one
 value per resource type, and resource types do not appear in the world's
 component list.
 

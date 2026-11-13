@@ -1,17 +1,18 @@
 # Larecs🌲 – Lightweight archetype-based ECS
 
 Larecs🌲 is a performance-oriented archetype-based ECS for [Mojo](https://www.modular.com/mojo)🔥.
-Its architecture is based on the Go ECS [Arche](https://github.com/mlange-42/arche).
+Larecs was inspired by the Go ECS [Arche](https://github.com/mlange-42/arche);
+its storage and execution architecture has since diverged.
 Larecs 1.0 is currently in beta, so public APIs may still change before the
 stable 1.0.0 release. After that release, public APIs follow semantic
 versioning unless they are explicitly marked experimental. See
-[compatibility and status](https://larecs.github.io/larecs/reference/compatibility/)
+[compatibility and status](https://larecs.github.io/larecs/dev/reference/compatibility/)
 for the experimental features.
 
 ## Features
 
 - Archetype storage and compile-time access checks through Mojo parameters
-- Native support for [resources](https://larecs.github.io/larecs/guide/shared_resources/) and scheduling
+- Native support for [resources](https://larecs.github.io/larecs/dev/guide/shared_resources/) and scheduling
 - Systems can run their component-processing kernels on the host or (experimentally) on an accelerator device via `SystemContext.run(..., backend=ExecutionBackend.DEVICE)`
 - Tested and benchmarked
 
@@ -24,17 +25,17 @@ Larecs🌲 has no other external dependencies.
 
 ## Installation
 
-The [installation guide](https://larecs.github.io/larecs/start/installation/)
-covers the locked Pixi environment, supported platforms, using the source from
-your own project, and precompiled packages.
+The [installation guide](https://larecs.github.io/larecs/dev/start/installation/)
+starts with the published Pixi package, then covers the locked development
+environment, supported platforms, using source, and manual precompilation.
 
 ## Usage
 
-Start with [Your first simulation](https://larecs.github.io/larecs/start/first_simulation/),
+Start with [Your first simulation](https://larecs.github.io/larecs/dev/start/first_simulation/),
 which moves particles with a system and a kernel. Two further tutorials extend
 it with creating and removing particles and with shared configuration. The
 complete programs live in [examples/particles](examples/particles). The
-[API docs](https://larecs.github.io/larecs/) list every public declaration.
+[API docs](https://larecs.github.io/larecs/dev/larecs/) list every public declaration.
 
 ## Contributing
 
@@ -132,7 +133,7 @@ such values qualify without declaring `TrivialRegisterPassable`. A resource
 that owns data, such as a `List`, can still reach threaded and device kernels
 through an adapter like `BufferResource`, which exposes a read-only view. A
 kernel that accesses an ineligible type fails to compile. See the
-[portable resources guide](https://larecs.github.io/larecs/guide/execution/portable_resources/)
+[portable resources guide](https://larecs.github.io/larecs/dev/guide/execution/portable_resources/)
 for details.
 
 Heap-owning components are a newer and less exercised path than plain-value
