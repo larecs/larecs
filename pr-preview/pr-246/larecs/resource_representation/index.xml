@@ -1,0 +1,41 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Larecs🌲 – resource_representation</title>
+    <link>https://larecs.github.io/larecs/pr-preview/pr-246/larecs/resource_representation/</link>
+    <description>Recent content in resource_representation on Larecs🌲</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	  <atom:link href="https://larecs.github.io/larecs/pr-preview/pr-246/larecs/resource_representation/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+      
+        
+      
+    
+    
+    <item>
+      <title>PlainValue</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-246/larecs/resource_representation/PlainValue/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-246/larecs/resource_representation/PlainValue/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Mojo trait · &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/resource_representation.mojo#L10&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Declares that a trivial type stores only plain numeric values.&lt;/p&gt;
+&lt;p&gt;Conform when reflection cannot inspect a pointer-free representation,
+such as a &lt;code&gt;StaticTuple&lt;/code&gt; or &lt;code&gt;InlineArray&lt;/code&gt; field of scalars. The declaring
+author guarantees that no field, at any depth, holds a pointer, reference,
+or handle; Larecs cannot verify this. Declared types must still be
+trivially copyable, movable, and deletable.&lt;/p&gt;
+&lt;h2&gt;Implemented traits&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;implemented-traits&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#implemented-traits&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;AnyType&lt;/code&gt;&lt;/p&gt;
+
+      </description>
+    </item>
+    
+  </channel>
+</rss>

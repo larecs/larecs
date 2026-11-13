@@ -1,0 +1,591 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Larecs🌲 – Architecture</title>
+    <link>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/</link>
+    <description>Recent content in Architecture on Larecs🌲</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	  <atom:link href="https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+      
+        
+      
+    
+    
+    <item>
+      <title>Execution and ownership</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/ownership/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/ownership/</guid>
+      <description>
+        
+        
+        &lt;p&gt;The &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/scheduler/Scheduler/&#34;&gt;&lt;code&gt;Scheduler&lt;/code&gt;&lt;/a&gt; owns a &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/world/World/&#34;&gt;&lt;code&gt;World&lt;/code&gt;&lt;/a&gt; and registered system
+values. Each scheduler phase visits systems in registration order: initialize
+once, update once per step, then finalize once. A system receives a
+&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/system/SystemContext/&#34;&gt;&lt;code&gt;SystemContext&lt;/code&gt;&lt;/a&gt; borrowing that world; its kernel receives only the
+columns, resources, and captures declared for that invocation.&lt;/p&gt;
+&lt;p&gt;The diagram separates ownership from temporary access.&lt;/p&gt;
+&lt;div class=&#34;docs-diagram&#34;&gt;
+&lt;div class=&#34;docs-figure&#34; role=&#34;region&#34; aria-label=&#34;Scheduler owns systems and World; World owns host storage, resource sources, optional device storage and a classifier; contexts borrow those owners.; scroll horizontally&#34; tabindex=&#34;0&#34;&gt;&lt;img src=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/images/architecture.svg&#34; alt=&#34;Scheduler owns systems and World; World owns host storage, resource sources, optional device storage and a classifier; contexts borrow those owners.&#34; loading=&#34;lazy&#34; /&gt;&lt;/div&gt;
+&lt;p class=&#34;figure-hint&#34;&gt;Scroll horizontally to read the full figure.&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;&lt;em&gt;Solid containment denotes ownership; arrows denote calls and borrowed access.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;We retain host components in &lt;code&gt;World.storage&lt;/code&gt;, resource sources in
+&lt;code&gt;World.resources&lt;/code&gt;, and optional device allocations in the world. A spatial
+classifier is also an owned world value. &lt;code&gt;KernelContext&lt;/code&gt; contains row count,
+column pointers, and binding descriptors; copying it does not copy the world
+or extend those allocations&amp;rsquo; validity beyond the invocation. No context or
+row reference may escape its execution boundary.&lt;/p&gt;
+&lt;h2&gt;One system, multiple kernel invocations&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;one-system-multiple-kernel-invocations&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#one-system-multiple-kernel-invocations&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;Move.update&lt;/code&gt; requests one run, but the executor chooses its invocation
+granularity. Sequential host execution calls the kernel for each nonempty
+matching physical range. Threaded execution can split ranges into chunks.
+Device execution packs ranges into one launch. Systems themselves remain
+ordered; threaded chunks do not make scheduler systems concurrent.&lt;/p&gt;
+&lt;p&gt;A side effect outside a kernel&amp;rsquo;s row loop therefore counts invocations,
+not simulation steps or entities. The &lt;a href=&#34;../execution&#34; &gt;work mapping&lt;/a&gt; explains
+how row offsets differ between those contexts. The checked particle types
+remain &lt;code&gt;Position.x/y&lt;/code&gt;, &lt;code&gt;Velocity.dx/dy&lt;/code&gt;, and &lt;code&gt;Time.delta&lt;/code&gt;; the system is &lt;code&gt;Move&lt;/code&gt;
+and its kernel is &lt;code&gt;move&lt;/code&gt; in &lt;a href=&#34;../../../start/first_simulation&#34; &gt;Your first simulation&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Caller and binding lifetimes&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;caller-and-binding-lifetimes&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#caller-and-binding-lifetimes&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;A threaded run prepares contexts and bindings on the caller, retains an
+execution guard and structural guard, then joins every worker before releasing
+them. The world remains caller-confined: its active flag rejects reentrant
+execution, and copying, moving, or destroying an active world aborts.
+This flag is a lifecycle check, not a mutex for arbitrary external callers.&lt;/p&gt;
+&lt;p&gt;Resource bindings retain source leases and invocation-owned views. A device
+run retains native staging buffers until queued work completes, publishes
+outputs, then releases bindings. See &lt;a href=&#34;../transfers&#34; &gt;bindings and transfers&lt;/a&gt;
+for failure behavior and &lt;a href=&#34;../iteration&#34; &gt;structural guards&lt;/a&gt; for iteration
+ownership.&lt;/p&gt;
+&lt;p&gt;The thesis architecture predates &lt;code&gt;SystemContext&lt;/code&gt;, device-copy ownership, and
+partition stores. Its mutable-World system signatures do not define today&amp;rsquo;s
+API. The adapted diagram describes roles and ownership, not object byte layout.&lt;/p&gt;
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/scheduler.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/world.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/system.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/scheduler_test.mojo&#34;&gt;test/scheduler_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/threaded_execution_test.mojo&#34;&gt;test/threaded_execution_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/resource_adapter_host_test.mojo&#34;&gt;test/resource_adapter_host_test.mojo&lt;/a&gt;.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Archetypes, columns, and locations</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/storage/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/storage/</guid>
+      <description>
+        
+        
+        &lt;p&gt;A &lt;strong&gt;logical archetype&lt;/strong&gt; groups entities with identical component composition.
+A &lt;strong&gt;physical store&lt;/strong&gt; holds one contiguous row collection for that composition.
+We keep component masks in a lazy transition graph; its nodes name canonical
+dense stores. Partitioned locality can add several physical stores beneath
+the same logical node. An internal &lt;code&gt;Archetype&lt;/code&gt; value represents a physical
+store, so its name alone does not imply one store per component combination.&lt;/p&gt;
+&lt;h2&gt;Columns contain component values&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;columns-contain-component-values&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#columns-contain-component-values&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The memory diagram shows one store with &lt;code&gt;Position&lt;/code&gt; and &lt;code&gt;Velocity&lt;/code&gt; active.&lt;/p&gt;
+&lt;div class=&#34;docs-diagram&#34;&gt;
+&lt;div class=&#34;docs-figure&#34; role=&#34;region&#34; aria-label=&#34;A store owns entity IDs and separate Position and Velocity columns. Each Position row contains both x and y, and each Velocity row contains dx and dy. Inactive component slots hold no allocation.; scroll horizontally&#34; tabindex=&#34;0&#34;&gt;&lt;img src=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/images/component-memory.svg&#34; alt=&#34;A store owns entity IDs and separate Position and Velocity columns. Each Position row contains both x and y, and each Velocity row contains dx and dy. Inactive component slots hold no allocation.&#34; loading=&#34;lazy&#34; /&gt;&lt;/div&gt;
+&lt;p class=&#34;figure-hint&#34;&gt;Scroll horizontally to read the full figure.&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;&lt;em&gt;Columns separate component types; fields remain together inside each value.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;The typed component table tracks a mask, live length, shared capacity,
+per-column revisions, and store incarnation (a fresh number for each new store).
+Its fixed component-ID-indexed
+array contains column descriptors. Each active descriptor owns an optional
+allocation and type-specific lifecycle functions; inactive descriptors have
+no component allocation. Entity IDs have a separate allocation. Columns
+and IDs share row indices, but their allocations are independent.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Position.x&lt;/code&gt; and &lt;code&gt;Position.y&lt;/code&gt; are fields in each &lt;code&gt;Position&lt;/code&gt; struct. They are
+not two scalar columns. The same applies to &lt;code&gt;Velocity.dx/dy&lt;/code&gt;. Spare capacity
+is uninitialized storage, not live component objects. The diagram&amp;rsquo;s boxes
+describe ownership and indexing, not header offsets, pointer packing, a
+stable ABI, or a CPU SIMD-batch API. In particular, the thesis&amp;rsquo;s pointer-slot
+sketch must not be read as today&amp;rsquo;s descriptor layout.&lt;/p&gt;
+&lt;h2&gt;Typed lifecycles&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;typed-lifecycles&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#typed-lifecycles&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Host components satisfy &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/component/#ComponentType&#34;&gt;&lt;code&gt;ComponentType&lt;/code&gt;&lt;/a&gt;
+(&lt;code&gt;Copyable &amp;amp; Deinitable&lt;/code&gt;); they can own heap data. &lt;code&gt;_ComponentColumn&lt;/code&gt; erases
+the concrete type while retaining typed operations for copying, moving,
+destroying, swapping, and allocating values.&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Operation&lt;/th&gt;
+          &lt;th&gt;Treatment of live values&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Copy a store&lt;/td&gt;
+          &lt;td&gt;Copy-construct each initialized value into independent column storage.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Grow capacity&lt;/td&gt;
+          &lt;td&gt;Allocate typed storage, move live values into it, then release the old allocation.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Remove a row&lt;/td&gt;
+          &lt;td&gt;Destroy removed values and move the last row into the hole when necessary.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Permute rows&lt;/td&gt;
+          &lt;td&gt;Swap entity IDs and every active component column together, preserving owners.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Destroy a store&lt;/td&gt;
+          &lt;td&gt;Destroy its live values once, then release column allocations.&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Raw byte transfer is a separate device eligibility boundary; support for an
+owning host component does not make that component device-safe or eligible
+for threaded host work. See the &lt;a href=&#34;../../../reference/execution&#34; &gt;execution contracts&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Structural transitions and identity&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;structural-transitions-and-identity&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#structural-transitions-and-identity&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Adding a component changes logical composition. The destination is the
+canonical store for the new mask, including when the source is a cluster
+store. In partition mode that destination stages rows until maintenance.
+The diagram follows particle B while particle C fills its old row.&lt;/p&gt;
+&lt;div class=&#34;docs-diagram&#34;&gt;
+&lt;div class=&#34;docs-figure&#34; role=&#34;region&#34; aria-label=&#34;Adding Velocity to B moves its Position from source row 1 into the Position-Velocity store, initializes Velocity, moves C from the source tail into row 1, and repairs both entity locations.; scroll horizontally&#34; tabindex=&#34;0&#34;&gt;&lt;img src=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/images/structural-transition.svg&#34; alt=&#34;Adding Velocity to B moves its Position from source row 1 into the Position-Velocity store, initializes Velocity, moves C from the source tail into row 1, and repairs both entity locations.&#34; loading=&#34;lazy&#34; /&gt;&lt;/div&gt;
+&lt;p class=&#34;figure-hint&#34;&gt;Scroll horizontally to read the full figure.&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;&lt;em&gt;B keeps its identity while its location changes; C&amp;rsquo;s location changes too.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Before touching initialized storage, &lt;code&gt;_ComponentMigration&lt;/code&gt; separates retained,
+removed, replaced, and added types, and checks missing removals or overlapping
+additions. Retained values move without destruction at the old location.
+Removed and replaced values stay initialized until destruction; new values
+initialize the destination. Swap-removal then repairs the source hole without
+destroying already moved values a second time. Typed row-permutation validation
+also completes before its first swap. These checks are not a promise of
+transactional rollback for arbitrary allocation failure.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/entity/Entity/&#34;&gt;&lt;code&gt;Entity&lt;/code&gt;&lt;/a&gt; is an ID/generation pair. The entity pool tracks liveness
+and recycling; &lt;code&gt;_entity_locations[id]&lt;/code&gt; maps a live identity to physical-store
+index and row. All row movement repairs that mapping, including the tail row
+used by swap-removal. A copied handle survives relocation, whereas an external
+component reference cannot survive a structural change or spatial maintenance.
+An ID from one world is not a cross-world reference.&lt;/p&gt;
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/archetype.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/host_storage.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/graph.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/entity.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/pool.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/host_storage_lifecycle_test.mojo&#34;&gt;test/host_storage_lifecycle_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/partitioned_spatial_test.mojo&#34;&gt;test/partitioned_spatial_test.mojo&lt;/a&gt;;
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/docs/design/decisions/0009-typed-row-permutation-foundation.md&#34;&gt;decision 0009&lt;/a&gt;
+records movement guarantees.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Queries, selections, and ranges</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/iteration/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/iteration/</guid>
+      <description>
+        
+        
+        &lt;p&gt;We discover stores by component masks, then traverse bounded row ranges.
+&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/filter/Filter/&#34;&gt;&lt;code&gt;Filter&lt;/code&gt;&lt;/a&gt; carries compile-time membership and access declarations;
+its include/exclude masks match physical stores. Excluded types constrain
+membership without supplying a component pointer. Read/write declarations
+also determine accessor permissions, invalidation, and device transfers.&lt;/p&gt;
+&lt;h2&gt;Guard ownership and cursor ownership&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;guard-ownership-and-cursor-ownership&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#guard-ownership-and-cursor-ownership&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/host_storage/HostStorage/#query&#34;&gt;&lt;code&gt;query&lt;/code&gt;&lt;/a&gt; returns a read-only
+&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/iteration/LockedEntityRange/&#34;&gt;&lt;code&gt;LockedEntityRange&lt;/code&gt;&lt;/a&gt;. The range owns a structural &lt;code&gt;LockGuard&lt;/code&gt; and a
+cursor. Copies share immutable store-index/range metadata through
+&lt;code&gt;ArcPointer&lt;/code&gt;, copy cursor positions independently, and acquire distinct lock
+bits. Exhaustion stops a cursor; it does not release its guard. Destroying
+one copy leaves the other copy&amp;rsquo;s guard intact.&lt;/p&gt;
+&lt;p&gt;The lock manager uses a fixed 256-bit lock set. Acquisition raises when those
+bits are exhausted; copying a guard aborts because &lt;code&gt;Copyable&lt;/code&gt; cannot report
+an error. Moving transfers the existing bit. The guard only rejects structural
+changes that would invalidate borrowed rows. It provides no cross-thread
+exclusion or component-data synchronization.&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;Representation&lt;/th&gt;
+          &lt;th&gt;Ownership and purpose&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;Entity&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;Copyable stable identity; no lock or row borrow.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Query row accessor&lt;/td&gt;
+          &lt;td&gt;Temporary read-only reference into a guarded store; cannot outlive its range.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;EntityRange&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;Store index, first row, and row count; plain metadata owns no lock.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;LockedEntityRange&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;Storage borrow and independent guard/cursor, including low-level batch membership.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;code&gt;EntitySelection&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;Movable, noncopyable exact membership plus one system-level structural guard.&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Kernel row accessor&lt;/td&gt;
+          &lt;td&gt;Invocation-local column pointers and row offset; no stable entity ID.&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;Exact batch membership&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;exact-batch-membership&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#exact-batch-membership&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/system/EntitySelection/&#34;&gt;&lt;code&gt;EntitySelection&lt;/code&gt;&lt;/a&gt; retains triples of physical-store index, first
+row, and row count. Structural operations update those triples in place.
+A partial source range can move to a different store; the selection follows
+the affected rows and excludes preexisting destination rows. Kernel execution
+intersects that membership with the kernel&amp;rsquo;s filter.&lt;/p&gt;
+&lt;p&gt;Selections authorize their own mutations only when their guard is the sole
+active structural lock. Another query or selection prevents that mutation;
+nesting does not grant access through the other guard. Release, destruction,
+or context-manager exit releases the selection lock, including error exits.&lt;/p&gt;
+&lt;p&gt;Low-level &lt;code&gt;HostStorage&lt;/code&gt; batch results use &lt;code&gt;LockedEntityRange&lt;/code&gt;, rather than
+the system-level selection. Both retain bounded membership: extending a
+destination store must not make an older batch suddenly include unrelated
+rows. Sharing metadata avoids copying whole range lists when copying cursors;
+it does not share cursor position or authorize mutation.&lt;/p&gt;
+&lt;h2&gt;From membership to work&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;from-membership-to-work&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#from-membership-to-work&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;A host context offsets its column pointers to the selected range&amp;rsquo;s first row
+and numbers local rows from zero. Threaded chunks repeat that rebasing.
+Device packing concatenates selected spans and scatters outputs to their
+original locations. Thus &lt;code&gt;particle.idx&lt;/code&gt; is a context-local offset, never a
+stable handle or a full-world sequence number. See &lt;a href=&#34;../execution&#34; &gt;work mapping&lt;/a&gt;
+and &lt;a href=&#34;../transfers&#34; &gt;transfers&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/iteration.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/lock.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/system.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/world_entity_iterator_test.mojo&#34;&gt;test/world_entity_iterator_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/entity_selection_test.mojo&#34;&gt;test/entity_selection_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/check_iteration_contracts.py&#34;&gt;test/check_iteration_contracts.py&lt;/a&gt;;
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/docs/design/decisions/0024-locked-storage-ranges.md&#34;&gt;decision 0024&lt;/a&gt;
+records the range contract.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Host, threaded, and device work mapping</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/execution/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/execution/</guid>
+      <description>
+        
+        
+        &lt;p&gt;&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/system/SystemContext/#run&#34;&gt;&lt;code&gt;run&lt;/code&gt;&lt;/a&gt; selects a compile-time
+&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/execution/ExecutionBackend/&#34;&gt;&lt;code&gt;ExecutionBackend&lt;/code&gt;&lt;/a&gt;, defaulting to &lt;code&gt;HOST&lt;/code&gt;. A thin kernel can use
+either target. Value-taking callables use the sequential host; threaded host
+execution requires an eligible nonraising thin kernel. &lt;code&gt;DEVICE&lt;/code&gt; validates
+support and a working context even when no rows match, and has
+&lt;a href=&#34;../../../reference/compatibility#no-device-fallback&#34; &gt;no host fallback&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;The mapping diagram follows two physical ranges through all three executors.&lt;/p&gt;
+&lt;div class=&#34;docs-diagram&#34;&gt;
+&lt;div class=&#34;docs-figure&#34; role=&#34;region&#34; aria-label=&#34;Sequential host calls process two ranges, threaded tasks claim disjoint local chunks, and four illustrative device threads visit seven packed rows by grid stride.; scroll horizontally&#34; tabindex=&#34;0&#34;&gt;&lt;img src=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/images/execution-mapping.svg&#34; alt=&#34;Sequential host calls process two ranges, threaded tasks claim disjoint local chunks, and four illustrative device threads visit seven packed rows by grid stride.&#34; loading=&#34;lazy&#34; /&gt;&lt;/div&gt;
+&lt;p class=&#34;figure-hint&#34;&gt;Scroll horizontally to read the full figure.&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;&lt;em&gt;Ranges remain separate on the host; device work uses a packed row domain.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Sequential host execution binds resources once and traverses nonempty matching
+physical stores. Each context contains pointers to its first row and a local
+length. Selected runs use the saved exact ranges. The iterator begins at zero
+and increments by one. Empty matches call no kernel, while resource validation
+and mutable adapter lifecycle work can still occur.&lt;/p&gt;
+&lt;h2&gt;Preparing and draining threaded jobs&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;preparing-and-draining-threaded-jobs&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#preparing-and-draining-threaded-jobs&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;_run_threaded&lt;/code&gt; validates eligibility independently of fallback, retains active
+execution and structural guards, binds resources, and checks all ranges and
+integer limits. Selected ranges are checked for overlap on a sorted copy;
+the saved order remains available for fallback.&lt;/p&gt;
+&lt;p&gt;For enough rows and more than one configured worker, the target job count is
+&lt;code&gt;workers * chunks_per_worker&lt;/code&gt;; chunk size is the ceiling of total matched rows
+divided by that target. Each range splits independently, so the actual job count
+can exceed the target. Every chunk gets offset column pointers and local indices.
+All fallible preparation finishes before kernels write rows.&lt;/p&gt;
+&lt;p&gt;Workers use an atomic &lt;code&gt;UInt32&lt;/code&gt; cursor to claim prepared contexts dynamically.
+There is no fixed store-to-thread assignment. &lt;code&gt;parallelize&lt;/code&gt; schedules at most
+the configured worker count and joins before finalization and release. Below
+the row cutoff, or with one worker, calls retain whole-range sequential
+granularity; eligibility checks still apply. Row ownership prevents overlap
+between chunks, but shared mutable adapted data still requires its adapter&amp;rsquo;s
+concurrent-mutation contract.&lt;/p&gt;
+&lt;h2&gt;Packed device iteration&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;packed-device-iteration&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#packed-device-iteration&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Device execution allocates or grows one buffer per accessed component type,
+packs matching spans, prepares resources/captures, and launches the kernel.
+&lt;code&gt;EntityAccessorIterator&lt;/code&gt; starts each GPU thread at &lt;code&gt;global_idx.x&lt;/code&gt; and advances
+by &lt;code&gt;context.thread_count&lt;/code&gt;. A thread stops when its offset reaches the packed
+length. That grid-stride rule covers every row once, including when the launch
+has fewer threads than rows.&lt;/p&gt;
+&lt;p&gt;The current launch uses 256 threads per block. &lt;code&gt;gpu_grid_dim&lt;/code&gt; starts with
+&lt;code&gt;ceil(length / 256)&lt;/code&gt; and caps blocks with a thread-based device residency bound
+when device attributes are available. Missing attributes disable the cap.
+This bound ignores register and shared-memory usage; it is not an occupancy
+guarantee. The iterator performs no transfer or synchronization itself.
+Written spans return through &lt;a href=&#34;../transfers&#34; &gt;staged transfers&lt;/a&gt; before &lt;code&gt;run&lt;/code&gt;
+returns.&lt;/p&gt;
+&lt;p&gt;The diagram adapts the thesis&amp;rsquo;s host, threaded-host, and grid-stride figures;
+four device threads illustrate the indexing rule rather than the actual block
+size. Public restrictions and call forms are in the
+&lt;a href=&#34;../../../reference/execution&#34; &gt;execution reference&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/system.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/execution.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/iteration.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/gpu_launch.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/grid_stride_iterator_test.mojo&#34;&gt;test/grid_stride_iterator_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/threaded_execution_test.mojo&#34;&gt;test/threaded_execution_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/gpu_launch_cap_test.mojo&#34;&gt;test/gpu_launch_cap_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/check_execution_backend_contracts.py&#34;&gt;test/check_execution_backend_contracts.py&lt;/a&gt;.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Bindings, transfers, and revisions</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/transfers/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/transfers/</guid>
+      <description>
+        
+        
+        &lt;p&gt;A &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/resource/ResourceStorage/&#34;&gt;&lt;code&gt;ResourceStorage&lt;/code&gt;&lt;/a&gt; owns one source value per resource type.
+An invocation validates its &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/resource/Resources/&#34;&gt;&lt;code&gt;Resources&lt;/code&gt;&lt;/a&gt; declarations, leases the
+sources, and retains prepared views until completion. Leases reject reentrant
+lookup, replacement, or removal of bound sources. They protect lifetime;
+they do not synchronize workers or repair escaped aliases.&lt;/p&gt;
+&lt;h2&gt;Sources and target-local views&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;sources-and-target-local-views&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#sources-and-target-local-views&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Ordinary resources bind directly on the host. Device transfer accepts only
+supported plain representations. Recursive field checks reject owning,
+pointer-bearing, or nontrivial values; &lt;code&gt;PlainValue&lt;/code&gt; permits an author-declared
+opaque representation only after trivial copy/move/destruction checks. That
+declaration makes the author responsible for pointer-free nested data.&lt;/p&gt;
+&lt;p&gt;A &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/resource_adapter/DevicePassableResource/&#34;&gt;&lt;code&gt;DevicePassableResource&lt;/code&gt;&lt;/a&gt; source instead declares a stateless
+&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/resource_adapter/ResourceAdapter/&#34;&gt;&lt;code&gt;ResourceAdapter&lt;/code&gt;&lt;/a&gt;. Its host view borrows source data; its device
+view refers to adapter-managed target allocations. &lt;code&gt;read&lt;/code&gt; selects
+&lt;code&gt;View[False]&lt;/code&gt;; &lt;code&gt;write&lt;/code&gt; and &lt;code&gt;read_write&lt;/code&gt; select &lt;code&gt;View[True]&lt;/code&gt;.
+Mutable preparation distinguishes fresh initialized output from preserved
+contents. It runs once per invocation before any range/chunk/launch, and
+finalization runs once after successful execution/publication, including
+empty matches. Mutable access requires adapter capability flags; threaded
+and device mutation also require concurrent-mutation support.&lt;/p&gt;
+&lt;p&gt;Read-only adapters guarantee concurrent readability of their views and
+reachable data. Owning sources stay on the host; copying their pointer bytes
+would not transfer the owned allocation. This is why a portable buffer or grid
+has a separate kernel representation.&lt;/p&gt;
+&lt;h2&gt;Packing and publication&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;packing-and-publication&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#packing-and-publication&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Component access declarations determine the transfer directions in this
+adaptation of the thesis&amp;rsquo;s device-memory figure.&lt;/p&gt;
+&lt;div class=&#34;docs-diagram&#34;&gt;
+&lt;div class=&#34;docs-figure&#34; role=&#34;region&#34; aria-label=&#34;Two selected host ranges pack into Position read-write and Velocity read-only device columns; only written Position spans scatter back and host gaps remain unchanged.; scroll horizontally&#34; tabindex=&#34;0&#34;&gt;&lt;img src=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/images/device-transfer.svg&#34; alt=&#34;Two selected host ranges pack into Position read-write and Velocity read-only device columns; only written Position spans scatter back and host gaps remain unchanged.&#34; loading=&#34;lazy&#34; /&gt;&lt;/div&gt;
+&lt;p class=&#34;figure-hint&#34;&gt;Scroll horizontally to read the full figure.&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;&lt;em&gt;Read access supplies input; write access schedules output publication.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Readable columns upload each selected span to its packed offset. Write-only
+columns allocate output without uploading old bytes, so kernels must &lt;code&gt;set&lt;/code&gt;
+every processed row. After execution, only declared written columns download
+and scatter back. Resource and explicit-capture outputs use
+the same invocation queue. Selection gaps stay untouched.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;_TransferFrame&lt;/code&gt; snapshots uploads in native host buffers and retains download
+staging buffers with eventual host destinations. Queued copies therefore do
+not retain caller-owned upload memory. The executor synchronizes the queue,
+publishes staged bytes, commits resource/column records, then finalizes
+adapters. Errors drain submitted work before releasing owners. If completion
+cannot be confirmed, the world becomes unusable for further execution.
+Already performed host writes and published outputs are not rolled back.&lt;/p&gt;
+&lt;h2&gt;Device-copy validity&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;device-copy-validity&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#device-copy-validity&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Buffer capacity reuse is independent of content reuse. By default, readable
+inputs upload every invocation. Experimental &lt;code&gt;World.reuse_device_copies&lt;/code&gt;
+also retains successful transfer records, as the figure shows.&lt;/p&gt;
+&lt;div class=&#34;docs-diagram&#34;&gt;
+&lt;div class=&#34;docs-figure&#34; role=&#34;region&#34; aria-label=&#34;A matching revision skips an unchanged upload, mutable host access makes it stale, the next device call uploads again, and declared outputs always download.; scroll horizontally&#34; tabindex=&#34;0&#34;&gt;&lt;img src=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/images/device-copy-reuse.svg&#34; alt=&#34;A matching revision skips an unchanged upload, mutable host access makes it stale, the next device call uploads again, and declared outputs always download.&#34; loading=&#34;lazy&#34; /&gt;&lt;/div&gt;
+&lt;p class=&#34;figure-hint&#34;&gt;Scroll horizontally to read the full figure.&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;&lt;em&gt;Skipping uploads requires matching validity metadata; output publication stays eager.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Resource revisions come from an increasing storage counter. Mutable &lt;code&gt;get&lt;/code&gt;,
+&lt;code&gt;add&lt;/code&gt;/&lt;code&gt;set&lt;/code&gt;, declared host writes, and successful device writes advance them;
+&lt;code&gt;read&lt;/code&gt; does not. Reuse still validates and leases the source. A current
+read-only adapted copy can skip &lt;code&gt;prepare_device&lt;/code&gt;; mutable adapted sources
+always prepare and never reuse their contents.&lt;/p&gt;
+&lt;p&gt;A column record identifies storage identity, physical-store slot, never-reused
+store incarnation, column revision, first row, row count, and packed offset. A mutation,
+row movement, reclaimed-slot replacement, or changed packing offset invalidates
+the relevant match. Written outputs still download. Failed calls invalidate
+touched records; disabling reuse, removal, and copying a world discard relevant
+records. Moves preserve owned state.&lt;/p&gt;
+&lt;p&gt;Tracked mutable exposure invalidates conservatively before the caller writes.
+A later edit through an escaped reference or raw pointer cannot advance the
+counter automatically: it requires explicit invalidation. Revisions are validity
+metadata, not alias tracking or a promise of persistent device-only state.&lt;/p&gt;
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/resource.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/resource_adapter.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/device_storage.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/system.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/resource_adapter_test.mojo&#34;&gt;test/resource_adapter_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/mutable_resource_adapter_test.mojo&#34;&gt;test/mutable_resource_adapter_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/device_copy_reuse_test.mojo&#34;&gt;test/device_copy_reuse_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/device_column_reuse_test.mojo&#34;&gt;test/device_column_reuse_test.mojo&lt;/a&gt;.
+The &lt;a href=&#34;../../../reference/resources&#34; &gt;resource reference&lt;/a&gt; defines author obligations
+and the &lt;a href=&#34;../../../guide/execution/copy_reuse&#34; &gt;copy-reuse guide&lt;/a&gt; shows invalidation.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Spatial maintenance</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/spatial/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/spatial/</guid>
+      <description>
+        
+        
+        &lt;p&gt;We store an owned &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/spatial/SpatialClassifier/&#34;&gt;&lt;code&gt;SpatialClassifier&lt;/code&gt;&lt;/a&gt; and typed maintenance callback
+on the world. Its explicit read-only filter selects eligible compositions and
+classifier inputs. The current world holds one classifier. A &lt;code&gt;UInt64&lt;/code&gt;
+&lt;strong&gt;cluster key&lt;/strong&gt; groups locality; neither key adjacency nor placement guarantees
+exact neighbors.&lt;/p&gt;
+&lt;h2&gt;Invalidations before movement&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;invalidations-before-movement&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#invalidations-before-movement&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The storage owns a queue of full ID/generation identities, sparse membership
+bits indexed by entity ID, committed keys, and a full-rebuild flag. Repeated
+input writes enqueue an identity once; classification reads its final values
+at the explicit boundary. Mutable input exposure and declared kernel writes
+mark conservatively, including device copy-back. Registration, structural
+changes, and explicit invalidation request a full rebuild.&lt;/p&gt;
+&lt;p&gt;The boundary separates callbacks from physical mutation.&lt;/p&gt;
+&lt;div class=&#34;docs-diagram&#34;&gt;
+&lt;div class=&#34;docs-figure&#34; role=&#34;region&#34; aria-label=&#34;Mutable classifier input exposure queues unique entity identities; explicit unlocked maintenance computes pending keys and plans before moving rows and committing keys. Classifier failure retains prior rows and dirty state.; scroll horizontally&#34; tabindex=&#34;0&#34;&gt;&lt;img src=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/images/spatial-maintenance.svg&#34; alt=&#34;Mutable classifier input exposure queues unique entity identities; explicit unlocked maintenance computes pending keys and plans before moving rows and committing keys. Classifier failure retains prior rows and dirty state.&#34; loading=&#34;lazy&#34; /&gt;&lt;/div&gt;
+&lt;p class=&#34;figure-hint&#34;&gt;Scroll horizontally to read the full figure.&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;&lt;em&gt;All classifier callbacks finish before any row moves.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;maintain_spatial&lt;/code&gt; first rejects a locked world. A clean call returns without
+row work. Otherwise it builds pending keys from the cache or a full scan,
+validates liveness/eligibility for dirty identities, and prepares permutations
+or partition placement. Classifier errors preserve prior order, committed keys,
+and pending invalidations. Once planning succeeds, typed movement repairs
+locations and commits keys, then clears dirty state. Allocation failure is
+fatal as in ordinary storage; this is not a general rollback transaction.&lt;/p&gt;
+&lt;p&gt;Mutable references cannot span maintenance. Low-level raw writes require
+explicit marking or invalidation because they bypass automatic tracking.
+System/kernel completion marks work but never runs spatial maintenance itself.&lt;/p&gt;
+&lt;h2&gt;Two physical layouts, one logical composition&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;two-physical-layouts-one-logical-composition&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#two-physical-layouts-one-logical-composition&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The adapted ordering/grouping figure shows the two implemented placement modes.&lt;/p&gt;
+&lt;div class=&#34;docs-diagram&#34;&gt;
+&lt;div class=&#34;docs-figure&#34; role=&#34;region&#34; aria-label=&#34;Default ordering makes equal keys contiguous in one physical store; partition mode moves newly staged D to the growable k0 store while k1 remains separate.; scroll horizontally&#34; tabindex=&#34;0&#34;&gt;&lt;img src=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/images/spatial-placement.svg&#34; alt=&#34;Default ordering makes equal keys contiguous in one physical store; partition mode moves newly staged D to the growable k0 store while k1 remains separate.&#34; loading=&#34;lazy&#34; /&gt;&lt;/div&gt;
+&lt;p class=&#34;figure-hint&#34;&gt;Scroll horizontally to read the full figure.&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;&lt;em&gt;Partition stores share a component mask and logical transition node.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Default maintenance sorts affected stores by ascending key and applies typed
+permutations to IDs and every active column. Equal-key rows become contiguous;
+applications cannot depend on tie order. Clean rows can move when regrouping
+requires it.&lt;/p&gt;
+&lt;p&gt;Opt-in partition mode retains a canonical staging store for creation and
+structural transitions. Maintenance moves rows into one growable store per
+logical-archetype/key pair, swap-removes source rows, and repairs locations.
+Destination growth can relocate existing values. Empty cluster stores release
+row allocations and recycle directory slots with fresh incarnations. Nonempty
+stores retain spare capacity; there is no current fixed 256-row cluster cap.&lt;/p&gt;
+&lt;p&gt;Ordinary queries and kernels include staging and cluster stores through the
+same mask/range traversal. Exact cluster selection requires clean maintenance
+and scans metadata; it does not build a neighbor index. Sparse maintenance
+still copies identity-capacity keys and scans store metadata, so classifying
+only dirty identities does not make total maintenance O(dirty identities).&lt;/p&gt;
+&lt;p&gt;The thesis&amp;rsquo;s memory blocks and historical bounded partitions explain the
+design lineage. Current growth and reclamation follow
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/docs/design/decisions/0014-growable-cluster-stores.md&#34;&gt;decision 0014&lt;/a&gt;,
+which supersedes 0013. The rejected special &lt;code&gt;Cluster&lt;/code&gt; component in 0007 is not
+part of placement. &lt;a href=&#34;../../development/reports/partitions&#34; &gt;Partition reports&lt;/a&gt;
+retain measurements with their layout and revision labels.&lt;/p&gt;
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/spatial.mojo&#34;&gt;Source&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/host_storage.mojo&#34;&gt;Source&lt;/a&gt;, &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/world.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/spatial_test.mojo&#34;&gt;test/spatial_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/partitioned_spatial_test.mojo&#34;&gt;test/partitioned_spatial_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/gpu_spatial_test.mojo&#34;&gt;test/gpu_spatial_test.mojo&lt;/a&gt;.
+For the application boundary, use &lt;a href=&#34;../../../guide/spatial_locality/maintain&#34; &gt;Maintain particle locality&lt;/a&gt;.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>Synchronization internals</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/synchronization/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-246/inside/architecture/synchronization/</guid>
+      <description>
+        
+        
+        &lt;p&gt;&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/sync/AtomicValue/&#34;&gt;&lt;code&gt;AtomicValue&lt;/code&gt;&lt;/a&gt; and
+&lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-246/larecs/sync/Synchronized/&#34;&gt;&lt;code&gt;Synchronized&lt;/code&gt;&lt;/a&gt; own target-local state.
+Their copyable views retain one protection identity; owners and acquired guards
+are noncopyable. These standalone primitives do not supply &lt;code&gt;KernelContext.sync&lt;/code&gt;,
+collection domains, automatic transfer bindings, or deferred retries.
+Those parts of accepted decision 0016 are unimplemented; decision 0017 remains
+proposed. &lt;a href=&#34;../../../guide/execution/shared_writes&#34; &gt;Coordinate shared writes&lt;/a&gt;
+explains available application patterns.&lt;/p&gt;
+&lt;h2&gt;Scalar operations and scope&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;scalar-operations-and-scope&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#scalar-operations-and-scope&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;AtomicView&lt;/code&gt; points to aligned &lt;code&gt;UInt32&lt;/code&gt; or &lt;code&gt;Int32&lt;/code&gt; storage accessed only
+atomically. Add/subtract wrap at the scalar width and return the previous value.
+Strong compare-exchange returns success and the observed value, using relaxed
+failure ordering. Read views permit loads only. Scalar operations default to
+relaxed ordering: counters do not publish adjacent ordinary payload writes.&lt;/p&gt;
+&lt;p&gt;The implementation selects CPU-wide scope, NVIDIA &lt;code&gt;device&lt;/code&gt; scope, or AMD
+&lt;code&gt;agent&lt;/code&gt; scope. Loads accept acquire and stores accept release. Supported
+read-modify-write operations also accept acquire, release, and acquire-release.
+Apple GPU support is limited to relaxed add/subtract and relaxed/acquire loads
+or relaxed/release stores. Strong CAS, ordered updates, and guards are rejected
+there. Release stores and acquire loads supply the separately verified Apple
+publication path; a compile probe alone would not prove hardware ordering.&lt;/p&gt;
+&lt;h2&gt;One state word per protected payload&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;one-state-word-per-protected-payload&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#one-state-word-per-protected-payload&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;Synchronized&lt;/code&gt; stores a payload and one initialized &lt;code&gt;UInt32&lt;/code&gt; state word.
+Zero means unlocked, the high bit (&lt;code&gt;0x80000000&lt;/code&gt;) means one writer, and the
+remaining bits count readers up to &lt;code&gt;0x7fffffff&lt;/code&gt;. Every view of an overlapping
+payload must use the same state word.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;try_read&lt;/code&gt; loads state, rejects writer/saturation, and makes at most one strong
+CAS to increment readers. &lt;code&gt;try_write&lt;/code&gt; makes one CAS from zero to the writer
+bit. Successful acquisition uses acquire ordering. A changed value or failed
+CAS returns &lt;code&gt;Busy&lt;/code&gt;; there is no spin loop, fairness, lock upgrade, or blocking
+wait. The caller decides what to do with unfinished work.&lt;/p&gt;
+&lt;p&gt;A successful &lt;code&gt;TryAccess&lt;/code&gt; owns a guard until it is consumed or destroyed.
+&lt;code&gt;take&lt;/code&gt; transfers that guard. Guard borrows confine payload references; release
+stores zero for a writer or atomically decrements readers, with release
+ordering. Scope exit releases access during error unwinding; it does not undo
+payload writes.&lt;/p&gt;
+&lt;h2&gt;Allocation and lifetime boundary&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;allocation-and-lifetime-boundary&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#allocation-and-lifetime-boundary&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Unsafe view construction borrows existing storage; it neither allocates nor
+transfers it. Device payload and state must already be device-accessible,
+aligned, initialized, and retained until all work completes. Host and device
+allocations are separate protection domains. Explicit move/destruction methods
+keep borrowed views from passing ordinary resource/capture raw-byte checks,
+including when nested in aggregates.&lt;/p&gt;
+&lt;p&gt;Structural lock bits preserve row addresses; resource leases preserve source
+lifetimes; synchronization state coordinates concurrent data access. None of
+those mechanisms substitutes for the others. Adapter capability declarations
+also do not add synchronization automatically.&lt;/p&gt;
+&lt;p&gt;Implementation: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/src/larecs/sync.mojo&#34;&gt;Source&lt;/a&gt;.
+Evidence: &lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/synchronization_test.mojo&#34;&gt;test/synchronization_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/check_synchronization_contracts.py&#34;&gt;test/check_synchronization_contracts.py&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/test/gpu_synchronization_test.mojo&#34;&gt;test/gpu_synchronization_test.mojo&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/larecs/larecs/blob/c6b22116c4f904a536297c7468749dd4493999bf/docs/design/research/apple-gpu-publication-ordering.md&#34;&gt;Apple publication research&lt;/a&gt;.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+  </channel>
+</rss>
