@@ -5,22 +5,34 @@ weight = 1
 aliases = ["/guide/installation/"]
 +++
 
-Install the repository's locked Pixi environment and run the first particle
-program. Then use Larecs from your own Pixi project, either as source or as a
-precompiled package.
+Install the published Larecs package into your own Pixi project. Larecs runs on
+Linux x86-64 and macOS on Apple Silicon; `1.0.0b1` is a beta with APIs that can
+still change. These pages describe the development checkout; released packages
+can expose an earlier API. Check the version in the documentation header and
+the version resolved in your project's `pixi.lock`.
 
-Larecs runs on Linux x86-64 and macOS on Apple Silicon. Larecs `1.0.0b1` is a
-beta, so its APIs can still change. Pixi installs these dependencies:
+## Install the published package
 
-- Mojo `>=1.0.0,<1.1.0`
-- MAX `>=26.5.0,<27`
-- `mojo-tracy >=1.1.0,<2`
+Install [Pixi](https://pixi.sh/latest/installation/), then run:
 
-It resolves them from the channels `conda-forge`, `https://repo.prefix.dev/max`,
-and `https://prefix.dev/tree-d` (for `mojo-tracy`). `pixi.lock` pins the exact
-builds.
+```sh
+pixi init my-simulation -c conda-forge -c https://repo.prefix.dev/max -c https://prefix.dev/tree-d
+cd my-simulation
+pixi add larecs
+pixi run mojo --version
+```
 
-## Install the locked environment
+The `tree-d` channel supplies Larecs and `mojo-tracy`; the package resolves
+compatible Mojo, MAX, and tracing dependencies. Keep `pixi.lock` to reproduce
+the environment. Mojo finds the installed package without a source include path.
+
+To follow the tutorials on these development pages, use the matching source
+checkout below. On macOS, also apply the SDK activation setup below if your
+linker rejects the system SDK.
+
+<a id="install-the-locked-environment"></a>
+
+## Run the development tutorials
 
 Install [Pixi](https://pixi.sh/latest/installation/), then run:
 
@@ -69,7 +81,9 @@ your project's `pixi.toml`:
 scripts = ["../larecs/scripts/activate_macos_sdk.sh"]
 ```
 
-## Use a precompiled package
+<a id="use-a-precompiled-package"></a>
+
+## Build a package from source
 
 Build the package with the toolchain your application uses. From the repository
 root:

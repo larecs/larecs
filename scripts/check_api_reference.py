@@ -78,8 +78,7 @@ def check(root: Path = ROOT, public: Path | None = None, base: str | None = None
         if item["source_url"] != expected:
             raise ValueError(f"Unpinned symbol source: {name}")
     # Resolve relative links with the same trailing-slash behavior as a browser.
-    config = (root / "docs/site/hugo.yaml").read_text()
-    base = base or os.environ.get("HUGO_BASEURL") or re.search(r"(?m)^baseURL: (.+)$", config).group(1).strip()
+    base = base or os.environ.get("DOCS_BASE_URL") or "https://larecs.github.io/larecs/dev/"
     base_path = urlsplit(base).path
     for page in (public / "reference").rglob("index.html"):
         page_url = urljoin(base, str(page.parent.relative_to(public)) + "/")

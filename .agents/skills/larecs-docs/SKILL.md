@@ -55,14 +55,13 @@ Every visible snippet compiles and runs.
 - Tutorial and guide examples live in checked programs under `examples/`.
   Mark excerpts with `# region NAME` / `# endregion NAME` and show them with
   `{{< example file="particles/movement.mojo" region="kernel" >}}`; offer the
-  whole program with `full=true`. A missing file or region fails the Hugo
+  whole program with `full=true`. A missing file or region fails the documentation
   build. `scripts/run_doctests.sh` compiles and runs every program in
   `examples/particles/`; add new example directories there.
-- Short standalone snippets may stay inline as Modo doctest blocks
+- Short standalone snippets may stay inline as labelled doctest blocks
   (`{doctest="<label>" global=true}` with a complete `def main() raises:`).
-  Modo wraps the lines of non-global blocks in `def main() raises:` through
-  `docs/templates/doctest.mojo`, so a label must not mix a global `main` with
-  non-global blocks. Use `hide=true` only for imports.
+  The renderer wraps non-global blocks in `def main() raises:`; a label must
+  not mix a global `main` with non-global blocks. Use `hide=true` only for imports.
 - Show every type, filter, kernel, and system before the prose explains it.
 - Assert the outcome the prose claims with `std.testing` (`assert_equal`,
   `assert_almost_equal`, `assert_raises`).
@@ -71,15 +70,25 @@ Every visible snippet compiles and runs.
   tutorial or guide for a complete program. Every extracted doctest runs;
   there is no skip list.
 
-Verify with `pixi run build-docs`: it runs `mojo doc`, Modo, the extracted
-doctests and example programs, and Hugo, and works on Linux and Apple Silicon
-(Modo is built natively there). Check the rendered HTML in
-`docs/site/public/`; `pixi run serve-docs` serves the site locally. Pull
-requests from repository branches deploy a preview to
-`https://larecs.github.io/larecs/pr-preview/pr-<number>/`
-(`.github/workflows/publish.yml`). Internal links must follow `baseURL`
-(`relURL`, relative paths, or `/images/...` through the theme) so they stay
-inside the preview.
+Verify with `pixi run verify-docs`. The pipeline uses `mojo doc`, the Python
+renderer in `scripts/render_docs.py`, and Astro/Starlight. Both build commands
+compile and execute every source-derived program before rendering. Check the
+rendered HTML under `docs/site/public/`. `DOCS_BASE_URL` selects a development,
+release, or PR preview prefix; preserve it in every internal link.
+
+## Reader review
+
+Read the page as a new caller after verifying its code. Distinguish the
+simulation's particles from ECS entities, use the public `ComponentType` and
+`ResourceType` constraints, and explain only language syntax needed for the
+next action. Link language concepts to Mojo's manual. Installation starts with
+the published package and distinguishes its API from the development checkout.
+
+A compiling example proves syntax and asserted behavior; it does not prove the
+prose teaches the right concept. Check each explanation against the visible
+code and the broader ECS contract. Apply a human finding to related pages and
+examples, then review adjacent concepts independently. Preserve existing human
+edits unless the finding requires changing them.
 
 ## Pages, links, and figures
 
@@ -112,16 +121,15 @@ primitives only), exports from the `larecs` root, and performance claims
 Follow the docstring template in
 `docs/development.md#coding-standards`. The summary line and contract
 render visibly; the readable declaration hides `mojo doc`'s `where` clauses
-and keeps the exact one collapsed (`docs/templates/`,
-`docs/site/layouts/shortcodes/declaration.html`). For a primary method, the
-description covers common call forms, execution or invocation behavior,
+and keeps the exact one collapsed (`scripts/render_docs.py`). For a primary
+method, the description covers common call forms, execution or invocation behavior,
 access rules, empty or failure behavior, and how its overloads differ.
 
 - Document `out` results under `Returns:`, not `Args:`.
 - State raised errors with their conditions, reference invalidation after
   structural changes, and lock effects.
-- Modo reads `[name]` as a cross reference, even inside inline code; write
-  `KernelContext` rather than `KernelContext[...]` in prose. Cross references
-  inside `Constraints:` are not resolved; use plain code there.
+- The renderer resolves `[name]` cross references in prose and leaves inline
+  code and fenced declarations literal. Use `api` directives on guide pages
+  and module-relative references in docstrings; unknown symbols fail the build.
 - Regenerate with `pixi run mojo doc -o docs/src/larecs.json src/larecs` and
   keep it free of warnings.
