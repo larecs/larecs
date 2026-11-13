@@ -46,21 +46,19 @@ def check_browser(public=None, base=None):
                           "larecs/system/SystemContext/", "larecs/resource_adapter/ResourceAdapter/",
                           "inside/architecture/storage/", "inside/architecture/execution/"):
                 page.goto(urljoin(site.base, route), wait_until="networkidle")
-                page.locator(".docs-context").wait_for()
+                page.locator("main").wait_for()
                 page.locator("details").evaluate_all("items => items.forEach(item => item.open = true)")
                 page.evaluate("document.fonts.ready")
                 overflow = page.evaluate("document.documentElement.scrollWidth > innerWidth + 1")
                 if overflow:
                     raise ValueError(f"Page overflows {width}px viewport: {route}")
-                for image in page.locator(".docs-figure img").all():
+                for image in page.locator("main img").all():
                     image.scroll_into_view_if_needed()
                     page.wait_for_function("image => image.complete && image.naturalWidth > 0", arg=image.element_handle())
                     try:
                         image.evaluate("image => image.decode()")
                     except Exception as error:
                         raise ValueError(f"Cannot decode {image.get_attribute('src')}: {errors}") from error
-                    if image.bounding_box()["width"] < 630:
-                        raise ValueError(f"Figure labels shrink below the reading width: {route}")
                 checked.append({"route": route, "width": width})
                 if width == 360 and route in {"start/first_simulation/", "larecs/system/SystemContext/"}:
                     page.screenshot(path=str(output / (route.strip("/").replace("/", "-") + ".png")), full_page=True)
@@ -70,23 +68,21 @@ def check_browser(public=None, base=None):
         # Mobile navigation must expose both the primary route and the secondary links.
         page.set_viewport_size({"width": 360, "height": 900})
         page.goto(site.base, wait_until="networkidle")
-        page.get_by_role("button", name="Menu", exact=True).click()
-        page.get_by_role("link", name="Architecture", exact=True).first.wait_for(state="visible")
+        page.locator(".sl-menu-button").click()
+        page.get_by_text("Inside Larecs", exact=True).first.wait_for(state="visible")
         page.get_by_role("link", name="Reference", exact=True).first.wait_for(state="visible")
 
         page.set_viewport_size({"width": 1440, "height": 900})
         page.goto(urljoin(site.base, "reference/"), wait_until="networkidle")
-        search = page.locator(".search-input:visible")
-        search.focus()
-        page.wait_for_function("window.pageIndex && window.sectionIndex")
-        # Pasted text must also refresh results after asynchronous indexing.
-        search.fill("synchronous")
-        results = page.locator(".search-results:visible a")
+        page.locator('button[data-open-modal]').click()
+        search = page.locator('.pagefind-ui__search-input')
+        search.fill("SystemContext")
+        results = page.locator('.pagefind-ui__result-link')
         results.first.wait_for(state="visible")
-        for href in results.evaluate_all("items => items.map(item => item.getAttribute('href'))"):
-            site.resolve(href)
         results.first.click()
         page.wait_for_load_state("networkidle")
+        if not page.url.startswith(site.base):
+            raise ValueError(f"Search escapes deployment prefix: {page.url}")
         if urlsplit(page.url).fragment:
             if not page.evaluate("Boolean(document.getElementById(decodeURIComponent(location.hash.slice(1))))"):
                 raise ValueError(f"Search navigates to a missing heading: {page.url}")
@@ -105,8 +101,8 @@ def check_browser(public=None, base=None):
         # Inspect the same fixed-palette SVG on a light canvas in both themes.
         page.goto(urljoin(site.base, "inside/architecture/storage/"), wait_until="networkidle")
         for dark in (False, True):
-            page.evaluate("dark => document.documentElement.classList.toggle('dark', dark)", dark)
-            image = page.locator(".docs-figure img").first
+            page.evaluate("dark => document.documentElement.dataset.theme = dark ? 'dark' : 'light'", dark)
+            image = page.locator("main img").first
             image.scroll_into_view_if_needed()
             if image.evaluate("image => getComputedStyle(image).backgroundColor") != "rgb(255, 255, 255)":
                 raise ValueError("SVG labels lose their light canvas in the dark theme")

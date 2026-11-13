@@ -1,0 +1,3 @@
+.sl-markdown-content pre { overflow-x: auto; }
+.sl-markdown-content img[src$=".svg"] { background: white; max-width: 100%; }
+.sl-markdown-content details { margin-block: 1rem; }

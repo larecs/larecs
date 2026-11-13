@@ -1597,15 +1597,8 @@ struct Archetype[
             new_capacity: The minimum required capacity. The actual allocated capacity
                          will be `next_power_of_two(new_capacity)` to maintain power-of-2 growth.
 
-        Example:
-
-        ```mojo
-        # Requesting 100 entities will allocate capacity for 128 (next power of 2)
-        archetype.reserve(100)  # Actually reserves 128
-
-        # Requesting 64 entities allocates exactly 64 (already power of 2)
-        archetype.reserve(64)   # Actually reserves 64
-        ```
+        `archetype.reserve(100)` rounds capacity to 128, the next power of
+        two. `archetype.reserve(64)` requests a power of two directly.
         """
         with Zone(function_name="Archetype.reserve(new_capacity: Int)"):
             self._storage.reserve(new_capacity)

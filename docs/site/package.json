@@ -1,0 +1,14 @@
+{
+  "name": "larecs-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "astro build",
+    "dev": "astro dev"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.43.0",
+    "astro": "7.4.11",
+    "sharp": "0.35.5"
+  }
+}
