@@ -8,7 +8,8 @@ weight = 4
 {{< api ExecutionBackend >}}, defaulting to `HOST`. A thin kernel can use
 either target. Value-taking callables use the sequential host; threaded host
 execution requires an eligible nonraising thin kernel. `DEVICE` validates
-support and a working context even when no rows match, and never falls back.
+support and a working context even when no rows match, and has
+[no host fallback](../../../reference/compatibility#no-device-fallback).
 
 The mapping diagram follows two physical ranges through all three executors.
 

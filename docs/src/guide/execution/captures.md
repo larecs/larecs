@@ -1,100 +1,134 @@
 +++
 type = "docs"
 title = "Pass local values to kernels"
-weight = 2
+weight = 3
 +++
 
-Pass a step-local scale or result without storing it as a world resource. Start
-with [movement and resources](../../../start/shared_configuration). Choose a
-lexical closure for sequential host borrows, or explicit slots for a thin kernel
-that can also run on a device. Threaded execution accepts neither capture path;
-its inputs belong in read-only resources or components.
+Give the particle kernel a step-local scale and get a particle count back,
+without storing either value as a world resource. Use a lexical closure when
+the kernel runs sequentially on the host, and explicit capture slots when the
+same kernel must also run on a device. Threaded execution accepts neither; pass
+its inputs through read-only resources or components.
 
-## Borrow locals on the host
+Start with [Execute on a device](../device), which introduces the backend
+parameter. [Run threaded host kernels](../threaded) defines thin kernels.
 
-Both independent programs on this page use these particle types.
+## Borrow locals with a closure on the host
+
+Both programs on this page use the [portable particle
+model](../#the-portable-particle-model).
 
 {{< example file="particles/lexical_closure.mojo" region="model" >}}
 
-The names match the core simulation. The explicit-capture variant uses the same
-`Float32` representation for device-compatible arithmetic; see
-[device eligibility](../device).
-
-The lexical stage defines `move` inside `Move.update` and passes it as a value.
+A *lexical closure* is a `def` nested inside another function that names the
+local variables it uses in a capture list. Here, `move` is defined inside
+`Move.update` and passed to `run` as a value:
 
 {{< example file="particles/lexical_closure.mojo" region="closure" >}}
 
-`imm scale` borrows the local input and `mut visits` borrows the counter.
-`context.run(move)` selects the value-taking overload, which supports only
-sequential HOST. Every matching physical store receives a call, so `visits`
-increments inside the row loop. Completion is synchronous; its final value is
-visible at the assertion. Do not capture an alias that structurally changes the
-world while rows are borrowed.
+The capture list `{imm scale, mut visits}` borrows `scale` read-only and
+`visits` mutably. `context.run(move)` selects the overload that takes a
+callable value; it runs only sequentially on the host. Larecs calls `move` once
+per matching physical store, and `visits` increases once per row. `run` returns
+after the last call, so the assertion sees the final count.
 
-The driver checks two matching physical stores with different compositions.
+The driver puts the two particles into different physical stores:
 
 {{< example file="particles/lexical_closure.mojo" region="check" >}}
 
-`walker` and `climber` both move once, and the counter counts rows across both
-calls. The extra `Int32` component puts `climber` in another logical archetype;
-it does not change the movement filter. Run
-`pixi run mojo run -I src examples/particles/lexical_closure.mojo` from the
-repository root to check the stage.
+The extra `Int32` component gives `climber` a different composition and
+therefore its own physical store; it does not change which entities `move`
+matches. Both particles move once, and `visits` counts rows across both calls.
+
+From the repository root, run:
+
+```sh
+pixi run mojo run -I src examples/particles/lexical_closure.mojo
+```
 
 ## Declare explicit slots for a thin kernel
 
-The alternative stage declares ordered {{< api Captures >}} slots, independent
-of the world's resource types.
+A thin kernel cannot borrow locals, but it can declare ordered *capture slots*
+with {{< api Captures >}}. The system binds a local value to each slot when it
+calls `run`, on the host or on a device.
 
 {{< example file="particles/captures.mojo" region="kernel" >}}
 
-Slot 0 is a {{< api ReadCapture >}} input; slot 1 is a {{< api MutCapture >}}
-result. `get[0]` is immutable. The output is shared by all invocations/threads,
-not private per row. On host, one writer per store adds that store's length.
-On device, only global thread zero adds the packed length, after its own row
-loop. This works because the result does not read other threads' outputs.
-It is not a barrier or a general parallel reduction.
+Slot 0 is a {{< api ReadCapture >}} input; `get[0]()` returns its value. Slot 1
+is a {{< api MutCapture >}} output. Every invocation, and on a device every
+thread, sees the same output value, so only one writer may update it:
 
-Bind locals in exactly the declared order when the system runs.
+- On the host, each invocation covers one physical store and adds its own row
+  count, `context.length`. Sequential invocations never overlap.
+- On a device, one launch covers all rows. `comptime if is_gpu()` compiles the
+  check only for the device, where only the thread with global index zero adds
+  the packed row count.
+
+This works because no thread reads another thread's result. A thread-zero
+branch is not a barrier, and it does not make a general reduction safe.
+
+Bind locals in the declared order when the system runs:
 
 {{< example file="particles/captures.mojo" region="system" >}}
 
-{{< api read_capture >}} and {{< api mut_capture >}} borrow their locals until
-`run` finishes. Host execution borrows the original values; device execution
-uploads each binding on every call and copies mutable slots back before return.
-Empty matches leave captures unchanged. The checked full program also tests an
-empty world and 37 particles split across two physical stores.
+{{< api read_capture >}} and {{< api mut_capture >}} borrow `scale` and
+`processed` until `run` returns. On the host, the kernel uses the original
+values. On a device, Larecs uploads every binding on each call and copies the
+mutable slot back before `run` returns, so `processed` holds 37 at the
+assertion.
 
-From the repository root, execute this independent stage:
+From the repository root, run:
 
 ```sh
 pixi run mojo run -I src examples/particles/captures.mojo
 ```
 
-The program always checks host execution. Its explicit device PASS line means
-actual execution and copy-back; a SKIP line means that device validation did
-not run. [Device setup](../device) explains availability failures.
+A PASS line for the device means the slots were bound, executed, and copied
+back on the accelerator; a SKIP line means only the host ran.
 
-## Restrictions and recovery
+## Variations
 
-| Failure or restriction | Response |
+### Keep a value between steps
+
+A capture lives for one `run` call. A value that persists between steps, or
+that owns memory, belongs in a [resource](../../shared_resources) or a
+[portable resource](../portable_resources).
+
+### Produce one result per particle
+
+When many invocations or threads contribute to a result, write a per-particle
+component and reduce it after `run`, as in [Coordinate shared
+writes](../shared_writes).
+
+## Failures and limits
+
+| Failure | Cause and fix |
 | --- | --- |
-| Wrong slot count, type, or mutability | Match `Captures` in binding order. Slots may share a type; their index still distinguishes them. |
-| Conflicting borrows of one local | Use separate values; the borrow checker rejects overlapping read/mutable bindings. |
-| Heap owner or host pointer in a device capture | Captures transfer trivial bytes, not object graphs, and perform no `DevicePassable` conversion. Use a portable resource for owned storage. |
-| A captured reference outlives execution | Keep references and pointers inside the invocation. Neither lexical nor explicit capture references may escape it. |
-| Several writers update one output | Choose a proven single writer or [per-row output and a later reduction](../shared_writes). Mutable capture access supplies no synchronization. |
+| Compile error on the slot count, type, or mutability | Bind one value per slot in declaration order, with the declared type. Two slots may share a type; their index distinguishes them. |
+| Borrow-checker error on one local | One local cannot be bound read-only and mutably in the same call. Use separate values. |
+| Compile error for a device capture that owns memory or holds a pointer | Device captures copy plain bytes. Use a [portable resource](../portable_resources) for owning data. |
+| Wrong result from several writers | A mutable slot provides no synchronization. Use one writer, or [per-particle output](../shared_writes). |
+| Compile error for a closure with `DEVICE` or `threaded=True` | Lexical closures run only sequentially on the host. Use explicit slots for a device. |
 
-Device execution remains [experimental](../../../reference/compatibility).
-Prefer explicit bindings when the same thin kernel must run on both targets;
-use [portable resources](../portable_resources) when the input persists between
-steps or owns data.
+Keep references from capture slots and closure borrows inside the kernel; they
+must not outlive the call. The [capture
+reference](../../../reference/resources#explicit-captures) lists the remaining
+binding rules.
+
+## Complete program
 
 {{< example file="particles/lexical_closure.mojo" full=true >}}
 
-The first program checks lexical host borrowing.
+The program above checks the lexical closure on the host.
 
 {{< example file="particles/captures.mojo" full=true >}}
 
-The second checks explicit host bindings and optionally device bindings as a
-separate simulation.
+The program above checks explicit slots on the host and, when available, on a
+device.
+
+## Next steps
+
+- [Use portable resources](../portable_resources) passes owning collections to
+  host and device kernels.
+- [Coordinate shared writes](../shared_writes) covers results from many
+  writers.

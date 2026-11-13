@@ -1,123 +1,138 @@
 +++
 type = "docs"
 title = "Use portable resources"
-weight = 3
+weight = 4
 +++
 
-Read an owning sample collection through the same particle kernel on host and
-device. Start with [shared resources](../../shared_resources) and
-[device selection](../device). Adapter-backed device execution and mutable
-adapters follow the [experimental status](../../../reference/compatibility).
-This stage uses read-only views; kernel outputs remain per-entity components.
+Read an owning collection, such as a list of samples, from the particle kernel
+on both the host and a device. An ordinary resource that owns memory works on
+the sequential host only, because Larecs cannot copy its heap data to a device
+byte by byte. A *portable resource* is a resource source with an adapter. It
+keeps the owner on the host and gives each kernel a *kernel view*, a plain value
+that points to the data on the kernel's target.
+
+Start with [Share values with resources](../../shared_resources) and
+[Execute on a device](../device). Mutable portable resources are
+[experimental](../../../reference/compatibility); this page uses read-only
+views.
 
 ## Separate the owner from the kernel view
 
-The particle fields stay plain; time remains an ordinary read resource.
+The particle types follow the [portable particle
+model](../#the-portable-particle-model), and `Time` stays an ordinary read-only
+resource.
 
 {{< example file="particles/portable_resources.mojo" region="model" >}}
 
-These types have no heap ownership. The new resource sources below instead own
-collections and expose a different representation inside kernels.
-
-Use {{< api BufferResource >}} for a contiguous scalar buffer. Add a custom
-{{< api DevicePassableResource >}} only when the kernel needs a domain-specific
-view, such as the last sample of a rectangular grid.
+The stage adds two *resource sources*, the owning values stored in the world:
 
 {{< example file="particles/portable_resources.mojo" region="owner_view" >}}
 
-`Samples` owns its host collection and supplies the built-in immutable
-{{< api ReadBuffer >}} with length and bounds-checked indexing. Do not index an
-empty buffer. `Grid` owns its `List`; `GridView` borrows samples through a
-pointer and exposes `last()`. Its dimensions must describe a nonempty grid.
-The pointer in a view is target-local: it refers to host memory during a host
-run and device memory during a device run.
+`Samples` is a {{< api BufferResource >}}, the built-in source for a contiguous
+buffer of scalars. Its kernel view is {{< api ReadBuffer >}}, which has a length
+and bounds-checked indexing. `Grid` is a custom
+{{< api DevicePassableResource >}}: it owns a `List` and names the adapter that
+creates its view, `GridView`. `GridView` holds a pointer to the samples and the
+grid's dimensions, and `last()` reads the final sample. The pointer is
+target-local: it refers to host memory in a host run and to device memory in a
+device run.
 
-## Implement validation and target preparation
+## Prepare the view for each target
 
-The stateless {{< api ResourceAdapter >}} checks the current owner and prepares
-the same descriptor type for each target.
+A {{< api ResourceAdapter >}} checks the current owner and builds the view for
+the target of each call.
 
 {{< example file="particles/portable_resources.mojo" region="adapter" >}}
 
-`validate` rejects zero dimensions, overflow, and inconsistent counts before
-binding either target, including empty entity matches. `bind_host` points into
-the retained source, never a temporary list. Its untracked origin makes the
-owner/lifetime obligations explicit; it does not transfer ownership.
+- `validate` runs before every call, including calls that match no entities. It
+  rejects empty or inconsistent grids, so `last()` never reads out of bounds.
+- `bind_host` points the view at the owner's own list; it copies nothing.
+- `prepare_device` uploads the samples through {{< api ResourceDeviceCache >}}
+  slot 0 and returns a view that points to device memory. The cache keeps the
+  device allocation between calls; by default, the samples upload again on
+  every call.
 
-`prepare_device` uses {{< api ResourceDeviceCache >}} slot 0 for samples.
-`cache.upload` snapshots supported pointer-free trivial samples in owned
-staging before enqueueing. Larecs uploads the descriptor separately, using
-reserved slot `-1`. Give additional arrays distinct nonnegative stable slots;
-do not enqueue copies from external host pointers or temporary allocations.
-The cache belongs to the source type, world, and device context. It retains
-allocation capacity; by default preparation still uploads current data each run.
-[Copy reuse](../copy_reuse) can skip read-view preparation when revisions match.
+## Request the source type in the kernel
 
-## Request the source type and receive its view
-
-Both `Resources` and the getter name the owning source type.
+The kernel declares and looks up resources by their source type:
 
 {{< example file="particles/portable_resources.mojo" region="kernel" >}}
 
-Inside `move`, `get[Samples]()` returns `ReadBuffer` and `get[Grid]()` returns
-`GridView`, both immutable. Outside execution, `world.resources.get[Grid]()`
-returns the owning `Grid`. Lookup uses source identity, so two owners may share
-a view type without becoming the same resource. Adapters register automatically
-when the source is added or inserted with `set`; there is no adapter factory.
+Inside `move`, `get[Samples]()` returns a `ReadBuffer` and `get[Grid]()` returns
+a `GridView`, both immutable. Outside a kernel, `world.resources.get[Grid]()`
+returns the owning `Grid`. Larecs registers the adapter when you add the source;
+there is no separate registration call.
 
-The driver adds both sources, changes the grid owner between runs, and checks
-validation without matching entities.
+The driver adds both sources, edits the grid between steps, and checks that
+validation also runs without matching entities:
 
 {{< example file="particles/portable_resources.mojo" region="check" >}}
 
-The first step uses scale `1 + 2` and ends at `x=0.75`; the edited owner changes
-the next scale to `1 + 3` and ends at `(1.75, 3.5)`. Each target runs a fresh
-simulation. The device PASS line confirms actual sample transfer and execution;
-the SKIP line means only host validation ran. From the repository root, execute
-`pixi run mojo run -I src examples/particles/portable_resources.mojo`.
+The first step scales movement by `1 + 2` and ends at `x=0.75`. The edit changes
+the last grid sample, so the second step scales by `1 + 3` and ends at
+`(1.75, 3.5)`.
 
-## Keep sources and views valid until completion
+From the repository root, run:
 
-Larecs validates sources, leases them, and retains descriptors until synchronous
-completion, including the join of threaded host workers. Reentrant lookup,
-replacement, or removal of a bound source raises. Copying/moving/destroying
-leased storage through an escaped alias aborts. Neither a view, its pointers,
-nor references obtained from it may escape the invocation.
+```sh
+pixi run mojo run -I src examples/particles/portable_resources.mojo
+```
 
-Every read view and all reachable storage must support concurrent reads without
-hidden mutation. Escaped aliases must not mutate, resize, relocate, or free the
-backing collection while a run uses it. An immutable pointer field alone does
-not establish that contract. Read adapters bind once on the coordinating host
-caller for threaded execution, then share the retained descriptor until join.
+A PASS line for the device means the kernel read both views on the accelerator;
+a SKIP line means only the host ran.
 
-## Use a writer view only when the adapter supports it
+## Keep sources and views valid during a call
 
-This `GridAdapter` is read-only. `Resources[Grid]()` means read-write and is
-rejected; declare `read` explicitly. For shared output, first consider
-[per-row results and a later reduction](../shared_writes).
+For the duration of a call, Larecs holds a *lease* on every bound source: it
+keeps the source alive and in place, and looking it up, replacing it, or
+removing it from inside the call raises. Two rules keep views valid:
 
-Current mutable adapters can opt into `supports_mutation` for sequential host
-writes and additionally `supports_concurrent_mutation` for threaded/device
-writes. These capabilities are author guarantees: an exclusive source lease
-does not prevent races among workers of one invocation. `write` selects fresh,
-adapter-initialized output; `read_write` preserves it. The descriptor remains
-immutable; its methods control backing writes. Preparation and finalization run
-once per invocation, even for empty matches, and mutable adapters prepare on
-every call despite copy reuse. The [adapter reference](../../../reference/resources)
-and [checked scatter example](https://github.com/larecs/larecs/blob/main/examples/scatter_resource.mojo)
-cover the hooks and atomic slot-reservation pattern.
+- Keep views, their pointers, and references obtained from them inside the
+  kernel invocation.
+- Do not change, resize, or free the owner through a reference you kept from
+  before the call while the call runs.
 
-## Troubleshooting
+A lease protects the source's lifetime; it does not synchronize threads.
+[Structural locks are not
+mutexes](../../../reference/compatibility#structural-locks-are-not-mutexes), and
+neither are leases. The [adapter
+reference](../../../reference/resources#adapter-contracts) lists the remaining
+rules for adapter authors.
 
-| Failure or restriction | Fix |
+## Variations
+
+### Write through an adapter
+
+`GridAdapter` supports reading only, so declare its source with `read`; the
+`Resources[Grid]()` default means read-write and fails to compile. An adapter
+that sets `supports_mutation` can provide a writable view for sequential host
+calls, and one that also sets `supports_concurrent_mutation` can provide it for
+threaded and device calls. The [mutable adapter
+reference](../../../reference/resources#mutable-adapters) and the [scatter
+example](https://github.com/larecs/larecs/blob/main/examples/scatter_resource.mojo)
+show the hooks and an atomic slot reservation. For most shared output, prefer
+[per-particle results](../shared_writes).
+
+### Skip unchanged uploads
+
+With [device-copy reuse](../copy_reuse) enabled, a read-only source that has not
+changed since the last device call skips `prepare_device` and reuses its view.
+
+## Failures and limits
+
+| Failure | Cause and fix |
 | --- | --- |
-| Grid validation error | Match dimensions and sample count before running. Empty entity matches do not bypass validation. |
-| Mutable declaration rejected | Use explicit `read` for these sources, or implement the writer protocol and required capabilities. Ordinary device write-only resources remain unsupported. |
-| Invalid or stale view pointer | Return target-local, owner/cache-backed memory; keep aliases from invalidating it. Do not byte-transfer a host pointer as an ordinary resource or capture. |
-| Unexpected stale samples with reuse enabled | Reacquire the owner through `get` after each run, or explicitly invalidate after an escaped-reference write. |
-| Adapter finalizer raises | Published outputs remain; the invocation is not a transaction. See [device failure behavior](../device#account-for-transfers-and-completion). |
+| `run` raises a grid validation error, even with no matching entities | The owner is invalid. Make the dimensions match the sample count before the call. |
+| Compile error: mutable access requires `Adapter.supports_mutation` | The source is declared writable. Declare it with `read`, or implement a writer view. |
+| Crash or wrong values from a view pointer | The view points to memory that does not belong to the owner or the device cache, or an earlier reference changed the owner during the call. Return owner-backed or cache-backed memory only. |
+| Stale samples with copy reuse enabled | The owner changed through a reference that Larecs does not track. Reacquire it with `get` after each run, or [invalidate it](../copy_reuse#invalidate-a-write-larecs-cannot-see). |
+
+## Complete program
 
 {{< example file="particles/portable_resources.mojo" full=true >}}
 
-[Binding internals](../../../inside/architecture/transfers#sources-and-target-local-views)
-explains leases, adapter descriptors, and source/view lifetimes.
+## Next steps
+
+- [Reuse unchanged device copies](../copy_reuse) avoids repeated uploads.
+- [Bindings, transfers, and revisions](../../../inside/architecture/transfers#sources-and-target-local-views)
+  explains leases, adapter views, and their lifetimes.

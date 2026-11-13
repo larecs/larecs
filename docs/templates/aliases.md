@@ -2,7 +2,7 @@
 {{if .Aliases}}## Aliases
 
 {{range .Aliases -}}
-{{`{{<html>}}`}}<a id="{{.Name}}"></a>{{`{{</html>}}`}}
+{{`{{< anchor "`}}{{.Name}}{{`" >}}`}}
 
 ### `{{.Name}}`
 
@@ -10,7 +10,7 @@
 
 {{end -}}
 ```mojo
-{{.Signature}}{{if .Type}}: {{.Type}}{{end}} = {{.Value}}
+{{.Signature}}{{if ne .Value "fn_literal"}}{{if .Type}}: {{.Type}}{{end}} = {{.Value}}{{end}}
 ```
 
 {{if .Description}}{{.Description}}

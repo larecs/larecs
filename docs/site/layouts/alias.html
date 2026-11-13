@@ -1,11 +1,13 @@
+{{- /* Redirect to the target's path so PR previews stay under their own baseURL. */ -}}
+{{- $target := (urls.Parse .Permalink).Path -}}
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <link rel="canonical" href="{{ .Permalink }}">
-    <meta http-equiv="refresh" content="0; url={{ .Permalink }}">
+    <meta http-equiv="refresh" content="0; url={{ $target }}">
     <title>Page moved</title>
-    <script>location.replace({{ .Permalink | jsonify | safeJS }} + location.hash);</script>
+    <script>location.replace({{ $target | jsonify | safeJS }} + location.hash);</script>
   </head>
-  <body><a href="{{ .Permalink }}">Continue to the current page</a>.</body>
+  <body><a href="{{ $target }}">Continue to the current page</a>.</body>
 </html>

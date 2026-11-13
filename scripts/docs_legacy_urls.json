@@ -36,44 +36,58 @@
     "the-world"
   ],
   "guide/execution/captures/": [
-    "borrow-locals-on-the-host",
+    "borrow-locals-with-a-closure-on-the-host",
+    "complete-program",
     "declare-explicit-slots-for-a-thin-kernel",
-    "restrictions-and-recovery"
+    "failures-and-limits",
+    "next-steps",
+    "variations"
   ],
   "guide/execution/copy_reuse/": [
     "check-both-transfer-policies",
-    "enable-reuse-and-invalidate-escaped-writes",
-    "keep-the-kernel-independent-of-transfer-policy",
-    "know-which-operations-advance-revisions",
-    "troubleshooting"
+    "complete-program",
+    "enable-reuse-for-a-world",
+    "failures-and-limits",
+    "invalidate-a-write-larecs-cannot-see",
+    "next-steps",
+    "variations"
   ],
   "guide/execution/device/": [
-    "account-for-transfers-and-completion",
-    "define-a-transferable-movement-stage",
-    "execute-and-compare-independent-runs",
-    "select-the-target-in-the-system",
-    "troubleshooting-and-limits"
+    "compare-the-device-with-the-host",
+    "complete-program",
+    "failures-and-limits",
+    "how-device-threads-visit-rows",
+    "let-the-filter-decide-what-moves",
+    "next-steps",
+    "select-the-device-in-the-system",
+    "variations"
   ],
   "guide/execution/": [],
   "guide/execution/portable_resources/": [
-    "implement-validation-and-target-preparation",
-    "keep-sources-and-views-valid-until-completion",
-    "request-the-source-type-and-receive-its-view",
+    "complete-program",
+    "failures-and-limits",
+    "keep-sources-and-views-valid-during-a-call",
+    "next-steps",
+    "prepare-the-view-for-each-target",
+    "request-the-source-type-in-the-kernel",
     "separate-the-owner-from-the-kernel-view",
-    "troubleshooting",
-    "use-a-writer-view-only-when-the-adapter-supports-it"
+    "variations"
   ],
   "guide/execution/shared_writes/": [
-    "match-ordering-and-backend-support",
-    "run-and-troubleshoot",
-    "use-standalone-host-primitives-when-you-own-the-storage",
+    "complete-program",
+    "failures-and-limits",
+    "next-steps",
+    "reduce-after-the-kernel-returns",
+    "variations",
     "write-a-separate-output-for-each-particle"
   ],
   "guide/execution/threaded/": [
-    "configure-and-check-the-result",
-    "keep-inputs-portable-and-work-independent",
-    "respect-chunk-boundaries-and-lifetimes",
-    "troubleshooting"
+    "complete-program",
+    "failures-and-limits",
+    "how-larecs-splits-the-rows",
+    "move-particles-in-threaded-chunks",
+    "next-steps",
+    "variations"
   ],
   "guide/": [],
   "guide/installation/": [
@@ -125,12 +139,14 @@
   ],
   "guide/spatial_locality/": [],
   "guide/spatial_locality/maintain/": [
-    "compare-row-ordering-with-growable-partitions",
-    "declare-eligible-classifier-inputs",
-    "execute-and-troubleshoot",
-    "run-movement-before-explicit-maintenance",
-    "select-exact-maintained-cluster-membership",
-    "track-dirty-inputs-and-choose-a-cadence"
+    "choose-a-placement-policy",
+    "classify-particles-by-grid-cell",
+    "complete-program",
+    "failures-and-limits",
+    "maintain-placement-after-movement",
+    "next-steps",
+    "select-one-cluster",
+    "variations"
   ],
   "guide/structural_changes/": [
     "create-entities-outside-a-system",
