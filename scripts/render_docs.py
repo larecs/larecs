@@ -11,6 +11,7 @@ from urllib.parse import urljoin, urlsplit
 
 from api_reference import ROOT, build_reference
 from doc_examples import regions
+from declaration_layout import format_declaration
 
 BASE = os.environ.get('DOCS_BASE_URL', 'https://larecs.github.io/larecs/dev/')
 CONTENT = ROOT / 'docs/site/src/content/docs'
@@ -196,8 +197,9 @@ class Renderer:
         if exact:
             readable = re.sub(r'\s+where \(eq .*$', '', exact)
             readable = re.sub(r': (\w+)\[[a-z_]\w*\.\w+[^\[\]]*\]', r': \1', readable)
-            text += declaration(readable)
-            if exact != readable:
+            formatted = format_declaration(readable)
+            text += declaration(formatted)
+            if exact != formatted:
                 text += '\n<details><summary>Exact declaration</summary>\n' + declaration(exact) + '\n</details>\n'
         text += '\n' + item.get('description', '') + '\n'
         if item.get('parentTraits'):

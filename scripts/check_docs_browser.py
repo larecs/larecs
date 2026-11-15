@@ -59,6 +59,10 @@ def check_browser(public=None, base=None):
                     for declaration in declarations.all():
                         if declaration.evaluate("node => getComputedStyle(node).whiteSpace !== 'pre-wrap' || node.scrollWidth > node.clientWidth + 1"):
                             raise ValueError(f"API declaration does not wrap at {width}px: {route}")
+                    if route == "larecs/system/SystemContext/":
+                        signature = declarations.filter(has_text="def run[").first.inner_text()
+                        if 'def run[\n    filter: Filter,\n' not in signature or '](\n    mut self,\n    *bindings: *Bindings.values\n)' not in signature:
+                            raise ValueError(f"API parameter and argument lines are not preserved: {route}")
                 for image in page.locator("main img").all():
                     image.scroll_into_view_if_needed()
                     page.wait_for_function("image => image.complete && image.naturalWidth > 0", arg=image.element_handle())

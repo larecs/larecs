@@ -5,6 +5,7 @@ Run after `pixi run build-docs` with the scripts Pixi test-api-reference task.
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -17,6 +18,63 @@ from check_docs import check as check_site, Page as SitePage
 from docs_redirects import write_case_redirects
 from check_docs_browser import check_browser
 from render_docs import BASE, Renderer
+from declaration_layout import format_declaration
+
+
+class DeclarationLayoutTests(unittest.TestCase):
+    """Check source-preserving layout across real compiler declarations."""
+
+    def test_short_declaration_stays_inline(self):
+        declaration = 'def get(self) -> Int'
+        self.assertEqual(format_declaration(declaration), declaration)
+
+    def test_long_parameter_and_argument_lists(self):
+        declaration = 'def apply[T: ComponentType, U: ResourceType](mut self, source: T, value: U) -> Entity'
+        formatted = format_declaration(declaration)
+        self.assertEqual(formatted, '''def apply[
+    T: ComponentType,
+    U: ResourceType
+](
+    mut self,
+    source: T,
+    value: U
+) -> Entity''')
+
+    def test_nested_callable_accounts_for_suffix(self):
+        declaration = 'def run[KernelFunc: def(KernelContext[filter, required_resources, capture_spec]) thin -> None](mut self)'
+        formatted = format_declaration(declaration)
+        self.assertIn('KernelFunc: def(\n', formatted)
+        self.assertTrue(all(len(line) <= 80 for line in formatted.splitlines()))
+
+    def test_literals_and_inference_markers(self):
+        declaration = 'def get[T: AnyType, //, name: String = "a, [b] (c)", *, mode: Int = 0](self, values: Tuple[T, T, T],) -> T'
+        formatted = format_declaration(declaration)
+        self.assertIn('    //,\n', formatted)
+        self.assertIn('"a, [b] (c)"', formatted)
+        self.assertIn('    *,\n', formatted)
+        self.assertIn('    values: Tuple[T, T, T],\n', formatted)
+        self.assertEqual(format_declaration(formatted), formatted)
+
+    def test_all_compiler_declarations_preserve_tokens(self):
+        # Compare lexical tokens independently of the formatter's scanner.
+        def tokens(text):
+            return re.findall(r""""(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\w+|[^\s]""", text)
+
+        def walk(node):
+            if isinstance(node, dict):
+                if node.get('signature'):
+                    signature = node['signature']
+                    formatted = format_declaration(signature)
+                    with self.subTest(signature=signature[:100]):
+                        self.assertEqual(tokens(signature), tokens(formatted))
+                        self.assertEqual(format_declaration(formatted), formatted)
+                for child in node.values():
+                    walk(child)
+            elif isinstance(node, list):
+                for child in node:
+                    walk(child)
+
+        walk(json.loads((ROOT / 'docs/src/larecs.json').read_text())['decl'])
 
 
 class TypeAnnotationTests(unittest.TestCase):
