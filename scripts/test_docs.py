@@ -1,19 +1,14 @@
 """Regression checks for documentation publishing failures and compatibility."""
 
-import asyncio
-import copy
-import io
 import json
-import subprocess
 import tempfile
 import unittest
-from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from api_reference import ROOT, source_locations
 from check_docs import Page, Site, check
 from doc_examples import coverage, inventory, regions
-from docs import _modo_executable, _relay, _run, _DOC_WARNING_RE, _check
+from render_docs import Renderer
 
 
 class ExampleTests(unittest.TestCase):
@@ -36,6 +31,11 @@ class ExampleTests(unittest.TestCase):
             file.write('\n```mojo {doctest="two" global=true}\ndef main():\n    pass\n```\n')
         with self.assertRaisesRegex(ValueError, "missing=.*example_two_test"):
             inventory(self.root)
+
+    def test_prose_label_is_not_an_executable_listing(self):
+        with (self.root / "docs/src/example.md").open("a") as file:
+            file.write('Use `doctest="not_a_test"` for an inline example.\n')
+        self.assertEqual(len(inventory(self.root)), 2)
 
     def test_unexpected_test_and_unchecked_listing(self):
         (self.root / "docs/test/stale.mojo").write_text('def main():\n    pass\n')
@@ -91,91 +91,25 @@ class PublishingTests(unittest.TestCase):
             with self.subTest(target=target), self.assertRaisesRegex(ValueError, message):
                 site.resolve(target)
 
-    def test_modo_warnings_are_errors(self):
-        original = json.loads((ROOT / "docs/src/larecs.json").read_text())
-        for missing in (True, False):
-            data = copy.deepcopy(original)
-            module = data["decl"]["modules"][1]
-            module["summary"] = "" if missing else "[UnknownDocumentationSymbol]"
-            module["description"] = ""
-            with self.subTest(missing_description=missing), tempfile.TemporaryDirectory() as directory:
-                fixture = Path(directory) / "fixture.json"
-                fixture.write_text(json.dumps(data))
-                buffer = io.BytesIO()
-                with io.TextIOWrapper(buffer) as output:
-                    with redirect_stdout(output), redirect_stderr(output):
-                        result = asyncio.run(_run(
-                            [_modo_executable(), "build", "--bare", "--input", str(fixture),
-                             "--output", str(Path(directory) / "content"), "--tests", ""],
-                            cwd=ROOT,
-                        ))
-                        with self.assertRaises(SystemExit):
-                            _check(*result, "Modo negative fixture")
-                    output.flush()
-                    diagnostic = buffer.getvalue().decode()
-                self.assertTrue(result[1], diagnostic)
-                self.assertIn("missing docstrings" if missing else "Can't resolve cross ref",
-                              diagnostic)
+    def test_renderer_rejects_missing_dependencies(self):
+        renderer = Renderer()
+        for content in ('{{< api DoesNotExist >}}',
+                        '{{< example file="missing.mojo" >}}',
+                        '{{< example file="particles/movement.mojo" region="missing" >}}'):
+            with self.subTest(content=content), self.assertRaises((ValueError, KeyError)):
+                renderer.shortcodes(content)
 
-    def test_hugo_example_and_warning_failures(self):
-        fixture = ROOT / "docs/site/content/negative-fixture.md"
-        shortcode = ROOT / "docs/site/layouts/shortcodes/negative-warning.html"
-        try:
-            shortcode.write_text('{{ warnf "intentional documentation warning" }}')
-            for content, diagnostic in (
-                ('{{< example file="missing.mojo" >}}', 'not found under examples/'),
-                ('{{< example file="particles/movement.mojo" region="missing" >}}', 'region "missing" not found'),
-                ('{{< negative-warning >}}', 'intentional documentation warning'),
-            ):
-                with self.subTest(content=content), tempfile.TemporaryDirectory() as directory:
-                    fixture.write_text('---\ntitle: Negative fixture\n---\n' + content)
-                    result = subprocess.run(["hugo", "-s", str(ROOT / "docs/site"),
-                                             "--panicOnWarning", "--destination", directory],
-                                            capture_output=True, text=True)
-                    warned = any(_DOC_WARNING_RE.match(line.encode()) for line in (result.stdout + result.stderr).splitlines())
-                    with self.assertRaises(SystemExit):
-                        _check(result.returncode, warned, "Hugo negative fixture")
-                    self.assertIn(diagnostic, result.stdout + result.stderr)
-        finally:
-            fixture.unlink(missing_ok=True)
-            shortcode.unlink(missing_ok=True)
+    def test_missing_api_documentation_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "Missing declaration documentation"):
+            Renderer().contract({"kind": "struct", "name": "Undocumented"}, "example", Path("example"))
 
-    def test_wrapper_propagates_errors_and_doc_warnings(self):
-        async def relay(line):
-            stream = asyncio.StreamReader()
-            stream.feed_data(line)
-            stream.feed_eof()
-            return await _relay(stream, io.TextIOWrapper(io.BytesIO()))
+    def test_duplicate_anchors_are_detected(self):
+        page = Page('<h2 id="same">Heading</h2><a id="same"></a>')
+        self.assertEqual(page.duplicate_ids, {"same"})
 
-        for line in (b"Error: in script post-test: exit status 1\n", b"WARNING: broken cross ref\n",
-                     b"Error: Can't resolve cross ref 'UnknownDocumentationSymbol'\n",
-                     b"Error: missing docstrings in strict mode\n",
-                     b"WARN  intentional documentation warning\n",
-                     b"\x1b[33mWARNING: colored diagnostic\x1b[0m\n",
-                     b"src/larecs/example.mojo:2:3: warning: undocumented parameter\n"):
-            self.assertTrue(asyncio.run(relay(line)))
-
-        # The packaged Linux launcher returns zero for these errors. Its status
-        # cannot turn a diagnosed generator failure into a publishing success.
-        with self.assertRaises(SystemExit), redirect_stderr(io.StringIO()):
-            _check(0, asyncio.run(relay(b"Error: generator failed\n")), "Modo")
-
-    def test_navigation_status_and_search_contracts(self):
-        public = ROOT / "docs/site/public"
-        home = (public / "index.html").read_text()
-        for label, route in (("Start", "start"), ("Guides", "guide"), ("Reference", "reference")):
-            self.assertIn(f'title="{label}"', home)
-            self.assertIn(f'/{route}', home)
-        for text in ("Documentation version", "Development · Larecs", "experimental APIs",
-                     "Architecture", "Development", "Menu"):
-            self.assertIn(text, home)
-        search = json.loads(next(public.glob("*.search-data*.json")).read_text())
-        execution = next(v for k, v in search.items() if k.endswith('/larecs/system/SystemContext/'))
-        text = json.dumps(execution)
-        self.assertIn("Constraints:", text)
-        self.assertIn("device-safe component and resource types", text)
-        resource = next(v for k, v in search.items() if k.endswith('/larecs/resource/ResourceStorage/'))
-        self.assertIn("re-obtain it", json.dumps(resource))
+    def test_region_indentation_matches_program(self):
+        excerpt = regions('# region inner\n    a()\n    if True:\n        b()\n# endregion inner')['inner']
+        self.assertEqual(excerpt, 'a()\nif True:\n    b()')
 
     def test_source_locations_ignore_examples_and_respect_type_ownership(self):
         text = 'struct First:\n    """Example:\n    def method(): pass\n    """\n    def actual(self): pass\nstruct Second:\n    def method(self): pass\n'

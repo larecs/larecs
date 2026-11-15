@@ -3,6 +3,8 @@
 # SKIP_DEBUG
 # SKIP_ASAN
 
+from larecs import ComponentType, ResourceType
+
 from std.testing import assert_almost_equal, assert_equal
 from larecs import (
     ExecutionBackend,
@@ -19,7 +21,7 @@ from std.sys import has_accelerator
 
 # region model
 @fieldwise_init
-struct Position(Copyable, Movable, TrivialRegisterPassable):
+struct Position(ComponentType, TrivialRegisterPassable):
     """Particle coordinates, using device-compatible scalar arithmetic."""
 
     var x: Float32
@@ -27,7 +29,7 @@ struct Position(Copyable, Movable, TrivialRegisterPassable):
 
 
 @fieldwise_init
-struct Velocity(Copyable, Movable, TrivialRegisterPassable):
+struct Velocity(ComponentType, TrivialRegisterPassable):
     """Particle displacement per unit of simulated time."""
 
     var dx: Float32
@@ -35,7 +37,7 @@ struct Velocity(Copyable, Movable, TrivialRegisterPassable):
 
 
 @fieldwise_init
-struct Time(Copyable, Movable):
+struct Time(ResourceType):
     """Shared simulated step length."""
 
     var delta: Float32

@@ -6,6 +6,7 @@ import os
 import platform
 import re
 import subprocess
+import textwrap
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -28,7 +29,7 @@ def regions(source: str) -> dict[str, str]:
             if not active or active[-1][0] != name:
                 raise ValueError(f"Unbalanced example region: {name}")
             _, start = active.pop()
-            result[name] = "\n".join(lines[start:index]).strip()
+            result[name] = textwrap.dedent("\n".join(lines[start:index])).strip()
             if not result[name]:
                 raise ValueError(f"Empty example region: {name}")
         else:
@@ -51,7 +52,7 @@ def inventory(root: Path = ROOT) -> list[Path]:
         for fence in re.findall(r"(?m)^```mojo([^\n]*)", text):
             if not LABEL.search(fence):
                 raise ValueError(f"Unchecked Mojo listing: {page.relative_to(root)}")
-        for label in set(LABEL.findall(text)):
+        for label in {LABEL.search(fence)[1] for fence in re.findall(r"(?m)^```mojo([^\n]*)", text)}:
             relative = page.relative_to(root / "docs/src").with_suffix("")
             expected.add(relative.parent / f"{relative.name}_{label}_test.mojo")
         for match in EXAMPLE.finditer(text):
@@ -65,7 +66,7 @@ def inventory(root: Path = ROOT) -> list[Path]:
             programs.add(program)
 
     def compiler_tests(node, path=(), method=False):
-        """Follow Modo's file ownership: method tests belong to their type."""
+        """Follow the renderer’s file ownership: method tests belong to their type."""
         if isinstance(node, dict):
             parent = path
             kind = node.get("kind")

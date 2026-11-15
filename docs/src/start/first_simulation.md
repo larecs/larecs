@@ -6,11 +6,12 @@ weight = 10
 
 In this tutorial you build a program that moves particles across a plane and
 checks where they end up. You define the particle data, write the movement
-logic once, and let Larecs apply it to every particle that can move.
+logic once, and let Larecs apply it to every entity with the required components.
 
 You need a working Mojo installation and the Larecs source, as described in
 [Installation](../../start/installation). The tutorial assumes you can read
-basic Mojo: structs, functions, and `var` declarations.
+basic Mojo: structs, functions, and `var` declarations. See the
+[Mojo manual](https://docs.modular.com/mojo/manual/) for the language basics.
 
 ## The program
 
@@ -36,27 +37,31 @@ and a velocity:
 {{< example file="particles/movement.mojo" region="components" >}}
 
 Components are ordinary structs. `@fieldwise_init` generates the constructor
-`Position(x, y)`, and `Copyable` and `Movable` let Larecs store and move the
-values. Each component type appears at most once per entity.
+`Position(x, y)`. Both structs conform to Larecs’s
+{{< api component.ComponentType >}} constraint, which requires copyable,
+destructible values. Each component type appears at most once per entity.
 
 ## Share the step length as a resource
 
 Every particle moves for the same amount of simulated time per step. Data that
-exists once for the whole simulation, rather than once per particle, is a
+exists once for the whole simulation, rather than once per entity, is a
 *resource*:
 
 {{< example file="particles/movement.mojo" region="time" >}}
 
+`Time` conforms to {{< api resource.ResourceType >}}, the constraint for values
+stored as resources.
+
 ## Write the movement kernel
 
 A *kernel* is a function that Larecs calls with a {{< api KernelContext >}}.
-Iterating the context visits every particle that matches the kernel's filter:
+Iterating the context visits every entity that matches the kernel's filter:
 
 {{< example file="particles/movement.mojo" region="kernel" >}}
 
 `move_filter` declares two things at compile time:
 
-- **Which particles match.** Only entities with both `Position` and `Velocity`
+- **Which entities match.** Only entities with both `Position` and `Velocity`
   are visited.
 - **How the kernel accesses each component.** `include[Position]()` grants
   read-write access, and `read[Velocity]()` grants read-only access. Larecs
@@ -65,9 +70,8 @@ Iterating the context visits every particle that matches the kernel's filter:
 `move_resources` declares that the kernel reads `Time`. A kernel can access
 only the resources it declares.
 
-The trailing `()` after each step of the filter turns the description into a
-value. `ref` binds a reference to the stored component, so assigning to
-`position.x` changes the particle in place.
+`ref` binds a reference to the stored component, so assigning to
+`position.x` changes the stored component in place.
 
 ## Run the kernel from a system
 

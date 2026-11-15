@@ -19,6 +19,7 @@ class Page(HTMLParser):
     def __init__(self, text):
         super().__init__()
         self.ids = set()
+        self.duplicate_ids = set()
         self.links = []
         self.images = []
         self.redirect = None
@@ -29,6 +30,8 @@ class Page(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if "id" in attrs:
+            if attrs["id"] in self.ids:
+                self.duplicate_ids.add(attrs["id"])
             self.ids.add(attrs["id"])
         if tag in {"a", "link"} and attrs.get("href"):
             self.links.append(attrs["href"])
@@ -69,8 +72,7 @@ class Site:
     def __init__(self, root=ROOT, public=None, base=None):
         self.root = root
         self.public = public or root / "docs/site/public"
-        config = (root / "docs/site/hugo.yaml").read_text()
-        self.base = base or os.environ.get("HUGO_BASEURL") or re.search(r"(?m)^baseURL: (.+)$", config)[1].strip()
+        self.base = base or os.environ.get("DOCS_BASE_URL") or "https://larecs.github.io/larecs/dev/"
         self.origin = urlsplit(self.base)
         self.pages = {path: Page(path.read_text()) for path in self.public.rglob("*.html")}
         self.api = json.loads((root / "docs/site/data/api.json").read_text())
@@ -92,7 +94,7 @@ class Site:
                 raise ValueError(f"Missing case-compatible redirect: {relative}")
             return self.resolve(self.api["case_redirects"][relative] +
                                 ("#" + url.fragment if url.fragment else ""), seen=seen)
-        path = self.public / relative
+        path = self.public / ("404.html" if relative == "404/" else relative)
         if not path.suffix:
             path = path / "index.html"
         if not path.is_file():
@@ -132,6 +134,8 @@ class Site:
         if not self.pages:
             raise ValueError("Missing generated site")
         for path, page in self.pages.items():
+            if page.duplicate_ids:
+                raise ValueError(f"Duplicate HTML IDs: {path}: {page.duplicate_ids}")
             relative = path.relative_to(self.public).as_posix().removesuffix("index.html")
             page_url = urljoin(self.base, page.url or relative)
             for href in page.links:
@@ -149,24 +153,10 @@ class Site:
             page = self.pages[self.public / target / "index.html"]
             for anchor in page.ids:
                 self.resolve(route + "#" + anchor)
-        indexes = list(self.public.glob("*.search-data*.json"))
-        if len(indexes) != 1:
-            raise ValueError(f"Expected one search index, found {indexes}")
-        search = json.loads(indexes[0].read_text())
-        for route, data in search.items():
-            self.resolve(route)
-            for heading in data["data"]:
-                fragment = heading.split("#", 1)[0]
-                if fragment:
-                    self.resolve(route + "#" + fragment)
-        for path, page in self.pages.items():
-            if page.redirect or path.name != "index.html" or path.parent == self.public:
-                continue
-            route = page.url
-            if route not in search:
-                raise ValueError(f"Published page missing from search: {route}")
-        print(f"Verified {len(self.pages)} HTML pages, links/assets/anchors, "
-              f"{len(legacy)} legacy routes and {len(search)} indexed pages")
+        if not (self.public / "pagefind/pagefind.js").is_file():
+            raise ValueError("Missing Pagefind search index")
+        print(f"Verified {len(self.pages)} HTML pages, links/assets/anchors and {len(legacy)} legacy routes")
+
 
 
 def check(root=ROOT, public=None, base=None):

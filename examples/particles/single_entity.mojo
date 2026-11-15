@@ -3,6 +3,8 @@
 Region markers supply excerpts for the single-entity guide.
 """
 
+from larecs import ComponentType
+
 from std.testing import (
     assert_almost_equal,
     assert_equal,
@@ -16,7 +18,7 @@ from larecs import Filter, World
 
 # region components
 @fieldwise_init
-struct Position(Copyable, Movable):
+struct Position(ComponentType):
     """Where a particle is."""
 
     var x: Float64
@@ -26,7 +28,7 @@ struct Position(Copyable, Movable):
 
 
 @fieldwise_init
-struct Velocity(Copyable, Movable):
+struct Velocity(ComponentType):
     """How far a particle moves per unit of time."""
 
     var dx: Float64
@@ -36,7 +38,7 @@ struct Velocity(Copyable, Movable):
 
 
 @fieldwise_init
-struct Frozen(Copyable, Movable):
+struct Frozen(ComponentType):
     """Marks a particle that stopped and remembers its last speed."""
 
     var speed: Float64

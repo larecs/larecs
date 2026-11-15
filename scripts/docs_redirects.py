@@ -18,7 +18,7 @@ def write_case_redirects(root, public, base):
         if path.exists() and path.samefile(module):
             text = module.read_text()
             if "data-legacy-redirect" in text:
-                raise ValueError("Case redirects require a clean Hugo destination")
+                raise ValueError("Case redirects require a clean Astro destination")
             module.write_text(text.replace("</body>", script + "</body>"))
         else:
             path.parent.mkdir(parents=True, exist_ok=True)

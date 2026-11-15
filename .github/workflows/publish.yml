@@ -34,7 +34,8 @@ jobs:
               - 'src/**'
               - 'examples/**'
               - 'README.md'
-              - 'modo.yaml'
+              - 'pixi.toml'
+              - 'pixi.lock'
               - 'scripts/**'
               - '.github/workflows/publish.yml'
 
@@ -69,7 +70,7 @@ jobs:
       - name: Use the preview base URL for pull requests
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-          echo "HUGO_BASEURL=https://larecs.github.io/larecs/${PREVIEW_UMBRELLA}/pr-${{ github.event.number }}/" >> "$GITHUB_ENV"
+          echo "DOCS_BASE_URL=https://larecs.github.io/larecs/${PREVIEW_UMBRELLA}/pr-${{ github.event.number }}/" >> "$GITHUB_ENV"
 
       - name: Verify documentation publishing
         run: |
@@ -95,7 +96,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: markdown
-          path: docs/site/content
+          path: docs/site/src/content/docs
       - name: Archive HTML artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -125,6 +126,7 @@ jobs:
         with:
           branch: gh-pages
           folder: public
+          target-folder: dev
           clean-exclude: ${{ env.PREVIEW_UMBRELLA }}/
           force: false
 

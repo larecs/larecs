@@ -60,10 +60,10 @@ def build_reference(root: Path = ROOT) -> dict:
     """Write symbol metadata and compatibility redirects for generated pages.
 
     Args:
-        root: Repository containing compiler JSON and Modo output.
+        root: Repository containing compiler JSON and generated pages.
 
     Returns:
-        Revision, version, and symbol metadata used by Hugo.
+        Revision, version, and symbol metadata used by Starlight.
     """
     declaration = json.loads((root / "docs/src/larecs.json").read_text())["decl"]
     exports = root_exports((root / "src/larecs/__init__.mojo").read_text())
@@ -71,7 +71,6 @@ def build_reference(root: Path = ROOT) -> dict:
         ["git", "rev-parse", "HEAD"], cwd=root, text=True
     ).strip()
     symbols = {}
-    content = root / "docs/site/content"
     locations = {}
 
     def add(name, target, source):
@@ -153,16 +152,10 @@ def build_reference(root: Path = ROOT) -> dict:
         route = f"larecs/{name}/"
         redirects[route] = target
         # Root type aliases such as System/ collide with system/ on APFS.
-        # Generate these after Hugo, preserving the module landing page.
-        if (content / "larecs" / name.lower() / "_index.md").is_file():
+        # Generate these after Astro, preserving the module landing page.
+        if name.lower() in {m["name"] for m in declaration["modules"]}:
             case_redirects[route] = target
             continue
-        page = content / (target.rstrip("/") + ".md")
-        text = page.read_text()
-        alias = f'aliases: ["/{route}"]\n'
-        if alias not in text:
-            text = text.replace("type: docs\n", "type: docs\n" + alias, 1)
-        page.write_text(text)
 
     data = {
         "revision": revision,

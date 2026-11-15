@@ -1,5 +1,0 @@
-{{- $path := .Get 0 -}}
-{{- $label := .Get 1 | default $path -}}
-{{- $revision := site.Data.api.revision -}}
-<a href="https://github.com/larecs/larecs/blob/{{ $revision }}/{{ $path }}">{{ $label }}</a>
-{{- /* Keep repository evidence at the same revision as the generated API. */ -}}

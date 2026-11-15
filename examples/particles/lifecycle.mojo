@@ -4,6 +4,8 @@ Region markers supply excerpts for the particle learning path.
 """
 
 # region imports
+from larecs import ComponentType, ResourceType
+
 from std.testing import assert_almost_equal, assert_equal
 
 from larecs import (
@@ -21,7 +23,7 @@ from larecs import (
 
 # region components
 @fieldwise_init
-struct Position(Copyable, Movable):
+struct Position(ComponentType):
     """Where a particle is."""
 
     var x: Float64
@@ -31,7 +33,7 @@ struct Position(Copyable, Movable):
 
 
 @fieldwise_init
-struct Velocity(Copyable, Movable):
+struct Velocity(ComponentType):
     """How far a particle moves per unit of time."""
 
     var dx: Float64
@@ -45,7 +47,7 @@ struct Velocity(Copyable, Movable):
 
 # region time
 @fieldwise_init
-struct Time(Copyable, Movable):
+struct Time(ResourceType):
     """The simulated time that passes in one step."""
 
     var delta: Float64

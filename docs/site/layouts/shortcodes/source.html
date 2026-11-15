@@ -1,8 +1,0 @@
-{{- $revision := site.Data.api.revision -}}
-{{- $url := printf "https://github.com/larecs/larecs/blob/%s/src/larecs/%s" $revision (.Get 0) -}}
-{{- $target := strings.TrimPrefix site.Home.RelPermalink .Page.RelPermalink -}}
-{{- range site.Data.api.symbols -}}
-  {{- if eq .target $target -}}{{- $url = .source_url -}}{{- end -}}
-{{- end -}}
-<a href="{{ $url }}">Source</a>
-{{- /* keep output on one line */ -}}

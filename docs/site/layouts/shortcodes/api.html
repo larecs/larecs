@@ -1,9 +1,0 @@
-{{- $name := .Get 0 -}}
-{{- $text := $name -}}
-{{- with .Get 1 -}}{{- $text = . -}}{{- end -}}
-{{- with index site.Data.api.symbols $name -}}
-<a href="{{ .target | relURL }}"><code>{{ $text }}</code></a>
-{{- else -}}
-{{- errorf "Unknown API symbol %q in %s" $name .Position -}}
-{{- end -}}
-{{- /* keep output on one line */ -}}

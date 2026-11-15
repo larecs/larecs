@@ -1,0 +1,6 @@
+---
+import api from '../../data/api.json';
+import Default from '@astrojs/starlight/components/SiteTitle.astro';
+---
+<div><Default {...Astro.props} /><span class="version">Development · {api.version}</span></div>
+<style>.version { display: block; font-size: .75rem; color: var(--sl-color-gray-2); }</style>

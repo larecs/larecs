@@ -134,7 +134,7 @@ once conda-forge ships an `ld64` that understands the new stubs.
 ## API reference generation
 
 Run `pixi run verify-docs` from the repository root before publishing. It runs
-strict compiler/Modo/Hugo generation, checked programs and negative diagnostics,
+compiler JSON and Astro/Starlight generation, checked programs and negative diagnostics,
 figure export comparisons, site-wide links and anchors, export/source checks,
 preview/browser fixtures, and clean reproducibility checks. `pixi run build-docs`
 is the shorter generation and content-check cycle.

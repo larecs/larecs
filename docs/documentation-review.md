@@ -301,4 +301,45 @@ than replace it:
 - Images under `docs/src` are not copied to the site; figures live in
   `docs/site/static/images/`.
 
-`mojo doc` remains the signature source and Hugo the site generator.
+That workflow proof retained `mojo doc` and Hugo. The human review below
+supersedes its generator choice.
+
+## Human review of the Start pages and publishing pipeline
+
+The November 2026 review found both reader-facing mistakes and publishing
+requirements that the earlier source audit did not cover. It was a partial
+review; passing its findings does not certify the remaining documentation.
+
+| Finding | Integrated treatment |
+| --- | --- |
+| LAR 1 | Development documentation uses `/larecs/dev/`, with its version visible in the header; `DOCS_BASE_URL` supports separate release prefixes. A selector needs actual published version targets. |
+| LAR 2 | The overview and README identify Arche as inspiration and state that the architecture diverged. |
+| LAR 3 | Installation starts with the published `tree-d` package, then distinguishes the matching development source and manual precompilation. Existing consumer SDK instructions remain. |
+| LAR 4 | The first simulation links the Mojo manual for language prerequisites. |
+| LAR 5 | Astro/Starlight replaces Modo/Hugo; API pages retain declarations, contract sections, overload anchors, source links, and exact compiler signatures. |
+| LAR 6 | Tutorials include regions from complete executable programs; builds execute the source-derived inventory and fail on extraction or execution errors. |
+| LAR 7–8 | Particle programs use the existing public `ComponentType` and `ResourceType` constraints rather than spelling their generic constituent traits. |
+| LAR 9–11 | Generic ECS explanations use entities; particles remain the concrete simulation domain. |
+| LAR 12 | The filter-construction aside is removed from the first simulation. |
+
+### What to change in future documentation work
+
+The previous checks already executed examples and validated links. Those checks
+could not catch an installation path aimed at contributors, generic language
+traits taking the place of domain constraints, or an explanation confusing an
+entity contract with its particle example. Treating executable examples as a
+proxy for teaching quality left these mistakes in place.
+
+Review the reader's next action separately from correctness: install the
+published package as a consumer, identify which documentation version matches
+it, and read each concept without assuming knowledge from implementation work.
+Use the exact public constraint names and distinguish the running example from
+the general API contract. The project documentation skill now carries this
+review step; mechanical checks remain in the build rather than prose rules.
+
+The renderer also rejects unchecked API listings, which exposed the old
+`Archetype.reserve` fragment. It now uses inline call forms instead of showing
+a program that cannot execute alone. Region extraction now dedents nested
+excerpts without changing their relative indentation. Regression fixtures
+cover unknown symbols, missing programs and regions, inventory loss, stale
+anchors, deployment-prefix escapes, and excerpt indentation.
