@@ -36,12 +36,16 @@
 
 3. **Open a PR into `nightly`.** Merge it yourself once the required checks
    pass; no approval is needed. Prefer squash merges, so each PR is one commit
-   on `nightly`. Issues named with `Closes #N` are closed when
-   the PR merges into `nightly`.
+   on `nightly`. GitHub closes issues from `Closes #N` only for
+   PRs into `main`; for PRs into `nightly`, the
+   [Sync stacked PR issues](.github/workflows/stacked-issue-links.yml)
+   workflow marks them in progress while the PR is open and closes them
+   when it merges.
 
 4. **Try it out.** The [Release nightly](.github/workflows/release-nightly.yml)
    workflow builds, tests, and publishes `nightly` every day at 02:17 UTC when
-   the branch changed. Maintainers can start it manually from the Actions tab.
+   its head is not published yet; the `nightly-published` tag marks the last
+   published commit. Maintainers can start it manually from the Actions tab.
 
 5. **Promote features worth keeping to `main`.** Name the features as their
    entries in the `nightly` changelog describe them. A promotion brings each
