@@ -180,6 +180,7 @@ from .sync import (
 
 from .resource_adapter import (
     DevicePassableResource,
+    ResourceAccess,
     ResourceAdapter,
     ResourceDeviceCache,
     ReadBuffer,
