@@ -1,4 +1,4 @@
-"""Generate Starlight pages and executable doctests directly from source."""
+"""Generate Starlight pages directly from source."""
 import html
 import json
 import os
@@ -41,7 +41,6 @@ def transform_prose(text, transform):
 class Renderer:
     def __init__(self):
         self.api = build_reference()
-        self.tests = {}
         self.redirects = dict(self.api['redirects'])
         self.type_targets = {}
         self.compiler_types = {}
@@ -124,8 +123,6 @@ class Renderer:
             label = re.search(r'doctest="([\w-]+)"', attrs)
             if not label:
                 raise ValueError(f'Unchecked Mojo listing: {owner}')
-            key = owner.parent / f'{owner.name}_{label[1]}_test.mojo'
-            self.tests.setdefault(key, []).append(('global=true' in attrs, code))
             return '' if 'hide=true' in attrs else fence(code)
         return re.sub(r'```mojo(?=[ \n])([^\n]*)\n(.*?)\n```', block, text, flags=re.S)
 
@@ -267,18 +264,11 @@ class Renderer:
 
     def generate(self):
         shutil.rmtree(CONTENT, ignore_errors=True)
+        # Discard output from the retired renderer doctest extractor.
         shutil.rmtree(TESTS, ignore_errors=True)
         self.authored()
         self.write("404", "Page not found", "The requested page does not exist. Use the navigation or search to find it.", hidden=True)
         self.api_pages()
-        for path, blocks in self.tests.items():
-            global_code = '\n'.join(code for is_global, code in blocks if is_global)
-            local_code = '\n'.join(code for is_global, code in blocks if not is_global)
-            if local_code:
-                global_code += '\n\ndef main() raises:\n' + '\n'.join('    ' + line for line in local_code.splitlines())
-            target = TESTS / path
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(global_code + '\n')
         (ROOT / 'docs/site/data/redirects.json').write_text(json.dumps(self.redirects, indent=2) + '\n')
 
 

@@ -1,6 +1,5 @@
 """Regression checks for documentation publishing failures and compatibility."""
 
-import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,7 +11,7 @@ from render_docs import Renderer
 
 
 class ExampleTests(unittest.TestCase):
-    """Exercise partial extraction loss and checked-excerpt failure cases."""
+    """Exercise source inventory and checked-excerpt failure cases."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -20,27 +19,22 @@ class ExampleTests(unittest.TestCase):
         self.root = Path(self.temp.name).resolve()
         for path in ("docs/src", "docs/test", "examples/particles"):
             (self.root / path).mkdir(parents=True)
-        (self.root / "docs/src/larecs.json").write_text('{"decl": {"name": "larecs", "kind": "package"}}')
         (self.root / "examples/particles/example.mojo").write_text('def main():\n    pass\n')
         (self.root / "docs/src/example.md").write_text('```mojo {doctest="one" global=true}\ndef main():\n    pass\n```\n')
         (self.root / "docs/test/example_one_test.mojo").write_text('def main():\n    pass\n')
 
-    def test_partial_extraction_loss(self):
-        self.assertEqual(len(inventory(self.root)), 2)
-        with (self.root / "docs/src/example.md").open("a") as file:
-            file.write('\n```mojo {doctest="two" global=true}\ndef main():\n    pass\n```\n')
-        with self.assertRaisesRegex(ValueError, "missing=.*example_two_test"):
-            inventory(self.root)
+    def test_source_doctests_need_no_generated_files(self):
+        (self.root / "docs/test/example_one_test.mojo").unlink()
+        self.assertEqual(len(inventory(self.root)), 1)
 
     def test_prose_label_is_not_an_executable_listing(self):
         with (self.root / "docs/src/example.md").open("a") as file:
             file.write('Use `doctest="not_a_test"` for an inline example.\n')
-        self.assertEqual(len(inventory(self.root)), 2)
+        self.assertEqual(len(inventory(self.root)), 1)
 
-    def test_unexpected_test_and_unchecked_listing(self):
+    def test_stale_generated_files_are_not_executed(self):
         (self.root / "docs/test/stale.mojo").write_text('def main():\n    pass\n')
-        with self.assertRaisesRegex(ValueError, "unexpected=.*stale"):
-            inventory(self.root)
+        self.assertEqual(len(inventory(self.root)), 1)
         (self.root / "docs/test/stale.mojo").unlink()
         (self.root / "docs/src/example.md").write_text('```mojo\npass\n```\n')
         with self.assertRaisesRegex(ValueError, "Unchecked Mojo listing"):
@@ -67,10 +61,13 @@ class ExampleTests(unittest.TestCase):
         program = self.root / "examples/particles/example.mojo"
         program.write_text('def main():\n    comptime if has_accelerator():\n        print("PASS: actual device parity")\n')
         prefix = '=== examples/particles/example.mojo ===\n'
-        passed = coverage(prefix + 'PASS: actual device parity\n', [program], self.root)
+        passed = coverage(prefix + 'PASS: actual device parity\n'
+                          '=== docs/src/example.md:1#one ===\nresult: PASS\n',
+                          [program], self.root)
         skipped = coverage(prefix + 'SKIP: no accelerator\n', [program], self.root)
         self.assertEqual(len(passed["actual_device_execution"]), 1)
         self.assertFalse(passed["hardware_skips"])
+        self.assertEqual(passed["doctests"], ["docs/src/example.md:1#one"])
         self.assertFalse(skipped["actual_device_execution"])
         self.assertEqual(len(skipped["hardware_skips"]), 1)
         with self.assertRaisesRegex(ValueError, "Missing or ambiguous"):

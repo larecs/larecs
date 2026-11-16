@@ -42,8 +42,7 @@ def regions(source: str) -> dict[str, str]:
 
 
 def inventory(root: Path = ROOT) -> list[Path]:
-    """Require every source-labelled doctest and referenced program to exist."""
-    expected = set()
+    """Reject unchecked listings and require every referenced program to exist."""
     programs = set((root / "examples/particles").glob("*.mojo"))
     if not programs:
         raise ValueError("Missing particle example programs")
@@ -52,9 +51,6 @@ def inventory(root: Path = ROOT) -> list[Path]:
         for fence in re.findall(r"(?m)^```mojo([^\n]*)", text):
             if not LABEL.search(fence):
                 raise ValueError(f"Unchecked Mojo listing: {page.relative_to(root)}")
-        for label in {LABEL.search(fence)[1] for fence in re.findall(r"(?m)^```mojo([^\n]*)", text)}:
-            relative = page.relative_to(root / "docs/src").with_suffix("")
-            expected.add(relative.parent / f"{relative.name}_{label}_test.mojo")
         for match in EXAMPLE.finditer(text):
             attrs = dict(re.findall(r'(\w+)="([^"]*)"', match[1]))
             program = (root / "examples" / attrs["file"]).resolve()
@@ -65,30 +61,7 @@ def inventory(root: Path = ROOT) -> list[Path]:
                 raise ValueError(f"Missing example region: {attrs['file']}:{attrs['region']}")
             programs.add(program)
 
-    def compiler_tests(node, path=(), method=False):
-        """Follow the renderer’s file ownership: method tests belong to their type."""
-        if isinstance(node, dict):
-            parent = path
-            kind = node.get("kind")
-            if kind in {"package", "module", "struct", "trait", "function"} and not (method and kind == "function"):
-                path = path + (node["name"],)
-            for key, value in node.items():
-                if isinstance(value, str):
-                    for label in LABEL.findall(value):
-                        expected.add(Path("larecs") / ("_".join(path) + f"_{label}_test.mojo"))
-                elif isinstance(value, (dict, list)):
-                    compiler_tests(value, parent if key == "overloads" else path,
-                                   method or (key == "functions" and kind in {"struct", "trait"}))
-        elif isinstance(node, list):
-            for item in node:
-                compiler_tests(item, path, method)
-
-    compiler_tests(json.loads((root / "docs/src/larecs.json").read_text())["decl"])
-    actual = {p.relative_to(root / "docs/test") for p in (root / "docs/test").rglob("*.mojo")}
-    if not expected or expected != actual:
-        raise ValueError(f"Doctest inventory differs: missing={sorted(map(str, expected - actual))}, "
-                         f"unexpected={sorted(map(str, actual - expected))}")
-    paths = sorted({root / "docs/test" / path for path in expected} | {p.resolve() for p in programs})
+    paths = sorted({p.resolve() for p in programs})
     for path in paths:
         if not re.search(r"(?m)^def main\(", path.read_text()):
             raise ValueError(f"Missing runnable entry point: {path}")
@@ -113,20 +86,29 @@ def coverage(output: str, programs: list[Path], root: Path = ROOT) -> dict:
         executed.extend(f"{relative}: {line}" for line in passed)
         skipped.extend(f"{relative}: {line}" for line in unavailable)
     return {"programs": [str(p.relative_to(root)) for p in programs],
+            "doctests": [label for label in results if re.search(r":\d+#", label)],
             "actual_device_execution": executed, "hardware_skips": skipped}
 
 
 def run() -> None:
-    """Execute the complete inventory and retain machine-readable path evidence."""
+    """Execute source doctests and examples, retaining device execution evidence."""
     programs = inventory()
     output = ROOT / "output/docs"
     output.mkdir(parents=True, exist_ok=True)
     (output / "examples.json").unlink(missing_ok=True)
     prefix = os.environ["CONDA_PREFIX"]
-    args = f"-DASSERT=all -Xlinker -L{prefix}/lib -Xlinker -lmojotracy -DTRACY_ENABLED"
-    command = ["mogo-tester", "--precompile", "src/larecs", f"--mojo-build-args={args}",
-               *[str(p.relative_to(ROOT)) for p in programs]]
-    print(f"Running all {len(programs)} documentation programs (no exclusions)", flush=True)
+    # The runner needs Mojo 1.2's runtime, while its child compiler must stay
+    # on the project's Mojo 1.0 PATH. Install separately and invoke it directly.
+    subprocess.run(["pixi", "install", "--locked", "-e", "doctest-runner"],
+                   cwd=ROOT, check=True)
+    runner = ROOT / ".pixi/envs/doctest-runner/bin/mogo-tester"
+    command = [str(runner), "--precompile", "src/larecs",
+               "--doctests", "src/larecs", "--doctests", "docs/src"]
+    for arg in ("-DASSERT=all", "-Xlinker", f"-L{prefix}/lib", "-Xlinker",
+                "-lmojotracy", "-DTRACY_ENABLED"):
+        command.extend(["--mojo-build-arg", arg])
+    command.extend(str(p.relative_to(ROOT)) for p in programs)
+    print(f"Running source doctests and {len(programs)} example programs (no exclusions)", flush=True)
     with (output / "examples.log").open("w") as log:
         process = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, text=True)

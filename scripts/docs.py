@@ -53,7 +53,7 @@ def site(renderer):
 
 def hashes():
     paths = []
-    for directory in ('docs/site/src/content/docs', 'docs/test', 'docs/site/public', 'docs/site/data'):
+    for directory in ('docs/site/src/content/docs', 'docs/site/public', 'docs/site/data'):
         paths.extend(p for p in (ROOT / directory).rglob('*') if p.is_file())
     paths.append(ROOT / 'docs/src/larecs.json')
     return {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}

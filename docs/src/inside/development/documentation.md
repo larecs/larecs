@@ -30,11 +30,17 @@ pixi run verify-docs
 ```
 
 Both `build-docs` and `verify-docs` regenerate compiler JSON, API metadata,
-Markdown, and executable doctests. They compile and execute every extracted
-doctest, every particle program, and every program referenced by an `example`
-directive before rendering the site. Missing programs, regions, entry points,
-or extracted tests fail the build. An assertion or execution failure prevents
+and Markdown. Mogo-tester 3 reads labelled doctests directly from
+`src/larecs/` and `docs/src/`; both commands compile and execute these doctests,
+every particle program, and every program referenced by an `example` directive
+before rendering the site. Missing programs, regions, entry points, or unlabelled
+Mojo listings fail the build. An assertion or execution failure prevents
 publishing. There is no exclusion list.
+
+`pixi run doctest` runs the source doctests and examples independently of site
+generation. Its locked `doctest-runner` environment supplies mogo-tester 3
+and its Mojo 1.2 runtime; the runner invokes the project’s Mojo 1.0 compiler
+from the test environment. Diagnostics identify the original source lines.
 
 Both commands also run backend, resource, and spatial rejection checks, compare
 figure exports, and validate symbol targets, source lines, site links, images,
@@ -43,7 +49,7 @@ Chromium layout, search, and redirect checks, then requires byte-identical clean
 regeneration at the same revision and deployment URL.
 
 Generated files live under `docs/site/src/content/docs/`, `docs/site/data/`,
-`docs/test/`, and `docs/site/public/`. They are disposable. Commit authored
+and `docs/site/public/`. They are disposable. Commit authored
 pages under `docs/src/`, runnable programs, renderer sources, lock files,
 and figure sources with their SVGs.
 
@@ -66,7 +72,7 @@ Excerpts retain relative indentation and come from the exact file executed by
 the publishing gate. The full form links to the program at the checkout's
 revision. Other example directories are included when a page references them.
 Short inline Mojo examples require a `doctest="label"` fence; `global=true`
-blocks supply a complete `def main() raises:`. Otherwise the extractor wraps
+blocks supply a complete `def main() raises:`. Otherwise mogo-tester wraps
 the block in `main`. Hide only imports with `hide=true`.
 
 Show every type, filter, kernel, and system before explaining it. Use the

@@ -48,6 +48,12 @@ clang = ">=22.1.8,<23"
 clangxx = ">=22.1.8,<23"
 mogo-tester = ">=2.3.3,<3"
 
+[feature.doctest-runner]
+channels = ["https://prefix.dev/tree-d", "https://conda.modular.com/max", "conda-forge"]
+
+[feature.doctest-runner.dependencies]
+mogo-tester = ">=3.0.0,<4"
+
 [feature.test.activation.env]
 CC = "clang"
 CXX = "clang++"
@@ -60,6 +66,7 @@ sysroot_linux-64 = ">=2.34,<3"
 
 [environments]
 test = ["test"] # An environment covering the "test" feature
+doctest-runner = { features = ["doctest-runner"], no-default-feature = true }
 
 [package]
 name = { workspace = true }
