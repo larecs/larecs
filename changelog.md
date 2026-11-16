@@ -6,16 +6,46 @@
 
 - Support `with` blocks for `EntitySelection`, including in-place mutation
   chains and automatic lock release on normal, early, and exceptional exits.
+  ([#174](https://github.com/larecs/larecs/pull/174))
 
 - Add movable, noncopyable `EntitySelection` results for system batch creation
   and filtered component changes, with in-place add/remove/replace chains and
-  reusable CPU/GPU kernel execution over exact selected rows.
+  reusable CPU/GPU kernel execution over exact selected rows. ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Add typed kernel capture bindings (`Captures`, `ReadCapture`, `MutCapture`,
+  `read_capture`, `mut_capture`) that pass host values to CPU and GPU kernels,
+  read-only or copied back after the run. ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Publish nightly packages built from the `nightly` branch to
+  https://prefix.dev/tree-d/nightly. ([#251](https://github.com/larecs/larecs/pull/251))
 
 ### Changed
 
 - Prefer selection kernels over iterating low-level host-storage batch mutation
   results; selections keep structural changes locked until explicit release or
-  destruction.
+  destruction. ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Validate GPU resources by trivial movability instead of requiring
+  `TrivialRegisterPassable`; `GPUResourceType` remains as a legacy alias.
+  ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Add a general `Error` arm to `LarecsError` that carries kernel and resource
+  failures out of entity selection scopes. ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Constrain Mojo to the 1.0 release series, with matching MAX and
+  `mojo-tracy` ranges for the conda package. ([#174](https://github.com/larecs/larecs/pull/174), [#251](https://github.com/larecs/larecs/pull/251))
+
+### Fixed
+
+- Allow CPU kernels written as capturing closures to use required resources.
+  ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Release the selection lock when a batch mutation fails. ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Include the kernel identity in system profiling zones. ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Select a compatible macOS SDK during Pixi activation when the default macOS 27
+  SDK breaks linking. ([#174](https://github.com/larecs/larecs/pull/174))
 
 ## [1.0.0b1 (2026-09-14)](https://github.com/larecs/larecs/compare/v0.5.0b4...v1.0.0b1)
 
