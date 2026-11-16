@@ -1,101 +1,93 @@
 # Contributing to Larecs🌲
 
+Every change is developed on a feature branch that starts from `main`. The
+branch is merged into `nightly` for testing without review, and the same branch
+is later promoted to `main` through a reviewed PR. `nightly` is rebuilt from
+`main` and the unpromoted feature branches after each release.
+
+![Larecs development workflow](docs/src/guide/images/development-workflow.svg)
+
+The [Develop a feature](docs/src/guide/development_workflow.md) guide explains
+each step in detail.
+
 ## Branches
 
-| Branch    | Receives                                       | Merge requirements                   | Packages                                                             |
-| --------- | ---------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------- |
-| `nightly` | Feature, fix, and documentation PRs            | Passing checks, no approving review  | Daily, to [`tree-d/nightly`](https://prefix.dev/tree-d/nightly)      |
-| `main`    | Promotions from `nightly`, release preparation | Passing checks and one approval      | Each GitHub release, to [`tree-d`](https://prefix.dev/tree-d)        |
+| Branch | Contains | Merge requirements | Packages |
+| --- | --- | --- | --- |
+| feature branch | One feature, started from `main` | — | — |
+| `nightly` | `main` plus feature branches under test | Passing checks, merge commit | Daily to [`tree-d/nightly`](https://prefix.dev/tree-d/nightly) |
+| `main` | Promoted features and releases | Passing checks, one approval, merge commit | Each release to [`tree-d`](https://prefix.dev/tree-d) |
 
-## Lifecycle of a change
+## Checklist for a feature
 
-1. **Develop on a branch from `nightly`.** Find or open the issue first, then
-   create the linked branch:
-
-   ```sh
-   gh issue develop <issue> --name <branch> --base nightly --checkout
-   ```
-
-   Stacked work uses the branch it builds on as `--base` instead.
-
-2. **Keep the changelog entry current.** The Unreleased section of
-   [changelog.md](changelog.md) on `nightly` has one entry per feature or fix
-   that reached `nightly`. Each entry describes the feature as it currently
-   behaves and ends with links to every PR that shaped it:
-
-   ```markdown
-   - Add opt-in threaded host execution. ([#187](https://github.com/larecs/larecs/pull/187), [#212](https://github.com/larecs/larecs/pull/212))
-   ```
-
-   A PR with a new feature adds an entry in the matching subsection. A PR that
-   refines, fixes, or reworks a feature already listed rewrites that entry to
-   match the new behavior and appends its own link. The
-   [Nightly changelog](.github/workflows/nightly-changelog.yml) check fails
-   unless the Unreleased section links the PR. Label PRs that change nothing
-   users notice, such as CI tweaks, `no-changelog`.
-
-3. **Open a PR into `nightly`.** Merge it yourself once the required checks
-   pass; no approval is needed. Prefer squash merges, so each PR is one commit
-   on `nightly`. GitHub closes issues from `Closes #N` only for
-   PRs into `main`; for PRs into `nightly`, the
-   [Sync stacked PR issues](.github/workflows/stacked-issue-links.yml)
-   workflow marks them in progress while the PR is open and closes them
-   when it merges.
-
-4. **Try it out.** The [Release nightly](.github/workflows/release-nightly.yml)
-   workflow builds, tests, and publishes `nightly` every day at 02:17 UTC when
-   its head is not published yet; the `nightly-published` tag marks the last
-   published commit. Maintainers can start it manually from the Actions tab.
-
-5. **Promote features worth keeping to `main`.** Name the features as their
-   entries in the `nightly` changelog describe them. A promotion brings each
-   feature to `main` in its final form as one reviewed change, not as a replay
-   of the nightly PRs that built it up:
-
-   - Start a branch from `main`, such as `promote/<topic>`.
-   - Bring over the feature's current state on `nightly`. When the PRs linked
-     from its entry apply cleanly, cherry-pick their merge commits in order
-     without committing (`git cherry-pick -n`) and commit the result once.
-     Otherwise take the feature's files or hunks from `origin/nightly`, leaving
-     out code that belongs to features not being promoted.
-   - Consolidate where the nightly history shows it: fold related entries into
-     one feature, drop intermediate APIs that later PRs replaced, and clean up
-     code, docs, and tests that review on `main` asks for.
-   - Write `main`'s changelog entries for the promoted behavior. Each entry ends
-     with the links of all nightly PRs it covers, so it is clear which nightly
-     entries are promoted.
-
-   Open the PR against `main`. Features that are not promoted stay in
-   `nightly` until they are reverted or reworked there.
-
-6. **Release from `main`.** Promoted features reach users with the next
-   periodic stable release, published by the [Release](.github/workflows/release.yml)
-   workflow. The release moves `main`'s Unreleased entries into the new
-   version's section.
-
-7. **Merge `main` back into `nightly`** after releases and promotions, so
-   release tags, version bumps, changelog sections, and review fixes made on
-   `main` reach `nightly`:
+1. **Branch from `main`**, linked to the feature's issue:
 
    ```sh
-   git switch -c sync/main-into-nightly origin/nightly
-   git merge --no-ff origin/main
+   gh issue develop <issue> --name <branch> --base main --checkout
    ```
 
-   Open a PR into `nightly`, label it `no-changelog`, and merge it with a merge
-   commit, not a squash. Refinements made during promotion now reach `nightly`
-   too. When resolving changelog conflicts, take `main`'s entries, remove the
-   nightly entries whose PR links all appear in them, and keep every other
-   nightly entry under Unreleased.
+   A feature that needs another unpromoted feature starts from that feature's
+   branch and is promoted after it.
 
-Urgent fixes for a stable release may target `main` directly; sync them into
-`nightly` afterwards.
+2. **Add a changelog fragment**, `changelog.d/<feature>.md`, with entries under
+   `### Breaking changes`, `### Added`, `### Changed`, `### Fixed`, or
+   `### Removed`. Each entry describes the current behavior and ends with
+   links to every PR that shaped it. See [changelog.d/README.md](changelog.d/README.md).
+   Label PRs that change nothing users notice `no-changelog`.
+
+3. **Open a PR into `nightly`.** Merge it yourself with a merge commit once
+   the checks pass; no approval is needed. The nightly package is published
+   daily to `https://prefix.dev/tree-d/nightly`.
+
+4. **Refine on the same branch.** Push follow-ups to the feature branch, open
+   a new PR into `nightly`, and update the fragment entry with the new PR link.
+
+5. **Promote** by opening a PR from the feature branch into `main`. After one
+   approval, merge it with a merge commit.
+
+6. **After a release**, a maintainer rebuilds `nightly` with
+   `scripts/rebuild_nightly.sh --push`.
+
+Never merge `nightly` into a feature branch, and never use **Update branch** on
+a PR into `nightly`. The **Feature branch base** check rejects branches that
+contain commits existing only on `nightly`. Merging `main` into a feature
+branch is fine.
+
+## Checks
+
+| Check | Runs on | Fails when |
+| --- | --- | --- |
+| Build gate, Publish API docs | Every PR | The package, tests, or docs do not build |
+| Feature branch base | PRs into `main` and `nightly` | The branch contains `nightly`-only commits |
+| Changelog fragment | PRs into `main` and `nightly` without `no-changelog` | No fragment is added or changed; for `nightly`, no changed fragment links the PR |
+
+## Releases
+
+1. Collect the fragments on `main` into `changelog.md`:
+
+   ```sh
+   python3 scripts/changelog.py release <version> --previous <previous version>
+   ```
+
+2. Merge the release PR, tag `v<version>`, and create the GitHub release; the
+   [Release](.github/workflows/release.yml) workflow publishes to `tree-d`.
+3. Rebuild `nightly`:
+
+   ```sh
+   scripts/rebuild_nightly.sh          # inspect the plan on nightly-rebuild
+   scripts/rebuild_nightly.sh --push   # force-push the rebuilt nightly
+   ```
+
+   If a merge conflicts, resolve it, run `git commit`, and continue with
+   `scripts/rebuild_nightly.sh --continue --push`. Use `--drop <branch>` to
+   leave out abandoned work and `--add <branch>` to include a branch that is
+   not in `nightly` yet.
 
 ## Nightly versions
 
-Nightly packages are versioned as the latest release tag on `nightly` plus the
-UTC time of its newest commit, for example `1.0.0b2.202611160230`. They sort
-after that release and before the next one.
+Nightly packages are versioned as the latest release tag plus the UTC build
+time, for example `1.0.0b2.202611160230`. They sort after that release and
+before the next one, and keep increasing across `nightly` rebuilds.
 
 To use them in a Pixi workspace, put the nightly channel before the stable one:
 
