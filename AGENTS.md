@@ -22,9 +22,14 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
   start without an issue only when the developer says so.
 - Work on a branch linked to the issue. Create it with
   `gh issue develop <N> --name <branch> --base <base> --checkout`, where `<base>`
-  is `main` or, for stacked work, the branch the work builds on. When an issue
+  is `nightly` or, for stacked work, the branch the work builds on. When an issue
   exists, create the work branch only this way, not with `git switch -c`,
   `git checkout -b`, or `git branch`.
+- Open PRs against `nightly`. Target `main` only when the developer asks for a
+  promotion, release preparation, or an urgent stable fix. Promote merged
+  nightly PRs with `scripts/nightly.sh promote <PR>` and merge `main` back with
+  `scripts/nightly.sh sync`; [CONTRIBUTING.md](CONTRIBUTING.md) describes the
+  lifecycle.
 - If tooling already started you on its own branch, such as a managed worktree,
   create the linked branch with `gh issue develop` without `--checkout`, then
   run `git fetch origin <branch>` and `git switch <branch>` before your first
