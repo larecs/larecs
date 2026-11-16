@@ -197,6 +197,24 @@ struct EntityLocation(ImplicitlyCopyable, TrivialRegisterPassable):
 
 
 @fieldwise_init
+struct EntityRange(ImplicitlyCopyable, TrivialRegisterPassable):
+    """A bounded contiguous set of entity rows in one archetype.
+
+    Args:
+        archetype_index: The index of the archetype containing the rows.
+        first_row: The first included row in the archetype.
+        row_count: The number of included rows.
+    """
+
+    var archetype_index: Int
+    """Index of the archetype containing the rows."""
+    var first_row: Int
+    """Index of the first included row."""
+    var row_count: Int
+    """Number of included rows."""
+
+
+@fieldwise_init
 struct EntityAccessor[filter: Filter](Copyable):
     """Non-owning mutable accessor for a single entity.
 
