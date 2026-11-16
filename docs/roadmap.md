@@ -68,6 +68,19 @@ model is implemented. See [decision 0002](design/decisions/0002-gpu-system-execu
 
 ## Later — lower priority
 
+### Performance regression coverage
+
+[Decision 0011](design/decisions/0011-pr-performance-regression-checks.md)
+defines the bounded CPU gate and per-run evidence.
+
+- [ ] Add disjoint selections, more component widths, and additional structural
+  mutation patterns after measuring combined compilation and execution cost
+  on Linux and macOS; keep the normal PR check near one minute per runner.
+- [ ] Measure larger working sets and GPU execution on dedicated hardware.
+- [ ] Evaluate smaller thresholds using repeated shared-runner noise evidence.
+- [ ] Add long-term trend storage if cumulative small regressions justify the
+  operational cost; per-run artifacts initially retain evidence for 30 days.
+
 ### Close remaining CPU/GPU kernel portability gaps
 
 [ECS-10](design/requirements.md) requires one kernel implementation usable on
