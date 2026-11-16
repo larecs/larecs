@@ -1,0 +1,127 @@
+name: Release nightly
+
+# Builds, tests, and publishes larecs from the `nightly` branch to
+# https://prefix.dev/tree-d/nightly. Scheduled runs use this file from the
+# default branch and publish only when `nightly` changed since the previous
+# scheduled run; manual runs always publish.
+#
+# Nightly versions append the UTC commit time of the `nightly` head to the
+# latest release tag reachable from it, e.g. `1.0.0b2.202611160230`. They
+# sort after that release and before the next one.
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-nightly
+  cancel-in-progress: false
+
+env:
+  NIGHTLY_BRANCH: nightly
+  NIGHTLY_CHANNEL: https://prefix.dev/tree-d/nightly
+
+jobs:
+  define:
+    name: Define nightly build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.define.outputs.sha }}
+      version: ${{ steps.define.outputs.version }}
+      publish: ${{ steps.define.outputs.publish }}
+      matrix: ${{ steps.define.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.NIGHTLY_BRANCH }}
+          # Full history and tags, so `git describe` finds the last release.
+          fetch-depth: 0
+      - id: define
+        shell: bash
+        run: |
+          sha="$(git rev-parse HEAD)"
+          commit_time="$(git log -1 --format=%ct)"
+          # Slightly more than the daily schedule interval, so a delayed run
+          # does not miss commits.
+          window=$((25 * 60 * 60))
+          publish=true
+          if [[ "${GITHUB_EVENT_NAME}" == "schedule" ]] \
+            && (( $(date +%s) - commit_time > window )); then
+            publish=false
+            echo "::notice::${NIGHTLY_BRANCH} has no commits since the last scheduled run; skipping."
+          fi
+
+          last_tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || echo v0.0.0)"
+          stamp="$(TZ=UTC git log -1 --date=format-local:%Y%m%d%H%M --format=%cd)"
+          version="${last_tag#v}.${stamp}"
+          echo "Nightly ${version} from ${sha}"
+
+          {
+            echo "sha=${sha}"
+            echo "version=${version}"
+            echo "publish=${publish}"
+            echo 'matrix=[{ "os": "ubuntu-latest", "target-platform": "linux-64" }, { "os": "macos-latest", "target-platform": "osx-arm64" }]'
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build package
+    needs: define
+    if: ${{ needs.define.outputs.publish == 'true' }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    env:
+      LARECS_VERSION: ${{ needs.define.outputs.version }}
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.define.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.define.outputs.sha }}
+      - name: Build and test conda package
+        uses: prefix-dev/rattler-build-action@v0.2.39
+        with:
+          artifact-name: nightly-package-${{ matrix.target-platform }}
+          build-args: >
+            --target-platform ${{ matrix.target-platform }}
+            --channel conda-forge
+            --channel https://repo.prefix.dev/max
+            --channel https://repo.prefix.dev/modular-community
+            --channel https://prefix.dev/tree-d
+
+  publish:
+    name: Publish to Tree-D nightly channel
+    needs:
+      - define
+      - build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC trusted publishing to prefix.dev
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nightly-package-*
+          path: dist
+      - uses: prefix-dev/rattler-build-action@v0.2.39
+        with:
+          setup-only: true
+          # `publish --to <channel URL>` needs a newer release than the
+          # action's default.
+          rattler-build-version: v0.80.1
+      - name: Publish packages
+        shell: bash
+        run: |
+          mapfile -t packages < <(find dist -type f \( -name "*.conda" -o -name "*.tar.bz2" \))
+          if (( ${#packages[@]} == 0 )); then
+            echo "::error::No packages were built."
+            exit 1
+          fi
+          printf 'Publishing %s\n' "${packages[@]}"
+          rattler-build publish --to "${NIGHTLY_CHANNEL}" "${packages[@]}"
