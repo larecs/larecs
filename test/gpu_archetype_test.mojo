@@ -8,7 +8,7 @@
 from std.sys import has_accelerator
 from std.testing import *
 
-from larecs import World, SystemContext, KernelContext, Filter
+from larecs import Entity, World, SystemContext, KernelContext, Filter
 
 
 # `TrivialRegisterPassable` on every component below satisfies
@@ -108,6 +108,45 @@ def test_gpu_run_raises_a_clear_error_without_device_storage() raises:
         assert_true("device" in String(e))
 
     assert_true(raised)
+
+
+def test_gpu_growing_and_repeated_multi_archetype_calls() raises:
+    """Checks flattened offsets and buffer reuse as matching groups grow.
+
+    Raises:
+        Error: If GPU execution or an assertion fails.
+    """
+    comptime if has_accelerator():
+        var world = World[Position, Velocity, Tag]()
+        var entities = List[Entity]()
+        for i in range(17):
+            entities.append(
+                world.storage.add_entity(Position(Float32(i)), Velocity(1))
+            )
+            entities.append(
+                world.storage.add_entity(
+                    Position(Float32(i)), Velocity(1), Tag(Int32(i))
+                )
+            )
+            var context = SystemContext(world)
+            context.run[bump, on_device=True]()
+            for j in range(i + 1):
+                assert_equal(
+                    world.storage.get[Position](entities[2 * j]).x,
+                    Float32(i + 1),
+                )
+                assert_equal(
+                    world.storage.get[Position](entities[2 * j + 1]).x,
+                    Float32(i + 1),
+                )
+        var pointer = world._device_storage[].get_device_ptr[Position]()
+        var context = SystemContext(world)
+        context.run[bump, on_device=True]()
+        assert_equal(
+            world._device_storage[].get_device_ptr[Position](), pointer
+        )
+        for entity in entities:
+            assert_equal(world.storage.get[Position](entity).x, 18)
 
 
 comptime functions = __functions_in_module()

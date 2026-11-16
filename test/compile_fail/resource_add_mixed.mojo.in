@@ -1,0 +1,12 @@
+from larecs.resource import ResourceStorage
+
+
+def main() raises:
+    """Rejects separated owning duplicates alongside a distinct resource type.
+
+    Raises:
+        Error: If resource insertion fails at runtime.
+    """
+    var resources = ResourceStorage()
+    resources.add(Float32(3))
+    resources.add(String("first"), Int(1), String("second"))

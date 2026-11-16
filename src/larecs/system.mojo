@@ -293,7 +293,10 @@ def _stage_device_columns[
         comptime id = ComponentManager[*WorldTs].get_id[T]()
         var previous = device._take_records[T]()
         var current = List[_Segment]()
-        device.ensure_column[T](total)
+        comptime if filter.reads[T]:
+            device.reserve_column[T](total)
+        else:
+            device.ensure_column[T](total)
         var offset = 0
         for k in range(len(ranges)):
             var rows = ranges[k]
@@ -1715,6 +1718,12 @@ struct SystemContext[
     ](mut self, *bindings: *Bindings) raises:
         """Runs a kernel over component rows matching ``filter``.
 
+        On the GPU, zero matching rows are a no-op: no columns or resource
+        buffers are prepared, no transfers are queued, and no kernel is
+        launched. The world's device storage and all required resources are
+        still validated, in that order. Without accelerator support,
+        ``on_device=True`` retains the CPU fallback behavior.
+
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
             required_resources: Compile-time resources the kernel may access.
@@ -1894,9 +1903,9 @@ struct SystemContext[
                         device_storage._device_context, frame
                     )
                     var matched_ranges = List[EntityRange](
-                        capacity=len(matching_archetypes._archetype_indices)
+                        capacity=len(matching_archetypes._archetype_indices[])
                     )
-                    for index in matching_archetypes._archetype_indices:
+                    for index in matching_archetypes._archetype_indices[]:
                         matched_ranges.append(
                             EntityRange(
                                 index,

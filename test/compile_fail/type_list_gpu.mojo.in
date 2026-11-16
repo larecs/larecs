@@ -1,0 +1,35 @@
+# SKIP_ASAN
+# SKIP_DEBUG
+
+from std.sys import has_accelerator
+
+from larecs.component import constrain_device_safe_components
+from larecs.resource import constrain_device_safe_resources
+from larecs import World, SystemContext, KernelContext, Filter, Resources
+
+
+comptime Value = @PAYLOAD@
+
+
+def kernel(context: KernelContext[@FILTER@, @RESOURCES@]):
+    """Provides a kernel whose declared types require GPU-safety validation.
+
+    Args:
+        context: The kernel's declared component and resource views.
+    """
+    pass
+
+
+def main() raises:
+    """Rejects GPU dispatch for nontrivial component or resource types.
+
+    Raises:
+        Error: If context initialization or dispatch fails.
+    """
+    comptime if has_accelerator():
+        var world = World[Int32, Value]()
+        var context = SystemContext(world)
+        context.run[kernel, on_device=True]()
+    else:
+        # CPU-only CI still checks the same constraint without GPU codegen.
+        comptime assert @CHECK@, "@DIAGNOSTIC@"
