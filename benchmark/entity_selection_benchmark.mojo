@@ -65,6 +65,7 @@ def _bench_full_world(mut bencher: Bencher):
         var context = SystemContext(world)
 
         def run_once() {mut context}:
+            """Runs one full-world CPU pass."""
             try:
                 context.run[increment]()
             except e:
@@ -94,6 +95,7 @@ def _bench_contiguous_selection[on_gpu: Bool](mut bencher: Bencher):
         var selection = context.add_entities(Value(1.0), count=SELECTION_SIZE)
 
         def run_once() {mut selection}:
+            """Runs one pass over the contiguous selection."""
             try:
                 selection.run[increment, on_gpu=on_gpu]()
                 keep(len(selection))
@@ -122,6 +124,7 @@ def _bench_disjoint_selection(mut bencher: Bencher):
             selection._ranges.append(EntityRange(1, i * 2, 1))
 
         def run_once() {mut selection}:
+            """Runs one CPU pass over the disjoint selection."""
             try:
                 selection.run[increment]()
                 keep(len(selection))
@@ -149,6 +152,7 @@ def _bench_selected_mutation_chain(mut bencher: Bencher):
         var selection = context.add_entities(Value(1.0), count=SELECTION_SIZE)
 
         def run_once() {mut selection}:
+            """Adds and removes the tag on the small selection once."""
             try:
                 selection.add(SelectedTag(1))
                 selection.remove[SelectedTag]()
@@ -178,6 +182,7 @@ def _bench_large_disjoint_mutation(mut bencher: Bencher):
             selection._ranges.append(EntityRange(1, (511 - i) * 2, 1))
 
         def run_once() {mut selection}:
+            """Adds and removes the tag on the disjoint selection once."""
             try:
                 selection.add(SelectedTag(1))
                 selection.remove[SelectedTag]()
