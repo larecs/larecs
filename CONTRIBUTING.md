@@ -18,22 +18,25 @@
 
    Stacked work uses the branch it builds on as `--base` instead.
 
-2. **Add a changelog entry.** Describe each feature or fix in the matching
-   subsection of the Unreleased section of [changelog.md](changelog.md) and end
-   the entry with a link to the PR:
+2. **Keep the changelog entry current.** The Unreleased section of
+   [changelog.md](changelog.md) on `nightly` has one entry per feature or fix
+   that reached `nightly`. Each entry describes the feature as it currently
+   behaves and ends with links to every PR that shaped it:
 
    ```markdown
-   - Add opt-in threaded host execution. ([#187](https://github.com/larecs/larecs/pull/187))
+   - Add opt-in threaded host execution. ([#187](https://github.com/larecs/larecs/pull/187), [#212](https://github.com/larecs/larecs/pull/212))
    ```
 
-   The Unreleased section on `nightly` lists every feature that reached
-   `nightly`; the [Nightly changelog](.github/workflows/nightly-changelog.yml)
-   check fails without an entry for the PR. Label PRs that change nothing
+   A PR with a new feature adds an entry in the matching subsection. A PR that
+   refines, fixes, or reworks a feature already listed rewrites that entry to
+   match the new behavior and appends its own link. The
+   [Nightly changelog](.github/workflows/nightly-changelog.yml) check fails
+   unless the Unreleased section links the PR. Label PRs that change nothing
    users notice, such as CI tweaks, `no-changelog`.
 
 3. **Open a PR into `nightly`.** Merge it yourself once the required checks
-   pass; no approval is needed. Prefer squash merges, so each feature is one
-   commit that is easy to promote. Issues named with `Closes #N` are closed when
+   pass; no approval is needed. Prefer squash merges, so each PR is one commit
+   on `nightly`. Issues named with `Closes #N` are closed when
    the PR merges into `nightly`.
 
 4. **Try it out.** The [Release nightly](.github/workflows/release-nightly.yml)
@@ -41,20 +44,25 @@
    the branch changed. Maintainers can start it manually from the Actions tab.
 
 5. **Promote features worth keeping to `main`.** Name the features as their
-   entries in the `nightly` changelog describe them. Each entry's PR link
-   identifies the merge commit to promote:
+   entries in the `nightly` changelog describe them. A promotion brings each
+   feature to `main` in its final form as one reviewed change, not as a replay
+   of the nightly PRs that built it up:
 
-   ```sh
-   gh pr view <nightly PR> --json mergeCommit --jq .mergeCommit.oid
-   git switch -c promote/<topic> origin/main
-   git cherry-pick -x <merge commit>      # add `-m 1` for a merge commit
-   ```
+   - Start a branch from `main`, such as `promote/<topic>`.
+   - Bring over the feature's current state on `nightly`. When the PRs linked
+     from its entry apply cleanly, cherry-pick their merge commits in order
+     without committing (`git cherry-pick -n`) and commit the result once.
+     Otherwise take the feature's files or hunks from `origin/nightly`, leaving
+     out code that belongs to features not being promoted.
+   - Consolidate where the nightly history shows it: fold related entries into
+     one feature, drop intermediate APIs that later PRs replaced, and clean up
+     code, docs, and tests that review on `main` asks for.
+   - Write `main`'s changelog entries for the promoted behavior. Each entry ends
+     with the links of all nightly PRs it covers, so it is clear which nightly
+     entries are promoted.
 
-   The cherry-pick brings the PR's changelog entries along; make sure `main`'s
-   Unreleased section contains them, PR links included, and nothing else from
-   `nightly`. Promote related features together on one branch, then open a PR
-   against `main`. Features that are not
-   promoted stay in `nightly` until they are reverted or reworked there.
+   Open the PR against `main`. Features that are not promoted stay in
+   `nightly` until they are reverted or reworked there.
 
 6. **Release from `main`.** Promoted features reach users with the next
    periodic stable release, published by the [Release](.github/workflows/release.yml)
@@ -71,9 +79,10 @@
    ```
 
    Open a PR into `nightly`, label it `no-changelog`, and merge it with a merge
-   commit, not a squash. When
-   resolving changelog conflicts, keep released entries in their version
-   section and every unpromoted entry under Unreleased.
+   commit, not a squash. Refinements made during promotion now reach `nightly`
+   too. When resolving changelog conflicts, take `main`'s entries, remove the
+   nightly entries whose PR links all appear in them, and keep every other
+   nightly entry under Unreleased.
 
 Urgent fixes for a stable release may target `main` directly; sync them into
 `nightly` afterwards.

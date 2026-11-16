@@ -27,15 +27,16 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
   `git checkout -b`, or `git branch`.
 - Open PRs against `nightly`. Target `main` only when the developer asks for a
   promotion, release preparation, or an urgent stable fix. Every PR into
-  `nightly` adds an Unreleased entry to `changelog.md` ending with the PR link,
-  such as `([#187](https://github.com/larecs/larecs/pull/187))`.
+  `nightly` adds an Unreleased entry to `changelog.md` ending with its PR link,
+  such as `([#187](https://github.com/larecs/larecs/pull/187))`, or, when it
+  refines a listed feature, rewrites that entry and appends its link.
 - When the developer asks to promote features, they name them as their
-  changelog entries on `nightly` describe them. Find each entry's PR, cherry-pick
-  that PR's merge commit onto a branch from `main`, check that `main`'s
-  Unreleased section gained exactly those entries, and open one PR against
-  `main`.
-  [CONTRIBUTING.md](CONTRIBUTING.md) describes the full lifecycle, including
-  merging `main` back into `nightly`.
+  changelog entries on `nightly` describe them. Bring each feature's final state
+  from `nightly` to a branch from `main` as one change, consolidating related
+  entries and dropping intermediate states, rather than replaying every nightly
+  PR. End each promoted changelog entry with the links of all nightly PRs it
+  covers, and open one PR against `main`. [CONTRIBUTING.md](CONTRIBUTING.md)
+  describes the full lifecycle, including merging `main` back into `nightly`.
 - If tooling already started you on its own branch, such as a managed worktree,
   create the linked branch with `gh issue develop` without `--checkout`, then
   run `git fetch origin <branch>` and `git switch <branch>` before your first
