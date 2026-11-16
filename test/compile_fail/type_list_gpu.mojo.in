@@ -5,7 +5,7 @@ from std.sys import has_accelerator
 
 from larecs.component import constrain_device_safe_components
 from larecs.resource import constrain_device_safe_resources
-from larecs import World, SystemContext, KernelContext, Filter, Resources
+from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter, Resources
 
 
 comptime Value = @PAYLOAD@
@@ -29,7 +29,7 @@ def main() raises:
     comptime if has_accelerator():
         var world = World[Int32, Value]()
         var context = SystemContext(world)
-        context.run[kernel, on_device=True]()
+        context.run[kernel, backend=ExecutionBackend.DEVICE]()
     else:
         # CPU-only CI still checks the same constraint without GPU codegen.
         comptime assert @CHECK@, "@DIAGNOSTIC@"

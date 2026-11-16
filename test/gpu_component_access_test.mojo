@@ -18,11 +18,11 @@
 from std.sys import has_accelerator
 from std.testing import *
 
-from larecs import World, SystemContext, KernelContext, Filter
+from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter
 
 
 # `TrivialRegisterPassable` satisfies `DeviceComponentType` (see
-# component.mojo): `SystemContext.run(..., on_device=True)` moves component
+# component.mojo): `SystemContext.run(..., backend=ExecutionBackend.DEVICE)` moves component
 # columns as raw bytes, which is only compile-time-permitted for a type
 # with no non-trivial state.
 @fieldwise_init
@@ -74,7 +74,7 @@ def test_gpu_write_only_component_downloads_without_a_prior_upload() raises:
     var c = world.storage.add_entity(Value(999), Doubled(0))
 
     var context = SystemContext(world)
-    context.run[fill_value, on_device=True]()
+    context.run[fill_value, backend=ExecutionBackend.DEVICE]()
 
     assert_equal(world.storage.get[Value](a).v, 10)
     assert_equal(world.storage.get[Value](b).v, 10)
@@ -106,13 +106,13 @@ def test_gpu_read_only_component_uploads_latest_host_state() raises:
 
     # Give `Value` a device column with stale data, mimicking a world whose
     # device storage was already used by an earlier system this frame.
-    context.run[fill_value, on_device=True]()
+    context.run[fill_value, backend=ExecutionBackend.DEVICE]()
     assert_equal(world.storage.get[Value](a).v, 10)
 
     # Bypass the kernel entirely -- host and device now disagree about `a`.
     world.storage.get[Value](a) = Value(21)
 
-    context.run[double_value, on_device=True]()
+    context.run[double_value, backend=ExecutionBackend.DEVICE]()
 
     assert_equal(world.storage.get[Doubled](a).v, 42)
     assert_equal(world.storage.get[Doubled](b).v, 20)
@@ -139,7 +139,7 @@ def test_gpu_include_still_reads_and_writes_both_directions() raises:
     var b = world.storage.add_entity(Value(5), Doubled(5))
 
     var context = SystemContext(world)
-    context.run[bump_both, on_device=True]()
+    context.run[bump_both, backend=ExecutionBackend.DEVICE]()
 
     assert_equal(world.storage.get[Value](a).v, 2)
     assert_equal(world.storage.get[Doubled](a).v, 3)

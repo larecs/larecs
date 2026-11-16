@@ -6,6 +6,7 @@ from std.gpu import global_idx
 from std.sys.info import is_gpu
 from std.testing import assert_equal, TestSuite
 from larecs import (
+    ExecutionBackend,
     World,
     SystemContext,
     KernelContext,
@@ -66,9 +67,12 @@ def check_capture_round_trip[on_device: Bool]() raises:
     var factor: Int32 = 3
     var result: Int32 = 7
     var context = SystemContext(world)
-    context.run[scale_and_record, on_device=on_device](
-        read_capture(factor), mut_capture(result)
-    )
+    context.run[
+        scale_and_record,
+        backend=(
+            ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+        ),
+    ](read_capture(factor), mut_capture(result))
     assert_equal(factor, 3)
     assert_equal(world.storage.get[Int32](entity), 12)
     assert_equal(result, 8)
@@ -107,9 +111,12 @@ def check_repeated_and_empty_bindings[on_device: Bool]() raises:
     var factor: Int32 = 2
     var processed: Int32 = 9
     var context = SystemContext(world)
-    context.run[scale_and_record, on_device=on_device](
-        read_capture(factor), mut_capture(processed)
-    )
+    context.run[
+        scale_and_record,
+        backend=(
+            ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+        ),
+    ](read_capture(factor), mut_capture(processed))
     assert_equal(processed, 9)
     # Re-borrow the world after the first context's last use.
     for i in range(37):
@@ -118,14 +125,20 @@ def check_repeated_and_empty_bindings[on_device: Bool]() raises:
         else:
             _ = world.storage.add_entity(Int32(i + 1), Float32(0))
     var populated_context = SystemContext(world)
-    populated_context.run[scale_and_record, on_device=on_device](
-        read_capture(factor), mut_capture(processed)
-    )
+    populated_context.run[
+        scale_and_record,
+        backend=(
+            ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+        ),
+    ](read_capture(factor), mut_capture(processed))
     assert_equal(processed, 46)
     factor = 4
-    populated_context.run[scale_and_record, on_device=on_device](
-        read_capture(factor), mut_capture(processed)
-    )
+    populated_context.run[
+        scale_and_record,
+        backend=(
+            ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+        ),
+    ](read_capture(factor), mut_capture(processed))
     assert_equal(processed, 83)
     var total: Int32 = 0
     for entity in world.storage.query[Filter().include[Int32]()]():
@@ -181,7 +194,9 @@ def test_gpu_plain_struct_capture() raises:
     _ = world.storage.add_entity(Int32(0))
     var value = CaptureBias(7)
     var context = SystemContext(world)
-    context.run[update_struct_capture, on_device=True](mut_capture(value))
+    context.run[update_struct_capture, backend=ExecutionBackend.DEVICE](
+        mut_capture(value)
+    )
     assert_equal(value.value, 12)
 
 
