@@ -1,8 +1,9 @@
-"""Explicit bindings of CPU-local values for synchronous CPU/GPU kernels."""
+"""Explicit bindings of host-local values for synchronous host/device kernels."""
 
 from std.memory import is_trivially_copyable, is_trivially_deletable
 from std.sys import size_of
 from max.gpu.host import DeviceContext, DeviceBuffer
+from .resource_adapter import _TransferFrame
 
 
 trait CaptureSpec:
@@ -24,7 +25,7 @@ struct ReadCapture[T: Copyable](CaptureSpec):
 
 
 struct MutCapture[T: Copyable](CaptureSpec):
-    """Declares a mutable capture slot copied back after GPU execution.
+    """Declares a mutable capture slot copied back after device execution.
 
     Parameters:
         T: The captured value type.
@@ -94,14 +95,14 @@ struct CaptureBinding[mut: Bool, //, T: Copyable, origin: Origin[mut=mut]](
 def read_capture[
     T: Copyable, origin: ImmOrigin
 ](ref[origin] value: T) -> CaptureBinding[T, origin]:
-    """Binds a CPU-local value for read-only kernel access.
+    """Binds a host-local value for read-only kernel access.
 
     Parameters:
         T: The captured value type.
-        origin: The inferred borrow origin of the CPU-local value.
+        origin: The inferred borrow origin of the host-local value.
 
     Args:
-        value: The value to borrow and upload on GPU execution.
+        value: The value to borrow and upload on device execution.
 
     Returns:
         A read-only binding borrowing value.
@@ -112,14 +113,14 @@ def read_capture[
 def mut_capture[
     T: Copyable, origin: MutOrigin
 ](ref[origin] value: T) -> CaptureBinding[T, origin]:
-    """Binds a CPU-local value for kernel mutation and GPU copy-back.
+    """Binds a host-local value for kernel mutation and device copy-back.
 
     Parameters:
         T: The captured value type.
-        origin: The inferred borrow origin of the CPU-local value.
+        origin: The inferred borrow origin of the host-local value.
 
     Args:
-        value: The value to borrow, upload, and overwrite after GPU execution.
+        value: The value to borrow, upload, and overwrite after device execution.
 
     Returns:
         A mutable binding borrowing value.
@@ -166,14 +167,14 @@ struct CaptureAccessor[captures: Captures](Copyable):
 def _bind_captures[
     captures: Captures, *Bindings: CaptureBindingType
 ](*bindings: *Bindings) -> CaptureAccessor[captures]:
-    """Checks host bindings and constructs an accessor for synchronous CPU use.
+    """Checks host bindings and constructs an accessor for synchronous host use.
 
     Parameters:
         captures: The kernel's declared slots.
         Bindings: The supplied host binding types.
 
     Args:
-        bindings: Borrows of the CPU-local values in slot order.
+        bindings: Borrows of the host-local values in slot order.
 
     Returns:
         An accessor retaining the bindings' addresses for this invocation.
@@ -209,44 +210,55 @@ struct DeviceCaptureStorage[captures: Captures]:
 
     var _buffers: Array[Optional[DeviceBuffer[DType.uint8]], len(Self.captures)]
 
-    def __init__(
-        out self, device: DeviceContext, host: CaptureAccessor[Self.captures]
+    def __init__(out self):
+        """Creates empty capture ownership without queueing work."""
+        self._buffers = {fill = None}
+
+    def prepare(
+        mut self,
+        device: DeviceContext,
+        host: CaptureAccessor[Self.captures],
+        mut frame: _TransferFrame,
     ) raises:
         """Uploads each bound host value into its own device allocation.
 
         Args:
             device: The device queue used for the kernel invocation.
-            host: Addresses of the borrowed CPU-local values.
+            host: Addresses of the borrowed host-local values.
+            frame: Native staging owner for synchronous execution.
 
         Raises:
             Error: If allocating or uploading a capture fails.
 
         Constraints:
-            GPU captures must be trivially copyable and trivially deletable.
+            Device captures must be trivially copyable and trivially deletable.
             Values must not contain pointers to host-only memory.
         """
-        self._buffers = {fill = None}
         comptime for i in range(len(Self.captures)):
             comptime T = Self.captures.Specs[i].Value
             comptime assert (
                 is_trivially_copyable[T]() and is_trivially_deletable[T]()
             ), (
-                "GPU captures require plain values without owned heap"
+                "Device captures require plain values without owned heap"
                 " allocations"
             )
             self._buffers[i] = device.enqueue_create_buffer[DType.uint8](
                 max(1, size_of[T]())
             )
             comptime if size_of[T]() > 0:
-                self._buffers[i].unsafe_value().enqueue_copy_from(
-                    host._pointers[i].unsafe_mut_cast[False]()
+                frame.upload(
+                    self._buffers[i].unsafe_value(),
+                    host._pointers[i].unsafe_mut_cast[False](),
                 )
 
-    def copy_back(self, host: CaptureAccessor[Self.captures]) raises:
-        """Queues downloads of mutable captures to their original CPU locals.
+    def copy_back(
+        self, host: CaptureAccessor[Self.captures], mut frame: _TransferFrame
+    ) raises:
+        """Queues downloads of mutable captures to their original host locals.
 
         Args:
             host: Addresses retained by the invocation's host bindings.
+            frame: Stages downloads for publication after synchronization.
 
         Raises:
             Error: If enqueueing a download fails.
@@ -255,6 +267,6 @@ struct DeviceCaptureStorage[captures: Captures]:
             comptime if Self.captures.Specs[i].writable and size_of[
                 Self.captures.Specs[i].Value
             ]() > 0:
-                self._buffers[i].unsafe_value().enqueue_copy_to(
-                    host._pointers[i]
+                frame.download(
+                    self._buffers[i].unsafe_value(), host._pointers[i]
                 )

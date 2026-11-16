@@ -10,12 +10,70 @@ Start with [requirements](requirements.md) for the current contract and
 [architecture](architecture.md) for the component map. Read the relevant
 decision record before changing an established behavior:
 
-| Decision | Status | Subject |
-| --- | --- | --- |
-| [0001](decisions/0001-locked-entity-selections.md) | Accepted | Locked entity selections and exact-range execution |
-| [0002](decisions/0002-gpu-system-execution.md) | Accepted | GPU system execution and transfer boundaries |
-| [0003](decisions/0003-grid-stride-entity-iteration.md) | Accepted | CPU/GPU grid-stride entity iteration |
-| [0004](decisions/0004-scoped-selection-errors.md) | Accepted | Error propagation across scoped selection mutation and execution |
+| Decision                                                        | Status                          | Subject                                                                  |
+| --------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------ |
+| [0001](decisions/0001-locked-entity-selections.md)              | Accepted                        | Locked entity selections and exact-range execution                       |
+| [0002](decisions/0002-gpu-system-execution.md)                  | Accepted                        | Device system execution and transfer boundaries                             |
+| [0003](decisions/0003-grid-stride-entity-iteration.md)          | Accepted                        | Host/device grid-stride entity iteration                                     |
+| [0004](decisions/0004-scoped-selection-errors.md)               | Accepted                        | Error propagation across scoped selection mutation and execution         |
+| [0005](decisions/0005-filtered-spatial-row-reordering.md)       | Superseded by 0012              | Filtered spatial clustering by periodic row reordering (classifier and maintenance implemented) |
+| [0006](decisions/0006-partitioned-spatial-archetype-storage.md) | Accepted                       | Cluster-local partitions beneath logical archetypes                      |
+| [0007](decisions/0007-special-cluster-component.md)             | Rejected                        | Proposed special built-in `Cluster` component for placement              |
+| [0008](decisions/0008-dirty-entity-spatial-classification.md)   | Accepted                       | Deferred classification of dirty entities at explicit boundaries |
+| [0009](decisions/0009-typed-row-permutation-foundation.md) | Accepted | Internal typed row permutation and movement error guarantees |
+| [0010](decisions/0010-spatial-classifier-maintenance.md) | Superseded by 0012 | Owned spatial classifiers, checked keys, and explicit full-scan maintenance |
+| [0011](decisions/0011-pr-performance-regression-checks.md) | Accepted | Same-runner PR regression checks, bounded CPU suites, and retained evidence |
+| [0012](decisions/0012-deferred-spatial-maintenance.md) | Accepted | Deferred dirty classification, conservative invalidation, and full-rebuild fallback |
+| [0013](decisions/0013-cluster-local-partition-blocks.md) | Superseded by 0014 | Opt-in bounded partition blocks, staging, reclamation, and exact cluster selections |
+| [0014](decisions/0014-growable-cluster-stores.md) | Accepted | One growable store per logical cluster without a chunk-size limit |
+| [0015](decisions/0015-host-device-execution-terminology.md) | Superseded by 0023 | Host/device execution terminology and beta API renames |
+| [0016](decisions/0016-kernel-memory-synchronization.md) | Accepted; partially implemented | Common CPU/GPU API using 32-bit atomics and nonblocking reader/writer guards |
+| [0017](decisions/0017-deferred-kernel-access.md) | Proposed | Common host/device scoped operations with executor-managed access retries |
+| [0018](decisions/0018-portable-resource-adapters.md) | Superseded by 0020; extended by 0022 | Source-declared automatic registration, stateless read-only adapters, and invocation-owned transfer lifetimes |
+| [0019](decisions/0019-threaded-host-execution.md) | Superseded by 0020 | Opt-in host chunks, unchanged sequential fallback, and shared read-only kernel views |
+| [0020](decisions/0020-declared-plain-values.md) | Accepted; threaded execution remains experimental | Author-declared opaque plain values for threaded components and ordinary resources |
+| [0021](decisions/0021-skip-unchanged-device-uploads.md) | Accepted; experimental | Opt-in revision-tracked device copies that skip unchanged uploads |
+| [0022](decisions/0022-mutable-adapted-resources.md) | Accepted; experimental | Access-selected adapter views, opt-in mutation capabilities, and once-per-invocation preparation and finalization |
+| [0023](decisions/0023-explicit-execution-backend.md) | Accepted | Compile-time explicit host/device targets without automatic fallback |
+| [0024](decisions/0024-locked-storage-ranges.md) | Accepted | Locked storage ranges, bounded batch membership, and independent shared-metadata cursors |
+
+## Research evidence
+
+- [Host thread execution investigation](research/host-thread-execution.md)
+  evaluates fixed worker counts, dynamic archetype jobs, runtime limits, and
+  ownership/binding safety, with a manual CPU dispatch probe and paired
+  sequential/whole-store/contiguous-chunk timing evidence.
+- [GPU synchronization research](research/gpu-synchronization.md) surveys Mojo,
+  MAX, and NVIDIA primitives and their implications for decision 0016.
+- [Apple GPU publication ordering](research/apple-gpu-publication-ordering.md)
+  explains the Apple restrictions and records M4 correctness and performance
+  measurements for acquire loads and release stores.
+- [Reference invalidation probe](research/reference-invalidation-probe.mojo)
+  shows that Mojo 1.0.0 accepts writes through a reference after a later
+  `mut self` call on its origin, motivating decision 0021's explicit
+  invalidation rule.
+  Research notes do not establish accepted requirements.
+
+- [Struct constraint audit](research/struct-constraints.md) records Mojo 1.0
+  declaration invariants, compiler proof limitations, and intentional exclusions.
+
+## Execution terminology
+
+Use **host** and **device** for execution roles, memory ownership, capture
+bindings, packing, transfers, and copy-back. In the current Larecs backend,
+the host is the CPU and the device is a supported GPU accelerator. This follows
+the [Mojo GPU package terminology](https://docs.modular.com/mojo/std/gpu/).
+
+Keep **CPU** and **GPU** when identifying hardware, GPU thread/grid facilities,
+toolchain requirements, hardware validation, or processor-specific performance
+evidence. Larecs APIs use `backend=ExecutionBackend.HOST/DEVICE`, `DeviceComponentType`,
+`DeviceResourceType`, `constrain_device_safe_components`, and
+`constrain_device_safe_resources`; see [decision 0023](decisions/0023-explicit-execution-backend.md)
+for target selection and [decision 0015](decisions/0015-host-device-execution-terminology.md)
+for the retained beta terminology migration. Preserve exact diagnostics, upstream names (`is_gpu()`,
+`std.gpu`, and `max.gpu.host`), hardware test filenames, and benchmark result
+identifiers. Terminology clarifications do not change execution behavior or
+imply support for additional accelerator backends.
 
 ## Recording a change
 
@@ -26,24 +84,59 @@ decision record before changing an established behavior:
    execution semantics, or a measured performance tradeoff. Use the next
    available four-digit number and a descriptive slug. For a minor clarification,
    update the existing record and explain the change in the commit.
-3. Record **Status** (`Proposed`, `Accepted`, or `Superseded`), **Context**,
-   **Decision**, **Rationale**, **Consequences**, and links to requirements,
+3. Put decision metadata in YAML front matter using the schema below. Record
+   **Context**, **Decision**, **Rationale**, **Consequences**, and links to requirements,
    tests, and implementation evidence. A short record is preferable to an
    untested claim. Proposed behavior must be clearly marked as proposed.
+   Rejected records describe the proposal and why it was not adopted; they do
+   not establish accepted behavior.
 4. Once a decision is accepted, update this index, the affected requirements,
    implementation/tests, and public guides as appropriate. If an accepted
-   decision changes, add a new record and mark the old one `Superseded by
-   [NNNN](...)`; retain its history.
+   decision changes, add a new record and set the old record's `status` to
+   `superseded by NNNN`, replacing `NNNN` with the new decision's four-digit ID;
+   retain its history and link to the replacement in the body or index.
 5. Put unfinished tasks in the [roadmap](../roadmap.md). Keep detailed
    implementation evidence in tests, benchmarks, or change history and link it
    from a decision when useful; it is not the sole statement of the contract.
 
+## Metadata schema
+
+Each decision starts with YAML front matter delimited by `---`. Keep lifecycle
+and planning metadata here rather than in a prose `Status:` paragraph. The index
+is a human-readable summary and must agree with the front matter.
+
+| Attribute       | Required        | Meaning                                                                                                                           |
+| --------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | Yes             | Quoted four-digit string matching the filename, such as `"0005"`. Quoting preserves leading zeros.                                |
+| `title`         | Yes             | Decision title without the number; matches the document heading.                                                                  |
+| `status`        | Yes             | `proposed`, `accepted`, `rejected`, `deprecated`, or `superseded by NNNN`. See the lifecycle meanings below. |
+| `status_notes`  | No              | Qualifications such as experimental scope, implementation gaps, or validation evidence. Use a YAML block scalar for longer notes. |
+| `planning`      | No              | `unplanned` when explicitly recorded as such. Omission makes no planning claim; use the roadmap for actual priorities and tasks.  |
+
+- `proposed`: an alternative under consideration that has not been accepted or
+  rejected. This includes undecided and unplanned alternatives.
+- `accepted`: an adopted design, whether or not implementation is complete.
+- `rejected`: a proposal explicitly declined.
+- `deprecated`: a formerly accepted design that should no longer be used, with
+  no accepted replacement recorded.
+- `superseded by NNNN`: a formerly accepted design replaced by the referenced
+  decision. Retain the old record as history.
+
+Acceptance does not imply implementation. Preserve any existing implementation
+or validation qualifications in `status_notes`; keep supporting evidence and
+links in the body. Do not invent dates or planning commitments when migrating
+an existing record.
+
 New records can start with this outline:
 
 ```markdown
-# Decision NNNN: Short title
+---
+id: "NNNN"
+title: "Short title"
+status: proposed | accepted | rejected | deprecated | superseded by NNNN
+---
 
-Status: Proposed
+# Decision NNNN: Short title
 
 ## Context
 

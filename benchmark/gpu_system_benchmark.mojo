@@ -1,4 +1,4 @@
-"""GPU and CPU system execution benchmarks over a tunable compute-bound kernel.
+"""Device and host system execution benchmarks over a tunable compute-bound kernel.
 
 The movement kernel used by `system_sketch.mojo` is memory-bound: it reads two
 components, writes one, and does three floating point operations per entity.
@@ -9,7 +9,7 @@ This benchmark instead runs a central-force orbital integration whose
 arithmetic intensity is a compile-time parameter. `steps` controls how many
 integration steps each entity performs per launch while the bytes moved stay
 fixed, so sweeping `steps` walks the same kernel from memory-bound to
-compute-bound and shows where the GPU path starts to pay for itself.
+compute-bound and shows where the device path starts to pay for itself.
 
 Components are `Float32`. Apple GPUs have no double precision, so the
 `Float64` components in `larecs.test_utils` cannot be used on the device.
@@ -26,9 +26,18 @@ from std.benchmark import (
 from std.math import rsqrt
 from std.sys import has_accelerator
 
+from max.gpu.host import DeviceAttribute
+
 from custom_benchmark import DefaultBench
 
-from larecs import Entity, Filter, KernelContext, SystemContext, World
+from larecs import (
+    ExecutionBackend,
+    Entity,
+    Filter,
+    KernelContext,
+    SystemContext,
+    World,
+)
 
 
 @fieldwise_init
@@ -71,6 +80,20 @@ comptime GRAVITATIONAL_PARAMETER: Float32 = 1.0
 comptime SOFTENING: Float32 = 1e-3
 """Softening term keeping the force finite at the origin."""
 
+comptime DEVICE_GRID_CAP = -1
+"""Grid cap setting that keeps the cap the device storage derived itself."""
+
+comptime UNCAPPED_GRID = 0
+"""Grid cap setting that launches one thread per row."""
+
+comptime CAPPED_BLOCKS_PER_MULTIPROCESSOR = 4
+"""Blocks per multiprocessor launched by the forced-cap benchmark entries.
+
+A fixed cap that applies even on devices such as Apple GPUs, which do not
+report the thread limit `max_resident_blocks` needs. Rows above the cap are
+covered by the grid-stride loop.
+"""
+
 comptime FLOPS_PER_STEP = 18
 """Floating point operations one integration step performs per entity.
 
@@ -103,7 +126,7 @@ def integrate_orbit[
         steps: The number of integration steps to perform per entity.
 
     Args:
-        context: The CPU or GPU execution context for the filtered rows.
+        context: The host or device execution context for the filtered rows.
     """
     for entity in context:
         ref position = entity.get[Position]()
@@ -149,26 +172,34 @@ def _populate(mut world: WorldType) raises -> Entity:
     Returns:
         The first entity added, so a caller can observe the kernel's output.
     """
-    var first = Entity()
-    var index = 0
-    for ref entity in world.storage.add_entities(
+    var context = SystemContext(world)
+    var selected = context.add_entities(
         Position(1.0, 0.0), Velocity(0.0, 1.0), count=ENTITY_COUNT
-    ):
-        var radius = 1.0 + Float32(index) * 1e-6
-        entity.unsafe_get[Position]().x = radius
-        entity.unsafe_get[Velocity]().dy = rsqrt(radius)
-        if index == 0:
-            first = entity.get_entity()
-        index += 1
-    return first
+    )
+
+    def initialize(rows: KernelContext[Filter().include[Position, Velocity]()]):
+        """Initializes selected orbital rows with distinct radii.
+
+        Args:
+            rows: Newly created position and velocity rows.
+        """
+        for entity in rows:
+            var radius = 1.0 + Float32(entity.idx) * 1e-6
+            entity.get[Position]().x = radius
+            entity.get[Velocity]().dy = rsqrt(radius)
+
+    selected.run(initialize)
+    selected^.release()
+    var query = world.storage.query[Filter().include[Position, Velocity]()]()
+    return query.__next__().get_entity()
 
 
-def _run_once[steps: Int, on_gpu: Bool](mut world: WorldType) raises:
+def _run_once[steps: Int, on_device: Bool](mut world: WorldType) raises:
     """Executes one launch of the integration kernel over `world`.
 
     Parameters:
         steps: The number of integration steps per entity.
-        on_gpu: Whether to execute against device storage.
+        on_device: Whether to execute against device storage.
 
     Args:
         world: The world whose entities are integrated.
@@ -176,20 +207,58 @@ def _run_once[steps: Int, on_gpu: Bool](mut world: WorldType) raises:
     var context = ContextType(
         Pointer(to=world).unsafe_origin_cast[MutUntrackedOrigin]()[]
     )
-    context.run[integrate_orbit[steps], on_gpu=on_gpu]()
+    context.run[
+        integrate_orbit[steps],
+        backend=(
+            ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+        ),
+    ]()
 
 
-def _benchmark[steps: Int, on_gpu: Bool](mut bencher: Bencher):
+def _set_grid_cap[grid_cap: Int](mut world: WorldType) raises:
+    """Overrides the launch grid cap of the world's device storage.
+
+    Parameters:
+        grid_cap: `DEVICE_GRID_CAP` keeps the device-derived cap,
+            `UNCAPPED_GRID` disables it, and a positive value launches at
+            most that many blocks per multiprocessor.
+
+    Args:
+        world: The world whose device storage is adjusted.
+
+    Raises:
+        Error: If the multiprocessor count cannot be queried.
+    """
+    comptime if grid_cap == DEVICE_GRID_CAP:
+        return
+    if not world._device_storage:
+        return
+    ref device_storage = world._device_storage.value()
+    comptime if grid_cap == UNCAPPED_GRID:
+        device_storage._max_grid_dim = UNCAPPED_GRID
+    else:
+        device_storage._max_grid_dim = (
+            device_storage._device_context.get_attribute(
+                DeviceAttribute.MULTIPROCESSOR_COUNT
+            )
+            * grid_cap
+        )
+
+
+def _benchmark[
+    steps: Int, on_device: Bool, grid_cap: Int = DEVICE_GRID_CAP
+](mut bencher: Bencher):
     """Benchmarks one launch of the integration kernel.
 
-    A warm-up launch runs before measurement. On the GPU path the first
+    A warm-up launch runs before measurement. On the device path the first
     launch pays just-in-time kernel compilation, which is a one-time startup
     cost rather than a per-frame one and would otherwise dominate the first
     measured iteration.
 
     Parameters:
         steps: The number of integration steps per entity.
-        on_gpu: Whether to execute against device storage.
+        on_device: Whether to execute against device storage.
+        grid_cap: The launch grid cap setting, see `_set_grid_cap`.
 
     Args:
         bencher: The benchmark driver.
@@ -197,15 +266,16 @@ def _benchmark[steps: Int, on_gpu: Bool](mut bencher: Bencher):
     var world = WorldType()
     var probe = Entity()
     try:
+        _set_grid_cap[grid_cap](world)
         probe = _populate(world)
-        _run_once[steps, on_gpu](world)
+        _run_once[steps, on_device](world)
     except e:
         print(e)
 
     @always_inline
     def bench_fn() {mut world, imm probe}:
         try:
-            _run_once[steps, on_gpu](world)
+            _run_once[steps, on_device](world)
             keep(world.storage.get[Position](probe).x)
         except e:
             print(e)
@@ -214,13 +284,14 @@ def _benchmark[steps: Int, on_gpu: Bool](mut bencher: Bencher):
 
 
 def _register[
-    steps: Int, on_gpu: Bool
+    steps: Int, on_device: Bool, grid_cap: Int = DEVICE_GRID_CAP
 ](mut bench: Bench, label: String, iterations: Optional[Int] = None) raises:
     """Registers one point of the arithmetic intensity sweep.
 
     Parameters:
         steps: The number of integration steps per entity.
-        on_gpu: Whether to execute against device storage.
+        on_device: Whether to execute against device storage.
+        grid_cap: The launch grid cap setting, see `_set_grid_cap`.
 
     Args:
         bench: The benchmark driver to register on.
@@ -233,7 +304,7 @@ def _register[
         Error: If the driver rejects the registration.
     """
     bench.bench_function(
-        _benchmark[steps, on_gpu],
+        _benchmark[steps, on_device, grid_cap],
         BenchId(label),
         [
             ThroughputMeasure(
@@ -264,8 +335,10 @@ def run_all_gpu_system_benchmarks(mut bench: Bench) raises:
     The sweep runs the same kernel at four arithmetic intensities on each
     execution target. The first point is memory-bound and measures little
     beyond host/device transfer cost; the last is deeply compute-bound and
-    measures the kernel itself. The GPU entries are registered only when an
-    accelerator is present, so the suite still runs without one.
+    measures the kernel itself. The device entries are registered only when an
+    accelerator is present, so the suite still runs without one. At both ends
+    of the sweep, the device path is also measured uncapped and with a forced
+    grid cap, so the cap's effect is visible on every device.
 
     Args:
         bench: The benchmark driver to register on.
@@ -285,6 +358,18 @@ def run_all_gpu_system_benchmarks(mut bench: Bench) raises:
         _register[8, True](bench, "system gpu, 8 steps")
         _register[64, True](bench, "system gpu, 64 steps")
         _register[512, True](bench, "system gpu, 512 steps (compute bound)")
+        _register[1, True, UNCAPPED_GRID](
+            bench, "system gpu, 1 step, uncapped grid"
+        )
+        _register[1, True, CAPPED_BLOCKS_PER_MULTIPROCESSOR](
+            bench, "system gpu, 1 step, 4 blocks per multiprocessor"
+        )
+        _register[512, True, UNCAPPED_GRID](
+            bench, "system gpu, 512 steps, uncapped grid"
+        )
+        _register[512, True, CAPPED_BLOCKS_PER_MULTIPROCESSOR](
+            bench, "system gpu, 512 steps, 4 blocks per multiprocessor"
+        )
 
 
 def main() raises:

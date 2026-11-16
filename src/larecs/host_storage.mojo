@@ -5,7 +5,11 @@ component data for a world, along with `Replacer` for atomically replacing
 an entity's components.
 """
 
-from .archetype import Archetype, MutArchetypeRowAccessor
+from .archetype import (
+    Archetype,
+    MutArchetypeRowAccessor,
+    _retained_component_mask,
+)
 from .bitmask import BitMask
 from .debug_utils import debug_warn
 from .component import (
@@ -25,7 +29,7 @@ from .graph import BitMaskGraph
 from .lock import LockManager
 from .pool import EntityPool
 from .iteration import (
-    LockedWorldEntityIterator,
+    LockedEntityRange,
     _ArchetypeIterator,
 )
 from .filter import Filter, BitMaskFilter
@@ -34,6 +38,7 @@ from .types import ComponentId
 from ._utils import concatenate_arrays, assert_unreachable
 
 from std.sys import size_of
+from std.memory import ArcPointer
 
 from tracy import Zone
 
@@ -78,6 +83,43 @@ def _sort_entity_ranges(mut ranges: List[EntityRange]):
         width *= 2
 
 
+struct _ComponentMigration:
+    """Partition a structural change before touching initialized storage.
+
+    Removed values exclude replacements; both remain initialized in the source
+    until destruction. Only retained values may be moved to the destination.
+    """
+
+    var retained: BitMask
+    """Source values transferred without destruction."""
+    var removed: BitMask
+    """Source values destroyed without a replacement."""
+    var replaced: BitMask
+    """Source values destroyed before installing new values of the same type."""
+    var added: BitMask
+    """New component types requiring initialization."""
+    var missing: BitMask
+    """Requested removals absent from the source."""
+    var overlap: BitMask
+    """Requested additions that illegally overlap retained values."""
+
+    @always_inline
+    def __init__(out self, source: BitMask, remove: BitMask, add: BitMask):
+        """Compute lifecycle sets and validation failures for a source mask.
+
+        Args:
+            source: Components present in the source archetype or filter.
+            remove: Requested removals, including types supplied again.
+            add: Requested new values, including replacements.
+        """
+        self.retained = _retained_component_mask(source, source | add, remove)
+        self.removed = source & remove & ~add
+        self.replaced = source & remove & add
+        self.added = add & ~source
+        self.missing = remove & ~source
+        self.overlap = self.retained & add
+
+
 struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     """
     Holds all the component and entity data for a world.
@@ -111,16 +153,16 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         lock_origin: MutOrigin,
         *,
         row_filter: Filter = Filter(),
-        has_start_indices: Bool = False,
-    ] = LockedWorldEntityIterator[
+        has_ranges: Bool = False,
+    ] = LockedEntityRange[
         archetype_origin,
         lock_origin,
         *Self.ComponentTypes,
         row_filter=row_filter,
-        has_start_indices=has_start_indices,
+        has_ranges=has_ranges,
     ]
     """
-    Primary entity iterator type comptime for mask-based HostStorage queries.
+    Locked storage range type for queries and low-level batch results.
 
     These iterators are copyable. Each copy preserves its source's current
     traversal position and acquires a distinct structural-change lock that is
@@ -135,7 +177,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             accessors are created with, if any. Only `query` passes this;
             other callers leave it at the default, so their accessors only
             support `unsafe_get`/`has`.
-        has_start_indices: Enables iteration from specific entity ranges (batch ops).
+        has_ranges: Enables exact bounded ranges for low-level batch results.
     """
 
     comptime ArchetypeIterator[
@@ -159,6 +201,24 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     var _locks: LockManager
     """Lock manager guarding mutation during active iteration."""
 
+    var _spatial_partitioned: Bool
+    """Whether maintenance places eligible rows in growable cluster stores."""
+    var _spatial_free_blocks: List[Int]
+    """Reclaimed physical slots; graph-owned staging slots are never recycled."""
+
+    var _spatial_enabled: Bool
+    """Whether spatial invalidation is active."""
+    var _spatial_inputs: BitMask
+    """Classifier input components requiring invalidation on mutable access."""
+    var _spatial_full: Bool
+    """Whether the next boundary must rebuild all keys."""
+    var _spatial_dirty: List[Entity]
+    """Deduplicated full identities with potentially changed inputs."""
+    var _spatial_marked: List[Bool]
+    """Sparse membership indexed by entity ID, rebuilt after structural changes."""
+    var _spatial_keys: List[UInt64]
+    """Committed classifier keys, independent of current row locations."""
+
     var _entity_pool: EntityPool  # Pool for entities.
     """Pool used to allocate and recycle entity IDs."""
     var _entity_locations: List[EntityLocation]
@@ -171,10 +231,20 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     """Type alias for the list of archetypes owned by this storage."""
 
     var _archetypes: Self.Archetypes
-    """Archetype list owned by this HostStorage."""
+    """Physical stores: logical staging archetypes, partition blocks, and tombstones."""
 
     var _archetype_map: BitMaskGraph[-1]
-    """Graph mapping component masks to archetype indices."""
+    """Graph mapping component masks to canonical logical staging indices."""
+
+    var _id: ArcPointer[UInt8]
+    """Allocation identity of this storage (decision 0021).
+
+    Fresh instances and copies allocate distinct tokens. Device storage retains
+    the token while records can reference it, preventing allocator address reuse.
+    Moves preserve it; no process-global counter or construction lock is needed.
+    """
+    var _clock: UInt64
+    """Last issued store incarnation (decision 0021)."""
 
     def __init__(out self):
         """
@@ -183,10 +253,184 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         with Zone(function_name="HostStorage.__init__()"):
             self._entity_locations = [EntityLocation(0, 0)]
             self._entity_pool = EntityPool()
+            self._spatial_partitioned = False
+            self._spatial_free_blocks = List[Int]()
+            self._spatial_enabled = False
+            self._spatial_inputs = BitMask()
+            self._spatial_full = False
+            self._spatial_dirty = List[Entity]()
+            self._spatial_marked = List[Bool]()
+            self._spatial_keys = List[UInt64]()
 
             self._archetype_map = BitMaskGraph[-1](0)
             self._archetypes = [Self.Archetype()]
             self._locks = LockManager()
+            self._id = ArcPointer(UInt8(0))
+            self._clock = 0
+            self._stamp_store(0)
+
+    def __init__(out self, *, copy: Self):
+        """Copies the storage under a new storage identity.
+
+        Args:
+            copy: The storage to copy.
+        """
+        self._locks = copy._locks.copy()
+        self._spatial_partitioned = copy._spatial_partitioned
+        self._spatial_free_blocks = copy._spatial_free_blocks.copy()
+        self._spatial_enabled = copy._spatial_enabled
+        self._spatial_inputs = copy._spatial_inputs.copy()
+        self._spatial_full = copy._spatial_full
+        self._spatial_dirty = copy._spatial_dirty.copy()
+        self._spatial_marked = copy._spatial_marked.copy()
+        self._spatial_keys = copy._spatial_keys.copy()
+        self._entity_pool = copy._entity_pool.copy()
+        self._entity_locations = copy._entity_locations.copy()
+        self._archetypes = copy._archetypes.copy()
+        self._archetype_map = copy._archetype_map.copy()
+        self._id = ArcPointer(UInt8(0))
+        self._clock = copy._clock
+
+    @always_inline
+    def _stamp_store(mut self, index: Int):
+        """Gives a newly created or replaced store a fresh incarnation.
+
+        Args:
+            index: Index of the store in `_archetypes`.
+        """
+        self._clock += 1
+        self._archetypes[index]._storage._incarnation = self._clock
+
+    def read[
+        T: ComponentType
+    ](self, entity: Entity) raises LarecsError -> ref[
+        ImmOrigin(
+            origin_of(
+                self._archetypes.unsafe_get(
+                    self._entity_locations[entity.get_id()].archetype_index
+                )
+            )
+        )
+    ] T:
+        """Returns an immutable reference to a component of an entity.
+
+        Unlike `get`, this does not count as a possible write, so the
+        component's device copy stays reusable in worlds that opted into
+        `World.reuse_device_copies`.
+
+        Parameters:
+            T: The type of the component. Constraints: Must be in the component manager.
+
+        Args:
+            entity: The entity whose component to read.
+
+        Raises:
+            LarecsError: If the entity is not alive or does not have the component.
+
+        Returns:
+            An immutable reference to the component value.
+        """
+        comptime assert Self.component_manager.contains_components[
+            T
+        ](), "Component type not in component manager"
+        self.assert_alive(entity)
+        var entity_loc = self._entity_locations[entity.get_id()]
+        if not self._archetypes.unsafe_get(
+            entity_loc.archetype_index
+        ).has_components[T]():
+            raise LarecsError(
+                ComponentError.missing_components_on_assert.with_components(
+                    BitMask(Self.component_manager.get_id[T]())
+                )
+            )
+        return self._archetypes.unsafe_get(
+            entity_loc.archetype_index
+        ).get_component[T](entity_loc.entity_index)
+
+    def invalidate_spatial(mut self):
+        """Requests a full key rebuild at the next explicit boundary.
+
+        Use after untracked raw-pointer writes or external policy changes.
+        This only invalidates metadata; it never classifies or moves rows.
+        """
+        if self._spatial_enabled:
+            self._spatial_full = True
+
+    def mark_spatial_dirty(mut self, entity: Entity) raises LarecsError:
+        """Marks a live identity for deferred classification.
+
+        Args:
+            entity: Entity whose classifier inputs may have changed.
+
+        Raises:
+            LarecsError: If the entity is not alive.
+        """
+        self.assert_alive(entity)
+        if self._spatial_enabled and not self._spatial_full:
+            self._enqueue_spatial_dirty(entity)
+
+    @always_inline
+    def _enqueue_spatial_dirty(mut self, entity: Entity):
+        """Deduplicates a current identity without storing a row location.
+
+        Args:
+            entity: Live entity; membership capacity matches the last rebuild.
+        """
+        var id = Int(entity.get_id())
+        if not self._spatial_marked[id]:
+            self._spatial_marked[id] = True
+            self._spatial_dirty.append(entity)
+
+    @always_inline
+    def _mark_spatial_write[*Ts: ComponentType](mut self, entity: Entity):
+        """Conservatively invalidates mutable access to classifier inputs.
+
+        Parameters:
+            Ts: Potentially written component types.
+
+        Args:
+            entity: Valid current entity identity.
+        """
+        if not self._spatial_enabled or self._spatial_full:
+            return
+        comptime for i in range(len(Ts)):
+            if self._spatial_inputs.get(Self.component_manager.get_id[Ts[i]]()):
+                self._enqueue_spatial_dirty(entity)
+                return
+
+    @always_inline
+    def _mark_spatial_range[
+        filter: Filter
+    ](mut self, archetype_index: Int, first_row: Int, row_count: Int):
+        """Invalidates a bounded execution range before potential writes.
+
+        Parameters:
+            filter: Kernel access declaration.
+
+        Args:
+            archetype_index: Current matching archetype.
+            first_row: First selected row.
+            row_count: Number of selected rows.
+        """
+        if not self._spatial_enabled or self._spatial_full:
+            return
+        comptime kernel_mask = filter.get_bitmask_filter[*Self.ComponentTypes]()
+        if not kernel_mask.matches(
+            self._archetypes[archetype_index].get_mask()
+        ):
+            return
+        var overlaps = False
+        comptime for i in range(len(filter)):
+            comptime T = filter._include.ComponentTypes[i]
+            comptime if filter.writes[T]:
+                overlaps |= self._spatial_inputs.get(
+                    Self.component_manager.get_id[T]()
+                )
+        if overlaps:
+            for row in range(first_row, first_row + row_count):
+                self._enqueue_spatial_dirty(
+                    self._archetypes[archetype_index].get_entity(row)
+                )
 
     @staticmethod
     def filter[
@@ -308,6 +552,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             )
 
             self._archetype_map[node_index] = archetype_index
+            self._stamp_store(archetype_index)
 
             return archetype_index
 
@@ -327,13 +572,18 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             )
         ):
             for i in range(len(self._archetypes)):
-                if self._archetypes[i].get_mask() == mask:
+                if (
+                    not self._archetypes[i]._partition_key
+                    and self._archetypes[i].get_node_index() >= 0
+                    and self._archetypes[i].get_mask() == mask
+                ):
                     return i
 
             var node_index = self._archetype_map.add_node(mask.copy())
             var archetype_index = len(self._archetypes)
             self._archetypes.append(Self.Archetype(node_index, mask^))
             self._archetype_map[node_index] = archetype_index
+            self._stamp_store(archetype_index)
             return archetype_index
 
     def add_entity[
@@ -398,6 +648,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             ](), "Duplicate component types in add_entity are not allowed."
 
             self._assert_unlocked()
+            self.invalidate_spatial()
 
             comptime component_count = len(Ts)
 
@@ -438,7 +689,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """Adds a batch of [..entity.Entity Entities].
@@ -485,7 +736,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: If `count` is negative.
 
         Returns:
-            An iterator to the new or recycled [..entity.Entity Entities].
+            A `LockedEntityRange` over exactly the new or recycled entity rows.
 
         """
         with Zone(
@@ -512,13 +763,14 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                             has_exclude_mask=False,
                         ](Pointer(to=self._archetypes), []),
                         Pointer(to=self._locks),
-                        {[]},
+                        [],
                     }
                     return
                 except _:
                     raise LarecsError(WorldError.out_of_locks)
 
             self._assert_unlocked()
+            self.invalidate_spatial()
 
             comptime component_count = len(Ts)
 
@@ -555,7 +807,11 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                         has_exclude_mask=False,
                     ](Pointer(to=self._archetypes), [archetype_index]),
                     Pointer(to=self._locks),
-                    {[first_index_in_archetype]},
+                    [
+                        EntityRange(
+                            archetype_index, first_index_in_archetype, count
+                        )
+                    ],
                 }
             except _:
                 raise LarecsError(WorldError.out_of_locks)
@@ -574,6 +830,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             )
         ):
             debug_assert(count > 0, "Count must be positive.")
+            self.invalidate_spatial()
             ref archetype = self._archetypes.unsafe_get(archetype_index)
             var arch_start_idx = archetype.extend(count, self._entity_pool)
             var entities_size = (
@@ -613,6 +870,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: If the world is locked or the entity does not exist.
         """
         self._assert_unlocked()
+        self.invalidate_spatial()
         self.assert_alive(entity)
 
         with Zone(function_name="HostStorage.remove_entity(entity: Entity)"):
@@ -699,6 +957,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: If the world is locked.
         """
         self._assert_unlocked()
+        self.invalidate_spatial()
 
         with Zone(
             function_name="HostStorage.remove_entities(query: QueryInfo)"
@@ -813,7 +1072,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             LarecsError: If the entity is not alive or does not have the component.
 
         Returns:
-            A reference to the component value.
+            A mutable reference to the component value. Access to a registered
+            classifier input conservatively invalidates this entity even when
+            the reference is used only to read. Do not retain it across maintenance.
         """
         comptime assert Self.component_manager.contains_components[
             T
@@ -833,6 +1094,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     )
                 )
 
+            self._mark_spatial_write[T](entity)
             return self._archetypes.unsafe_get(
                 entity_loc.archetype_index
             ).get_component[T](entity_loc.entity_index)
@@ -868,6 +1130,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             self._archetypes.unsafe_get(
                 entity_loc.archetype_index
             ).set_components[T](entity_loc.entity_index, component^)
+            self._mark_spatial_write[T](entity)
 
     @always_inline
     def set[
@@ -905,6 +1168,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             self._archetypes.unsafe_get(
                 entity_loc.archetype_index
             ).set_components[*Ts](entity_loc.entity_index, *components^)
+            self._mark_spatial_write[*Ts](entity)
 
     def add[
         *Ts: ComponentType
@@ -967,7 +1231,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """
@@ -1019,7 +1283,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 components to add.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
         with Zone(
             function_name=(
@@ -1050,7 +1314,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """Adds components to all entities matching a compile-time filter.
@@ -1068,7 +1332,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 entity already carrying an added component.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
         with Zone(
             function_name=(
@@ -1117,7 +1381,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """
@@ -1159,7 +1423,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             Error: when called with a filter that could match entities that don't have all of the components to remove.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
 
         with Zone(
@@ -1194,7 +1458,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """Removes components from entities matching a compile-time filter.
@@ -1209,7 +1473,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 entity missing a removed component.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
         with Zone(
             function_name=(
@@ -1292,6 +1556,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             comptime add_ids = Self.component_manager.get_id_arr[*Ts]()
 
             self._assert_unlocked()
+            self.invalidate_spatial()
             self.assert_alive(entity)
 
             # Reserve space for the possibility that a new archetype gets created
@@ -1302,60 +1567,49 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             var entity_loc = self._entity_locations[entity.get_id()]
 
             var old_archetype_idx = entity_loc.archetype_index
-            ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
-            var old_archetype_mask = old_archetype.get_mask()
+            ref old_archetype_before = self._archetypes.unsafe_get(
+                old_archetype_idx
+            )
+            var old_archetype_mask = old_archetype_before.get_mask()
 
-            var runtime_add_ids = materialize[add_ids]()
-            var runtime_remove_ids = materialize[remove_ids]()
-
+            var migration = _ComponentMigration(
+                old_archetype_mask,
+                BitMask(materialize[remove_ids]()),
+                BitMask(materialize[add_ids]()),
+            )
             comptime if rem_size:
-                var remove_mask = BitMask(runtime_remove_ids)
-                if not old_archetype_mask.contains(remove_mask):
+                if migration.missing != BitMask():
                     raise LarecsError(
                         ComponentError.missing_components_on_remove.with_components(
-                            remove_mask & ~old_archetype_mask
+                            migration.missing
                         )
                     )
-
             comptime if add_size:
-                var compare_mask = old_archetype_mask
-
-                comptime if rem_size:
-                    compare_mask.set(runtime_remove_ids, False)
-                var add_mask = BitMask(runtime_add_ids)
-                if compare_mask.contains(add_mask):
+                if migration.overlap != BitMask():
                     raise LarecsError(
                         ComponentError.existing_components_on_add.with_components(
-                            compare_mask & add_mask
+                            migration.overlap
                         )
                     )
 
-            comptime ComponentIdsType = Array[ComponentId, add_size + rem_size]
-            comptime assert 0 <= add_size + rem_size
-
-            var component_ids: ComponentIdsType
-            comptime if add_size and rem_size:
-                comptime concatenated = concatenate_arrays(remove_ids, add_ids)
-                component_ids = materialize[concatenated]()
-            elif Bool(add_size) and not rem_size:
-                component_ids = rebind_var[ComponentIdsType](runtime_add_ids^)
-            elif not add_size and Bool(rem_size):
-                component_ids = rebind_var[ComponentIdsType](
-                    runtime_remove_ids^
-                )
-            else:
+            comptime if not add_size and not rem_size:
                 return
+            comptime component_ids = concatenate_arrays(remove_ids, add_ids)
 
             var index_in_old_archetype = entity_loc.entity_index
             var new_archetype_idx = self._get_archetype_index(
-                component_ids, old_archetype.get_node_index()
+                materialize[component_ids](),
+                old_archetype_before.get_node_index(),
             )
             ref old_archetype = self._archetypes.unsafe_get(old_archetype_idx)
 
             # Removing and re-adding the same component set keeps the entity
             # in its current archetype. These rows are initialized, so replace
             # their values in place rather than appending and moving onto self.
-            if old_archetype_idx == new_archetype_idx:
+            if (
+                old_archetype.get_node_index()
+                == self._archetypes[new_archetype_idx].get_node_index()
+            ):
                 old_archetype.set_components[*Ts](
                     index_in_old_archetype, *add_components^
                 )
@@ -1373,16 +1627,18 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                 Pointer(to=old_archetype._storage).as_unsafe_any_origin(),
                 1,
                 index_in_old_archetype,
+                excluded_components=migration.removed | migration.replaced,
             )
 
             new_archetype.init_components[*Ts](
                 index_in_new_archetype, *add_components^
             )
 
-            var new_archetype_mask = new_archetype.get_mask().copy()
+            # Only retained values were moved; removed/replaced values are
+            # still initialized and must be destroyed during swap removal.
             var swapped = (
                 old_archetype.unsafe_remove_after_moving_shared_components(
-                    index_in_old_archetype, new_archetype_mask
+                    index_in_old_archetype, migration.retained
                 )
             )
             if swapped:
@@ -1455,6 +1711,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             *Ts
         ](), "Duplicate component types in add are not allowed."
         self._assert_selection_authorized(manager_address, lock)
+        self.invalidate_spatial()
         self.assert_alive(entity)
 
         comptime add_size = len(Ts)
@@ -1465,6 +1722,9 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         var entity_loc = self._entity_locations[entity.get_id()]
         var old_archetype_idx = entity_loc.archetype_index
         var old_mask = self._archetypes[old_archetype_idx].get_mask().copy()
+        var migration = _ComponentMigration(
+            old_mask, BitMask(runtime_remove_ids), BitMask(runtime_add_ids)
+        )
 
         comptime if rem_size:
             var remove_mask = BitMask(runtime_remove_ids)
@@ -1506,7 +1766,10 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             component_ids, old_node_index
         )
 
-        if old_archetype_idx == new_archetype_idx:
+        if (
+            old_node_index
+            == self._archetypes[new_archetype_idx].get_node_index()
+        ):
             ref archetype = self._archetypes.unsafe_get(old_archetype_idx)
             comptime for i in range(add_size):
                 comptime T = Ts[i]
@@ -1523,15 +1786,15 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             Pointer(to=old_archetype._storage).as_unsafe_any_origin(),
             1,
             entity_loc.entity_index,
+            excluded_components=migration.removed | migration.replaced,
         )
         comptime for i in range(add_size):
             comptime T = Ts[i]
             new_archetype.init_components[T](new_row, add_components[i].copy())
 
-        var destination_mask = new_archetype.get_mask().copy()
         var swapped = (
             old_archetype.unsafe_remove_after_moving_shared_components(
-                entity_loc.entity_index, destination_mask
+                entity_loc.entity_index, migration.retained
             )
         )
         if swapped:
@@ -1596,6 +1859,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             *Ts
         ](), "Duplicate component types in add are not allowed."
         self._assert_selection_authorized(manager_address, lock)
+        self.invalidate_spatial()
         result_ranges = List[EntityRange]()
 
         comptime add_size = len(Ts)
@@ -1712,7 +1976,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """
@@ -1729,7 +1993,7 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             add_components: The components to add.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
 
         Raises:
             LarecsError: when called with a filter that could match existing entities that already have at least one of the
@@ -1755,20 +2019,17 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             comptime add_size = len(Ts)
             comptime add_ids = Self.component_manager.get_id_arr[*Ts]()
 
-            comptime ComponentIdsType = Array[ComponentId, add_size + rem_size]
-            comptime assert 0 <= add_size + rem_size
-
             # Note:
             #    This operation can never map multiple archetypes onto one, due to the requirement that components to add
             #    must be excluded in the query. Therefore, we can apply the transformation to each matching archetype
             #    individually without checking for edge cases where multiple archetypes get merged into one.
             #    This also enables potential parallelization optimizations.
 
-            var runtime_add_ids = materialize[add_ids]()
-            var runtime_remove_ids = materialize[remove_ids]()
-
-            var add_mask = BitMask(runtime_add_ids)
-            var remove_mask = BitMask(runtime_remove_ids)
+            var add_mask = BitMask(materialize[add_ids]())
+            var remove_mask = BitMask(materialize[remove_ids]())
+            var filter_migration = _ComponentMigration(
+                filter.include_mask, remove_mask, add_mask
+            )
 
             comptime if add_size:
                 # If the filter could match archetypes that already have at least one of the components, raise an error
@@ -1787,24 +2048,22 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     for archetype in self._get_archetype_iterator(
                         filter.include_mask, filter.exclude_mask
                     ):
-                        var archetype_mask = archetype.get_mask()
-
-                        comptime if rem_size:
-                            archetype_mask.set(runtime_remove_ids, False)
-
-                        if archetype and archetype_mask.contains_any(add_mask):
+                        var migration = _ComponentMigration(
+                            archetype.get_mask(), remove_mask, add_mask
+                        )
+                        if archetype and migration.overlap != BitMask():
                             raise LarecsError(
                                 ComponentError.existing_components_on_add_query.with_components(
-                                    archetype_mask & add_mask
+                                    migration.overlap
                                 )
                             )
 
             comptime if rem_size:
                 # If the filter could match archetypes that don't have all of the components, raise an error
-                if not filter.include_mask.contains(remove_mask):
+                if filter_migration.missing != BitMask():
                     raise LarecsError(
                         ComponentError.missing_components_on_remove_query.with_components(
-                            remove_mask & ~filter.include_mask
+                            filter_migration.missing
                         )
                     )
 
@@ -1816,17 +2075,8 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                             )
                         )
 
-            var component_ids: ComponentIdsType
-            comptime if add_size and rem_size:
-                comptime concatenated = concatenate_arrays(remove_ids, add_ids)
-                component_ids = materialize[concatenated]()
-            elif Bool(add_size) and not rem_size:
-                component_ids = rebind_var[ComponentIdsType](runtime_add_ids^)
-            elif not add_size and Bool(rem_size):
-                component_ids = rebind_var[ComponentIdsType](
-                    runtime_remove_ids^
-                )
-            else:
+            comptime component_ids = concatenate_arrays(remove_ids, add_ids)
+            comptime if not add_size and not rem_size:
                 # Nothing to do. Just return empty iterator.
                 try:
                     iterator = {
@@ -1834,16 +2084,17 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                             Pointer(to=self._archetypes), List[Int]()
                         ),
                         Pointer(to=self._locks),
-                        List[Int](),
+                        List[EntityRange](),
                     }
                 except _:
                     raise LarecsError(WorldError.out_of_locks)
                 return
 
             self._assert_unlocked()
+            self.invalidate_spatial()
 
             comptime _2kb_of_UInt_or_Int = (1024 * 2) // size_of[UInt]()
-            var arch_start_idcs = List[Int](
+            var changed_ranges = List[EntityRange](
                 capacity=min(len(self._archetypes), _2kb_of_UInt_or_Int)
             )
             var changed_archetype_idcs = List[Int](
@@ -1861,13 +2112,15 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     # 2. If an archetype with the new component combination does not exist yet,
                     #    create new archetype B = A.different_by(component_ids) and move entities and component data from A to B.
                     var old_node_index = old_archetype1.get_node_index()
+                    var old_archetype_idx = self._entity_locations[
+                        old_archetype1.get_entity(0).get_id()
+                    ].archetype_index
                     var new_archetype_idx = self._get_archetype_index[
                         add_size + rem_size
-                    ](component_ids, old_node_index)
+                    ](materialize[component_ids](), old_node_index)
 
                     # We need to update the pointer to the old archetype, because the `self._archetypes` list may have been
                     # resized during the call to `_get_archetype_index`.
-                    var old_archetype_idx = self._archetype_map[old_node_index]
                     ref old_archetype = self._archetypes.unsafe_get(
                         index(old_archetype_idx)
                     )
@@ -1878,17 +2131,24 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
 
                     # TODO: Optimization: If `new_archetype` is empty we can just shallow-copy the _ComponentTable of `old_archetype` to `new_archetype` and reinit `old_archetype`.
 
+                    var migration = _ComponentMigration(
+                        old_archetype.get_mask(), remove_mask, add_mask
+                    )
                     var old_archetype_size = len(old_archetype)
-                    if old_archetype_idx == new_archetype_idx:
-                        arch_start_idcs.append(0)
-                        changed_archetype_idcs.append(new_archetype_idx)
+                    if old_node_index == new_archetype.get_node_index():
+                        changed_ranges.append(
+                            EntityRange(
+                                old_archetype_idx, 0, old_archetype_size
+                            )
+                        )
+                        changed_archetype_idcs.append(old_archetype_idx)
 
                         # The archetype did not change, so these rows
                         # already hold valid values that must be destroyed
                         # before assigning the new ones.
                         comptime for i in range(add_size):
                             comptime T = Ts[i]
-                            new_archetype.set_component_range[T](
+                            old_archetype.set_component_range[T](
                                 0,
                                 old_archetype_size,
                                 add_components[i].copy(),
@@ -1900,11 +2160,32 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                     ).as_unsafe_any_origin()
                     var arch_start_idx = (
                         new_archetype.unsafe_move_all_from_archetype(
-                            old_archetype_unsafe
+                            old_archetype_unsafe,
+                            excluded_components=migration.removed
+                            | migration.replaced,
                         )
                     )
-                    arch_start_idcs.append(arch_start_idx)
-                    changed_archetype_idcs.append(new_archetype_idx)
+                    if new_archetype_idx not in changed_archetype_idcs:
+                        changed_ranges.append(
+                            EntityRange(
+                                new_archetype_idx,
+                                arch_start_idx,
+                                old_archetype_size,
+                            )
+                        )
+                        changed_archetype_idcs.append(new_archetype_idx)
+                    else:
+                        # Physical cluster stores can share one logical source
+                        # node and append into the same destination store.
+                        for range_index in range(len(changed_archetype_idcs)):
+                            if (
+                                changed_archetype_idcs[range_index]
+                                == new_archetype_idx
+                            ):
+                                changed_ranges[
+                                    range_index
+                                ].row_count += old_archetype_size
+                                break
 
                     # These rows were just appended by
                     # `unsafe_move_all_from_archetype` and hold uninitialized
@@ -1936,10 +2217,36 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
                         Pointer(to=self._archetypes), changed_archetype_idcs^
                     ),
                     Pointer(to=self._locks),
-                    arch_start_idcs^,
+                    changed_ranges^,
                 }
             except _:
                 raise LarecsError(WorldError.out_of_locks)
+
+    def _reorder_archetype_rows(
+        mut self, archetype_index: Int, source_rows: List[Int]
+    ) raises LarecsError:
+        """Reorders one archetype and repairs its entity-to-row mapping.
+
+        Internal foundation for explicit spatial maintenance. Component masks,
+        graph nodes, entity generations, and membership remain unchanged.
+
+        Args:
+            archetype_index: Index of the archetype to reorder.
+            source_rows: Old row index for each destination row.
+
+        Raises:
+            LarecsError: If storage is locked, the archetype index is invalid,
+                or the permutation is invalid. No rows move on these errors.
+        """
+        self._assert_unlocked()
+        if archetype_index < 0 or archetype_index >= len(self._archetypes):
+            raise Error("Row permutation archetype index is out of bounds")
+        ref archetype = self._archetypes[archetype_index]
+        archetype._reorder_rows(source_rows)
+        for row in range(len(archetype)):
+            self._entity_locations[
+                archetype.get_entity(row).get_id()
+            ].entity_index = row
 
     @always_inline
     def _assert_unlocked(self) raises LarecsError:
@@ -1990,12 +2297,14 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
             )
         ):
             self._assert_unlocked()
+            self.invalidate_spatial()
 
             with self._locked():
                 for ref archetype in Self.ArchetypeIterator(
                     Pointer(to=self._archetypes),
                     filter.copy(),
                 ):
+                    archetype._storage._touch_rows()
                     for i in range(len(archetype)):
                         try:
                             ref entity = archetype.get_row_accessor(i)
@@ -2153,59 +2462,6 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
     #                     len(archetype[]), closure
     #                 )
 
-    def _get_entity_iterator[
-        has_exclude_mask: Bool = False, has_start_indices: Bool = False
-    ](
-        mut self,
-        include_mask: BitMask,
-        exclude_mask: StaticOptional[BitMask, has_exclude_mask],
-        var start_indices: StaticOptional[List[Int], has_start_indices] = None,
-        out iterator: Self.Iterator[
-            origin_of(self._archetypes),
-            origin_of(self._locks),
-            has_start_indices=has_start_indices,
-        ],
-    ) raises LarecsError:
-        """
-        Creates an iterator over all [..entity.Entity Entities] that have / do not have the components in the provided masks.
-
-        Parameters:
-            has_exclude_mask: Whether an exclude_mask is provided.
-            has_start_indices: Whether start_indices are provided.
-
-
-        Args:
-            include_mask:   The mask of components to include.
-            exclude_mask:   The mask of components to exclude.
-            start_indices: The start indices of the iterator. See [..iteration._WorldEntityIterator].
-        """
-        with Zone(
-            function_name=(
-                "HostStorage._get_entity_iterator[has_exclude_mask: Bool,"
-                " has_start_indices: Bool](include_mask: BitMask, exclude_mask:"
-                " StaticOptional[BitMask, has_exclude_mask], var start_indices:"
-                " StaticOptional[List[Int], has_start_indices], out iterator:"
-                " Self.Iterator)"
-            )
-        ):
-            try:
-                iterator = Self.Iterator[
-                    origin_of(self._archetypes),
-                    origin_of(self._locks),
-                    has_start_indices=has_start_indices,
-                ](
-                    Pointer(to=self._archetypes),
-                    BitMaskFilter(
-                        include_mask,
-                        exclude_mask.copy(),
-                    ),
-                    Pointer(to=self._locks),
-                    start_indices^,
-                )
-            except _:
-                raise LarecsError(UnknownError())
-
-    @always_inline
     def _get_archetype_iterator[
         has_exclude_mask: Bool = False
     ](
@@ -2471,7 +2727,7 @@ struct Replacer[
         out iterator: Self.HostStorage.Iterator[
             origin_of(self._storage[]._archetypes),
             origin_of(self._storage[]._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """
@@ -2490,7 +2746,7 @@ struct Replacer[
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
         with Zone(
             function_name=(
@@ -2512,7 +2768,7 @@ struct Replacer[
         out iterator: Self.HostStorage.Iterator[
             origin_of(self._storage[]._archetypes),
             origin_of(self._storage[]._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """
@@ -2531,7 +2787,7 @@ struct Replacer[
             Error: when called on a locked world. Do not use during [.HostStorage.query] iteration.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
 
         with Zone(
@@ -2559,7 +2815,7 @@ struct Replacer[
         out iterator: Self.HostStorage.Iterator[
             origin_of(self._storage[]._archetypes),
             origin_of(self._storage[]._locks),
-            has_start_indices=True,
+            has_ranges=True,
         ],
     ) raises LarecsError:
         """Replaces components on entities matching a compile-time filter.
@@ -2577,7 +2833,7 @@ struct Replacer[
                 satisfy the component replacement constraints.
 
         Returns:
-            An iterator over the modified entities.
+            A `LockedEntityRange` over exactly the modified entity rows.
         """
         with Zone(
             function_name=(

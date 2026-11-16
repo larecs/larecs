@@ -5,12 +5,19 @@ from std.os import abort
 from std.sys import has_accelerator
 
 from custom_benchmark import DefaultBench
-from larecs import EntityRange, Filter, KernelContext, SystemContext, World
+from larecs import (
+    ExecutionBackend,
+    EntityRange,
+    Filter,
+    KernelContext,
+    SystemContext,
+    World,
+)
 
 
 @fieldwise_init
 struct Value(Copyable, TrivialRegisterPassable):
-    """GPU-safe benchmark value."""
+    """Device-safe benchmark value."""
 
     var value: Float32
 
@@ -33,7 +40,7 @@ def increment(context: KernelContext[Filter().include[Value]()]):
     """Increments every execution row.
 
     Args:
-        context: Value rows for this execution range or packed GPU launch.
+        context: Value rows for this execution range or packed device launch.
     """
     for entity in context:
         entity.get[Value]().value += 1.0
@@ -53,7 +60,7 @@ def _populate(mut world: World[Value, SelectedTag]) raises:
 
 
 def _bench_full_world(mut bencher: Bencher):
-    """Measures the unchanged ordinary full-world CPU path.
+    """Measures the unchanged ordinary full-world host path.
 
     Args:
         bencher: Benchmark driver.
@@ -78,11 +85,93 @@ def _bench_full_world(mut bencher: Bencher):
         abort("Entity selection benchmark setup failed")
 
 
-def _bench_contiguous_selection[on_gpu: Bool](mut bencher: Bencher):
+@fieldwise_init
+struct ArchetypeTag[index: Int](Copyable, TrivialRegisterPassable):
+    """Creates distinct archetypes without changing kernel work."""
+
+    var value: Int32
+
+
+def _bench_many_archetypes[closure: Bool](mut bencher: Bencher):
+    """Measures lazy host discovery across matching and nonmatching archetypes.
+
+    Parameters:
+        closure: Whether to invoke a lexical closure or thin kernel.
+
+    Args:
+        bencher: Benchmark driver; setup and verification are outside timing.
+    """
+    try:
+        var world = World[
+            Value,
+            ArchetypeTag[0],
+            ArchetypeTag[1],
+            ArchetypeTag[2],
+            ArchetypeTag[3],
+            ArchetypeTag[4],
+            ArchetypeTag[5],
+        ]()
+        comptime for i in range(6):
+            for _ in world.storage.add_entities(
+                Value(0.0), ArchetypeTag[i](0), count=512
+            ):
+                pass
+            for _ in world.storage.add_entities(ArchetypeTag[i](0), count=512):
+                pass
+        for _ in world.storage.add_entities(Value(0.0), count=512):
+            pass
+        var context = SystemContext(world)
+        var calls = 0
+
+        def lexical_kernel(
+            rows: KernelContext[Filter().include[Value]()],
+        ) {mut calls}:
+            """Runs identical row work and retains one lexical invocation count.
+
+            Args:
+                rows: One matching archetype's Value column.
+            """
+            calls += 1
+            increment(rows)
+
+        def run_once() {mut context, imm lexical_kernel}:
+            """Runs one filtered host invocation, aborting on unexpected failure.
+            """
+            try:
+                comptime if closure:
+                    context.run(lexical_kernel)
+                else:
+                    context.run[increment]()
+            except e:
+                print(e)
+                abort("Multi-archetype host benchmark workload failed")
+
+        bencher.iter(run_once)
+        var count = 0
+        var expected_value = Float32(bencher.num_iters)
+        var total = Float32(0)
+        for row in world.storage.query[Filter().read[Value]()]():
+            count += 1
+            var value = row.get[Value]().value
+            if value != expected_value:
+                abort("Multi-archetype host benchmark skipped or repeated rows")
+            total += value
+        if count != 3584 or total <= 0:
+            abort("Multi-archetype host benchmark validation failed")
+        comptime if closure:
+            if calls != bencher.num_iters * 7 or total != Float32(calls * 512):
+                abort("Multi-archetype closure benchmark visit count failed")
+        keep(total)
+    except e:
+        print(e)
+        abort("Multi-archetype host benchmark setup failed")
+
+
+def _bench_contiguous_selection[on_device: Bool](mut bencher: Bencher):
     """Measures repeated execution on one small contiguous selection.
 
     Parameters:
-        on_gpu: Whether to execute on the accelerator.
+        on_device: Whether to execute on the accelerator.
 
     Args:
         bencher: Benchmark driver.
@@ -97,7 +186,12 @@ def _bench_contiguous_selection[on_gpu: Bool](mut bencher: Bencher):
         def run_once() {mut selection}:
             """Runs one pass over the contiguous selection."""
             try:
-                selection.run[increment, on_gpu=on_gpu]()
+                selection.run[
+                    increment,
+                    backend=(
+                        ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+                    ),
+                ]()
                 keep(len(selection))
             except e:
                 print(e)
@@ -110,7 +204,7 @@ def _bench_contiguous_selection[on_gpu: Bool](mut bencher: Bencher):
 
 
 def _bench_disjoint_selection(mut bencher: Bencher):
-    """Measures repeated CPU execution over disjoint single-row ranges.
+    """Measures repeated host execution over disjoint single-row ranges.
 
     Args:
         bencher: Benchmark driver.
@@ -210,6 +304,16 @@ def run_all_entity_selection_benchmarks(mut bench: Bench) raises:
         _bench_full_world,
         BenchId("system cpu, full world 100k"),
         fixed_iterations=100,
+    )
+    bench.bench_function(
+        _bench_many_archetypes[False],
+        BenchId("system cpu, 7 matching of 13 archetypes thin"),
+        fixed_iterations=1000,
+    )
+    bench.bench_function(
+        _bench_many_archetypes[True],
+        BenchId("system cpu, 7 matching of 13 archetypes closure"),
+        fixed_iterations=1000,
     )
     bench.bench_function(
         _bench_contiguous_selection[False],

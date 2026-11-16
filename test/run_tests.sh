@@ -46,4 +46,66 @@ for arg in "$@"; do
     esac
 done
 
+# A complete suite run also verifies public compile-time classifier diagnostics.
+# Individual test-file runs retain the existing focused behavior.
+run_backend_contracts=false
+run_performance=false
+run_synchronization_contracts=false
+run_resource_contracts=false
+run_threaded_contracts=false
+larecs_test_directory="$(cd "$(dirname "$0")" && pwd)"
+for test_path in "${test_args[@]}"; do
+    if [ "${test_path##*/}" = "world_entity_iterator_test.mojo" ]; then
+        python "$larecs_test_directory/check_iteration_contracts.py"
+    fi
+    if [ "${test_path##*/}" = "execution_backend_test.mojo" ]; then
+        run_backend_contracts=true
+    fi
+    if [ "${test_path##*/}" = "threaded_execution_test.mojo" ]; then
+        run_threaded_contracts=true
+    fi
+    if [ "${test_path##*/}" = "resource_adapter_test.mojo" ]; then
+        run_resource_contracts=true
+    fi
+    if [ "${test_path##*/}" = "synchronization_test.mojo" ]; then
+        run_synchronization_contracts=true
+    fi
+    if [ -d "$test_path" ] && \
+        [ "$(cd "$test_path" && pwd)" = "$larecs_test_directory" ]; then
+        run_backend_contracts=true
+        run_performance=true
+        run_resource_contracts=true
+        run_threaded_contracts=true
+        run_synchronization_contracts=true
+        python "$larecs_test_directory/check_iteration_contracts.py"
+        python "$larecs_test_directory/check_struct_constraints.py"
+        bash "$larecs_test_directory/check_spatial_filters.sh"
+        break
+    fi
+done
+
+if "$run_backend_contracts"; then
+    python "$larecs_test_directory/check_execution_backend_contracts.py"
+fi
+
+if "$run_synchronization_contracts"; then
+    python "$larecs_test_directory/check_synchronization_contracts.py"
+fi
+
+if "$run_threaded_contracts"; then
+    python -m unittest discover -s "$larecs_test_directory" -p threaded_cpu_capacity_test.py
+    python "$larecs_test_directory/check_threaded_contracts.py"
+fi
+
+if "$run_resource_contracts"; then
+    python "$larecs_test_directory/check_resource_contracts.py"
+fi
+
 mogo-tester "${precompile_args[@]}" --asan --mojo-build-args="${mojo_build_args[*]}" "${test_args[@]}"
+
+# This bounded CPU benchmark runs on both existing PR test runners. Focused
+# file runs omit it; the full benchmark suite remains an optional manual task.
+if "$run_performance"; then
+    python -m unittest discover -s "$larecs_test_directory" -p '*performance_test.py'
+    python "$larecs_test_directory/../scripts/check_performance.py"
+fi

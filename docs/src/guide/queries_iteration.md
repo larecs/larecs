@@ -170,7 +170,7 @@ A kernel is a component-processing function passed to
 {{< api SystemContext.run >}} or {{< api EntitySelection.run >}}. It receives a {{< api KernelContext >}} and
 iterates over the entities matching its filter. The filter declares which
 components the kernel can write and which it can only read. The same kernel
-can run on the CPU or, for supported component types, a GPU accelerator.
+can run on the host or, for supported component types, an accelerator device.
 
 The `move_entities` kernel declared above writes `Position` and only reads
 `Velocity`. The following direct construction demonstrates how the context
@@ -183,8 +183,8 @@ invokes it:
 
 Calling the same kernel through a selection intersects the kernel filter with
 the selection's saved ranges. The selection remains reusable; execution does
-not change its membership. CPU row indices are local to each selected range,
-while GPU rows index the packed launch, so neither is a stable entity or
+not change its membership. Host row indices are local to each selected range,
+while device rows index the packed launch, so neither is a stable entity or
 selection-wide index.
 
 In an application, the scheduler supplies this context to each system's
@@ -192,3 +192,16 @@ lifecycle methods, and the system calls `run` from there. The system is the
 scheduled unit of application logic; the kernel is the function it delegates
 filtered component processing to. See
 [Systems and the scheduler](../systems_scheduler) for the complete pattern.
+
+With [partitioned spatial storage](spatial_clustering.md#cluster-local-partition-blocks),
+ordinary queries traverse all matching blocks and staging rows. Logical
+archetype composition and query membership stay the same; row indices name a
+physical store and are not stable identifiers. Query locks and independent copy
+cursors apply across block boundaries too.
+
+Queries return `iteration.LockedEntityRange` through `HostStorage.Iterator`.
+They share immutable store indices across copies; each copy owns its traversal
+position and a separate structural lock. Query access stays read-only. For
+execution on changed rows, use `SystemContext` batch operations and
+`EntitySelection.run`; low-level storage ranges are described in
+[batch creation](../adding_and_removing_entities).

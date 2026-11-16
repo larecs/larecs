@@ -1,27 +1,34 @@
-"""Systems and their CPU/GPU execution context.
+"""Systems and their host/device execution context.
 
 Provides `System`, the trait implemented by scheduler-managed systems,
 `SystemContext`, through which a system accesses the world, and
 `KernelContext`, the component/resource view seen by a `SystemContext.run`
-kernel on CPU or GPU.
+kernel on host or device.
 """
 
 from std.builtin.device_passable import DevicePassable, DeviceTypeEncoder
-from std.math import ceildiv
 from std.sys import has_accelerator
 from std.reflection import reflect_fn
 
 from max.gpu.host import DevicePointer
+from max.algorithm import parallelize
+from .execution import _ExecutionGuard, ExecutionBackend
+from .lock import LockGuard
+from .sync import AtomicValue
+from .resource_representation import _plain_device_value
 
 from tracy import Zone
 
+from .archetype import Archetype as _Archetype
 from .world import World
+from .host_storage import _sort_entity_ranges
 from .entity import EntityRange
 from .error import LarecsError, WorldError
 from .component import (
     ComponentType,
+    ComponentManager,
     Components,
-    constrain_gpu_safe_components,
+    constrain_device_safe_components,
 )
 from .filter import Filter
 from .iteration import EntityAccessorIterator
@@ -30,9 +37,13 @@ from .resource import (
     Resources,
     ResourceType,
     ResourceStorage,
-    constrain_gpu_safe_resources,
+    _drain_failed_device,
+    _ResourceInvocation,
+    _validate_resource_spec,
 )
-from .device_storage import DeviceResourceStorage
+from .resource_adapter import DevicePassableResource, _TransferFrame
+from .device_storage import _Segment
+from .gpu_launch import BLOCK_SIZE, gpu_grid_dim
 from .capture import (
     Captures,
     CaptureAccessor,
@@ -152,8 +163,406 @@ def _finalize_system[
         S.finalize(concrete_system, context)
 
 
-comptime BLOCK_SIZE = 2**4
-"""Number of GPU threads per block used when launching kernels."""
+@always_inline
+def _bind_host_resources[
+    required_resources: Resources, origin: MutOrigin
+](ref[origin] resources: ResourceStorage) raises -> _ResourceInvocation[
+    required_resources, origin
+]:
+    """Validates, leases, and prepares one synchronous host invocation.
+
+    Parameters:
+        required_resources: Ordered source and access declarations.
+        origin: Borrow keeping resource storage alive through the invocation.
+
+    Args:
+        resources: World-owned source storage.
+
+    Raises:
+        Error: If validation or host preparation fails.
+
+    Returns:
+        Descriptor owners and source leases retained until explicit release.
+    """
+    _validate_resource_spec[required_resources, False]()
+    var binding = _ResourceInvocation[required_resources, origin](resources)
+    binding.bind_host()
+    return binding^
+
+
+@always_inline
+def _host_kernel_context[
+    filter: Filter,
+    required_resources: Resources,
+    capture_spec: Captures,
+    *WorldTs: ComponentType,
+](
+    mut archetype: _Archetype[*WorldTs],
+    first_row: Int,
+    row_count: Int,
+    resources: ResourceAccessor[required_resources],
+    captures: CaptureAccessor[capture_spec],
+) raises -> KernelContext[filter, required_resources, capture_spec]:
+    """Prepares one bounded host range using invocation-wide bindings.
+
+    Parameters:
+        filter: Component access declarations for this range.
+        required_resources: Resource declarations for the invocation.
+        capture_spec: Explicit capture declarations for the invocation.
+        WorldTs: Component types declared by the world.
+
+    Args:
+        archetype: Matching archetype containing the range.
+        first_row: First row in the caller-validated range.
+        row_count: Exact number of rows to execute.
+        resources: Validated resource pointers shared across ranges.
+        captures: Bound capture pointers shared across ranges.
+
+    Raises:
+        Error: If a declared component column is missing.
+
+    Returns:
+        A context with component pointers offset to the range start and local
+        row numbering. Its untracked references must not escape execution.
+        Revisions of the written columns of the store advance (decision 0021).
+    """
+    comptime for i in range(len(filter)):
+        comptime T = filter._include.ComponentTypes[i]
+        comptime if filter.writes[T]:
+            archetype._storage._touch_column(
+                ComponentManager[*WorldTs].get_id[T]()
+            )
+    var columns = KernelContext[
+        filter, required_resources, capture_spec
+    ].Columns(uninitialized=True)
+    comptime for i in range(len(filter)):
+        comptime T = filter._include.ComponentTypes[i]
+        columns[i] = (
+            archetype._storage.get_component_ptr[T]()
+            .unsafe_offset(first_row)
+            .unsafe_bitcast[UInt8]()
+        )
+    return KernelContext[filter, required_resources, capture_spec](
+        columns^,
+        resources.copy(),
+        capture_columns=captures._pointers.copy(),
+        length=Int32(row_count),
+        thread_count=1,
+    )
+
+
+def _stage_device_columns[
+    filter: Filter, *WorldTs: ComponentType
+](
+    mut world: World[*WorldTs],
+    ranges: List[EntityRange],
+    total: Int,
+    mut frame: _TransferFrame,
+) raises -> List[List[_Segment]]:
+    """Uploads the readable columns of matched ranges, skipping unchanged segments.
+
+    Ranges are packed at increasing offsets in the given order. With device
+    copy reuse enabled, a readable segment is skipped only if the column's
+    previous record at the same position matches its store, incarnation,
+    revision, row range, and offset (decision 0021). The records of every
+    accessed column are removed before any work is queued.
+
+    Parameters:
+        filter: Kernel component access declarations.
+        WorldTs: Component types declared by the world.
+
+    Args:
+        world: World whose device storage is initialized.
+        ranges: Nonempty matched store ranges in packing order.
+        total: Sum of the range row counts.
+        frame: Invocation staging owner.
+
+    Raises:
+        Error: If allocation or transfer fails.
+
+    Returns:
+        Per filter position, the segments the column will hold after a
+        successful run; empty while reuse is disabled.
+    """
+    ref device = world._device_storage.unsafe_value()
+    device._check_host(world.storage._id)
+    comptime column_count = len(filter)
+    var records = List[List[_Segment]](capacity=column_count)
+    comptime for i in range(len(filter)):
+        comptime T = filter._include.ComponentTypes[i]
+        comptime id = ComponentManager[*WorldTs].get_id[T]()
+        var previous = device._take_records[T]()
+        var current = List[_Segment]()
+        comptime if filter.reads[T]:
+            device.reserve_column[T](total)
+        else:
+            device.ensure_column[T](total)
+        var offset = 0
+        for k in range(len(ranges)):
+            var rows = ranges[k]
+            ref store = world.storage._archetypes.unsafe_get(
+                rows.archetype_index
+            )
+            var skip = False
+            if device._reuse:
+                var segment = _Segment(
+                    rows.archetype_index,
+                    store._storage._incarnation,
+                    store._storage._column_revision(id),
+                    rows.first_row,
+                    rows.row_count,
+                    offset,
+                )
+                skip = (
+                    segment.incarnation != 0
+                    and k < len(previous)
+                    and previous[k] == segment
+                )
+                current.append(segment)
+            comptime if filter.reads[T]:
+                if not skip:
+                    device.stage_from_host[T](
+                        frame,
+                        Span(
+                            unsafe_ptr=store._storage.get_component_ptr[
+                                T
+                            ]().unsafe_offset(rows.first_row),
+                            length=rows.row_count,
+                        ),
+                        offset=offset,
+                    )
+            offset += rows.row_count
+        records.append(current^)
+    return records^
+
+
+def _commit_device_columns[
+    filter: Filter, *WorldTs: ComponentType
+](mut world: World[*WorldTs], var records: List[List[_Segment]]):
+    """Records device column contents after successful publication.
+
+    Advances the revision of every written column in each matched store,
+    since publication changed its host values, then stamps the segments.
+
+    Parameters:
+        filter: Kernel component access declarations.
+        WorldTs: Component types declared by the world.
+
+    Args:
+        world: World whose device storage is initialized.
+        records: Segments returned by `_stage_device_columns`.
+    """
+    ref device = world._device_storage.unsafe_value()
+    comptime for i in range(len(filter)):
+        comptime T = filter._include.ComponentTypes[i]
+        comptime id = ComponentManager[*WorldTs].get_id[T]()
+        comptime if filter.writes[T]:
+            for segment in records[i]:
+                world.storage._archetypes.unsafe_get(
+                    segment.store
+                )._storage._touch_column(id)
+            for ref segment in records[i]:
+                segment.revision = world.storage._archetypes.unsafe_get(
+                    segment.store
+                )._storage._column_revision(id)
+        device._restore_records[T](records[i].copy())
+
+
+def _validate_threaded_spec[
+    filter: Filter, required_resources: Resources, capture_spec: Captures
+]():
+    """Checks eligibility independently of worker count or sequential fallback.
+
+    Parameters:
+        filter: Accessed components, excluding filter-only exclusions.
+        required_resources: Explicit read-only plain values or adapted sources;
+            adapted sources may be mutable with concurrent-mutation support.
+        capture_spec: Must be empty for threaded kernels.
+
+    Constraints:
+        Accessed components and ordinary resources must be pointer-free values;
+        ordinary resources must be read-only; mutable adapted sources require
+        `supports_concurrent_mutation`; explicit captures are unsupported.
+    """
+    comptime assert (
+        len(capture_spec) == 0
+    ), "Threaded execution does not support captures"
+    comptime for i in range(len(filter)):
+        comptime assert _plain_device_value[
+            filter._include.ComponentTypes[i]
+        ](), "Threaded components require pointer-free trivial plain values"
+    _validate_resource_spec[required_resources, False, True]()
+    comptime for i in range(len(required_resources)):
+        comptime T = required_resources.ResourceTypes[i]
+        comptime if not conforms_to(T, DevicePassableResource):
+            comptime assert (
+                required_resources._mode[T] == 1
+            ), "Threaded resources require explicit read access"
+            comptime assert _plain_device_value[T](), (
+                "Threaded resources require pointer-free plain values or"
+                " DevicePassableResource adapters"
+            )
+
+
+def _run_threaded[
+    filter: Filter,
+    required_resources: Resources,
+    capture_spec: Captures,
+    KernelFunc: def(
+        KernelContext[filter, required_resources, capture_spec]
+    ) thin -> None,
+    selected: Bool,
+    *WorldTs: ComponentType,
+](mut world: World[*WorldTs], saved_ranges: List[EntityRange]) raises:
+    """Prepares all ranges on the caller, then drains disjoint host jobs and joins.
+
+    Parameters:
+        filter: Kernel component access declaration.
+        required_resources: Read-only invocation resource declarations.
+        capture_spec: Empty capture declaration, retained in the kernel type.
+        KernelFunc: Nonraising thin kernel invoked once per prepared context.
+        selected: Use saved exact ranges rather than discovering whole stores.
+        WorldTs: Component types supported by the world.
+
+    Args:
+        world: Caller-confined world, retained until every worker joins.
+        saved_ranges: Selection membership; ignored for ordinary execution.
+
+    Raises:
+        Error: If execution, resources, ranges, or checked arithmetic are invalid.
+        Preparation completes before any kernel writes; worker failures are fatal.
+    """
+    _validate_threaded_spec[filter, required_resources, capture_spec]()
+    world._check_execution()
+    var active = _ExecutionGuard(
+        Pointer[Bool, MutUntrackedOrigin](
+            unsafe_from_address=Int(Pointer(to=world._execution_active))
+        )
+    )
+    var structural_lock = LockGuard(Pointer(to=world.storage._locks))
+    var binding = _bind_host_resources[required_resources](world.resources)
+    var resources = ResourceAccessor[required_resources](
+        binding.pointers.copy()
+    )
+    var captures = CaptureAccessor[capture_spec]({uninitialized = True})
+    var ranges = List[EntityRange]()
+    comptime bitmask = filter.get_bitmask_filter[*WorldTs]()
+    comptime if selected:
+        ranges = saved_ranges.copy()
+    else:
+        for index in range(len(world.storage._archetypes)):
+            ref store = world.storage._archetypes[index]
+            if len(store) and bitmask.matches(store.get_mask()):
+                ranges.append(EntityRange(index, 0, len(store)))
+    var total = 0
+    for rows in ranges:
+        if rows.archetype_index < 0 or rows.archetype_index >= len(
+            world.storage._archetypes
+        ):
+            raise Error("Invalid threaded store index")
+        ref store = world.storage._archetypes[rows.archetype_index]
+        if (
+            rows.first_row < 0
+            or rows.row_count < 0
+            or rows.first_row > len(store)
+            or rows.row_count > len(store) - rows.first_row
+        ):
+            raise Error("Invalid threaded row range")
+        if not bitmask.matches(store.get_mask()):
+            continue
+        if rows.row_count > Int(Int64.MAX) - total:
+            raise Error("Threaded matched-row count overflows Int")
+        total += rows.row_count
+    comptime if selected:
+        # Validate a sorted copy, preserving whole-range fallback call order.
+        var ordered = ranges.copy()
+        _sort_entity_ranges(ordered)
+        var previous_store = -1
+        var previous_end = 0
+        for rows in ordered:
+            if rows.row_count == 0 or not bitmask.matches(
+                world.storage._archetypes[rows.archetype_index].get_mask()
+            ):
+                continue
+            if (
+                rows.archetype_index == previous_store
+                and rows.first_row < previous_end
+            ):
+                raise Error("Threaded selected ranges overlap")
+            previous_store = rows.archetype_index
+            previous_end = rows.first_row + rows.row_count
+    var config = world.execution_config()
+    var parallel = config.workers() > 1 and total >= config.min_parallel_rows()
+    var chunk_size = max(1, total)
+    if parallel:
+        var target = config.workers() * config.chunks_per_worker()
+        chunk_size = max(1, total // target + Int(total % target != 0))
+    var contexts = List[
+        KernelContext[filter, required_resources, capture_spec]
+    ]()
+    for rows in ranges:
+        if (
+            not bitmask.matches(
+                world.storage._archetypes[rows.archetype_index].get_mask()
+            )
+            or rows.row_count == 0
+        ):
+            continue
+        ref store = world.storage._archetypes.unsafe_get(rows.archetype_index)
+        var first = rows.first_row
+        var remaining = rows.row_count
+        while remaining > 0:
+            var count = min(chunk_size, remaining)
+            if count > Int(Int32.MAX):
+                raise Error("Threaded context exceeds Int32 row limit")
+            contexts.append(
+                _host_kernel_context[filter, required_resources, capture_spec](
+                    store, first, count, resources, captures
+                )
+            )
+            first += count
+            remaining -= count
+    var job_count = len(contexts)
+    var workers = min(config.workers(), job_count)
+    # Each worker can make one terminal claim after all useful claims.
+    if job_count > Int(UInt32.MAX) - workers:
+        raise Error("Threaded job cursor would overflow UInt32")
+    # Publish write invalidation only after every fallible preparation step.
+    # Keep this range predicate synchronized with context preparation above.
+    for rows in ranges:
+        if rows.row_count > 0 and bitmask.matches(
+            world.storage._archetypes[rows.archetype_index].get_mask()
+        ):
+            world.storage._mark_spatial_range[filter](
+                rows.archetype_index, rows.first_row, rows.row_count
+            )
+    if not parallel or workers <= 1:
+        for job in contexts:
+            KernelFunc(job)
+    else:
+        var jobs = contexts.unsafe_ptr()
+        var cursor_owner = AtomicValue[UInt32](0)
+        var cursor = cursor_owner.write_view()
+
+        def worker(lane: Int) {imm jobs, imm job_count, imm cursor}:
+            """Claims jobs dynamically until all prepared contexts are consumed.
+
+            Args:
+                lane: Runtime worker-task index; work is allocated by the cursor.
+            """
+            while True:
+                var index = Int(cursor.fetch_add(1))
+                if index >= job_count:
+                    break
+                KernelFunc(jobs[unsafe_offset=index])
+
+        parallelize(worker, workers, workers)
+    _ = contexts^
+    # All workers joined: complete shared adapter outputs exactly once.
+    binding.finalize()
+    binding.release()
+    _ = structural_lock^
+    _ = active^
 
 
 struct EntitySelection[
@@ -415,9 +824,10 @@ struct EntitySelection[
             KernelContext[filter, required_resources, capture_spec]
         ) thin -> None,
         *Bindings: CaptureBindingType,
-        on_gpu: Bool = False,
+        backend: ExecutionBackend = ExecutionBackend.HOST,
+        threaded: Bool = False,
     ](mut self, *bindings: *Bindings) raises:
-        """Runs a thin CPU or GPU kernel on selected rows matching ``filter``.
+        """Runs a thin host or device kernel on selected rows matching ``filter``.
 
         Parameters:
             filter: Kernel filter intersected with saved selection membership.
@@ -425,184 +835,196 @@ struct EntitySelection[
             capture_spec: Explicit read-only and mutable capture slots.
             KernelFunc: Thin kernel function to invoke.
             Bindings: Inferred explicit capture binding types.
-            on_gpu: Whether to pack and execute matching rows on the GPU.
+            backend: Compile-time target, HOST by default; DEVICE never falls back.
+            threaded: Opt into experimental synchronous host chunk execution.
 
         Args:
             bindings: Capture bindings in ``capture_spec`` order.
 
         Raises:
-            Error: If bindings or resources are invalid, or GPU execution fails.
+            Error: If the world is unusable or already executing; selected ranges
+                are invalid or overlap; bindings or resources are invalid;
+                structural lock slots are exhausted; threaded row totals, job
+                counts, or context sizes overflow; context preparation fails;
+                or device execution fails.
         """
+        _validate_backend[backend]()
+        comptime assert not (
+            threaded and backend == ExecutionBackend.DEVICE
+        ), "Threaded and device execution are mutually exclusive"
+        comptime if threaded:
+            comptime assert (
+                len(Bindings) == 0
+            ), "Threaded execution does not support captures"
+            _run_threaded[
+                filter, required_resources, capture_spec, KernelFunc, True
+            ](self._world[], self._ranges)
+            return
+        self._world[]._check_execution()
+        _validate_resource_spec[
+            required_resources, backend == ExecutionBackend.DEVICE
+        ]()
         var host_captures = _bind_captures[capture_spec](*bindings)
-        var matching_ranges = List[EntityRange]()
-        var total_length = 0
-        comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
-        for selected_range in self._ranges:
-            ref archetype = self._world[].storage._archetypes.unsafe_get(
-                selected_range.archetype_index
+        comptime if backend == ExecutionBackend.HOST:
+            var resource_binding = _bind_host_resources[required_resources](
+                self._world[].resources
             )
-            if selected_range.row_count > 0 and bitmask_filter.matches(
-                archetype.get_mask()
-            ):
-                matching_ranges.append(selected_range)
-                total_length += selected_range.row_count
-
-        comptime if not has_accelerator() or not on_gpu:
-            var resource_pointers = ResourceAccessor[
-                required_resources
-            ].Pointers(uninitialized=True)
-            comptime for i in range(len(required_resources)):
-                comptime T = required_resources.ResourceTypes[i]
-                resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
-                    unsafe_from_address=Int(
-                        Pointer(to=self._world[].resources.get[T]())
-                    )
-                )
             var resource_accessor = ResourceAccessor[required_resources](
-                resource_pointers^
+                resource_binding.pointers.copy()
             )
-
-            for selected_range in matching_ranges:
+            comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
+            for selected_range in self._ranges:
+                self._world[].storage._mark_spatial_range[filter](
+                    selected_range.archetype_index,
+                    selected_range.first_row,
+                    selected_range.row_count,
+                )
                 ref archetype = self._world[].storage._archetypes.unsafe_get(
                     selected_range.archetype_index
                 )
-                var kernel_columns = KernelContext[
-                    filter, required_resources, capture_spec
-                ].Columns(uninitialized=True)
-                comptime for i in range(len(filter)):
-                    comptime T = filter._include.ComponentTypes[i]
-                    kernel_columns[i] = (
-                        archetype._storage.get_component_ptr[T]()
-                        .unsafe_offset(selected_range.first_row)
-                        .unsafe_bitcast[UInt8]()
+                if selected_range.row_count == 0 or not bitmask_filter.matches(
+                    archetype.get_mask()
+                ):
+                    continue
+                KernelFunc(
+                    _host_kernel_context[
+                        filter, required_resources, capture_spec
+                    ](
+                        archetype,
+                        selected_range.first_row,
+                        selected_range.row_count,
+                        resource_accessor,
+                        host_captures,
                     )
-                var kernel_context = KernelContext[
-                    filter, required_resources, capture_spec
-                ](
-                    kernel_columns^,
-                    resource_accessor.copy(),
-                    capture_columns=host_captures._pointers.copy(),
-                    length=Int32(selected_range.row_count),
-                    thread_count=1,
                 )
-                KernelFunc(kernel_context)
-        else:
-            comptime assert constrain_gpu_safe_components[
+            resource_binding.finalize()
+            resource_binding.release()
+        elif has_accelerator():
+            var matching_ranges = List[EntityRange]()
+            var total_length = 0
+            comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
+            for selected_range in self._ranges:
+                ref archetype = self._world[].storage._archetypes.unsafe_get(
+                    selected_range.archetype_index
+                )
+                if selected_range.row_count > 0 and bitmask_filter.matches(
+                    archetype.get_mask()
+                ):
+                    matching_ranges.append(selected_range)
+                    total_length += selected_range.row_count
+
+            comptime assert constrain_device_safe_components[
                 *filter._include.ComponentTypes
             ](), (
-                "EntitySelection.run(..., on_gpu=True) requires every"
-                " accessed component type to be GPU-safe."
-            )
-            comptime assert constrain_gpu_safe_resources[
-                *required_resources.ResourceTypes
-            ](), (
-                "EntitySelection.run(..., on_gpu=True) requires every"
-                " required resource type to be trivially movable."
+                "EntitySelection.run(..., backend=ExecutionBackend.DEVICE)"
+                " requires every accessed component type to be device-safe."
             )
             if not self._world[]._device_storage:
                 raise Error(
-                    "EntitySelection.run(..., on_gpu=True) requires a working"
-                    " GPU device context."
+                    "EntitySelection.run(..., backend=ExecutionBackend.DEVICE)"
+                    " requires a working device context."
                 )
 
             # Required resources and explicit bindings remain validated even
             # when the range/filter intersection is empty.
+            var resource_binding = _ResourceInvocation[
+                required_resources, origin_of(self._world[].resources)
+            ](self._world[].resources)
+            resource_binding.validate_device(
+                self._world[]._device_storage[]._device_context
+            )
             if total_length == 0:
-                comptime for i in range(len(required_resources)):
-                    comptime T = required_resources.ResourceTypes[i]
-                    _ = Pointer(to=self._world[].resources.get[T]())
+                resource_binding.complete_without_launch()
+                resource_binding.release()
                 return
 
             ref device_storage = self._world[]._device_storage[]
-            var device_captures = DeviceCaptureStorage[capture_spec](
-                device_storage._device_context, host_captures
-            )
-            var capture_pointers = HostKernelContext[
-                filter, required_resources, capture_spec
-            ].CaptureBuffers(uninitialized=True)
-            comptime for i in range(len(capture_spec)):
-                capture_pointers[i] = rebind[
-                    DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
-                ](device_captures._buffers[i].unsafe_value().device_ptr())
+            var frame = _TransferFrame(device_storage._device_context)
+            var device_captures = DeviceCaptureStorage[capture_spec]()
+            try:
+                device_captures.prepare(
+                    device_storage._device_context, host_captures, frame
+                )
+                var capture_pointers = HostKernelContext[
+                    filter, required_resources, capture_spec
+                ].CaptureBuffers(uninitialized=True)
+                comptime for i in range(len(capture_spec)):
+                    capture_pointers[i] = rebind[
+                        DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
+                    ](device_captures._buffers[i].unsafe_value().device_ptr())
+                var resource_pointers = resource_binding.bind_device(
+                    device_storage._device_context, frame
+                )
+                var column_records = _stage_device_columns[filter](
+                    self._world[], matching_ranges, total_length, frame
+                )
+                var kernel_columns = HostKernelContext[
+                    filter, required_resources, capture_spec
+                ].Columns(uninitialized=True)
+                comptime for i in range(len(filter)):
+                    comptime T = filter._include.ComponentTypes[i]
+                    kernel_columns[i] = device_storage.get_device_ptr[T]()
 
-            var device_resources = DeviceResourceStorage[required_resources](
-                device_storage._device_context
-            )
-            var resource_pointers = HostKernelContext[
-                filter, required_resources, capture_spec
-            ].ResourceBuffers(uninitialized=True)
-            comptime for i in range(len(required_resources)):
-                comptime T = required_resources.ResourceTypes[i]
-                device_resources.upload[T](self._world[].resources.get[T]())
-                resource_pointers[i] = device_resources.get_device_ptr[T]()
+                var grid_dim = gpu_grid_dim(
+                    total_length, device_storage._max_grid_dim
+                )
+                var kernel_context = HostKernelContext[
+                    filter, required_resources, capture_spec
+                ](
+                    kernel_columns^,
+                    resource_pointers^,
+                    capture_pointers=capture_pointers^,
+                    length=Int32(total_length),
+                    thread_count=Int32(grid_dim * BLOCK_SIZE),
+                )
+                device_storage._device_context.enqueue_function[KernelFunc](
+                    kernel_context,
+                    grid_dim=grid_dim,
+                    block_dim=BLOCK_SIZE,
+                )
 
-            var kernel_columns = HostKernelContext[
-                filter, required_resources, capture_spec
-            ].Columns(uninitialized=True)
-            comptime for i in range(len(filter)):
-                comptime T = filter._include.ComponentTypes[i]
-                comptime if filter.reads[T]:
-                    var packed_offset = 0
-                    for selected_range in matching_ranges:
-                        ref archetype = (
-                            self._world[].storage._archetypes.unsafe_get(
-                                selected_range.archetype_index
+                comptime for i in range(len(filter)):
+                    comptime T = filter._include.ComponentTypes[i]
+                    comptime if filter.writes[T]:
+                        var packed_offset = 0
+                        for selected_range in matching_ranges:
+                            self._world[].storage._mark_spatial_range[filter](
+                                selected_range.archetype_index,
+                                selected_range.first_row,
+                                selected_range.row_count,
                             )
-                        )
-                        var source = Span(
-                            unsafe_ptr=archetype._storage.get_component_ptr[
-                                T
-                            ]().unsafe_offset(selected_range.first_row),
-                            length=selected_range.row_count,
-                        )
-                        device_storage.copy_from_host[T](
-                            source, offset=packed_offset
-                        )
-                        packed_offset += selected_range.row_count
-                else:
-                    device_storage.ensure_column[T](total_length)
-                kernel_columns[i] = device_storage.get_device_ptr[T]()
-
-            var grid_dim = ceildiv(total_length, BLOCK_SIZE)
-            var kernel_context = HostKernelContext[
-                filter, required_resources, capture_spec
-            ](
-                kernel_columns^,
-                resource_pointers^,
-                capture_pointers=capture_pointers^,
-                length=Int32(total_length),
-                thread_count=Int32(grid_dim * BLOCK_SIZE),
-            )
-            device_storage._device_context.enqueue_function[KernelFunc](
-                kernel_context,
-                grid_dim=grid_dim,
-                block_dim=BLOCK_SIZE,
-            )
-
-            comptime for i in range(len(filter)):
-                comptime T = filter._include.ComponentTypes[i]
-                comptime if filter.writes[T]:
-                    var packed_offset = 0
-                    for selected_range in matching_ranges:
-                        ref archetype = (
-                            self._world[].storage._archetypes.unsafe_get(
-                                selected_range.archetype_index
+                            ref archetype = (
+                                self._world[].storage._archetypes.unsafe_get(
+                                    selected_range.archetype_index
+                                )
                             )
-                        )
-                        device_storage.copy_to_host[T](
-                            archetype._storage.get_component_ptr[
-                                T
-                            ]().unsafe_offset(selected_range.first_row),
-                            offset=packed_offset,
-                            length=selected_range.row_count,
-                        )
-                        packed_offset += selected_range.row_count
-
-            comptime for i in range(len(required_resources)):
-                comptime T = required_resources.ResourceTypes[i]
-                device_resources.download[T](self._world[].resources.get[T]())
-            device_captures.copy_back(host_captures)
-            device_storage.synchronize()
+                            device_storage.stage_to_host[T](
+                                frame,
+                                archetype._storage.get_component_ptr[
+                                    T
+                                ]().unsafe_offset(selected_range.first_row),
+                                offset=packed_offset,
+                                length=selected_range.row_count,
+                            )
+                            packed_offset += selected_range.row_count
+                resource_binding.download(frame)
+                device_captures.copy_back(host_captures, frame)
+                device_storage.synchronize()
+                frame.publish()
+                resource_binding.commit_device()
+                _commit_device_columns[filter](self._world[], column_records^)
+                # Outputs are published; adapter failures keep them.
+                resource_binding.finalize()
+            except error:
+                _drain_failed_device(
+                    self._world[].resources,
+                    device_storage._device_context,
+                    error^,
+                    self._world[]._execution_unusable,
+                )
+            finally:
+                resource_binding.release()
+                self._world[]._last_device_upload = frame.uploaded.copy()
 
     def run[
         filter: Filter,
@@ -613,11 +1035,10 @@ struct EntitySelection[
             KernelContext[filter, required_resources, capture_spec]
         ) -> None,
         *Bindings: CaptureBindingType,
-        on_gpu: Bool = False,
-    ](
-        mut self, kernel_func: KernelFunc, *bindings: *Bindings
-    ) raises where not on_gpu:
-        """Runs a value-taking CPU closure on selected matching rows.
+        backend: ExecutionBackend = ExecutionBackend.HOST,
+        threaded: Bool = False,
+    ](mut self, kernel_func: KernelFunc, *bindings: *Bindings) raises:
+        """Runs a value-taking host closure on selected matching rows.
 
         Parameters:
             filter: Kernel filter intersected with saved selection membership.
@@ -625,7 +1046,8 @@ struct EntitySelection[
             capture_spec: Explicit read-only and mutable capture slots.
             KernelFunc: Inferred unified closure type.
             Bindings: Inferred explicit capture binding types.
-            on_gpu: Must remain false; lexical GPU captures are unsupported.
+            backend: Must be HOST; value-taking device callables are unsupported.
+            threaded: Must remain false; threaded kernels must be thin.
 
         Args:
             kernel_func: Closure invoked once per matching selected range.
@@ -634,22 +1056,32 @@ struct EntitySelection[
         Raises:
             Error: If explicit bindings or required resources are invalid.
         """
-        var host_captures = _bind_captures[capture_spec](*bindings)
-        var resource_pointers = ResourceAccessor[required_resources].Pointers(
-            uninitialized=True
+        comptime assert (
+            backend == ExecutionBackend.HOST
+        ), "Value-taking kernel callables require ExecutionBackend.HOST"
+        _validate_backend[backend]()
+        comptime assert not threaded, (
+            "Threaded execution requires a thin kernel; lexical closures are"
+            " unsupported"
         )
-        comptime for i in range(len(required_resources)):
-            comptime T = required_resources.ResourceTypes[i]
-            resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
-                unsafe_from_address=Int(
-                    Pointer(to=self._world[].resources.get[T]())
-                )
-            )
+        self._world[]._check_execution()
+        _validate_resource_spec[
+            required_resources, backend == ExecutionBackend.DEVICE
+        ]()
+        var host_captures = _bind_captures[capture_spec](*bindings)
+        var resource_binding = _bind_host_resources[required_resources](
+            self._world[].resources
+        )
         var resource_accessor = ResourceAccessor[required_resources](
-            resource_pointers^
+            resource_binding.pointers.copy()
         )
         comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
         for selected_range in self._ranges:
+            self._world[].storage._mark_spatial_range[filter](
+                selected_range.archetype_index,
+                selected_range.first_row,
+                selected_range.row_count,
+            )
             ref archetype = self._world[].storage._archetypes.unsafe_get(
                 selected_range.archetype_index
             )
@@ -657,26 +1089,18 @@ struct EntitySelection[
                 archetype.get_mask()
             ):
                 continue
-            var kernel_columns = KernelContext[
-                filter, required_resources, capture_spec
-            ].Columns(uninitialized=True)
-            comptime for i in range(len(filter)):
-                comptime T = filter._include.ComponentTypes[i]
-                kernel_columns[i] = (
-                    archetype._storage.get_component_ptr[T]()
-                    .unsafe_offset(selected_range.first_row)
-                    .unsafe_bitcast[UInt8]()
+            kernel_func(
+                _host_kernel_context[filter, required_resources, capture_spec](
+                    archetype,
+                    selected_range.first_row,
+                    selected_range.row_count,
+                    resource_accessor,
+                    host_captures,
                 )
-            var kernel_context = KernelContext[
-                filter, required_resources, capture_spec
-            ](
-                kernel_columns^,
-                resource_accessor.copy(),
-                capture_columns=host_captures._pointers.copy(),
-                length=Int32(selected_range.row_count),
-                thread_count=1,
             )
-            kernel_func(kernel_context)
+
+        resource_binding.finalize()
+        resource_binding.release()
 
 
 @fieldwise_init
@@ -685,8 +1109,8 @@ struct ResourceAccessor[resources: Resources](Copyable):
     position in ``resources``.
 
     Backed by plain byte pointers rather than a [..resource.ResourceStorage]
-    reference, so the same representation works both for CPU kernels
-    (pointers into host resource storage) and GPU kernels (pointers into
+    reference, so the same representation works both for host kernels
+    (pointers into host resource storage) and device kernels (pointers into
     device buffers uploaded for the call) -- mirroring how ``KernelContext``
     already represents component columns as an array of byte pointers keyed
     by position in the kernel's filter.
@@ -708,29 +1132,102 @@ struct ResourceAccessor[resources: Resources](Copyable):
     var _pointers: Self.Pointers
     """Byte pointers to each resource's buffer, indexed by position in ``resources``."""
 
-    def get[T: ResourceType](self) -> ref[MutUntrackedOrigin] T:
-        """Returns the resource of type T.
+    comptime _writable[
+        T: ResourceType
+    ] = not Self.resources._readonly.Types.contains[
+        T
+    ]() and not Self.resources._writeonly.Types.contains[
+        T
+    ]()
 
-        Always returns a mutable reference, mirroring how
-        `EntityAccessor.get` exposes component columns: the backing
-        pointer is already untracked-mutable (it addresses either host
-        resource storage or an uploaded device buffer), regardless of
-        whether this accessor itself was reached through a mutable or
-        immutable `KernelContext` -- so a kernel can write a resource back
-        even though `KernelFunc`'s non-capturing overload takes its
-        `KernelContext` immutably.
+    def get[
+        T: ResourceType
+    ](self) -> ref[
+        UntrackedOrigin[mut=Self._writable[T]]
+    ] T where not conforms_to(T, DevicePassableResource):
+        """Gets an ordinary source using its declared access mode.
 
         Parameters:
-            T: The type of the resource to retrieve.
+            T: The original source type, never the associated view type.
 
         Returns:
-            The resource of type T.
+            An immutable read reference or mutable read_write reference.
+            References and descriptors must not escape the invocation.
+
+        Constraints:
+            T must be declared with read or read_write access.
         """
         comptime id = Self.resources.index_of[T]()
         comptime assert (
             id != -1
         ), "T must be part of the kernel's required_resources"
-        return self._pointers[id].unsafe_bitcast[T]()[]
+        comptime assert (
+            Self.resources._mode[T] != 2
+        ), "Write-only resources provide set, not get"
+        return (
+            self._pointers[id]
+            .unsafe_bitcast[T]()
+            .unsafe_mut_cast[Self._writable[T]]()[]
+        )
+
+    def get[
+        T: DevicePassableResource
+    ](self) -> ref[ImmUntrackedOrigin] T.View[Self.resources._mode[T] != 1]:
+        """Gets the portable view selected by the declared access.
+
+        `read` selects `T.View[False]`; `write` and `read_write` select
+        `T.View[True]`. The descriptor itself is immutable; mutable views
+        write shared backing buffers through their own operations.
+
+        Parameters:
+            T: The original adapted source type.
+
+        Returns:
+            Host-local or device-local view for this invocation.
+
+        Constraints:
+            T must be declared; mutable access requires adapter support.
+        """
+        comptime id = Self.resources.index_of[T]()
+        comptime assert (
+            id != -1
+        ), "T must be part of the kernel's required_resources"
+        comptime assert (
+            Self.resources._mode[T] == 1 or T.Adapter.supports_mutation
+        ), (
+            "DevicePassableResource mutable access requires"
+            " Adapter.supports_mutation"
+        )
+        return (
+            self._pointers[id]
+            .unsafe_bitcast[T.View[Self.resources._mode[T] != 1]]()
+            .unsafe_mut_cast[False]()[]
+        )
+
+    def set[T: ResourceType](self, var value: T):
+        """Replaces an ordinary source through host write or read_write access.
+
+        Parameters:
+            T: Declared ordinary source type.
+
+        Args:
+            value: New source value to move into the bound resource.
+
+        Constraints:
+            The declaration must permit writing; adapted sources expose views
+            and cannot be replaced from a kernel.
+        """
+        comptime id = Self.resources.index_of[T]()
+        comptime assert (
+            id != -1
+        ), "T must be part of the kernel's required_resources"
+        comptime assert not conforms_to(
+            T, DevicePassableResource
+        ), "DevicePassableResource kernels write through views, not set"
+        comptime assert (
+            Self.resources._mode[T] != 1
+        ), "Read resources cannot be set"
+        self._pointers[id].unsafe_bitcast[T]()[] = value^
 
 
 @fieldwise_init
@@ -744,7 +1241,7 @@ struct KernelContext[
     Parameters:
         filter: The comptime [..filter.Filter] describing the accessed components.
         required_resources: Compile-time resources the kernel may access.
-        capture_spec: Ordered read-only and mutable CPU-local capture slots.
+        capture_spec: Ordered read-only and mutable host-local capture slots.
     """
 
     var length: Int32
@@ -760,7 +1257,7 @@ struct KernelContext[
     """Byte pointers to each included component's column, indexed by position in ``filter``."""
 
     var captures: CaptureAccessor[Self.capture_spec]
-    """Explicitly bound CPU-local values available to this kernel."""
+    """Explicitly bound host-local values available to this kernel."""
 
     var resources: ResourceAccessor[Self.required_resources]
     """Accessor for the kernel's required resources."""
@@ -806,7 +1303,7 @@ struct KernelContext[
         Returns:
             An iterator that yields one row accessor per matching row.
         """
-        # No `Zone` here: this runs as part of the kernel body on the GPU,
+        # No `Zone` here: this runs as part of the kernel body on the device,
         # where the host-only Tracy FFI calls are not available.
         return EntityAccessorIterator[Self.filter](self)
 
@@ -822,7 +1319,7 @@ struct HostKernelContext[
     Parameters:
         filter: The comptime [..filter.Filter] describing the accessed components.
         required_resources: Compile-time resources the kernel may access.
-        capture_spec: Ordered read-only and mutable CPU-local capture slots.
+        capture_spec: Ordered read-only and mutable host-local capture slots.
     """
 
     comptime device_type = KernelContext[
@@ -882,7 +1379,7 @@ struct HostKernelContext[
         Args:
             columns: Device pointers to each included component's column.
             resource_pointers: Device pointers to each required resource's buffer.
-            capture_pointers: Device pointers to uploaded CPU-local values.
+            capture_pointers: Device pointers to uploaded host-local values.
             length: Total number of rows the kernel operates over.
             thread_count: Number of threads participating in the launch.
         """
@@ -1033,6 +1530,55 @@ struct SystemContext[
                     EntityRange(archetype_index, 0, len(archetype))
                 )
 
+    def select_cluster[
+        filter: Filter = Filter()
+    ](
+        mut self,
+        key: UInt64,
+        out selection: EntitySelection[Self.world_origin, *Self.WorldTs],
+    ) raises LarecsError:
+        """Lock exactly the maintained cluster rows matching a component filter.
+
+        Maintenance must be clean when membership is captured. Later writes
+        do not change this selection's membership; release it before maintenance.
+        Multiple logical archetypes and dense-cluster blocks may contribute.
+
+        Parameters:
+            filter: Component filter intersected with the cluster membership.
+
+        Args:
+            key: Exact registered classifier key.
+
+        Raises:
+            LarecsError: If partition storage is disabled, maintenance is pending,
+                storage is locked, or no structural lock is available.
+
+        Returns:
+            A locked selection, empty when the maintained cluster has no matches.
+        """
+        self.world[].storage._assert_unlocked()
+        if not self.world[].storage._spatial_partitioned:
+            raise Error(
+                "Cluster selection requires partitioned spatial storage"
+            )
+        if (
+            self.world[].storage._spatial_full
+            or len(self.world[].storage._spatial_dirty) > 0
+        ):
+            raise Error("Cluster selection requires clean spatial maintenance")
+        selection = EntitySelection[Self.world_origin, *Self.WorldTs](
+            self.world, List[EntityRange]()
+        )
+        var bitmask_filter = self.world[].storage.filter[filter]()
+        for index in range(len(selection._world[].storage._archetypes)):
+            ref block = selection._world[].storage._archetypes[index]
+            if block._partition_key and len(block) > 0:
+                if (
+                    block._partition_key.value() == key
+                    and bitmask_filter.matches(block.get_mask())
+                ):
+                    selection._ranges.append(EntityRange(index, 0, len(block)))
+
     def add_entities[
         *Ts: ComponentType
     ](
@@ -1174,104 +1720,121 @@ struct SystemContext[
             KernelContext[filter, required_resources, capture_spec]
         ) thin -> None,
         *Bindings: CaptureBindingType,
-        on_gpu: Bool = False,
+        backend: ExecutionBackend = ExecutionBackend.HOST,
+        threaded: Bool = False,
     ](mut self, *bindings: *Bindings) raises:
         """Runs a kernel over component rows matching ``filter``.
+
+        On the GPU, zero matching rows are a no-op: no columns or resource
+        buffers are prepared, no transfers are queued, and no kernel is
+        launched. The world's device storage and all required resources are
+        still validated, in that order. Selecting DEVICE without accelerator
+        support raises an error, including for empty matches.
 
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
             required_resources: Compile-time resources the kernel may access.
-            capture_spec: Ordered read-only and mutable CPU-local capture slots.
+            capture_spec: Ordered read-only and mutable host-local capture slots.
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
-            on_gpu: Whether to execute the kernel against device storage.
+            backend: Compile-time target, HOST by default; DEVICE never falls back.
+            threaded: Opt into experimental synchronous host chunk execution.
 
         Args:
             bindings: Explicit read-only and mutable bindings in declared slot order.
 
         Raises:
-            Error: If a required resource is missing, or if the device
-                execution path fails to allocate or synchronize.
+            Error: If the world is unusable or already executing; bindings or
+                required resources are invalid; structural lock slots are
+                exhausted; threaded row totals, job counts, or context sizes
+                overflow; context preparation fails; or the device execution
+                path fails to allocate or synchronize.
         """
         with Zone(
             function_name=String(
                 t"SystemContext.run[filter: Filter, required_resources:"
                 t" Resources, //, KernelFunc:"
-                t" {reflect_fn[KernelFunc].display_name()} , *, on_gpu: Bool]()"
+                t" {reflect_fn[KernelFunc].display_name()} , *, backend:"
+                t" ExecutionBackend]()"
             )
         ):
+            _validate_backend[backend]()
+            comptime assert not (
+                threaded and backend == ExecutionBackend.DEVICE
+            ), "Threaded and device execution are mutually exclusive"
+            comptime if threaded:
+                comptime assert (
+                    len(Bindings) == 0
+                ), "Threaded execution does not support captures"
+                _run_threaded[
+                    filter, required_resources, capture_spec, KernelFunc, False
+                ](self.world[], List[EntityRange]())
+                return
+            self.world[]._check_execution()
+            _validate_resource_spec[
+                required_resources, backend == ExecutionBackend.DEVICE
+            ]()
             var host_captures = _bind_captures[capture_spec](*bindings)
-            var length = 0
-            comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
-            comptime exclude_mask = filter.get_exclude_mask[*Self.WorldTs]()
-            var matching_archetypes = (
-                self.world[].storage._get_archetype_iterator(
-                    include_mask,
-                    exclude_mask,
+            comptime if backend == ExecutionBackend.HOST:
+                var resource_binding = _bind_host_resources[required_resources](
+                    self.world[].resources
                 )
-            )
-            for ref archetype in matching_archetypes.copy():
-                length += len(archetype)
-
-            comptime if not has_accelerator() or not on_gpu:
-                var resource_pointers = ResourceAccessor[
-                    required_resources
-                ].Pointers(uninitialized=True)
-
-                comptime for i in range(len(required_resources)):
-                    comptime T = required_resources.ResourceTypes[i]
-                    resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
-                        unsafe_from_address=Int(
-                            Pointer(to=self.world[].resources.get[T]())
+                var resource_accessor = ResourceAccessor[required_resources](
+                    resource_binding.pointers.copy()
+                )
+                comptime bitmask_filter = filter.get_bitmask_filter[
+                    *Self.WorldTs
+                ]()
+                # Fix the invocation boundary and reacquire each archetype by
+                # index instead of retaining the list buffer across callbacks.
+                var archetype_count = len(self.world[].storage._archetypes)
+                for index in range(archetype_count):
+                    if (
+                        self.world[].storage._spatial_enabled
+                        and bitmask_filter.matches(
+                            self.world[].storage._archetypes[index].get_mask()
+                        )
+                    ):
+                        self.world[].storage._mark_spatial_range[filter](
+                            index,
+                            0,
+                            len(self.world[].storage._archetypes[index]),
+                        )
+                    ref archetype = self.world[].storage._archetypes.unsafe_get(
+                        index
+                    )
+                    if len(archetype) == 0 or not bitmask_filter.matches(
+                        archetype.get_mask()
+                    ):
+                        continue
+                    KernelFunc(
+                        _host_kernel_context[
+                            filter, required_resources, capture_spec
+                        ](
+                            archetype,
+                            0,
+                            len(archetype),
+                            resource_accessor,
+                            host_captures,
                         )
                     )
-
-                var resource_accessor = ResourceAccessor[required_resources](
-                    resource_pointers^
-                )
-
-                # A filter can match multiple archetypes. Run the kernel once
-                # per matching archetype so each component pointer refers to a
-                # homogeneous SoA range and the accessor's row id remains
-                # local to that archetype.
-                for ref archetype in matching_archetypes^:
-                    var kernel_columns = KernelContext[
-                        filter, required_resources, capture_spec
-                    ].Columns(uninitialized=True)
-
-                    comptime for i in range(len(filter)):
-                        comptime T = filter._include.ComponentTypes[i]
-                        kernel_columns[
-                            i
-                        ] = archetype._storage.get_component_ptr[
-                            T
-                        ]().unsafe_bitcast[
-                            UInt8
-                        ]()
-
-                    var kernel_context = KernelContext[
-                        filter, required_resources, capture_spec
-                    ](
-                        kernel_columns^,
-                        resource_accessor.copy(),
-                        capture_columns=host_captures._pointers.copy(),
-                        # Each archetype's columns are separate SoA
-                        # allocations, not offsets into one shared buffer
-                        # (unlike the GPU path below, which flattens every
-                        # matching archetype into one device column). The
-                        # kernel's row loop must therefore stop at this
-                        # archetype's own length, not the total across every
-                        # matching archetype -- using the total here made
-                        # every archetype but the largest walk past the end
-                        # of its columns.
-                        length=Int32(len(archetype)),
-                        thread_count=1,
+                resource_binding.finalize()
+                resource_binding.release()
+            elif has_accelerator():
+                var length = 0
+                comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
+                comptime exclude_mask = filter.get_exclude_mask[*Self.WorldTs]()
+                var matching_archetypes = (
+                    self.world[].storage._get_archetype_iterator(
+                        include_mask,
+                        exclude_mask,
                     )
-                    KernelFunc(kernel_context)
+                )
+                for ref archetype in matching_archetypes.copy():
+                    length += len(archetype)
 
-            else:
-                # `on_gpu=True` moves every accessed component and resource
+                # Device execution moves every accessed component and resource
                 # across the host/device boundary as raw bytes (see
                 # `DeviceComponentStorage`/`DeviceResourceStorage`): the
                 # destination is never constructed through `T`'s copy
@@ -1280,41 +1843,40 @@ struct SystemContext[
                 # logic) would be silently corrupted or leaked by that copy,
                 # so reject it here at compile time rather than at the
                 # `DeviceBuffer` call sites below where the failure would be
-                # far less legible. Host execution (`on_gpu=False`) is
+                # far less legible. Host execution is
                 # unaffected -- it never takes this branch.
-                comptime assert constrain_gpu_safe_components[
+                comptime assert constrain_device_safe_components[
                     *filter._include.ComponentTypes
                 ](), (
-                    "SystemContext.run(..., on_gpu=True) requires every"
-                    " accessed component type to be GPU-safe (conform to"
-                    " GPUComponentType, i.e. TrivialRegisterPassable) for raw"
-                    " byte transfer between host and device."
-                )
-                comptime assert constrain_gpu_safe_resources[
-                    *required_resources.ResourceTypes
-                ](), (
-                    "SystemContext.run(..., on_gpu=True) requires every"
-                    " required resource type to be trivially movable for raw"
-                    " byte transfer between host and device."
+                    "SystemContext.run(..., backend=ExecutionBackend.DEVICE)"
+                    " requires every accessed component type to be device-safe"
+                    " (conform to DeviceComponentType, i.e."
+                    " TrivialRegisterPassable) for raw byte transfer between"
+                    " host and device."
                 )
 
                 if not self.world[]._device_storage:
                     raise Error(
-                        "SystemContext.run(..., on_gpu=True) requires a"
-                        " working GPU device context, but this world's"
-                        " device storage never initialized -- either no"
-                        " accelerator is available, or `DeviceContext()`"
-                        " construction failed when the world was created."
-                        " Run with on_gpu=False to execute on the CPU"
-                        " instead."
+                        "SystemContext.run(...,"
+                        " backend=ExecutionBackend.DEVICE) requires a working"
+                        " device context, but this world's device storage never"
+                        " initialized -- either no accelerator is available, or"
+                        " `DeviceContext()` construction failed when the world"
+                        " was created. Run with backend=ExecutionBackend.HOST"
+                        " to execute on the host instead."
                     )
 
                 # No component columns exist for an unmatched filter. Validate
                 # resources without allocating or launching any device work.
+                var resource_binding = _ResourceInvocation[
+                    required_resources, origin_of(self.world[].resources)
+                ](self.world[].resources)
+                resource_binding.validate_device(
+                    self.world[]._device_storage[]._device_context
+                )
                 if length == 0:
-                    comptime for i in range(len(required_resources)):
-                        comptime T = required_resources.ResourceTypes[i]
-                        _ = Pointer(to=self.world[].resources.get[T]())
+                    resource_binding.complete_without_launch()
+                    resource_binding.release()
                     return
 
                 # Reuse the world's device storage across calls instead of
@@ -1329,108 +1891,123 @@ struct SystemContext[
                 # follow it.
                 ref device_storage = self.world[]._device_storage[]
 
-                var device_captures = DeviceCaptureStorage[capture_spec](
-                    device_storage._device_context, host_captures
-                )
-                var capture_pointers = HostKernelContext[
-                    filter, required_resources, capture_spec
-                ].CaptureBuffers(uninitialized=True)
-                comptime for i in range(len(capture_spec)):
-                    capture_pointers[i] = rebind[
-                        DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
-                    ](device_captures._buffers[i].unsafe_value().device_ptr())
-
-                var device_resources = DeviceResourceStorage[
-                    required_resources
-                ](device_storage._device_context)
-                var resource_pointers = HostKernelContext[
-                    filter, required_resources, capture_spec
-                ].ResourceBuffers(uninitialized=True)
-
-                comptime for i in range(len(required_resources)):
-                    comptime T = required_resources.ResourceTypes[i]
-                    device_resources.upload[T](self.world[].resources.get[T]())
-                    resource_pointers[i] = device_resources.get_device_ptr[T]()
-
-                var kernel_columns = HostKernelContext[
-                    filter, required_resources, capture_spec
-                ].Columns(uninitialized=True)
-
-                comptime for i in range(len(filter)):
-                    comptime T = filter._include.ComponentTypes[i]
-
-                    comptime if filter.reads[T]:
-                        # A filter can match multiple archetypes; each is a
-                        # separate homogeneous host range that must land at
-                        # its own offset in the flat device column,
-                        # matching how the download loop below reads them
-                        # back. Uploading every archetype at the default
-                        # `offset=0` would overwrite each archetype with
-                        # the next, corrupting every column but the last.
-                        var offset = 0
-                        for ref archetype in matching_archetypes.copy():
-                            device_storage.copy_from_host[T](
-                                archetype._storage.get_component_span[T](),
-                                offset=offset,
-                            )
-                            offset += len(archetype)
-                    else:
-                        # `T` is write-only for this kernel: its prior
-                        # value is never read, so there is nothing to
-                        # upload. The column still needs to exist and be
-                        # sized for `length`, since the kernel writes
-                        # through it and the download loop below reads the
-                        # result back.
-                        device_storage.ensure_column[T](length)
-
-                    kernel_columns[i] = device_storage.get_device_ptr[T]()
-
-                var grid_dim = ceildiv(length, BLOCK_SIZE)
-                if length > 0:
-                    var kernel_context = HostKernelContext[
+                var frame = _TransferFrame(device_storage._device_context)
+                var device_captures = DeviceCaptureStorage[capture_spec]()
+                try:
+                    device_captures.prepare(
+                        device_storage._device_context, host_captures, frame
+                    )
+                    var capture_pointers = HostKernelContext[
                         filter, required_resources, capture_spec
-                    ](
-                        kernel_columns^,
-                        resource_pointers^,
-                        capture_pointers=capture_pointers^,
-                        length=Int32(length),
-                        thread_count=Int32(grid_dim * BLOCK_SIZE),
+                    ].CaptureBuffers(uninitialized=True)
+                    comptime for i in range(len(capture_spec)):
+                        capture_pointers[i] = rebind[
+                            DevicePointer[
+                                mut=True, DType.uint8, MutUntrackedOrigin
+                            ]
+                        ](
+                            device_captures._buffers[i]
+                            .unsafe_value()
+                            .device_ptr()
+                        )
+                    var resource_pointers = resource_binding.bind_device(
+                        device_storage._device_context, frame
                     )
-                    device_storage._device_context.enqueue_function[KernelFunc](
-                        kernel_context,
-                        grid_dim=grid_dim,
-                        block_dim=BLOCK_SIZE,
+                    var matched_ranges = List[EntityRange](
+                        capacity=len(matching_archetypes._archetype_indices[])
                     )
-
+                    for index in matching_archetypes._archetype_indices[]:
+                        matched_ranges.append(
+                            EntityRange(
+                                index,
+                                0,
+                                len(
+                                    self.world[].storage._archetypes.unsafe_get(
+                                        index
+                                    )
+                                ),
+                            )
+                        )
+                    var column_records = _stage_device_columns[filter](
+                        self.world[], matched_ranges, length, frame
+                    )
+                    var kernel_columns = HostKernelContext[
+                        filter, required_resources, capture_spec
+                    ].Columns(uninitialized=True)
                     comptime for i in range(len(filter)):
                         comptime T = filter._include.ComponentTypes[i]
-
-                        comptime if filter.writes[T]:
-                            var offset = 0
-                            for ref archetype in matching_archetypes.copy():
-                                device_storage.copy_to_host[T](
-                                    archetype._storage.get_component_ptr[T](),
-                                    offset=offset,
-                                    length=len(archetype),
-                                )
-                                offset += len(archetype)
-                        # `T` is read-only for this kernel: nothing on the
-                        # device could have changed it, so there is
-                        # nothing to download.
-
-                    comptime for i in range(len(required_resources)):
-                        comptime T = required_resources.ResourceTypes[i]
-                        device_resources.download[T](
-                            self.world[].resources.get[T]()
+                        kernel_columns[i] = device_storage.get_device_ptr[T]()
+                    var grid_dim = gpu_grid_dim(
+                        length, device_storage._max_grid_dim
+                    )
+                    if length > 0:
+                        var kernel_context = HostKernelContext[
+                            filter, required_resources, capture_spec
+                        ](
+                            kernel_columns^,
+                            resource_pointers^,
+                            capture_pointers=capture_pointers^,
+                            length=Int32(length),
+                            thread_count=Int32(grid_dim * BLOCK_SIZE),
                         )
-
-                    # `device_resources` was constructed from
-                    # `device_storage._device_context`, so both storages
-                    # share the same underlying device context and a single
-                    # synchronize flushes every operation enqueued above by
-                    # either one.
-                    device_captures.copy_back(host_captures)
-                device_storage.synchronize()
+                        device_storage._device_context.enqueue_function[
+                            KernelFunc
+                        ](
+                            kernel_context,
+                            grid_dim=grid_dim,
+                            block_dim=BLOCK_SIZE,
+                        )
+                        comptime for i in range(len(filter)):
+                            comptime T = filter._include.ComponentTypes[i]
+                            comptime if filter.writes[T]:
+                                var offset = 0
+                                for ref archetype in matching_archetypes.copy():
+                                    if (
+                                        self.world[].storage._spatial_enabled
+                                        and not self.world[].storage._spatial_full
+                                        and self.world[].storage._spatial_inputs.get(
+                                            Self.World.HostStorage.component_manager.get_id[
+                                                T
+                                            ]()
+                                        )
+                                    ):
+                                        for row in range(len(archetype)):
+                                            self.world[].storage._enqueue_spatial_dirty(
+                                                archetype.get_entity(row)
+                                            )
+                                    device_storage.stage_to_host[T](
+                                        frame,
+                                        archetype._storage.get_component_ptr[
+                                            T
+                                        ](),
+                                        offset=offset,
+                                        length=len(archetype),
+                                    )
+                                    offset += len(archetype)
+                            # `T` is read-only for this kernel: nothing on the
+                            # device could have changed it, so there is
+                            # nothing to download.
+                        # Stage resource outputs on the same invocation queue.
+                        resource_binding.download(frame)
+                    device_captures.copy_back(host_captures, frame)
+                    device_storage.synchronize()
+                    frame.publish()
+                    resource_binding.commit_device()
+                    _commit_device_columns[filter](
+                        self.world[], column_records^
+                    )
+                    # Outputs are published; adapter failures keep them.
+                    resource_binding.finalize()
+                except error:
+                    _drain_failed_device(
+                        self.world[].resources,
+                        device_storage._device_context,
+                        error^,
+                        self.world[]._execution_unusable,
+                    )
+                finally:
+                    resource_binding.release()
+                    self.world[]._last_device_upload = frame.uploaded.copy()
 
     def run[
         filter: Filter,
@@ -1441,20 +2018,20 @@ struct SystemContext[
             KernelContext[filter, required_resources, capture_spec]
         ) -> None,
         *Bindings: CaptureBindingType,
-        on_gpu: Bool = False,
-    ](
-        mut self, kernel_func: KernelFunc, *bindings: *Bindings
-    ) raises where not on_gpu:
+        backend: ExecutionBackend = ExecutionBackend.HOST,
+        threaded: Bool = False,
+    ](mut self, kernel_func: KernelFunc, *bindings: *Bindings) raises:
         """Runs a kernel closure over component rows matching ``filter``.
 
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
             required_resources: Compile-time resources the kernel may access.
-            capture_spec: Ordered read-only and mutable CPU-local capture slots.
+            capture_spec: Ordered read-only and mutable host-local capture slots.
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
-            on_gpu: Whether to execute the kernel against device storage.
+            backend: Must be HOST; value-taking device callables are unsupported.
+            threaded: Must remain false; threaded kernels must be thin.
 
         Args:
             kernel_func: The kernel closure to run once per matching
@@ -1463,9 +2040,9 @@ struct SystemContext[
             bindings: Explicit read-only and mutable bindings in declared slot order.
 
         Note:
-            Captures may borrow CPU-local values with ``imm`` or ``mut``.
+            Captures may borrow host-local values with ``imm`` or ``mut``.
             Resource access uses the same API as the non-capturing overload.
-            This overload executes synchronously on the CPU only.
+            This overload executes synchronously on the host only.
 
         Raises:
             Error: If a required resource is missing.
@@ -1474,61 +2051,76 @@ struct SystemContext[
             function_name=(
                 "SystemContext.run[filter: Filter, required_resources:"
                 " Resources, //, KernelFunc: def(KernelContext[filter,"
-                " required_resources]) -> None, *, on_gpu:"
-                " Bool](kernel_func: KernelFunc)"
+                " required_resources]) -> None, *, backend:"
+                " ExecutionBackend](kernel_func: KernelFunc)"
             )
         ):
-            var host_captures = _bind_captures[capture_spec](*bindings)
-            comptime include_mask = filter.get_include_mask[*Self.WorldTs]()
-            comptime exclude_mask = filter.get_exclude_mask[*Self.WorldTs]()
-            var matching_archetypes = (
-                self.world[].storage._get_archetype_iterator(
-                    include_mask,
-                    exclude_mask,
-                )
+            comptime assert (
+                backend == ExecutionBackend.HOST
+            ), "Value-taking kernel callables require ExecutionBackend.HOST"
+            _validate_backend[backend]()
+            comptime assert not threaded, (
+                "Threaded execution requires a thin kernel; lexical closures"
+                " are unsupported"
             )
-
-            var resource_pointers = ResourceAccessor[
-                required_resources
-            ].Pointers(uninitialized=True)
-            comptime for i in range(len(required_resources)):
-                comptime T = required_resources.ResourceTypes[i]
-                resource_pointers[i] = Pointer[UInt8, MutUntrackedOrigin](
-                    unsafe_from_address=Int(
-                        Pointer(to=self.world[].resources.get[T]())
+            self.world[]._check_execution()
+            _validate_resource_spec[
+                required_resources, backend == ExecutionBackend.DEVICE
+            ]()
+            var host_captures = _bind_captures[capture_spec](*bindings)
+            var resource_binding = _bind_host_resources[required_resources](
+                self.world[].resources
+            )
+            var resource_accessor = ResourceAccessor[required_resources](
+                resource_binding.pointers.copy()
+            )
+            comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
+            # Fix the invocation boundary and reacquire each archetype by
+            # index instead of retaining the list buffer across callbacks.
+            var archetype_count = len(self.world[].storage._archetypes)
+            for index in range(archetype_count):
+                if (
+                    self.world[].storage._spatial_enabled
+                    and bitmask_filter.matches(
+                        self.world[].storage._archetypes[index].get_mask()
+                    )
+                ):
+                    self.world[].storage._mark_spatial_range[filter](
+                        index, 0, len(self.world[].storage._archetypes[index])
+                    )
+                ref archetype = self.world[].storage._archetypes.unsafe_get(
+                    index
+                )
+                if len(archetype) == 0 or not bitmask_filter.matches(
+                    archetype.get_mask()
+                ):
+                    continue
+                kernel_func(
+                    _host_kernel_context[
+                        filter, required_resources, capture_spec
+                    ](
+                        archetype,
+                        0,
+                        len(archetype),
+                        resource_accessor,
+                        host_captures,
                     )
                 )
+            resource_binding.finalize()
+            resource_binding.release()
 
-            var resource_accessor = ResourceAccessor[required_resources](
-                resource_pointers^
-            )
 
-            # A filter can match multiple archetypes. Run the kernel once per
-            # matching archetype so each component pointer refers to a
-            # homogeneous SoA range and the accessor's row id remains local to
-            # that archetype.
-            for ref archetype in matching_archetypes^:
-                var kernel_columns = KernelContext[
-                    filter, required_resources, capture_spec
-                ].Columns(uninitialized=True)
+def _validate_backend[backend: ExecutionBackend]() raises:
+    """Rejects invalid choices and unavailable compile-time device support.
 
-                comptime for i in range(len(filter)):
-                    comptime T = filter._include.ComponentTypes[i]
-                    kernel_columns[i] = archetype._storage.get_component_ptr[
-                        T
-                    ]().unsafe_bitcast[UInt8]()
+    Parameters:
+        backend: Explicit compile-time execution target.
 
-                var kernel_context = KernelContext[
-                    filter, required_resources, capture_spec
-                ](
-                    kernel_columns^,
-                    resource_accessor.copy(),
-                    capture_columns=host_captures._pointers.copy(),
-                    # See the matching comment in the other `run` overload:
-                    # each archetype's columns are a separate allocation, so
-                    # the row loop must stop at this archetype's own length,
-                    # not the total across every matching archetype.
-                    length=Int32(len(archetype)),
-                    thread_count=1,
-                )
-                kernel_func(kernel_context)
+    Raises:
+        Error: If DEVICE is selected without accelerator compilation support.
+    """
+    comptime assert (
+        backend == ExecutionBackend.HOST or backend == ExecutionBackend.DEVICE
+    ), "Invalid execution backend"
+    comptime if backend == ExecutionBackend.DEVICE and not has_accelerator():
+        raise Error("ExecutionBackend.DEVICE requires accelerator support")

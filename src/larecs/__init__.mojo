@@ -5,8 +5,8 @@ It is based on the ECS [Arche](https://github.com/mlange-42/arche), implemented 
 
 Larecs 1.0 is currently in beta, so public APIs may still change before the
 stable 1.0.0 release. After that release, public APIs follow semantic
-versioning unless they are explicitly marked experimental. GPU execution is
-currently such an experimental API.
+versioning unless they are explicitly marked experimental. Device execution is
+currently such an experimental API. Threaded host execution is also experimental.
 
 Example:
 
@@ -93,6 +93,12 @@ main()
 ```
 
 Exports:
+ - sync.AtomicValue
+ - sync.AtomicView
+ - sync.CompareExchangeResult
+ - sync.Synchronized
+ - sync.SyncView
+ - sync.TryAccess
  - capture.Captures
  - capture.ReadCapture
  - capture.MutCapture
@@ -126,6 +132,12 @@ Exports:
  - system.SystemContext
  - system.KernelContext
  - types.ComponentId
+ - spatial.SpatialClassifier
+ - spatial.grid_cell
+ - spatial.morton_key_3d
+ - execution.ExecutionBackend
+ - execution.ThreadedExecutionConfig
+ - resource_representation.PlainValue
  - world.World
 """
 from .world import World
@@ -155,3 +167,26 @@ from .capture import (
     read_capture,
     mut_capture,
 )
+
+from .spatial import SpatialClassifier, grid_cell, morton_key_3d
+
+from .sync import (
+    AtomicValue,
+    AtomicView,
+    CompareExchangeResult,
+    Synchronized,
+    SyncView,
+    TryAccess,
+)
+
+from .resource_adapter import (
+    DevicePassableResource,
+    ResourceAccess,
+    ResourceAdapter,
+    ResourceDeviceCache,
+    ReadBuffer,
+    BufferResource,
+)
+
+from .execution import ExecutionBackend, ThreadedExecutionConfig
+from .resource_representation import PlainValue

@@ -7,10 +7,9 @@ types and offers helpers for checking their validity.
 from std.collections.check_bounds import check_bounds
 from std.sys import size_of
 
-from std.collections import Set
-
 from tracy import Zone
 
+from ._type_list import _TypeChecks
 from .bitmask import BitMask
 from .types import ComponentId
 
@@ -18,10 +17,10 @@ from .types import ComponentId
 comptime ComponentType = Copyable & Deinitable
 """The trait that components must conform to."""
 
-comptime GPUComponentType = TrivialRegisterPassable
-"""Trait subset of [.ComponentType] safe for GPU raw-byte transfer.
+comptime DeviceComponentType = TrivialRegisterPassable
+"""Trait subset of [.ComponentType] safe for device raw-byte transfer.
 
-`SystemContext.run(..., on_gpu=True)` moves component columns between host
+`SystemContext.run(..., backend=ExecutionBackend.DEVICE)` moves component columns between host
 and device buffers via a plain byte copy (see
 [..device_storage.DeviceComponentStorage]): the destination never runs
 `T`'s copy constructor or destructor, only `memcpy`s its bytes. That is
@@ -38,24 +37,21 @@ be redundant.
 """
 
 
-def constrain_gpu_safe_components[*Ts: ComponentType]() -> Bool:
-    """Checks whether all component types are safe for GPU raw-byte transfer.
+def constrain_device_safe_components[*Ts: ComponentType]() -> Bool:
+    """Checks whether all component types are safe for device raw-byte transfer.
 
     Parameters:
         Ts: The component types to check.
 
     Returns:
-        True when every type in ``Ts`` conforms to [.GPUComponentType].
+        True when every type in ``Ts`` conforms to [.DeviceComponentType].
     """
     with Zone(
         function_name=(
-            "component.constrain_gpu_safe_components[*Ts: ComponentType]()"
+            "component.constrain_device_safe_components[*Ts: ComponentType]()"
         )
     ):
-        comptime for i in range(len(Ts)):
-            comptime if not conforms_to(Ts[i], GPUComponentType):
-                return False
-        return True
+        return _TypeChecks[*Ts].device_safe()
 
 
 @fieldwise_init
@@ -91,10 +87,7 @@ def constrain_components_unique[*Ts: ComponentType]() -> Bool:
             "component.constrain_components_unique[*Ts: ComponentType]()"
         )
     ):
-        var set = Set[String]()
-        comptime for i in range(len(Ts)):
-            _ = set.insert(reflect[Ts[i]].name())
-        return len(set) == len(Ts)
+        return _TypeChecks[*Ts].unique[by_name=True]()
 
 
 def constrain_valid_components[*Ts: ComponentType]() -> Bool:
@@ -213,7 +206,9 @@ struct ComponentManager[
         ):
             comptime for i in range(len(Ts)):
                 comptime T = Ts[i]
-                comptime if reflect[T].name() not in Self._registry:
+                comptime if _TypeChecks[*Self.ComponentTypes].index_of[
+                    T, by_name=True
+                ]() == -1:
                     return False
             return True
 

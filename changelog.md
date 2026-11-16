@@ -4,6 +4,60 @@
 
 ### Added
 
+- Add experimental mutable adapted resources. `read` selects an adapter's
+  `View[False]`; `write` (fresh, adapter-initialized output) and `read_write`
+  (preserved contents) select `View[True]`, which may be a distinct writer type.
+  Opt in with `supports_mutation` for sequential host runs and
+  `supports_concurrent_mutation` for device and threaded runs. Adapters prepare
+  once per invocation, including empty queries; device outputs are staged and
+  published before `finalize`. Add `ResourceAccess`, the cache helpers
+  `upload_mutable`, `fill`, and `download`, and a capture-free scatter example.
+  Host paths are tested on Linux and macOS; device paths are tested on NVIDIA
+  A100 and Apple M4.
+
+- Add experimental opt-in `threaded=True` host execution for ordinary and exact
+  selected kernel calls, with fixed `World(execution_config=...)` worker-task
+  budgets and dynamically claimed contiguous chunks. Keep ordinary sequential
+  execution and below-cutoff whole-range fallback unchanged. Admit pointer-free
+  accessed components and explicit read-only resources, including shared
+  `KernelView` adapters; reject unsafe bindings and active-world lifecycle changes.
+  Validate Linux concurrency; macOS arm64 validation remains pending.
+  Trivial types with `StaticTuple` or `InlineArray` fields of scalars can
+  conform to the `PlainValue` marker to declare a pointer-free representation
+  that reflection cannot inspect.
+
+- Add source-declared `DevicePassableResource` adapters, portable read-only
+  views, `BufferResource`, and source-keyed allocation reuse. Kernels keep
+  `get[Source]()` on host and device; current source edits and replacements
+  require no rebinding. Add `Resources().read/write/read_write` declarations.
+
+
+- Add target-local `AtomicValue` and `Synchronized` owners with shared views,
+  32-bit atomic operations, nonblocking read/write guards, and compiler-enforced
+  guard borrows. CPU tests cover actual concurrent workers; device paths are
+  experimental; Apple initially supports relaxed scalar operations plus acquire
+  loads and release stores.
+  Dedicated ECS bindings, collection domains, and deferred waiting remain planned.
+
+- Add opt-in growable cluster-local partitions beneath logical component-defined
+  archetypes, with staged structural writes, typed transfers, source swap-removal,
+  allocation reclamation, and exact locked `SystemContext.select_cluster`
+  membership. Ordinary queries, bulk changes, and CPU/GPU execution traverse
+  cluster stores while preserving entity locations and component lifetimes. Retain
+  deferred row reordering as the default; add paired maintenance/scan/cell-frame
+  benchmarks and capacity-derived memory evidence for both layouts.
+
+- Add a shared PR performance gate with twelve CPU ECS cases alongside the
+  spatial suite, paired base/current sampling, confirmed regression failures,
+  and retained JSON, Markdown, and diagnostic evidence on Linux and macOS.
+
+- Add small spatial layout/cadence comparisons and same-runner performance
+  regression checks to the complete PR test suite.
+
+- Add owned read-only spatial classifiers, explicit full-scan row maintenance,
+  and checked grid/Morton-key helpers. Maintenance groups equal keys within
+  existing archetypes while preserving entity locations and component lifetimes.
+
 - Support `with` blocks for `EntitySelection`, including in-place mutation
   chains and automatic lock release on normal, early, and exceptional exits.
   ([#174](https://github.com/larecs/larecs/pull/174))
@@ -20,6 +74,58 @@
   https://prefix.dev/tree-d/nightly. ([#251](https://github.com/larecs/larecs/pull/251))
 
 ### Changed
+
+- Replace mutation-result start-index iteration with bounded `LockedEntityRange`
+  storage adapters, preserving read-only queries, independent cursor/lock copies,
+  and shared immutable membership metadata. Use `SystemContext` selections for
+  batch kernel execution; explicit iterator specializations use `has_ranges`.
+- Replace `on_device` (formerly `on_gpu`) boolean kernel target flags with the
+  compile-time `backend=ExecutionBackend.HOST/DEVICE` enum on ordinary and selected
+  execution. Host remains the default; unavailable device execution now raises
+  instead of falling back. Value-taking callables require HOST.
+
+- **Breaking:** declare `ResourceAdapter.View` as `comptime View[mut: Bool]`
+  and return `Self.View[False]` from `bind_host` and `prepare_device`.
+  `DevicePassableResource.KernelView` now defaults to `View[False]`; remove
+  explicit declarations. Mutable declarations of adapters without mutation
+  support report "requires Adapter.supports_mutation".
+- Stage high-level device transfers in owned buffers and publish downloads only
+  after successful completion. Drain failures; reject further execution if
+  completion cannot be confirmed. Reject resource changes during active leases.
+- Reject owning, pointer-bearing, nontrivial, and opaque ordinary device
+  resources. Migrate heap-backed device sources to read-only adapters; opaque
+  fixed arrays require an explicit supported representation. Legacy
+  `Resources[T]()` remains `read_write` for ordinary resources.
+
+
+- Remove spatial `block_capacity`: each logical archetype/cluster now owns one
+  contiguous growable store. Classifier configuration controls cluster granularity;
+  keep staging, typed transfers, exact selections, and empty-store reclamation.
+
+- Launch device kernels with 256-thread blocks instead of 16, so blocks fill
+  whole warps/wavefronts and occupancy is no longer limited by the
+  per-multiprocessor block count. Cap the grid at the thread-based upper bound
+  of one resident wave, where the device reports it; larger row counts are
+  covered by the grid-stride loop.
+
+- Rename the beta execution option `on_gpu` to `on_device`,
+  `GPUComponentType`/`GPUResourceType` to
+  `DeviceComponentType`/`DeviceResourceType`, and the
+  `constrain_gpu_safe_components`/`constrain_gpu_safe_resources` helpers to
+  `constrain_device_safe_components`/`constrain_device_safe_resources`.
+  Use host/device terminology for execution and transfers while retaining
+  CPU/GPU for hardware. Existing callers must update these names; execution
+  behavior and supported hardware are unchanged.
+
+- Defer spatial classification until explicit maintenance, deduplicating dirty
+  entity identities across mutable input references, setters, CPU kernels,
+  selected execution, and GPU copy-back. Clean boundaries skip work; structural
+  changes request full rebuilds. Add explicit entity marking/full invalidation
+  for raw writes and preserve cached keys and pending work after classifier errors.
+
+- Share CPU resource binding and bounded kernel context setup across ordinary
+  and selected execution, with lazy matching-range discovery and no temporary
+  CPU range metadata.
 
 - Prefer selection kernels over iterating low-level host-storage batch mutation
   results; selections keep structural changes locked until explicit release or
