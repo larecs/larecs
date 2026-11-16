@@ -24,3 +24,16 @@ _Avoid_: Parallel systems, when only chunks within one run are concurrent.
 A resource's kernel-facing representation, distinct from its owning source.
 It describes the data available to the kernel on its execution target.
 _Avoid_: Resource owner, when referring to the view.
+
+**Device copy**:
+The device-held bytes of one resource or of one store's component column,
+last transferred to or from the host.
+_Avoid_: Device cache, when referring to contents rather than allocations.
+
+**Revision**:
+A per-item number that Larecs advances whenever a resource or a store's
+component column may have changed on the host.
+_Avoid_: Generation (an entity's recycling count), version.
+
+**Stale device copy**:
+A device copy whose recorded revision differs from the item's current revision.
