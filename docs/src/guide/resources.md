@@ -225,18 +225,309 @@ To run this same kernel on a device, replace its host `run` call with:
     context.run[move_with_time, on_device=True]()
 ```
 
-For device execution, accessed components must conform to
-`TrivialRegisterPassable`; required resources must satisfy
-`is_trivially_movable`. Resources do not need to declare
-`TrivialRegisterPassable` themselves. Larecs copies each resource's bytes to
-the device before execution and back afterward, including kernel changes.
+For device execution, components must conform to `TrivialRegisterPassable`.
+Ordinary resources need a supported pointer-free representation with trivial
+copy, move, and destruction. Numeric values, `Bool`, and aggregates of those
+values are accepted without declaring `TrivialRegisterPassable`. Owning
+collections, host pointers, and opaque representations (including fixed `Array`
+fields in this increment) are rejected. Host kernels still support owning resources.
 
-Trivial movability does **not** make host heap allocations accessible to the
-device. The transfer does not follow pointers, copy `List` or `Dict` contents,
-or invoke `DevicePassable` encoding. Do not pass host-backed collections or
-host-side `TileTensor` descriptors as resources through this path. They need
-an explicit device representation and transfer support, which this API does
-not yet provide. Heap-backed resources remain supported in host kernels.
+## Resource permissions
+
+`Resources[T]()` preserves `read_write` access. Prefer explicit declarations:
+
+```mojo
+comptime required = Resources().read[Time]().read_write[Statistics]()
+```
+
+A `read` getter is immutable and its device buffer is never downloaded.
+`read_write` permits mutable `get[T]()` and copies device changes back after
+successful completion. Host `write[T]()` offers `set[T](value)` only; it rejects
+`get[T]()`. Device write-only resources are unsupported because conditional
+shared writes could publish uninitialized data. Applications must synchronize
+concurrent writes to ordinary shared resources themselves.
+
+## Portable owning resources
+
+Use `BufferResource` for a contiguous scalar collection. The same kernel requests
+the original source type and receives its read-only `ReadBuffer` view on both
+backends:
+
+```mojo
+from larecs import BufferResource, Filter, KernelContext, Resources, SystemContext, World
+
+comptime Samples = BufferResource[DType.int32]
+comptime required = Resources().read[Samples]()
+
+def add_sample(context: KernelContext[Filter().include[Int32](), required]):
+    ref samples = context.resources.get[Samples]()
+    for entity in context:
+        entity.get[Int32]() += samples[0]
+
+def main() raises:
+    var world = World[Int32]()
+    world.resources.add(Samples([Int32(7), Int32(8)]))
+    _ = world.storage.add_entities(Int32(1), count=37)
+    var context = SystemContext(world)
+    context.run[add_sample]()
+    context.run[add_sample, on_device=True]()
+    world.resources.get[Samples]().samples[0] = 9
+    context.run[add_sample]()
+```
+
+Device execution requires a working accelerator. Samples are uploaded every
+invocation; device allocation capacity is reused. The host source remains
+unchanged by device view access. `ReadBuffer` has `len` and bounds-checked
+indexing; empty buffers have length zero and must not be indexed.
+
+### Defining a custom portable resource
+
+Implement `DevicePassableResource` when your resource owns data that cannot be
+copied directly to a device, or needs a domain-specific kernel API. Keep the
+owning host type, its kernel view, and transfer logic separate:
+
+| Type | Contains | Used by |
+| --- | --- | --- |
+| `Grid` | Owning `List` and current dimensions | Application code between runs |
+| `GridView` | Immutable sample pointer, dimensions, and sampling methods | The same kernel on either backend |
+| `GridAdapter` | Static validation and view preparation methods | Larecs during `run` |
+
+The source declares `KernelView` and `Adapter` as compile-time members. The
+adapter declares the matching `Source` and `View`; it needs no constructor or
+instance fields. Every method reads the current source, including configuration
+such as dimensions.
+
+This complete example uses a rectangular grid. Its view exposes `last()` to
+keep pointer arithmetic inside the resource API. A scientific view can instead
+provide interpolation, coordinate lookup, or other read-only operations.
+
+```mojo {doctest="guide_custom_resource" global=true hide=true}
+# SKIP_DEBUG
+# SKIP_ASAN
+```
+
+```mojo {doctest="guide_custom_resource" global=true}
+from std.sys import has_accelerator
+from std.testing import assert_equal
+from larecs import (
+    DevicePassableResource,
+    ResourceAdapter,
+    ResourceDeviceCache,
+    Filter,
+    KernelContext,
+    Resources,
+    SystemContext,
+    World,
+)
+
+
+@fieldwise_init
+struct Grid(DevicePassableResource):
+    """Owns current host samples and grid metadata."""
+
+    comptime KernelView = GridView
+    comptime Adapter = GridAdapter
+    var values: List[Int32]
+    var width: Int
+    var height: Int
+
+
+@fieldwise_init
+struct GridView(TrivialRegisterPassable):
+    """Portable read-only descriptor over current target-local samples."""
+
+    var values: Pointer[Int32, ImmUntrackedOrigin]
+    var width: Int
+    var height: Int
+
+    def last(self) -> Int32:
+        """Reads the last sample of this validated nonempty grid.
+
+        Returns:
+            Last grid sample.
+        """
+        return self.values[unsafe_offset=self.width * self.height - 1]
+
+
+struct GridAdapter(ResourceAdapter):
+    """Stateless adapter using current dimensions and cached sample capacity."""
+
+    comptime Source = Grid
+    comptime View = GridView
+
+    @staticmethod
+    def validate(source: Self.Source) raises:
+        """Checks a nonempty rectangular grid before preparing either target.
+
+        Args:
+            source: Current host owner.
+
+        Raises:
+            Error: If dimensions overflow or do not match sample storage.
+        """
+        if source.width <= 0 or source.height <= 0:
+            raise Error("This grid requires positive dimensions")
+        if source.width > 9223372036854775807 // source.height:
+            raise Error("Grid dimensions overflow")
+        if source.width * source.height != len(source.values):
+            raise Error("Grid dimensions must match sample count")
+
+    @staticmethod
+    def bind_host(source: Self.Source) raises -> Self.View:
+        """Borrows immutable samples from the validated host owner.
+
+        Args:
+            source: Current validated source.
+
+        Raises:
+            Error: If descriptor preparation fails.
+
+        Returns:
+            Descriptor over host samples.
+        """
+        return {
+            Pointer[Int32, ImmUntrackedOrigin](
+                unsafe_from_address=Int(source.values.unsafe_ptr())
+            ),
+            source.width,
+            source.height,
+        }
+
+    @staticmethod
+    def prepare_device(
+        source: Self.Source, mut cache: ResourceDeviceCache
+    ) raises -> Self.View:
+        """Uploads current samples and returns the same descriptor type.
+
+        Args:
+            source: Current validated source.
+            cache: Source-type, context-local allocation cache.
+
+        Raises:
+            Error: If sample allocation or upload fails.
+
+        Returns:
+            Descriptor over device samples.
+        """
+        return {
+            cache.upload[Int32](0, Span(source.values)),
+            source.width,
+            source.height,
+        }
+
+```
+
+`validate` runs before preparation on either backend, even when no entities
+match. Check sample counts and arithmetic here; a trivial view descriptor does
+not prove that its pointer indexing is valid. This grid rejects empty storage,
+so `last()` is always defined after successful validation.
+
+`bind_host` borrows the owner's samples without copying. Its untracked immutable
+pointer relies on Larecs retaining the source throughout the invocation; it must
+never point into a temporary local collection. `prepare_device` uploads the
+samples through the supplied cache and returns the same descriptor with a device
+pointer. Larecs uploads the descriptor itself; the adapter does not need to.
+
+### Registering and using the custom resource
+
+Declare read access using the **source type**, and keep that same type in
+`get[Grid]()`. Inside the kernel the result is an immutable `GridView`, on both
+host and device. Outside the kernel, `world.resources.get[Grid]()` returns the
+owning `Grid` for edits. The following continues the example above:
+
+```mojo {doctest="guide_custom_resource" global=true}
+comptime required = Resources().read[Grid]()
+
+
+def add_grid_sample(
+    context: KernelContext[Filter().include[Int32](), required]
+):
+    """Adds the grid's last sample to each matching component.
+
+    Args:
+        context: Component rows and the read-only GridView binding.
+    """
+    ref grid = context.resources.get[Grid]()
+    for entity in context:
+        entity.get[Int32]() += grid.last()
+
+
+def main() raises:
+    """Uses one custom resource and kernel on the host and, if available, device.
+
+    Raises:
+        Error: If resource validation, execution, or a result check fails.
+    """
+    var world = World[Int32]()
+    world.resources.add(Grid([Int32(1), Int32(2), Int32(3), Int32(9)], 2, 2))
+    var entity = world.storage.add_entity(Int32(1))
+    var context = SystemContext(world)
+
+    context.run[add_grid_sample]()
+    assert_equal(world.storage.get[Int32](entity), 10)
+
+    # World-side access returns the owning Grid, so samples can be edited.
+    world.resources.get[Grid]().values[3] = 5
+    context.run[add_grid_sample]()
+    assert_equal(world.storage.get[Int32](entity), 15)
+
+    comptime if has_accelerator():
+        context.run[add_grid_sample, on_device=True]()
+        assert_equal(world.storage.get[Int32](entity), 20)
+        assert_equal(world.resources.get[Grid]().values[3], 5)
+
+```
+
+The host calls always run; the device call runs when an accelerator is available.
+No explicit binding registration or manual transfer is required. Editing the
+owner between runs changes what the next invocation sees. Kernel results go to
+components; the read-only resource is never downloaded or changed by the kernel.
+Host-only resources can continue implementing `ResourceType` without an adapter.
+
+### Adapter allocation and access rules
+
+Use nonnegative cache slots for sample allocations. Slot `-1` is reserved for
+Larecs's view descriptor. For multiple arrays, give each array its own stable
+slot, such as `0` for samples and `1` for coordinates. Each world keeps a separate
+cache per source type, tied to its device context. Capacity is reused, but every
+preparation uploads current contents; adapters need no revision tracking.
+
+The cache accepts supported pointer-free trivial sample
+values, snapshots them in native owned staging, and returns an immutable device
+pointer. Adapters must use cache-owned allocations and this upload helper;
+queued copies from external host pointers or pointers to temporary allocations
+violate the lifetime contract. Views may contain immutable pointers and trivial
+metadata; mutable pointer fields are rejected. Adapters remain responsible for
+valid device addresses and pointee interpretation.
+
+There is no adapter factory or instance. Registration happens automatically on
+`add` and insert-on-`set`; source types identify bindings, so two resources may
+share the same view type. A wrapper can adapt a third-party owner. See the
+[compiled grid example](../../design/research/resource-view-probe.mojo).
+
+Only `read` is supported for adapted sources, including host execution.
+`Resources[AdaptedSource]()` and mutable declarations fail compilation.
+`get[Source]()` always returns the associated view; kernels cannot access the
+owner. Edit the world-side owner between runs, including whole-instance
+assignment through `world.resources.get[T]() = T(...)`; the next run validates
+and uploads the new source without rebinding. Copied worlds have independent host
+owners and empty resource caches.
+
+## Invocation lifetime and failures
+
+`run` completes synchronously. Larecs retains sources and descriptors throughout
+execution, rejects reentrant lookup/replacement/removal of bound sources, and
+rejects duplicate source declarations. Previously escaped `UnsafeAnyOrigin`
+references must not mutate or resize the source while a kernel uses its view;
+views and references must not escape the invocation. Copying or destroying leased
+storage through an escaped alias aborts because lifecycle operations cannot raise.
+
+Device component, capture, and resource downloads use owned staging and publish
+only after synchronization succeeds. On failure Larecs drains the queue and
+propagates the error; if completion remains unknown, further execution on the
+world raises. Failed calls discard staged outputs, without promising rollback of
+other host effects. Empty device matches still validate resources and adapters
+but perform no device allocation, upload, or launch.
 
 ## Removing resources
 
