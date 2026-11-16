@@ -46,4 +46,24 @@ for arg in "$@"; do
     esac
 done
 
+# A complete suite run also verifies public compile-time classifier diagnostics.
+# Individual test-file runs retain the existing focused behavior.
+run_spatial_performance=false
+larecs_test_directory="$(cd "$(dirname "$0")" && pwd)"
+for test_path in "${test_args[@]}"; do
+    if [ -d "$test_path" ] && \
+        [ "$(cd "$test_path" && pwd)" = "$larecs_test_directory" ]; then
+        run_spatial_performance=true
+        bash "$larecs_test_directory/check_spatial_filters.sh"
+        break
+    fi
+done
+
 mogo-tester "${precompile_args[@]}" --asan --mojo-build-args="${mojo_build_args[*]}" "${test_args[@]}"
+
+# This bounded CPU benchmark runs on both existing PR test runners. Focused
+# file runs omit it; the full benchmark suite remains an optional manual task.
+if "$run_spatial_performance"; then
+    python -m unittest discover -s "$larecs_test_directory" -p spatial_performance_test.py
+    python "$larecs_test_directory/../scripts/check_spatial_performance.py"
+fi

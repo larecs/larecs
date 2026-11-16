@@ -1,6 +1,10 @@
-# Decision 0003: Grid-stride entity iteration
+---
+id: "0003"
+title: "Grid-stride entity iteration"
+status: accepted
+---
 
-Status: Accepted and implemented for CPU and GPU kernel iteration.
+# Decision 0003: Grid-stride entity iteration
 
 ## Context
 
