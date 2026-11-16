@@ -1,0 +1,35 @@
+name: Nightly changelog
+
+# Every PR into `nightly` adds an entry to the Unreleased section of
+# changelog.md that links the PR, so the section lists every feature that
+# reached `nightly`. Label a PR `no-changelog` to skip the check.
+
+on:
+  pull_request:
+    branches: [nightly]
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+
+permissions: {}
+
+jobs:
+  check:
+    name: Changelog entry
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check changelog entry
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          reference="([#${PR_NUMBER}](https://github.com/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}))"
+          # Lines of the Unreleased section, up to the next release heading.
+          if awk '/^## \[Unreleased\]/ { found = 1; next } found && /^## / { exit } found' changelog.md \
+            | grep -qF -- "${reference}"; then
+            echo "Found the changelog entry for #${PR_NUMBER}."
+          else
+            echo "::error file=changelog.md::Add an entry for #${PR_NUMBER} to the Unreleased section that ends with ${reference}, or label the PR 'no-changelog'."
+            exit 1
+          fi
