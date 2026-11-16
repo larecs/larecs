@@ -18,10 +18,10 @@ from .types import ComponentId
 comptime ComponentType = Copyable & Deinitable
 """The trait that components must conform to."""
 
-comptime GPUComponentType = TrivialRegisterPassable
-"""Trait subset of [.ComponentType] safe for GPU raw-byte transfer.
+comptime DeviceComponentType = TrivialRegisterPassable
+"""Trait subset of [.ComponentType] safe for device raw-byte transfer.
 
-`SystemContext.run(..., on_gpu=True)` moves component columns between host
+`SystemContext.run(..., on_device=True)` moves component columns between host
 and device buffers via a plain byte copy (see
 [..device_storage.DeviceComponentStorage]): the destination never runs
 `T`'s copy constructor or destructor, only `memcpy`s its bytes. That is
@@ -38,22 +38,22 @@ be redundant.
 """
 
 
-def constrain_gpu_safe_components[*Ts: ComponentType]() -> Bool:
-    """Checks whether all component types are safe for GPU raw-byte transfer.
+def constrain_device_safe_components[*Ts: ComponentType]() -> Bool:
+    """Checks whether all component types are safe for device raw-byte transfer.
 
     Parameters:
         Ts: The component types to check.
 
     Returns:
-        True when every type in ``Ts`` conforms to [.GPUComponentType].
+        True when every type in ``Ts`` conforms to [.DeviceComponentType].
     """
     with Zone(
         function_name=(
-            "component.constrain_gpu_safe_components[*Ts: ComponentType]()"
+            "component.constrain_device_safe_components[*Ts: ComponentType]()"
         )
     ):
         comptime for i in range(len(Ts)):
-            comptime if not conforms_to(Ts[i], GPUComponentType):
+            comptime if not conforms_to(Ts[i], DeviceComponentType):
                 return False
         return True
 

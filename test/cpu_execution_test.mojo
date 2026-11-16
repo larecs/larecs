@@ -1,4 +1,4 @@
-"""Shared CPU execution preserves exact ranges and invocation-wide bindings."""
+"""Shared host execution preserves exact ranges and invocation-wide bindings."""
 
 from std.testing import (
     assert_equal,
@@ -55,7 +55,7 @@ def update_rows(rows: KernelContext[cpu_filter, Resources[History](), slots]):
 
 
 def _check_ranges[selected: Bool, closure: Bool]() raises:
-    """Checks all CPU entry points against independently expected membership.
+    """Checks all host entry points against independently expected membership.
 
     Parameters:
         selected: Whether to run bounded disjoint selected ranges.
@@ -85,7 +85,7 @@ def _check_ranges[selected: Bool, closure: Bool]() raises:
         """Checks lexical captures alongside explicit captures and resources.
 
         Args:
-            rows: One matching CPU range.
+            rows: One matching host range.
         """
         lexical_calls += 1
         update_rows(rows)
@@ -156,7 +156,7 @@ def _check_ranges[selected: Bool, closure: Bool]() raises:
 
 
 def test_cpu_ranges_and_bindings() raises:
-    """All four CPU forms preserve disjoint membership and shared bindings.
+    """All four host forms preserve disjoint membership and shared bindings.
 
     Raises:
         Error: If a range, binding, or filter contract is violated.
@@ -170,7 +170,7 @@ def _check_empty[closure: Bool, selected: Bool]() raises:
     """Validates missing resources even when no range matches.
 
     Parameters:
-        closure: Whether to use the value-taking CPU overload.
+        closure: Whether to use the value-taking host overload.
         selected: Whether to execute through an empty selection.
 
     Raises:
@@ -242,7 +242,7 @@ def _check_empty[closure: Bool, selected: Bool]() raises:
 
 
 def test_empty_cpu_matches_validate_resources() raises:
-    """Missing resources fail in both CPU overloads with empty membership.
+    """Missing resources fail in both host overloads with empty membership.
 
     Raises:
         Error: If empty-match validation or lock cleanup fails.
@@ -268,7 +268,7 @@ def excluded_rows(
 
 
 def _check_filtered[selected: Bool]() raises:
-    """Checks exclusion and exclusive filters on both CPU range sources.
+    """Checks exclusion and exclusive filters on both host range sources.
 
     Parameters:
         selected: Whether to intersect a saved selection with the filters.
@@ -321,7 +321,7 @@ def _check_filtered[selected: Bool]() raises:
 
 
 def test_cpu_exclusion_and_exclusive_filters() raises:
-    """Ordinary and selected CPU paths preserve filter intersections.
+    """Ordinary and selected host paths preserve filter intersections.
 
     Raises:
         Error: If either range source executes an ineligible row.
@@ -367,10 +367,10 @@ def grow_archetypes(
 
 
 def _check_archetype_growth[closure: Bool]() raises:
-    """Checks a fixed CPU invocation boundary across archetype-list relocation.
+    """Checks a fixed host invocation boundary across archetype-list relocation.
 
     Parameters:
-        closure: Whether to invoke the thin or lexical CPU overload.
+        closure: Whether to invoke the thin or lexical host overload.
 
     Raises:
         Error: If setup, traversal, or an assertion fails.
@@ -418,10 +418,10 @@ def _check_archetype_growth[closure: Bool]() raises:
 
 
 def test_cpu_archetype_boundary_survives_list_relocation() raises:
-    """Neither CPU form retains a stale list pointer or visits appended archetypes.
+    """Neither host form retains a stale list pointer or visits appended archetypes.
 
     Raises:
-        Error: If internal callback growth invalidates ordinary CPU traversal.
+        Error: If internal callback growth invalidates ordinary host traversal.
     """
     _check_archetype_growth[False]()
     _check_archetype_growth[True]()
@@ -431,7 +431,7 @@ comptime functions = __functions_in_module()
 
 
 def main() raises:
-    """Runs the CPU execution contract tests.
+    """Runs the host execution contract tests.
 
     Raises:
         Error: If a contract test fails.
