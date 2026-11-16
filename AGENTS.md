@@ -26,10 +26,16 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
   exists, create the work branch only this way, not with `git switch -c`,
   `git checkout -b`, or `git branch`.
 - Open PRs against `nightly`. Target `main` only when the developer asks for a
-  promotion, release preparation, or an urgent stable fix. Promote merged
-  nightly PRs with `scripts/nightly.sh promote <PR>` and merge `main` back with
-  `scripts/nightly.sh sync`; [CONTRIBUTING.md](CONTRIBUTING.md) describes the
-  lifecycle.
+  promotion, release preparation, or an urgent stable fix. Every PR into
+  `nightly` adds an Unreleased entry to `changelog.md` ending with the PR link,
+  such as `([#187](https://github.com/larecs/larecs/pull/187))`.
+- When the developer asks to promote features, they name them as their
+  changelog entries on `nightly` describe them. Find each entry's PR, cherry-pick
+  that PR's merge commit onto a branch from `main`, check that `main`'s
+  Unreleased section gained exactly those entries, and open one PR against
+  `main`.
+  [CONTRIBUTING.md](CONTRIBUTING.md) describes the full lifecycle, including
+  merging `main` back into `nightly`.
 - If tooling already started you on its own branch, such as a managed worktree,
   create the linked branch with `gh issue develop` without `--checkout`, then
   run `git fetch origin <branch>` and `git switch <branch>` before your first
