@@ -4,5 +4,10 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.sl-markdown-content img[src$=".svg"] { background: white; max-width: 100%; }
+.sl-markdown-content .diagram { overflow-x: auto; }
+.sl-markdown-content .diagram img[src$=".svg"] {
+  background: white;
+  min-width: 720px;
+  max-width: none;
+}
 .sl-markdown-content details { margin-block: 1rem; }

@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import { larecsDocumentation } from './src/pipeline/integration.mjs';
 const deployment = new URL(process.env.DOCS_BASE_URL || 'https://larecs.github.io/larecs/dev/');
 export default defineConfig({
   site: deployment.origin,
@@ -32,5 +33,5 @@ export default defineConfig({
         { label: 'Development', items: ['inside/development', { autogenerate: { directory: 'inside/development' } }] },
       ] },
     ],
-  })],
+  }), larecsDocumentation()],
 });

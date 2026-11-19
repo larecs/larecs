@@ -6,8 +6,9 @@ weight = 4
 
 Run the publishing checks after changing a page, example, API contract, or
 figure. Work from the repository root with the [locked setup](../setup).
-`mojo doc` supplies declarations; `scripts/render_docs.py` generates API and
-handwritten pages for Astro and Starlight. Pagefind indexes the rendered site.
+`mojo doc` supplies declarations. Astro’s content loader reads compiler JSON
+and authored pages directly, resolves examples and type links, and formats
+declarations. Starlight renders the content; Pagefind indexes the site.
 
 ## Prepare the environment
 
@@ -30,11 +31,11 @@ pixi run verify-docs
 ```
 
 Both `build-docs` and `verify-docs` regenerate compiler JSON, API metadata,
-and Markdown. Mogo-tester 3 reads labelled doctests directly from
-`src/larecs/` and `docs/src/`; both commands compile and execute these doctests,
-every particle program, and every program referenced by an `example` directive
-before rendering the site. Missing programs, regions, entry points, or unlabelled
-Mojo listings fail the build. An assertion or execution failure prevents
+and Astro content entries. Mogo-tester 3 reads labelled doctests
+from `src/larecs/` and `docs/src/`; both commands compile and execute these
+alongside every particle program and every program referenced by an `example`
+directive. Missing programs, regions, entry points, unchecked listings, or
+incomplete source doctest coverage fail the build. An execution failure prevents
 publishing. There is no exclusion list.
 
 `pixi run doctest` runs the source doctests and examples independently of site
@@ -48,9 +49,10 @@ anchors, and legacy URLs. `verify-docs` additionally runs regression fixtures,
 Chromium layout, search, and redirect checks, then requires byte-identical clean
 regeneration at the same revision and deployment URL.
 
-Generated files live under `docs/site/src/content/docs/`, `docs/site/data/`,
-and `docs/site/public/`. They are disposable. Commit authored
-pages under `docs/src/`, runnable programs, renderer sources, lock files,
+Astro loads pages into its content store without writing an intermediate
+Markdown tree. Compiler metadata and HTML live under `docs/site/data/` and
+`docs/site/public/`. They are disposable. Commit authored pages under
+`docs/src/`, runnable programs, renderer sources, lock files,
 and figure sources with their SVGs.
 
 `output/docs/examples.json` records actual device execution separately from
@@ -94,9 +96,11 @@ alt text aligned with the figure. The
 
 ## Preview and deploy
 
-`pixi run serve-docs` generates the source pages and starts Astro's development
-server. `pixi run watch-docs` uses the same server; rerun it after changing
-compiler declarations or example sources. Use `verify-docs` before publishing.
+`pixi run serve-docs` starts Astro’s development server. `pixi run watch-docs`
+uses the same server. The content loader watches authored pages, examples, and
+Mojo source; it updates changed content and recompiles API metadata when
+needed. Both commands install locked Node dependencies before starting Astro.
+Use `verify-docs` before publishing.
 
 `DOCS_BASE_URL` selects the deployment prefix. Development docs live at
 `https://larecs.github.io/larecs/dev/`; PR previews use

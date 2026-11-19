@@ -4,10 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from api_reference import ROOT, source_locations
 from check_docs import Page, Site, check
 from doc_examples import coverage, inventory, regions, source_doctests
-from render_docs import Renderer
 
 
 class ExampleTests(unittest.TestCase):
@@ -159,18 +157,6 @@ class PublishingTests(unittest.TestCase):
             with self.subTest(target=target), self.assertRaisesRegex(ValueError, message):
                 site.resolve(target)
 
-    def test_renderer_rejects_missing_dependencies(self):
-        renderer = Renderer()
-        for content in ('{{< api DoesNotExist >}}',
-                        '{{< example file="missing.mojo" >}}',
-                        '{{< example file="particles/movement.mojo" region="missing" >}}'):
-            with self.subTest(content=content), self.assertRaises((ValueError, KeyError)):
-                renderer.shortcodes(content)
-
-    def test_missing_api_documentation_is_rejected(self):
-        with self.assertRaisesRegex(ValueError, "Missing declaration documentation"):
-            Renderer().contract({"kind": "struct", "name": "Undocumented"}, "example", Path("example"))
-
     def test_duplicate_anchors_are_detected(self):
         page = Page('<h2 id="same">Heading</h2><a id="same"></a>')
         self.assertEqual(page.duplicate_ids, {"same"})
@@ -179,12 +165,6 @@ class PublishingTests(unittest.TestCase):
         excerpt = regions('# region inner\n    a()\n    if True:\n        b()\n# endregion inner')['inner']
         self.assertEqual(excerpt, 'a()\nif True:\n    b()')
 
-    def test_source_locations_ignore_examples_and_respect_type_ownership(self):
-        text = 'struct First:\n    """Example:\n    def method(): pass\n    """\n    def actual(self): pass\nstruct Second:\n    def method(self): pass\n'
-        locations = source_locations(text)
-        self.assertNotIn(("First", "method"), locations)
-        self.assertEqual(locations[("First", "actual")], 5)
-        self.assertEqual(locations[("Second", "method")], 7)
 
 
 if __name__ == "__main__":

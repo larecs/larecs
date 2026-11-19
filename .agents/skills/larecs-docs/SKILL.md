@@ -72,8 +72,11 @@ Every visible snippet compiles and runs.
   there is no skip list. Doctests run from source with `pixi run doctest`;
   they do not require generated files under `docs/test/`.
 
-Verify with `pixi run verify-docs`. The pipeline uses `mojo doc`, the Python
-renderer in `scripts/render_docs.py`, and Astro/Starlight. Both build commands
+Verify with `pixi run verify-docs`. The pipeline uses `mojo doc` and
+Astro/Starlight. The content loader in
+`docs/site/src/pipeline/loader.mjs` reads source and compiler JSON directly;
+page rendering, type links, excerpts, and declaration layout use JavaScript.
+Both build commands
 compile and execute every source-derived program before rendering. Check the
 rendered HTML under `docs/site/public/`. `DOCS_BASE_URL` selects a development,
 release, or PR preview prefix; preserve it in every internal link.
@@ -123,8 +126,8 @@ primitives only), exports from the `larecs` root, and performance claims
 Follow the docstring template in
 `docs/development.md#coding-standards`. The summary line and contract
 render visibly; the readable declaration hides `mojo doc`'s `where` clauses
-and keeps the exact one collapsed (`scripts/render_docs.py`). For a primary
-method, the description covers common call forms, execution or invocation behavior,
+and keeps the exact one collapsed (`docs/site/src/pipeline/content.mjs`). For
+a primary method, the description covers common call forms, execution or invocation behavior,
 access rules, empty or failure behavior, and how its overloads differ.
 
 - Document `out` results under `Returns:`, not `Args:`.
