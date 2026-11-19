@@ -2,7 +2,7 @@
 
 Provides `LockManager` for structural-change lock bits and `LockGuard` for
 owning one bit until it is transferred into an owning container such as
-`LockedWorldEntityIterator`. These types are not thread-synchronization
+`LockedEntityRange`. These types are not thread-synchronization
 primitives.
 """
 
@@ -116,7 +116,7 @@ struct LockGuard[lock_origin: MutOrigin](Copyable, Movable):
     `Copyable` trait cannot report errors, copying aborts if no lock is
     available. Acquire a guard before constructing a value that needs
     protection during initialization, then transfer it into the owning
-    container, such as `LockedWorldEntityIterator`.
+    container, such as `LockedEntityRange`.
 
     Parameters:
         lock_origin: The origin of the lock manager, which must outlive the guard.

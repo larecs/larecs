@@ -55,6 +55,9 @@ run_resource_contracts=false
 run_threaded_contracts=false
 larecs_test_directory="$(cd "$(dirname "$0")" && pwd)"
 for test_path in "${test_args[@]}"; do
+    if [ "${test_path##*/}" = "world_entity_iterator_test.mojo" ]; then
+        python "$larecs_test_directory/check_iteration_contracts.py"
+    fi
     if [ "${test_path##*/}" = "execution_backend_test.mojo" ]; then
         run_backend_contracts=true
     fi
@@ -74,6 +77,7 @@ for test_path in "${test_args[@]}"; do
         run_resource_contracts=true
         run_threaded_contracts=true
         run_synchronization_contracts=true
+        python "$larecs_test_directory/check_iteration_contracts.py"
         python "$larecs_test_directory/check_struct_constraints.py"
         bash "$larecs_test_directory/check_spatial_filters.sh"
         break
