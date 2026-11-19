@@ -6,9 +6,10 @@ name: Release nightly
 # from the `nightly-published` tag, which marks the last published commit, so
 # a commit whose build failed is retried by the next run.
 #
-# Nightly versions append the UTC commit time of the `nightly` head to the
-# latest release tag reachable from it, e.g. `1.0.0b2.202611160230`. They
-# sort after that release and before the next one.
+# Nightly versions append the UTC build time to the latest release tag
+# reachable from `nightly`, e.g. `1.0.0b2.202611160230`. They sort after that
+# release and before the next one, and keep increasing when `nightly` is
+# rebuilt onto an older commit.
 
 on:
   schedule:
@@ -55,7 +56,7 @@ jobs:
           fi
 
           last_tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || echo v0.0.0)"
-          stamp="$(TZ=UTC git log -1 --date=format-local:%Y%m%d%H%M --format=%cd)"
+          stamp="$(date -u +%Y%m%d%H%M)"
           version="${last_tag#v}.${stamp}"
           echo "Nightly ${version} from ${sha}"
 

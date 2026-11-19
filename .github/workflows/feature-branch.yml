@@ -1,0 +1,30 @@
+name: Feature branch
+
+# Feature branches start from `main` and are merged into both `nightly` and
+# `main`. A branch that contains commits existing only on `nightly` (for
+# example after "Update branch" on a PR into `nightly`) would carry
+# unpromoted features into `main`, so PRs from such branches fail here.
+
+on:
+  pull_request:
+    branches: [main, nightly]
+
+permissions: {}
+
+jobs:
+  base:
+    name: Feature branch base
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Reject nightly-only commits
+        run: |
+          git fetch --quiet origin '+refs/heads/*:refs/remotes/origin/*'
+          bash scripts/check_feature_branch.sh
+      - name: Test feature workflow tooling
+        run: python3 -m unittest discover -s scripts/tests -v
