@@ -37,6 +37,8 @@ grid's dimensions, and `last()` reads the final sample. The pointer is
 target-local: it refers to host memory in a host run and to device memory in a
 device run.
 
+{{< legacy-anchor "implement-validation-and-target-preparation" >}}
+
 ## Prepare the view for each target
 
 A {{< api ResourceAdapter >}} checks the current owner and builds the view for
@@ -51,6 +53,8 @@ the target of each call.
   slot 0 and returns a view that points to device memory. The cache keeps the
   device allocation between calls; by default, the samples upload again on
   every call.
+
+{{< legacy-anchor "request-the-source-type-and-receive-its-view" >}}
 
 ## Request the source type in the kernel
 
@@ -81,6 +85,8 @@ pixi run mojo run -I src examples/particles/portable_resources.mojo
 A PASS line for the device means the kernel read both views on the accelerator;
 a SKIP line means only the host ran.
 
+{{< legacy-anchor "keep-sources-and-views-valid-until-completion" >}}
+
 ## Keep sources and views valid during a call
 
 For the duration of a call, Larecs holds a *lease* on every bound source: it
@@ -101,6 +107,8 @@ rules for adapter authors.
 
 ## Variations
 
+{{< legacy-anchor "use-a-writer-view-only-when-the-adapter-supports-it" >}}
+
 ### Write through an adapter
 
 `GridAdapter` supports reading only, so declare its source with `read`; the
@@ -117,6 +125,8 @@ show the hooks and an atomic slot reservation. For most shared output, prefer
 
 With [device-copy reuse](../copy_reuse) enabled, a read-only source that has not
 changed since the last device call skips `prepare_device` and reuses its view.
+
+{{< legacy-anchor "troubleshooting" >}}
 
 ## Failures and limits
 

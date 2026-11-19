@@ -13,6 +13,8 @@ the repository's pinned Mojo and MAX environment and a supported accelerator.
 Start with [Update entities with systems and kernels](../../systems_kernels)
 and [Share time and configuration](../../../start/shared_configuration).
 
+{{< legacy-anchor "select-the-target-in-the-system" >}}
+
 ## Select the device in the system
 
 The stage uses the [portable particle model](../#the-portable-particle-model),
@@ -34,6 +36,8 @@ the `backend` parameter of {{< api SystemContext.run >}}:
 `Move[ExecutionBackend.HOST]()` runs it sequentially on the host, which is also
 the default when you omit `backend`. The {{< api ExecutionBackend >}} value is a
 compile-time parameter, so each system specialization runs on one target.
+
+{{< legacy-anchor "define-a-transferable-movement-stage" >}}
 
 ## Let the filter decide what moves
 
@@ -57,6 +61,8 @@ component, read-write resource, and mutable capture back to the host. The next
 system sees the new values on the host. Rows that the filter does not match
 stay untouched.
 
+{{< legacy-anchor "execute-and-compare-independent-runs" >}}
+
 ## Compare the device with the host
 
 The driver runs two steps on 37 moving particles and one unmatched marker,
@@ -78,6 +84,8 @@ pixi run mojo run -I src examples/particles/device.mojo
 A PASS line for the device means the kernel ran on the accelerator and matched
 the host; a SKIP line means this machine has no supported accelerator and only
 the host ran.
+
+{{< legacy-anchor "account-for-transfers-and-completion" >}}
 
 ## How device threads visit rows
 
@@ -123,6 +131,8 @@ value and [portable resources](../portable_resources) for an owning collection.
 By default, every device call uploads all readable columns and resources.
 [Reuse unchanged device copies](../copy_reuse) skips uploads of data that has
 not changed since the last call.
+
+{{< legacy-anchor "troubleshooting-and-limits" >}}
 
 ## Failures and limits
 

@@ -13,6 +13,8 @@ its inputs through read-only resources or components.
 Start with [Execute on a device](../device), which introduces the backend
 parameter. [Run threaded host kernels](../threaded) defines thin kernels.
 
+{{< legacy-anchor "borrow-locals-on-the-host" >}}
+
 ## Borrow locals with a closure on the host
 
 Both programs on this page use the [portable particle
@@ -99,6 +101,8 @@ that owns memory, belongs in a [resource](../../shared_resources) or a
 When many invocations or threads contribute to a result, write a per-particle
 component and reduce it after `run`, as in [Coordinate shared
 writes](../shared_writes).
+
+{{< legacy-anchor "restrictions-and-recovery" >}}
 
 ## Failures and limits
 
