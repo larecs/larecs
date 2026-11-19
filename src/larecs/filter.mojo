@@ -23,10 +23,10 @@ struct Filter[
 
     Every included component is tracked separately as readable (`_read`)
     and/or writable (`_written`). `include` -- the default, and the only
-    mode that matters for the CPU query API, where this distinction is not
+    mode that matters for the host query API, where this distinction is not
     used -- marks a component both readable and writable, matching this
     type's behavior before `_read`/`_written` existed. `read` and `write`
-    mark a component for one direction only: a GPU-run kernel then only
+    mark a component for one direction only: a kernel running on the device then only
     pays for the transfer direction it actually needs (see `SystemContext.run`),
     and `EntityAccessor.get`/`set` enforce the declared mode at compile
     time, not just by convention -- see `read` and `write` below.
@@ -82,7 +82,7 @@ struct Filter[
 
     `EntityAccessor.get` returns an immutable reference for these
     components; `EntityAccessor.set` is a compile error. `SystemContext.run`'s
-    GPU path uploads these components before the kernel runs but does not
+    device path uploads these components before the kernel runs but does not
     download them afterward, since a read-only kernel cannot have changed
     them.
 
@@ -108,7 +108,7 @@ struct Filter[
 
     `EntityAccessor.set` overwrites these components; `EntityAccessor.get`
     is a compile error, since a write-only component's prior value is
-    never uploaded to the kernel. `SystemContext.run`'s GPU path downloads
+    never uploaded to the kernel. `SystemContext.run`'s device path downloads
     these components after the kernel runs but does not upload them
     beforehand, since a write-only kernel never reads their prior value.
 

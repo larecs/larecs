@@ -603,7 +603,7 @@ def read_positions(kernel: KernelContext[Filter().read[Position]()]):
 
 
 def test_readonly_kernels_and_exact_selected_writes() raises:
-    """Only matching potential writes invalidate, including lexical CPU kernels.
+    """Only matching potential writes invalidate, including lexical host kernels.
 
     Raises:
         Error: If setup, maintenance, or validation fails.
@@ -634,7 +634,7 @@ def test_readonly_kernels_and_exact_selected_writes() raises:
     def lexical_write(
         kernel: KernelContext[Filter().include[Position]().read[Payload]()],
     ) {mut observed}:
-        """Writes through a reference in a selected lexical CPU kernel.
+        """Writes through a reference in a selected lexical host kernel.
 
         Args:
             kernel: Exact selected position range.

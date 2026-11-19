@@ -127,7 +127,7 @@ def bump(context: KernelContext[Filter().include[Tag]()]):
     """Increment each matching selected row once.
 
     Args:
-        context: CPU or packed GPU row context.
+        context: host or packed device row context.
     """
     for row in context:
         row.get[Tag]().value += 1
@@ -326,7 +326,7 @@ def test_partition_lifetimes_without_copy_or_early_destruction() raises:
 
 
 def test_query_copy_cursors_and_cpu_closure_across_blocks() raises:
-    """Copied queries retain independent cursors/locks and CPU closures visit all rows.
+    """Copied queries retain independent cursors/locks and host closures visit all rows.
 
     Raises:
         Error: If cursor, lock, or execution membership checks fail.
@@ -352,7 +352,7 @@ def test_query_copy_cursors_and_cpu_closure_across_blocks() raises:
     var visits = 0
 
     def count(rows: KernelContext[Filter().read[Int, Heap]()]) {mut}:
-        """Count the rows in one physical CPU range.
+        """Count the rows in one physical host range.
 
         Args:
             rows: Read-only block rows.

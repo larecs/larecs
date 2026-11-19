@@ -1,9 +1,9 @@
-"""Systems and their CPU/GPU execution context.
+"""Systems and their host/device execution context.
 
 Provides `System`, the trait implemented by scheduler-managed systems,
 `SystemContext`, through which a system accesses the world, and
 `KernelContext`, the component/resource view seen by a `SystemContext.run`
-kernel on CPU or GPU.
+kernel on host or device.
 """
 
 from std.builtin.device_passable import DevicePassable, DeviceTypeEncoder
@@ -23,7 +23,7 @@ from .error import LarecsError, WorldError
 from .component import (
     ComponentType,
     Components,
-    constrain_gpu_safe_components,
+    constrain_device_safe_components,
 )
 from .filter import Filter
 from .iteration import EntityAccessorIterator
@@ -32,7 +32,7 @@ from .resource import (
     Resources,
     ResourceType,
     ResourceStorage,
-    constrain_gpu_safe_resources,
+    constrain_device_safe_resources,
 )
 from .device_storage import DeviceResourceStorage
 from .capture import (
@@ -159,14 +159,14 @@ comptime BLOCK_SIZE = 2**4
 
 
 @always_inline
-def _bind_cpu_resources[
+def _bind_host_resources[
     required_resources: Resources
 ](
     mut resources: ResourceStorage,
 ) raises -> ResourceAccessor[
     required_resources
 ]:
-    """Validates and binds resources once for a synchronous CPU invocation.
+    """Validates and binds resources once for a synchronous host invocation.
 
     Parameters:
         required_resources: Ordered resource types required by the kernel.
@@ -192,7 +192,7 @@ def _bind_cpu_resources[
 
 
 @always_inline
-def _cpu_kernel_context[
+def _host_kernel_context[
     filter: Filter,
     required_resources: Resources,
     capture_spec: Captures,
@@ -204,7 +204,7 @@ def _cpu_kernel_context[
     resources: ResourceAccessor[required_resources],
     captures: CaptureAccessor[capture_spec],
 ) raises -> KernelContext[filter, required_resources, capture_spec]:
-    """Prepares one bounded CPU range using invocation-wide bindings.
+    """Prepares one bounded host range using invocation-wide bindings.
 
     Parameters:
         filter: Component access declarations for this range.
@@ -506,7 +506,7 @@ struct EntitySelection[
         *Bindings: CaptureBindingType,
         backend: ExecutionBackend = ExecutionBackend.HOST,
     ](mut self, *bindings: *Bindings) raises:
-        """Runs a thin CPU or GPU kernel on selected rows matching ``filter``.
+        """Runs a thin host or device kernel on selected rows matching ``filter``.
 
         Parameters:
             filter: Kernel filter intersected with saved selection membership.
@@ -520,13 +520,13 @@ struct EntitySelection[
             bindings: Capture bindings in ``capture_spec`` order.
 
         Raises:
-            Error: If bindings or resources are invalid, or GPU execution fails.
+            Error: If bindings or resources are invalid, or device execution fails.
         """
         _validate_backend[backend]()
 
         var host_captures = _bind_captures[capture_spec](*bindings)
         comptime if backend == ExecutionBackend.HOST:
-            var resource_accessor = _bind_cpu_resources[required_resources](
+            var resource_accessor = _bind_host_resources[required_resources](
                 self._world[].resources
             )
             comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
@@ -544,7 +544,7 @@ struct EntitySelection[
                 ):
                     continue
                 KernelFunc(
-                    _cpu_kernel_context[
+                    _host_kernel_context[
                         filter, required_resources, capture_spec
                     ](
                         archetype,
@@ -568,13 +568,13 @@ struct EntitySelection[
                     matching_ranges.append(selected_range)
                     total_length += selected_range.row_count
 
-            comptime assert constrain_gpu_safe_components[
+            comptime assert constrain_device_safe_components[
                 *filter._include.ComponentTypes
             ](), (
                 "EntitySelection.run(..., backend=ExecutionBackend.DEVICE)"
-                " requires every accessed component type to be GPU-safe."
+                " requires every accessed component type to be device-safe."
             )
-            comptime assert constrain_gpu_safe_resources[
+            comptime assert constrain_device_safe_resources[
                 *required_resources.ResourceTypes
             ](), (
                 "EntitySelection.run(..., backend=ExecutionBackend.DEVICE)"
@@ -702,7 +702,7 @@ struct EntitySelection[
         *Bindings: CaptureBindingType,
         backend: ExecutionBackend = ExecutionBackend.HOST,
     ](mut self, kernel_func: KernelFunc, *bindings: *Bindings) raises:
-        """Runs a value-taking CPU closure on selected matching rows.
+        """Runs a value-taking host closure on selected matching rows.
 
         Parameters:
             filter: Kernel filter intersected with saved selection membership.
@@ -725,7 +725,7 @@ struct EntitySelection[
         ), "Value-taking kernel callables require ExecutionBackend.HOST"
 
         var host_captures = _bind_captures[capture_spec](*bindings)
-        var resource_accessor = _bind_cpu_resources[required_resources](
+        var resource_accessor = _bind_host_resources[required_resources](
             self._world[].resources
         )
         comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
@@ -743,7 +743,7 @@ struct EntitySelection[
             ):
                 continue
             kernel_func(
-                _cpu_kernel_context[filter, required_resources, capture_spec](
+                _host_kernel_context[filter, required_resources, capture_spec](
                     archetype,
                     selected_range.first_row,
                     selected_range.row_count,
@@ -759,8 +759,8 @@ struct ResourceAccessor[resources: Resources](Copyable):
     position in ``resources``.
 
     Backed by plain byte pointers rather than a [..resource.ResourceStorage]
-    reference, so the same representation works both for CPU kernels
-    (pointers into host resource storage) and GPU kernels (pointers into
+    reference, so the same representation works both for host kernels
+    (pointers into host resource storage) and device kernels (pointers into
     device buffers uploaded for the call) -- mirroring how ``KernelContext``
     already represents component columns as an array of byte pointers keyed
     by position in the kernel's filter.
@@ -818,7 +818,7 @@ struct KernelContext[
     Parameters:
         filter: The comptime [..filter.Filter] describing the accessed components.
         required_resources: Compile-time resources the kernel may access.
-        capture_spec: Ordered read-only and mutable CPU-local capture slots.
+        capture_spec: Ordered read-only and mutable host-local capture slots.
     """
 
     var length: Int32
@@ -834,7 +834,7 @@ struct KernelContext[
     """Byte pointers to each included component's column, indexed by position in ``filter``."""
 
     var captures: CaptureAccessor[Self.capture_spec]
-    """Explicitly bound CPU-local values available to this kernel."""
+    """Explicitly bound host-local values available to this kernel."""
 
     var resources: ResourceAccessor[Self.required_resources]
     """Accessor for the kernel's required resources."""
@@ -880,7 +880,7 @@ struct KernelContext[
         Returns:
             An iterator that yields one row accessor per matching row.
         """
-        # No `Zone` here: this runs as part of the kernel body on the GPU,
+        # No `Zone` here: this runs as part of the kernel body on the device,
         # where the host-only Tracy FFI calls are not available.
         return EntityAccessorIterator[Self.filter](self)
 
@@ -896,7 +896,7 @@ struct HostKernelContext[
     Parameters:
         filter: The comptime [..filter.Filter] describing the accessed components.
         required_resources: Compile-time resources the kernel may access.
-        capture_spec: Ordered read-only and mutable CPU-local capture slots.
+        capture_spec: Ordered read-only and mutable host-local capture slots.
     """
 
     comptime device_type = KernelContext[
@@ -956,7 +956,7 @@ struct HostKernelContext[
         Args:
             columns: Device pointers to each included component's column.
             resource_pointers: Device pointers to each required resource's buffer.
-            capture_pointers: Device pointers to uploaded CPU-local values.
+            capture_pointers: Device pointers to uploaded host-local values.
             length: Total number of rows the kernel operates over.
             thread_count: Number of threads participating in the launch.
         """
@@ -1304,7 +1304,7 @@ struct SystemContext[
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
             required_resources: Compile-time resources the kernel may access.
-            capture_spec: Ordered read-only and mutable CPU-local capture slots.
+            capture_spec: Ordered read-only and mutable host-local capture slots.
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
@@ -1324,14 +1324,14 @@ struct SystemContext[
                 t"SystemContext.run[filter: Filter, required_resources:"
                 t" Resources, //, KernelFunc:"
                 t" {reflect_fn[KernelFunc].display_name()} , *, backend:"
-                t" ExecutionBackend]()"
+                t" Bool]()"
             )
         ):
             var host_captures = _bind_captures[capture_spec](*bindings)
             comptime if backend == ExecutionBackend.HOST:
-                var resource_accessor = _bind_cpu_resources[required_resources](
-                    self.world[].resources
-                )
+                var resource_accessor = _bind_host_resources[
+                    required_resources
+                ](self.world[].resources)
                 comptime bitmask_filter = filter.get_bitmask_filter[
                     *Self.WorldTs
                 ]()
@@ -1358,7 +1358,7 @@ struct SystemContext[
                     ):
                         continue
                     KernelFunc(
-                        _cpu_kernel_context[
+                        _host_kernel_context[
                             filter, required_resources, capture_spec
                         ](
                             archetype,
@@ -1392,16 +1392,16 @@ struct SystemContext[
                 # `DeviceBuffer` call sites below where the failure would be
                 # far less legible. Host execution (`backend=ExecutionBackend.HOST`) is
                 # unaffected -- it never takes this branch.
-                comptime assert constrain_gpu_safe_components[
+                comptime assert constrain_device_safe_components[
                     *filter._include.ComponentTypes
                 ](), (
                     "SystemContext.run(..., backend=ExecutionBackend.DEVICE)"
-                    " requires every accessed component type to be GPU-safe"
-                    " (conform to GPUComponentType, i.e."
+                    " requires every accessed component type to be device-safe"
+                    " (conform to DeviceComponentType, i.e."
                     " TrivialRegisterPassable) for raw byte transfer between"
                     " host and device."
                 )
-                comptime assert constrain_gpu_safe_resources[
+                comptime assert constrain_device_safe_resources[
                     *required_resources.ResourceTypes
                 ](), (
                     "SystemContext.run(..., backend=ExecutionBackend.DEVICE)"
@@ -1417,7 +1417,7 @@ struct SystemContext[
                         " initialized -- either no accelerator is available, or"
                         " `DeviceContext()` construction failed when the world"
                         " was created. Run with backend=ExecutionBackend.HOST"
-                        " to execute on the CPU instead."
+                        " to execute on the host instead."
                     )
 
                 # No component columns exist for an unmatched filter. Validate
@@ -1572,7 +1572,7 @@ struct SystemContext[
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
             required_resources: Compile-time resources the kernel may access.
-            capture_spec: Ordered read-only and mutable CPU-local capture slots.
+            capture_spec: Ordered read-only and mutable host-local capture slots.
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
@@ -1585,9 +1585,9 @@ struct SystemContext[
             bindings: Explicit read-only and mutable bindings in declared slot order.
 
         Note:
-            Captures may borrow CPU-local values with ``imm`` or ``mut``.
+            Captures may borrow host-local values with ``imm`` or ``mut``.
             Resource access uses the same API as the non-capturing overload.
-            This overload executes synchronously on the CPU only.
+            This overload executes synchronously on the host only.
 
         Raises:
             Error: If a required resource is missing.
@@ -1606,7 +1606,7 @@ struct SystemContext[
             )
         ):
             var host_captures = _bind_captures[capture_spec](*bindings)
-            var resource_accessor = _bind_cpu_resources[required_resources](
+            var resource_accessor = _bind_host_resources[required_resources](
                 self.world[].resources
             )
             comptime bitmask_filter = filter.get_bitmask_filter[*Self.WorldTs]()
@@ -1631,7 +1631,7 @@ struct SystemContext[
                 ):
                     continue
                 kernel_func(
-                    _cpu_kernel_context[
+                    _host_kernel_context[
                         filter, required_resources, capture_spec
                     ](
                         archetype,

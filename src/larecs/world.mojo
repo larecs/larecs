@@ -80,7 +80,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                 # `self._device_storage` stays empty, and
                 # `SystemContext.run(..., backend=ExecutionBackend.DEVICE)` already compiles out
                 # its entire device path under this same `has_accelerator()`
-                # check (see `system.mojo`), so no GPU method is reachable
+                # check (see `system.mojo`), so no device method is reachable
                 # from a world built this way.
                 self._device_storage = None
             else:
@@ -99,13 +99,13 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                     # context could not be created. But it must not stay
                     # silent either: the only sign of this failure from
                     # here on is `self._device_storage` being empty, and
-                    # the first thing a caller who *did* expect a GPU sees
+                    # the first thing a caller who *did* expect a device sees
                     # is an unrelated-looking error much later, at the
                     # first `backend=ExecutionBackend.DEVICE` run. Surface the real cause now,
                     # in debug builds, at the point it actually occurred.
                     self._device_storage = None
                     debug_warn(
-                        t"World.__init__: GPU device storage did not initialize"
+                        t"World.__init__: device storage did not initialize"
                         t" ({String(e)}); backend=ExecutionBackend.DEVICE"
                         t" system runs will raise until a working accelerator"
                         t" is available."

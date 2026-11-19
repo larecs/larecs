@@ -5,18 +5,18 @@ weight = 100
 +++
 
 The focused `entity_selection_benchmark.mojo` workload compares ordinary
-full-world CPU execution with contiguous and disjoint 64-row selections in a
-100,000-row world, a selected add/remove chain, and selected GPU execution when
+full-world host execution with contiguous and disjoint 64-row selections in a
+100,000-row world, a selected add/remove chain, and selected device execution when
 an accelerator is available. On the Apple Metal development host used for the
 1.0.0b2 work, one bounded run measured approximately 0.0253 ms for the 100k-row
-CPU path, 0.0000664 ms for the contiguous selection, 0.000556 ms for 64 disjoint
-single-row ranges, 0.00727 ms for the add/remove chain, and 0.379 ms for the GPU
+host path, 0.0000664 ms for the contiguous selection, 0.000556 ms for 64 disjoint
+single-row ranges, 0.00727 ms for the add/remove chain, and 0.379 ms for the device
 selection. These are development measurements, not a cross-version historical
 baseline; use the benchmark on target hardware for regression decisions.
 
-## Shared CPU execution comparison
+## Shared host execution comparison
 
-The focused selection driver also measures thin and lexical CPU kernels over
+The focused selection driver also measures thin and lexical host kernels over
 seven matching archetypes (512 rows each) alongside six nonmatching archetypes
 (512 rows each). All matching rows perform the same increment; the closure also
 counts range invocations. Construction and result checks are excluded, and
@@ -24,7 +24,7 @@ checks outside the timer verify row count, every row against `Bencher.num_iters`
 and the closure's exact invocation count and accumulated values.
 These cases remain manual benchmarks; they are not added to the small PR suite.
 
-On Apple M4, macOS 27.0.1, Mojo 1.0.0 (`ed45d567`), the shared CPU setup refactor
+On Apple M4, macOS 27.0.1, Mojo 1.0.0 (`ed45d567`), the shared host setup refactor
 in `1cd32ba` was compared with `688fb670c87ced6b08c920e2c3527a1890218c6f`
 using the **same updated driver** and compiler environment. Build one optimized
 binary against an isolated baseline checkout and one against the current source, without
@@ -33,7 +33,7 @@ order across five paired samples with no concurrent builds or benchmark jobs.
 The driver uses fixed iterations: 100 full-world calls, 1,000 multi-archetype
 calls, 10,000 contiguous selected calls, and 1,000 disjoint selected calls.
 
-| CPU workload | Baseline median | Refactor median |
+| Host workload | Baseline median | Refactor median |
 | --- | --- | --- |
 | 100,000 rows, full-world thin | 23.33 µs | 22.89 µs |
 | 3,584 rows, seven matching archetypes, thin | 1.269 µs | 1.034 µs |
@@ -43,7 +43,7 @@ calls, 10,000 contiguous selected calls, and 1,000 disjoint selected calls.
 
 The unchanged mutation controls measured 10.13 → 10.09 µs for a 64-row
 add/remove chain and 107 → 98 µs for the first 512-row disjoint mutation pass.
-The existing selected GPU case ran on the actual Apple M4 accelerator and
+The existing selected device case ran on the actual Apple M4 accelerator and
 measured 276.31 → 267.52 µs. These short synthetic batches are local evidence,
 not portable timing baselines or application speedup claims. Full-world row
 work dominates discovery at 100k rows; small selections benefit from avoiding
@@ -221,7 +221,7 @@ distributions. Each configuration warms both layouts with one sixteen-frame
 batch, then alternates their order for five paired sixteen-frame samples.
 
 The 48 scenarios cover maintenance with 1, 1/64, or all identities updated;
-ordinary read-only query scans and CPU execution with unchanged layouts;
+ordinary read-only query scans and host execution with unchanged layouts;
 and complete cell frames with the same updates, maintenance every frame (or
 every fourth frame for 1/64 updates), all-lane per-cell aggregation, and cyclic
 adjacent-cell aggregate products. Both layouts use identical entities, input
@@ -235,7 +235,7 @@ and validation are excluded. There are no device transfers in these CPU timings.
 
 Every sample checks all identities once, final inputs, all payload lanes,
 entity locations, default key order or homogeneous cluster stores, and equal
-complete spatial checksums outside timing. Query/CPU scan reductions are also
+complete spatial checksums outside timing. Query/host scan reductions are also
 checked against their complete expected sums. Results are consumed inside the
 timer. This is a synthetic spatial workload, not a game/simulation speedup,
 collision detection, or a persistent neighbor index.
@@ -326,9 +326,9 @@ warmed pairs for 32,768 rows were:
 | Uniform | Ordinary query scan | Clean | 0.149 ms | 0.175 ms | 1.17 |
 | Dense | Ordinary query scan | Clean | 0.149 ms | 0.148 ms | 0.99 |
 | Singleton sparse | Ordinary query scan | Clean | 0.149 ms | 0.237 ms | 1.59 |
-| Uniform | Ordinary CPU scan | Clean | 0.019 ms | 0.045 ms | 2.36 |
-| Dense | Ordinary CPU scan | Clean | 0.019 ms | 0.022 ms | 1.16 |
-| Singleton sparse | Ordinary CPU scan | Clean | 0.020 ms | 0.155 ms | 7.92 |
+| Uniform | Ordinary host scan | Clean | 0.019 ms | 0.045 ms | 2.36 |
+| Dense | Ordinary host scan | Clean | 0.019 ms | 0.022 ms | 1.16 |
+| Singleton sparse | Ordinary host scan | Clean | 0.020 ms | 0.155 ms | 7.92 |
 
 Initial maintained capacity and allocation evidence for those worlds:
 
@@ -362,14 +362,14 @@ The current layout retains key copying and directory scans but removes
 cross-block compaction; destination growth can still relocate existing columns.
 Cluster selection scans metadata. Application workloads,
 other component widths, structural-heavy frames, Linux comparative timings,
-process/peak memory, and GPU timings remain on the roadmap. GPU functional
+process/peak memory, and device timings remain on the roadmap. GPU functional
 integration ran on the actual local accelerator; it is separate evidence from
 these CPU performance measurements.
 
 The separate default-path PR gate against `6037850` passed all twelve core and
 32 spatial cases in **49.2 seconds**, including four sequential builds and five
 paired samples. It required no regression confirmation. Ordinary 2,048-row
-query/CPU execution changes were +0.1%/-0.6%, stable-ID access was +3.9%, and
+query/host execution changes were +0.1%/-0.6%, stable-ID access was +3.9%, and
 selected mutation was +0.9% in that run. These small shared-machine differences
 are not a zero-overhead guarantee; the existing 30%/500 ns rule is unchanged.
 Hosted Linux/macOS evidence is retained by the PR checks.
