@@ -60,7 +60,8 @@ Every visible snippet compiles and runs.
   `examples/particles/`; add new example directories there.
 - Short standalone snippets may stay inline as labelled doctest blocks
   (`{doctest="<label>" global=true}` with a complete `def main() raises:`).
-  The renderer wraps non-global blocks in `def main() raises:`; a label must
+  Mogo-tester 3 reads source fences and wraps non-global blocks in
+  `def main() raises:`; a label must
   not mix a global `main` with non-global blocks. Use `hide=true` only for imports.
 - Show every type, filter, kernel, and system before the prose explains it.
 - Assert the outcome the prose claims with `std.testing` (`assert_equal`,
@@ -68,7 +69,8 @@ Every visible snippet compiles and runs.
 - API docstrings use the canonical public path (`world.storage.add_entity`,
   not `world.add_entity`). Show call forms as inline code and link the
   tutorial or guide for a complete program. Every extracted doctest runs;
-  there is no skip list.
+  there is no skip list. Doctests run from source with `pixi run doctest`;
+  they do not require generated files under `docs/test/`.
 
 Verify with `pixi run verify-docs`. The pipeline uses `mojo doc`, the Python
 renderer in `scripts/render_docs.py`, and Astro/Starlight. Both build commands

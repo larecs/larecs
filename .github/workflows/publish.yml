@@ -91,7 +91,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: doctest
-          path: docs/test
+          path: output/docs
       - name: Archive Markdown artifacts
         uses: actions/upload-artifact@v4
         with:
