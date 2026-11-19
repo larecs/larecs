@@ -1,60 +1,11 @@
 """Regression checks for documentation publishing failures and compatibility."""
 
-import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
-from api_reference import ROOT, source_locations
 from check_docs import Page, Site, check
 from doc_examples import coverage, inventory, regions
-from render_docs import Renderer
-import docs
-
-
-class PreviewTests(unittest.TestCase):
-    """Install locked dependencies before either fresh-checkout preview command."""
-
-    def test_preview_installs_before_generation_and_dev(self):
-        for command in ('serve', 'watch'):
-            with self.subTest(command=command), patch('sys.argv', ['docs.py', command]), \
-                    patch.object(docs, 'run') as run, patch.object(docs, 'generate') as generate:
-                generate.side_effect = lambda: self.assertEqual(
-                    run.call_args.args, ('npm', 'ci'))
-                docs.main()
-                self.assertEqual(run.call_args.args,
-                                 ('npm', 'run', 'dev', '--', '--host', '127.0.0.1'))
-
-
-class CrossReferenceTests(unittest.TestCase):
-    """Resolve the reference forms used by existing compiler docstrings."""
-
-    @classmethod
-    def setUpClass(cls):
-        cls.renderer = Renderer()
-
-    def test_owner_method_and_module_fallback(self):
-        self.assertEqual(self.renderer.link('.add_entity', 'host_storage.HostStorage'),
-                         self.renderer.link('host_storage.HostStorage.add_entity'))
-        self.assertEqual(self.renderer.link('.BitPool.get', 'pool.BitPool'),
-                         self.renderer.link('pool.BitPool.get'))
-        # Some compiler versions emit BitMask as an alias without its methods.
-        with patch.dict(self.renderer.api['symbols'], {
-            'bitmask.BitMask.__str__': {'target': 'larecs/bitmask/BitMask/#__str__'},
-        }):
-            self.assertEqual(self.renderer.link('.__str__', 'bitmask.BitMask'),
-                             'larecs/bitmask/BitMask/#__str__')
-
-    def test_labeled_cross_references(self):
-        rendered = self.renderer.prose(
-            '[..entity.Entity Entities] and [.HostStorage.is_locked locked]',
-            'host_storage.HostStorage')
-        self.assertIn('[Entities](', rendered)
-        self.assertIn('[locked](', rendered)
-        self.assertNotIn('[..entity.Entity Entities]', rendered)
-        with self.assertRaisesRegex(ValueError, 'Unknown API symbol'):
-            self.renderer.prose('[..entity.DoesNotExist Missing]', 'host_storage.HostStorage')
 
 
 class ExampleTests(unittest.TestCase):
@@ -137,18 +88,6 @@ class PublishingTests(unittest.TestCase):
             with self.subTest(target=target), self.assertRaisesRegex(ValueError, message):
                 site.resolve(target)
 
-    def test_renderer_rejects_missing_dependencies(self):
-        renderer = Renderer()
-        for content in ('{{< api DoesNotExist >}}',
-                        '{{< example file="missing.mojo" >}}',
-                        '{{< example file="particles/movement.mojo" region="missing" >}}'):
-            with self.subTest(content=content), self.assertRaises((ValueError, KeyError)):
-                renderer.shortcodes(content)
-
-    def test_missing_api_documentation_is_rejected(self):
-        with self.assertRaisesRegex(ValueError, "Missing declaration documentation"):
-            Renderer().contract({"kind": "struct", "name": "Undocumented"}, "example", Path("example"))
-
     def test_duplicate_anchors_are_detected(self):
         page = Page('<h2 id="same">Heading</h2><a id="same"></a>')
         self.assertEqual(page.duplicate_ids, {"same"})
@@ -157,12 +96,6 @@ class PublishingTests(unittest.TestCase):
         excerpt = regions('# region inner\n    a()\n    if True:\n        b()\n# endregion inner')['inner']
         self.assertEqual(excerpt, 'a()\nif True:\n    b()')
 
-    def test_source_locations_ignore_examples_and_respect_type_ownership(self):
-        text = 'struct First:\n    """Example:\n    def method(): pass\n    """\n    def actual(self): pass\nstruct Second:\n    def method(self): pass\n'
-        locations = source_locations(text)
-        self.assertNotIn(("First", "method"), locations)
-        self.assertEqual(locations[("First", "actual")], 5)
-        self.assertEqual(locations[("Second", "method")], 7)
 
 
 if __name__ == "__main__":

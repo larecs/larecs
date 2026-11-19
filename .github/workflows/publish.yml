@@ -92,11 +92,6 @@ jobs:
         with:
           name: doctest
           path: docs/test
-      - name: Archive Markdown artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: markdown
-          path: docs/site/src/content/docs
       - name: Archive HTML artifacts
         uses: actions/upload-artifact@v4
         with:
