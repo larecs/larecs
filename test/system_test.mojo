@@ -256,6 +256,120 @@ def test_cpu_closure_with_explicit_capture_bindings() raises:
     assert_equal(world.storage.get[Int32](entity), 6)
 
 
+@fieldwise_init
+struct DispatchAudit(ResourceType):
+    var calls: Int
+    var rows: Int
+    var wrong_threads: Int
+
+
+comptime MIXED_FILTER = Filter().write[Int32]().read[Counter]().exclude[
+    Float32
+]()
+
+
+def audit_dispatch(
+    context: KernelContext[MIXED_FILTER, Resources[DispatchAudit]()]
+):
+    """Records local bounds and exercises reordered read/write columns.
+
+    Args:
+        context: Component columns and the mutable audit resource.
+    """
+    ref audit = context.resources.get[DispatchAudit]()
+    audit.calls += 1
+    audit.rows += Int(context.length)
+    audit.wrong_threads += Int(context.thread_count != 1)
+    for entity in context:
+        entity.set(Int32(entity.get[Counter]().v * 2))
+
+
+def check_cpu_dispatch[groups: Int, use_closure: Bool]() raises:
+    """Checks both callable forms across empty, single and multiple matches.
+
+    Parameters:
+        groups: Number of matching archetypes to populate (zero to two).
+        use_closure: Whether to dispatch a capturing closure.
+
+    Raises:
+        Error: If setup, dispatch, or an assertion fails.
+    """
+    var world = World[Counter, Int32, Tag, Float32]()
+    world.resources.add(DispatchAudit(0, 0, 0))
+    var excluded = world.storage.add_entity(Counter(99), Int32(-1), Float32(0))
+    var entities = List[Entity]()
+    comptime if groups > 0:
+        for i in range(3):
+            entities.append(world.storage.add_entity(Counter(i + 1), Int32(-1)))
+    comptime if groups > 1:
+        for i in range(2):
+            entities.append(
+                world.storage.add_entity(Counter(i + 4), Int32(-1), Tag(0))
+            )
+
+    var calls = 0
+    var rows = 0
+    var wrong_threads = 0
+    var factor = 2
+
+    def captured(
+        view: KernelContext[MIXED_FILTER],
+    ) {mut calls, mut rows, mut wrong_threads, imm factor}:
+        """Records local bounds and writes values using captured state.
+
+        Args:
+            view: The current archetype's read/write component columns.
+        """
+        calls += 1
+        rows += Int(view.length)
+        wrong_threads += Int(view.thread_count != 1)
+        for entity in view:
+            entity.set(Int32(entity.get[Counter]().v * factor))
+
+    var context = SystemContext(world)
+    # Repeated calls exercise resource pointer validity across helper returns.
+    for _ in range(20):
+        comptime if use_closure:
+            context.run(captured)
+        else:
+            context.run[audit_dispatch]()
+
+    comptime if not use_closure:
+        calls = world.resources.get[DispatchAudit]().calls
+        rows = world.resources.get[DispatchAudit]().rows
+        wrong_threads = world.resources.get[DispatchAudit]().wrong_threads
+    assert_equal(calls, groups * 20)
+    assert_equal(rows, len(entities) * 20)
+    assert_equal(wrong_threads, 0)
+    for i in range(len(entities)):
+        assert_equal(world.storage.get[Int32](entities[i]), Int32((i + 1) * 2))
+        assert_equal(world.storage.get[Counter](entities[i]).v, i + 1)
+    assert_equal(world.storage.get[Int32](excluded), -1)
+
+
+def test_cpu_dispatch_shapes_and_access_modes() raises:
+    """Covers both overloads with zero, one and two matching archetypes.
+
+    Raises:
+        Error: If any dispatch case fails.
+    """
+    comptime for groups in range(3):
+        check_cpu_dispatch[groups, False]()
+        check_cpu_dispatch[groups, True]()
+
+
+def test_cpu_empty_query_still_requires_static_resources() raises:
+    """An empty static CPU dispatch validates its required resources.
+
+    Raises:
+        Error: If the missing resource is accepted.
+    """
+    var world = World[Counter, Int32, Tag, Float32]()
+    var context = SystemContext(world)
+    with assert_raises():
+        context.run[audit_dispatch]()
+
+
 comptime functions = __functions_in_module()
 
 
