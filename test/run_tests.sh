@@ -46,4 +46,11 @@ for arg in "$@"; do
     esac
 done
 
+for backend_test_path in "${test_args[@]}"; do
+    if [ -d "$backend_test_path" ] || [ "${backend_test_path##*/}" = "execution_backend_test.mojo" ]; then
+        python "$(dirname "$0")/check_execution_backend_contracts.py"
+        break
+    fi
+done
+
 mogo-tester "${precompile_args[@]}" --asan --mojo-build-args="${mojo_build_args[*]}" "${test_args[@]}"

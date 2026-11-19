@@ -67,3 +67,5 @@ Link to requirements, tests, measurements, and implementation plans.
 ```
 
 For agent-specific workflow requirements, see [AGENTS.md](../../AGENTS.md).
+
+- [0023: Explicit compile-time execution backend](decisions/0023-explicit-execution-backend.md)

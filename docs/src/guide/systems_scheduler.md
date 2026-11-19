@@ -260,6 +260,7 @@ The slot index is compile-time; two slots may have the same value type.
 ```
 
 ```mojo {doctest="guide_gpu_captures" global=true}
+from larecs import ExecutionBackend
 from larecs import (
     World, SystemContext, KernelContext, Filter,
     Captures, ReadCapture, MutCapture, read_capture, mut_capture,
@@ -298,7 +299,7 @@ def main() raises:
     var factor: Int32 = 3
     var processed: Int32 = 0
     var context = SystemContext(world)
-    context.run[scale, on_gpu=True](
+    context.run[scale, backend=ExecutionBackend.DEVICE](
         read_capture(factor), mut_capture(processed)
     )
     assert_equal(world.storage.get[Int32](entity), 12)
@@ -333,12 +334,13 @@ or once for the GPU launch gives the same total.
 ## GPU execution
 
 The `SystemContext.run` call used by `Move` executes its kernel on the CPU by
-default. Pass `on_gpu=True` to run a compatible kernel on an accelerator. The
+default. Pass `backend=ExecutionBackend.DEVICE` to run a compatible kernel on an accelerator. The
 same kernel function works on both targets unchanged; see the
 {{< api SystemContext.run >}} and {{< api KernelContext >}} API docs for
 details. GPU execution requires an available accelerator and the corresponding
-Mojo GPU toolchain. On systems without one, `on_gpu=True` kernels fall back to
-CPU execution.
+Mojo GPU toolchain. Selecting `ExecutionBackend.DEVICE` raises if accelerator
+compilation support or a working device context is unavailable, including for
+empty matches. It never falls back to CPU execution.
 
 Required resources use the same `context.resources.get[T]()` API on the GPU.
 Resource transfer constraints, shared-write safety, and the non-capturing
