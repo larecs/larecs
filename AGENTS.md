@@ -20,23 +20,31 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
   related parent issues. Tell the developer which issue you are working on. If
   none fits, ask whether to create one (use the `issue-description` skill), and
   start without an issue only when the developer says so.
-- Work on a branch linked to the issue. Create it with
+- Work on a feature branch linked to the issue. Create it with
   `gh issue develop <N> --name <branch> --base <base> --checkout`, where `<base>`
-  is `nightly` or, for stacked work, the branch the work builds on. When an issue
-  exists, create the work branch only this way, not with `git switch -c`,
-  `git checkout -b`, or `git branch`.
-- Open PRs against `nightly`. Target `main` only when the developer asks for a
-  promotion, release preparation, or an urgent stable fix. Every PR into
-  `nightly` adds an Unreleased entry to `changelog.md` ending with its PR link,
-  such as `([#187](https://github.com/larecs/larecs/pull/187))`, or, when it
-  refines a listed feature, rewrites that entry and appends its link.
-- When the developer asks to promote features, they name them as their
-  changelog entries on `nightly` describe them. Bring each feature's final state
-  from `nightly` to a branch from `main` as one change, consolidating related
-  entries and dropping intermediate states, rather than replaying every nightly
-  PR. End each promoted changelog entry with the links of all nightly PRs it
-  covers, and open one PR against `main`. [CONTRIBUTING.md](CONTRIBUTING.md)
-  describes the full lifecycle, including merging `main` back into `nightly`.
+  is `main` or, when the work needs an unpromoted feature, that feature's
+  branch. Never base work on `nightly` and never merge `nightly` into a
+  feature branch; merging `main` into it is fine. When an issue exists, create
+  the work branch only this way, not with `git switch -c`, `git checkout -b`,
+  or `git branch`.
+- Record user-visible changes in one fragment per feature,
+  `changelog.d/<feature>.md`, never in `changelog.md`. Group entries under
+  `### Breaking changes`, `### Added`, `### Changed`, `### Fixed`, or
+  `### Removed`, describe current behavior, and end each entry with the links
+  of every PR that shaped it, such as
+  `([#187](https://github.com/larecs/larecs/pull/187))`. A follow-up PR
+  rewrites the entry and appends its link. PRs with no user-visible change get
+  the `no-changelog` label instead.
+- Open PRs from the feature branch into `nightly` and merge them with a merge
+  commit once checks pass. Open a PR into `main` only when the developer asks
+  to promote a feature or prepare a release; it comes from the same feature
+  branch, so promoted commits are identical on both branches. When the
+  developer names features to promote by their changelog entries, find the
+  fragments and their branches, promote stacked branches bottom-up, and
+  consolidate refinements on the branch before opening the PR.
+- Rebuild `nightly` only when the developer asks, with
+  `scripts/rebuild_nightly.sh`; [CONTRIBUTING.md](CONTRIBUTING.md) and
+  `docs/src/guide/development_workflow.md` describe the full lifecycle.
 - If tooling already started you on its own branch, such as a managed worktree,
   create the linked branch with `gh issue develop` without `--checkout`, then
   run `git fetch origin <branch>` and `git switch <branch>` before your first
