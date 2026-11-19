@@ -58,15 +58,14 @@ git_rr() {
 }
 
 collect_branches() {
-    # Remote branches merged into nightly but not into main, ordered by the
-    # first commit on nightly's first-parent line that contains them.
+    # Unpromoted remote branches, including tips advanced or rewritten since
+    # integration, ordered by their earlier merge on nightly's first-parent line.
     local candidates=() ref
     while read -r ref; do
         case "$ref" in
-            "$remote" | "$remote/HEAD" | "$remote/main" | "$remote/nightly" | "$remote/gh-pages" | "$remote/release/"*) continue ;;
+            "$remote" | "$remote/HEAD" | "$remote/main" | "$remote/nightly" | "$remote/nightly-history/"* | "$remote/gh-pages" | "$remote/release/"*) continue ;;
         esac
-        if git merge-base --is-ancestor "$ref" "$remote/nightly" \
-            && ! git merge-base --is-ancestor "$ref" "$remote/main"; then
+        if ! git merge-base --is-ancestor "$ref" "$remote/main"; then
             candidates+=("${ref#"$remote/"}")
         fi
     done < <(git for-each-ref --format='%(refname:short)' "refs/remotes/$remote")
@@ -82,11 +81,22 @@ collect_branches() {
         candidates=("${sorted[@]}")
     fi
 
-    local commit branch ordered=() assigned=" "
+    local commit branch subject merged_tip ordered=() assigned=" "
     while read -r commit; do
-        for branch in "${candidates[@]}"; do
+        subject="$(git log -1 --format=%s "$commit")"
+        merged_tip="$(git rev-parse --verify "$commit^2" 2>/dev/null || true)"
+        if [[ -n "$merged_tip" ]] && git merge-base --is-ancestor "$merged_tip" "$remote/main"; then
+            merged_tip=""
+        fi
+        for branch in "${candidates[@]+"${candidates[@]}"}"; do
             [[ "$assigned" == *" $branch "* ]] && continue
-            if git merge-base --is-ancestor "$remote/$branch" "$commit"; then
+            # An advanced tip still contains the merged revision. A rewritten
+            # tip is identified by the standard Git or GitHub merge subject.
+            if git merge-base --is-ancestor "$remote/$branch" "$commit" \
+                || { [[ -n "$merged_tip" ]] && git merge-base --is-ancestor "$merged_tip" "$remote/$branch" 2>/dev/null; } \
+                || [[ "$subject" == "Merge branch '$branch' into nightly" ]] \
+                || [[ "$subject" == "Merge remote-tracking branch '$remote/$branch' into nightly" ]] \
+                || [[ "$subject" == "Merge pull request #"*" from "*"/$branch" ]]; then
                 ordered+=("$branch")
                 assigned+="$branch "
             fi
@@ -129,8 +139,8 @@ if [[ "$resume" == true ]]; then
     [[ -f "$state_file" ]] || die "no rebuild in progress"
     [[ "$(git branch --show-current)" == "$work_branch" ]] || die "switch to $work_branch first"
     [[ ! -e "$(git rev-parse --git-path MERGE_HEAD)" ]] || die "finish the merge first: git commit"
-    # The conflicted branch is now merged.
-    sed -i.bak '1d' "$state_file" && rm -f "$state_file.bak"
+    # merge_branches verifies containment before removing the queued branch,
+    # and retries it if the interrupted merge was aborted or never started.
 else
     if ! git diff --quiet || ! git diff --cached --quiet; then
         die "the working tree has uncommitted changes"
@@ -154,10 +164,13 @@ echo "Changed files relative to the current nightly:"
 git diff --stat "$old" HEAD | tail -n 1
 
 if [[ "$push" == true ]]; then
-    git push --force-with-lease="nightly:$old" "$remote" "HEAD:nightly"
+    # Keep old integration commits reachable for the feature-branch check.
+    # Publish the archive and replacement together, or change neither ref.
+    git push --atomic --force-with-lease="nightly:$old" "$remote" \
+        "$old:refs/heads/nightly-history/$old" "HEAD:refs/heads/nightly"
     rm -f "$base_file"
     echo "Pushed the rebuilt nightly."
 else
     echo
-    echo "Inspect $work_branch, then publish it with: git push --force-with-lease=nightly:$old $remote $work_branch:nightly"
+    echo "Inspect $work_branch, then publish it with: git push --atomic --force-with-lease=nightly:$old $remote $old:refs/heads/nightly-history/$old $work_branch:refs/heads/nightly"
 fi

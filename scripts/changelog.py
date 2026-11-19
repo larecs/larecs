@@ -36,8 +36,13 @@ IGNORED = {"README.md"}
 def fragment_paths() -> list[Path]:
     """Return the fragment files in a stable order."""
     return sorted(
-        p for p in FRAGMENTS.glob("*.md") if p.name not in IGNORED
+        p for p in FRAGMENTS.glob("*.md") if is_fragment(p)
     )
+
+
+def is_fragment(path: Path) -> bool:
+    """Return whether a path is a releasable top-level Markdown fragment."""
+    return path.parent == FRAGMENTS and path.suffix == ".md" and path.name not in IGNORED
 
 
 def parse_fragment(path: Path) -> dict[str, list[str]]:
@@ -101,12 +106,16 @@ def render(merged: dict[str, list[str]]) -> str:
 def changed_fragments(base: str) -> list[Path]:
     """Return fragments added or modified since the merge base with `base`."""
     out = subprocess.run(
-        ["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD", "--", str(FRAGMENTS)],
+        ["git", "diff", "--name-only", "-z", "--no-renames", "--diff-filter=AM", f"{base}...HEAD", "--", str(FRAGMENTS)],
         check=True,
         capture_output=True,
         text=True,
     ).stdout
-    return [Path(p) for p in out.split() if Path(p).name not in IGNORED]
+    paths = [Path(p) for p in out.split("\0") if p and Path(p) != FRAGMENTS / "README.md"]
+    for path in paths:
+        if not is_fragment(path):
+            sys.exit(f"error: {path}: fragments must be top-level {FRAGMENTS}/*.md files")
+    return paths
 
 
 def check(base: str, pr: int | None, require_link: bool) -> None:
