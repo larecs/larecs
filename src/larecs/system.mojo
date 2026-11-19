@@ -15,6 +15,7 @@ from max.gpu.host import DevicePointer
 
 from tracy import Zone
 
+from .execution import ExecutionBackend
 from .world import World
 from .entity import EntityRange
 from .error import LarecsError, WorldError
@@ -415,7 +416,7 @@ struct EntitySelection[
             KernelContext[filter, required_resources, capture_spec]
         ) thin -> None,
         *Bindings: CaptureBindingType,
-        on_gpu: Bool = False,
+        backend: ExecutionBackend = ExecutionBackend.HOST,
     ](mut self, *bindings: *Bindings) raises:
         """Runs a thin CPU or GPU kernel on selected rows matching ``filter``.
 
@@ -425,7 +426,7 @@ struct EntitySelection[
             capture_spec: Explicit read-only and mutable capture slots.
             KernelFunc: Thin kernel function to invoke.
             Bindings: Inferred explicit capture binding types.
-            on_gpu: Whether to pack and execute matching rows on the GPU.
+            backend: Compile-time execution backend; HOST by default.
 
         Args:
             bindings: Capture bindings in ``capture_spec`` order.
@@ -433,6 +434,8 @@ struct EntitySelection[
         Raises:
             Error: If bindings or resources are invalid, or GPU execution fails.
         """
+        _validate_backend[backend]()
+
         var host_captures = _bind_captures[capture_spec](*bindings)
         var matching_ranges = List[EntityRange]()
         var total_length = 0
@@ -447,7 +450,7 @@ struct EntitySelection[
                 matching_ranges.append(selected_range)
                 total_length += selected_range.row_count
 
-        comptime if not has_accelerator() or not on_gpu:
+        comptime if backend == ExecutionBackend.HOST:
             var resource_pointers = ResourceAccessor[
                 required_resources
             ].Pointers(uninitialized=True)
@@ -486,23 +489,24 @@ struct EntitySelection[
                     thread_count=1,
                 )
                 KernelFunc(kernel_context)
-        else:
+        elif has_accelerator():
             comptime assert constrain_gpu_safe_components[
                 *filter._include.ComponentTypes
             ](), (
-                "EntitySelection.run(..., on_gpu=True) requires every"
-                " accessed component type to be GPU-safe."
+                "EntitySelection.run(..., backend=ExecutionBackend.DEVICE)"
+                " requires every accessed component type to be GPU-safe."
             )
             comptime assert constrain_gpu_safe_resources[
                 *required_resources.ResourceTypes
             ](), (
-                "EntitySelection.run(..., on_gpu=True) requires every"
-                " required resource type to be trivially movable."
+                "EntitySelection.run(..., backend=ExecutionBackend.DEVICE)"
+                " requires every required resource type to be trivially"
+                " movable."
             )
             if not self._world[]._device_storage:
                 raise Error(
-                    "EntitySelection.run(..., on_gpu=True) requires a working"
-                    " GPU device context."
+                    "EntitySelection.run(..., backend=ExecutionBackend.DEVICE)"
+                    " requires a working device context."
                 )
 
             # Required resources and explicit bindings remain validated even
@@ -613,10 +617,8 @@ struct EntitySelection[
             KernelContext[filter, required_resources, capture_spec]
         ) -> None,
         *Bindings: CaptureBindingType,
-        on_gpu: Bool = False,
-    ](
-        mut self, kernel_func: KernelFunc, *bindings: *Bindings
-    ) raises where not on_gpu:
+        backend: ExecutionBackend = ExecutionBackend.HOST,
+    ](mut self, kernel_func: KernelFunc, *bindings: *Bindings) raises:
         """Runs a value-taking CPU closure on selected matching rows.
 
         Parameters:
@@ -625,7 +627,7 @@ struct EntitySelection[
             capture_spec: Explicit read-only and mutable capture slots.
             KernelFunc: Inferred unified closure type.
             Bindings: Inferred explicit capture binding types.
-            on_gpu: Must remain false; lexical GPU captures are unsupported.
+            backend: Compile-time execution backend; HOST by default.
 
         Args:
             kernel_func: Closure invoked once per matching selected range.
@@ -634,6 +636,11 @@ struct EntitySelection[
         Raises:
             Error: If explicit bindings or required resources are invalid.
         """
+        _validate_backend[backend]()
+        comptime assert (
+            backend == ExecutionBackend.HOST
+        ), "Value-taking kernel callables require ExecutionBackend.HOST"
+
         var host_captures = _bind_captures[capture_spec](*bindings)
         var resource_pointers = ResourceAccessor[required_resources].Pointers(
             uninitialized=True
@@ -1174,7 +1181,7 @@ struct SystemContext[
             KernelContext[filter, required_resources, capture_spec]
         ) thin -> None,
         *Bindings: CaptureBindingType,
-        on_gpu: Bool = False,
+        backend: ExecutionBackend = ExecutionBackend.HOST,
     ](mut self, *bindings: *Bindings) raises:
         """Runs a kernel over component rows matching ``filter``.
 
@@ -1185,7 +1192,7 @@ struct SystemContext[
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
-            on_gpu: Whether to execute the kernel against device storage.
+            backend: Compile-time execution backend; HOST by default.
 
         Args:
             bindings: Explicit read-only and mutable bindings in declared slot order.
@@ -1194,11 +1201,14 @@ struct SystemContext[
             Error: If a required resource is missing, or if the device
                 execution path fails to allocate or synchronize.
         """
+        _validate_backend[backend]()
+
         with Zone(
             function_name=String(
                 t"SystemContext.run[filter: Filter, required_resources:"
                 t" Resources, //, KernelFunc:"
-                t" {reflect_fn[KernelFunc].display_name()} , *, on_gpu: Bool]()"
+                t" {reflect_fn[KernelFunc].display_name()} , *, backend:"
+                t" ExecutionBackend]()"
             )
         ):
             var host_captures = _bind_captures[capture_spec](*bindings)
@@ -1214,7 +1224,7 @@ struct SystemContext[
             for ref archetype in matching_archetypes.copy():
                 length += len(archetype)
 
-            comptime if not has_accelerator() or not on_gpu:
+            comptime if backend == ExecutionBackend.HOST:
                 var resource_pointers = ResourceAccessor[
                     required_resources
                 ].Pointers(uninitialized=True)
@@ -1270,8 +1280,8 @@ struct SystemContext[
                     )
                     KernelFunc(kernel_context)
 
-            else:
-                # `on_gpu=True` moves every accessed component and resource
+            elif has_accelerator():
+                # `backend=ExecutionBackend.DEVICE` moves every accessed component and resource
                 # across the host/device boundary as raw bytes (see
                 # `DeviceComponentStorage`/`DeviceResourceStorage`): the
                 # destination is never constructed through `T`'s copy
@@ -1280,33 +1290,34 @@ struct SystemContext[
                 # logic) would be silently corrupted or leaked by that copy,
                 # so reject it here at compile time rather than at the
                 # `DeviceBuffer` call sites below where the failure would be
-                # far less legible. Host execution (`on_gpu=False`) is
+                # far less legible. Host execution (`backend=ExecutionBackend.HOST`) is
                 # unaffected -- it never takes this branch.
                 comptime assert constrain_gpu_safe_components[
                     *filter._include.ComponentTypes
                 ](), (
-                    "SystemContext.run(..., on_gpu=True) requires every"
-                    " accessed component type to be GPU-safe (conform to"
-                    " GPUComponentType, i.e. TrivialRegisterPassable) for raw"
-                    " byte transfer between host and device."
+                    "SystemContext.run(..., backend=ExecutionBackend.DEVICE)"
+                    " requires every accessed component type to be GPU-safe"
+                    " (conform to GPUComponentType, i.e."
+                    " TrivialRegisterPassable) for raw byte transfer between"
+                    " host and device."
                 )
                 comptime assert constrain_gpu_safe_resources[
                     *required_resources.ResourceTypes
                 ](), (
-                    "SystemContext.run(..., on_gpu=True) requires every"
-                    " required resource type to be trivially movable for raw"
-                    " byte transfer between host and device."
+                    "SystemContext.run(..., backend=ExecutionBackend.DEVICE)"
+                    " requires every required resource type to be trivially"
+                    " movable for raw byte transfer between host and device."
                 )
 
                 if not self.world[]._device_storage:
                     raise Error(
-                        "SystemContext.run(..., on_gpu=True) requires a"
-                        " working GPU device context, but this world's"
-                        " device storage never initialized -- either no"
-                        " accelerator is available, or `DeviceContext()`"
-                        " construction failed when the world was created."
-                        " Run with on_gpu=False to execute on the CPU"
-                        " instead."
+                        "SystemContext.run(...,"
+                        " backend=ExecutionBackend.DEVICE) requires a working"
+                        " device context, but this world's device storage never"
+                        " initialized -- either no accelerator is available, or"
+                        " `DeviceContext()` construction failed when the world"
+                        " was created. Run with backend=ExecutionBackend.HOST"
+                        " to execute on the CPU instead."
                     )
 
                 # No component columns exist for an unmatched filter. Validate
@@ -1441,10 +1452,8 @@ struct SystemContext[
             KernelContext[filter, required_resources, capture_spec]
         ) -> None,
         *Bindings: CaptureBindingType,
-        on_gpu: Bool = False,
-    ](
-        mut self, kernel_func: KernelFunc, *bindings: *Bindings
-    ) raises where not on_gpu:
+        backend: ExecutionBackend = ExecutionBackend.HOST,
+    ](mut self, kernel_func: KernelFunc, *bindings: *Bindings) raises:
         """Runs a kernel closure over component rows matching ``filter``.
 
         Parameters:
@@ -1454,7 +1463,7 @@ struct SystemContext[
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
-            on_gpu: Whether to execute the kernel against device storage.
+            backend: Compile-time execution backend; HOST by default.
 
         Args:
             kernel_func: The kernel closure to run once per matching
@@ -1470,11 +1479,16 @@ struct SystemContext[
         Raises:
             Error: If a required resource is missing.
         """
+        _validate_backend[backend]()
+        comptime assert (
+            backend == ExecutionBackend.HOST
+        ), "Value-taking kernel callables require ExecutionBackend.HOST"
+
         with Zone(
             function_name=(
                 "SystemContext.run[filter: Filter, required_resources:"
                 " Resources, //, KernelFunc: def(KernelContext[filter,"
-                " required_resources]) -> None, *, on_gpu:"
+                " required_resources]) -> None, *, backend:"
                 " Bool](kernel_func: KernelFunc)"
             )
         ):
@@ -1532,3 +1546,19 @@ struct SystemContext[
                     thread_count=1,
                 )
                 kernel_func(kernel_context)
+
+
+def _validate_backend[backend: ExecutionBackend]() raises:
+    """Rejects invalid choices and unavailable compile-time device support.
+
+    Parameters:
+        backend: Explicit compile-time execution target.
+
+    Raises:
+        Error: If DEVICE is selected without accelerator compilation support.
+    """
+    comptime assert (
+        backend == ExecutionBackend.HOST or backend == ExecutionBackend.DEVICE
+    ), "Invalid execution backend"
+    comptime if backend == ExecutionBackend.DEVICE and not has_accelerator():
+        raise Error("ExecutionBackend.DEVICE requires accelerator support")

@@ -5,7 +5,14 @@ from std.os import abort
 from std.sys import has_accelerator
 
 from custom_benchmark import DefaultBench
-from larecs import EntityRange, Filter, KernelContext, SystemContext, World
+from larecs import (
+    ExecutionBackend,
+    EntityRange,
+    Filter,
+    KernelContext,
+    SystemContext,
+    World,
+)
 
 
 @fieldwise_init
@@ -97,7 +104,12 @@ def _bench_contiguous_selection[on_gpu: Bool](mut bencher: Bencher):
         def run_once() {mut selection}:
             """Runs one pass over the contiguous selection."""
             try:
-                selection.run[increment, on_gpu=on_gpu]()
+                selection.run[
+                    increment,
+                    backend=(
+                        ExecutionBackend.DEVICE if on_gpu else ExecutionBackend.HOST
+                    ),
+                ]()
                 keep(len(selection))
             except e:
                 print(e)

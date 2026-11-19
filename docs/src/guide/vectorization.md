@@ -59,11 +59,11 @@ threads and copies only the component directions declared by the filter. For
 example, `move_filter` uploads both component columns but downloads only the
 modified `Position` column.
 
-In `Move.update`, pass `on_gpu=True` to run a compatible kernel on an
+In `Move.update`, pass `backend=ExecutionBackend.DEVICE` to run a compatible kernel on an
 available accelerator:
 
 ```mojo
-context.run[move_entities, on_gpu=True]()
+context.run[move_entities, backend=ExecutionBackend.DEVICE]()
 ```
 
 GPU execution requires GPU-safe component types and the corresponding Mojo

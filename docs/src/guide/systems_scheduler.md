@@ -298,7 +298,7 @@ def main() raises:
     var factor: Int32 = 3
     var processed: Int32 = 0
     var context = SystemContext(world)
-    context.run[scale, on_gpu=True](
+    context.run[scale, backend=ExecutionBackend.DEVICE](
         read_capture(factor), mut_capture(processed)
     )
     assert_equal(world.storage.get[Int32](entity), 12)
@@ -333,11 +333,11 @@ or once for the GPU launch gives the same total.
 ## GPU execution
 
 The `SystemContext.run` call used by `Move` executes its kernel on the CPU by
-default. Pass `on_gpu=True` to run a compatible kernel on an accelerator. The
+default. Pass `backend=ExecutionBackend.DEVICE` to run a compatible kernel on an accelerator. The
 same kernel function works on both targets unchanged; see the
 {{< api SystemContext.run >}} and {{< api KernelContext >}} API docs for
 details. GPU execution requires an available accelerator and the corresponding
-Mojo GPU toolchain. On systems without one, `on_gpu=True` kernels fall back to
+Mojo GPU toolchain. On systems without one, `backend=ExecutionBackend.DEVICE` kernels fall back to
 CPU execution.
 
 Required resources use the same `context.resources.get[T]()` API on the GPU.

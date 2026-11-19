@@ -222,7 +222,7 @@ for an example. GPU entry points use the non-capturing `context.run[kernel]()` f
 To run this same kernel on a GPU, replace its CPU `run` call with:
 
 ```mojo
-    context.run[move_with_time, on_gpu=True]()
+    context.run[move_with_time, backend=ExecutionBackend.DEVICE]()
 ```
 
 For GPU execution, accessed components must conform to
