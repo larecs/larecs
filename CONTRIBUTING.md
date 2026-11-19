@@ -5,9 +5,9 @@ branch is merged into `nightly` for testing without review, and the same branch
 is later promoted to `main` through a reviewed PR. `nightly` is rebuilt from
 `main` and the unpromoted feature branches after each release.
 
-![Larecs development workflow](docs/images/development-workflow.svg)
+![Larecs development workflow](docs/src/guide/images/development-workflow.svg)
 
-The [Develop a feature](docs/development_workflow.md) guide explains
+The [Develop a feature](docs/src/guide/development_workflow.md) guide explains
 each step in detail.
 
 ## Branches

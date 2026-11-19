@@ -33,7 +33,7 @@ Larecs is a performance-critical Entity Component System library written in Mojo
   consolidate refinements on the branch before opening the PR.
 - Rebuild `nightly` only when the developer asks, with
   `scripts/rebuild_nightly.sh`; [CONTRIBUTING.md](CONTRIBUTING.md) and
-  `docs/development_workflow.md` describe the full lifecycle.
+  `docs/src/guide/development_workflow.md` describe the full lifecycle.
 - If tooling already started you on its own branch, such as a managed worktree,
   create the linked branch with `gh issue develop` without `--checkout`, then
   run `git fetch origin <branch>` and `git switch <branch>` before your first

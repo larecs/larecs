@@ -37,7 +37,8 @@ writes), execution backends (threaded, device, captures, and copy reuse), and
 spatial locality. Extend one of them before adding a page. Each guide states the
 limits of its feature beside it; there are no curated reference or architecture
 pages. Never label a page or section by audience. Maintainer material lives
-outside the site: `docs/development_workflow.md`, `docs/benchmarks/`, and
+outside the site: `docs/src/guide/development_workflow.md` (excluded from
+the build), `docs/benchmarks/`, and
 `docs/documentation.md`.
 
 ## Running example: particles

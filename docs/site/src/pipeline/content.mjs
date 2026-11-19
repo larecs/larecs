@@ -5,6 +5,8 @@ import { root, base, read, json, write, files, escapeHtml } from './project.mjs'
 import { buildReference } from './api.mjs';
 import { formatDeclaration } from './declaration-layout.mjs';
 
+// Maintainer pages kept under docs/src for history reasons; they are not published.
+const REPOSITORY_ONLY = new Set(['guide/development_workflow']);
 const fence = (code) => '\n```mojo-render\n' + code.trim() + '\n```\n';
 const declaration = (code) => '\n<div class="api-declaration">\n' + fence(code) + '\n</div>\n';
 const codeText = (text) => escapeHtml(text).replace(/[\\`*_\[\]()]/g, (char) => `&#${char.charCodeAt(0)};`);
@@ -151,8 +153,10 @@ export class Documentation {
   }
   authored() {
     for (const path of files('docs/src', '.md')) {
+      const owner = relative(resolve(root, 'docs/src'), path).replace(/\.md$/, '');
+      if (REPOSITORY_ONLY.has(owner)) continue;
       const [, head, ...bodyParts] = read(path).split('+++');
-      const data = parse(head), owner = relative(resolve(root, 'docs/src'), path).replace(/\.md$/, '');
+      const data = parse(head);
       const route = owner.replace(/_index$/, '').replace(/\/$/, '');
       const body = this.shortcodes(this.extract(bodyParts.join('+++'), owner));
       if (data.draft) continue;
