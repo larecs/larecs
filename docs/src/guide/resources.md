@@ -292,10 +292,12 @@ owning host type, its kernel view, and transfer logic separate:
 | `GridView` | Immutable sample pointer, dimensions, and sampling methods | The same kernel on either backend |
 | `GridAdapter` | Static validation and view preparation methods | Larecs during `run` |
 
-The source declares `KernelView` and `Adapter` as compile-time members. The
-adapter declares the matching `Source` and `View`; it needs no constructor or
-instance fields. Every method reads the current source, including configuration
-such as dimensions.
+The source declares its `Adapter` as a compile-time member. The adapter declares
+the matching `Source` and a `View[mut: Bool]` mapping; it needs no constructor
+or instance fields. A read-only adapter maps both access kinds to one view type.
+The source's `View` and `KernelView` (an alias for `View[False]`) default to the
+adapter's mapping. Every method reads the current source, including
+configuration such as dimensions.
 
 This complete example uses a rectangular grid. Its view exposes `last()` to
 keep pointer arithmetic inside the resource API. A scientific view can instead
@@ -325,7 +327,6 @@ from larecs import (
 struct Grid(DevicePassableResource):
     """Owns current host samples and grid metadata."""
 
-    comptime KernelView = GridView
     comptime Adapter = GridAdapter
     var values: List[Int32]
     var width: Int
@@ -353,7 +354,7 @@ struct GridAdapter(ResourceAdapter):
     """Stateless adapter using current dimensions and cached sample capacity."""
 
     comptime Source = Grid
-    comptime View = GridView
+    comptime View[mut: Bool] = GridView
 
     @staticmethod
     def validate(source: Self.Source) raises:
@@ -373,7 +374,7 @@ struct GridAdapter(ResourceAdapter):
             raise Error("Grid dimensions must match sample count")
 
     @staticmethod
-    def bind_host(source: Self.Source) raises -> Self.View:
+    def bind_host(source: Self.Source) raises -> Self.View[False]:
         """Borrows immutable samples from the validated host owner.
 
         Args:
@@ -396,7 +397,7 @@ struct GridAdapter(ResourceAdapter):
     @staticmethod
     def prepare_device(
         source: Self.Source, mut cache: ResourceDeviceCache
-    ) raises -> Self.View:
+    ) raises -> Self.View[False]:
         """Uploads current samples and returns the same descriptor type.
 
         Args:
@@ -486,8 +487,8 @@ Host-only resources can continue implementing `ResourceType` without an adapter.
 
 ### Adapter allocation and access rules
 
-Every adapter must support concurrent reads of its `KernelView` on the view's
-execution target. View methods and all reachable memory must permit concurrent
+Every adapter must support concurrent reads of its read view, `View[False]`, on
+the view's execution target. View methods and all reachable memory must permit concurrent
 reads without hidden unsafe mutation. No escaped alias may mutate, resize,
 relocate, or free backing data before invocation completion; immutable pointer
 fields alone do not establish this guarantee. This is a universal adapter
@@ -497,8 +498,9 @@ Threaded host calls accept adapted sources only through explicit `read`
 declarations. The caller validates and binds each source once, then shares the
 same descriptor and sample storage across jobs. Resource leases and descriptor
 owners remain alive until all workers join, including whole-range fallback.
-Ordinary pointer-free read resources also work without an adapter. Mutable
-resources remain unsupported by this engine.
+Ordinary pointer-free read resources also work without an adapter. Ordinary
+mutable resources remain unsupported by this engine; mutable adapted resources
+require [concurrent mutation support](#mutable-adapted-resources-experimental).
 
 Use nonnegative cache slots for sample allocations. Slot `-1` is reserved for
 Larecs's view descriptor. For multiple arrays, give each array its own stable
@@ -521,13 +523,95 @@ There is no adapter factory or instance. Registration happens automatically on
 share the same view type. A wrapper can adapt a third-party owner. See the
 [compiled grid example](../../design/research/resource-view-probe.mojo).
 
-Only `read` is supported for adapted sources, including host execution.
+Adapters without mutation support accept only `read`, including on the host;
 `Resources[AdaptedSource]()` and mutable declarations fail compilation.
 `get[Source]()` always returns the associated view; kernels cannot access the
 owner. Edit the world-side owner between runs, including whole-instance
 assignment through `world.resources.get[T]() = T(...)`; the next run validates
 and uploads the new source without rebinding. Copied worlds have independent host
 owners and empty resource caches.
+
+## Mutable adapted resources (experimental)
+
+An adapter can also give kernels a **writer view**, so shared output such as a
+per-cell grid is filled without a `MutCapture` and with the same kernel on
+every target. The access declaration selects the view:
+
+| Declaration | `get[T]()` returns | Output before the kernel runs |
+| --- | --- | --- |
+| `Resources().read[T]()` | `T.View[False]` | Not applicable |
+| `Resources().write[T]()` | `T.View[True]` | Fresh, initialized by the adapter |
+| `Resources().read_write[T]()` | `T.View[True]` | Existing contents preserved |
+
+Read and writer views can be different types:
+
+```mojo
+struct GridAdapter(ResourceAdapter):
+    comptime Source = Grid
+    comptime View[mutable: Bool] = GridFill if mutable else GridRead
+    comptime supports_mutation = True
+    comptime supports_concurrent_mutation = True
+```
+
+Both capabilities default to `False`. `supports_mutation` admits `write` and
+`read_write` declarations for sequential host runs. Device and `threaded=True`
+runs also require `supports_concurrent_mutation`. Declare it only if every
+writer-view operation is safe under concurrent use, for example because slots
+are reserved with [atomics](../synchronization) and then written disjointly.
+Larecs leases the source exclusively for the invocation. This does not prevent
+races between the GPU threads or host workers of one kernel: **you are
+responsible for safe resource access.** Unsupported combinations fail
+compilation.
+
+The descriptor a kernel receives is immutable. A writer view holds pointers to
+adapter-managed backing buffers, such as slots, per-cell counters, reductions,
+and error flags, and mutates them through its own methods. Mutable adapters
+implement four hooks that receive the full `ResourceAccess` mode, so `write`
+can initialize fresh output while `read_write` preserves it:
+
+| Hook | When Larecs calls it |
+| --- | --- |
+| `bind_host_mutable[access](mut source)` | Once before host kernels run. On the host, kernels write the source's buffers directly. Also called for device runs without matching rows. |
+| `prepare_device_mutable[access](mut source, mut cache)` | Once before a device launch. Use `cache.fill` for fresh output and `cache.upload_mutable` to preserve contents. |
+| `stage_device_results[access](mut source, mut cache)` | After the launch is queued. Stage every output with `cache.download`. |
+| `finalize[access](mut source)` | Once after all kernel work completed and device outputs were published. Use it to clamp counters or report overflow. |
+
+Preparation and finalization run once per invocation, across every matching
+archetype, selected range, threaded chunk, and device launch, including runs
+with no matching rows. Output is never reset per archetype or worker. Device
+runs use the world's device queue and cache; buffers and staging stay alive
+until completion. Mutable adapted sources are prepared on every run, even in
+worlds that [reuse device copies](#reusing-unchanged-device-copies-experimental).
+Size host targets before staging downloads; they are written only after the
+queue completes.
+
+Failures follow the [invocation rules](#invocation-lifetime-and-failures):
+
+- Host writes are not rolled back. If preparation fails after `write`
+  initialization, the source stays initialized, and `finalize` does not run.
+- Device outputs are published only after synchronization succeeds. A failed
+  run discards them.
+- If `finalize` raises, the run raises, but published outputs remain and the
+  world stays usable.
+
+[`examples/scatter_resource.mojo`](../../../examples/scatter_resource.mojo)
+is a complete example. Writers reserve per-cell slots with atomic counters
+and count dropped writes; `finalize` clamps the counters. The same thin kernel
+runs sequentially, threaded, and on a device. Run it with
+`pixi run scatter-example`. Slot order within a cell depends on scheduling.
+
+### Migrating existing adapters
+
+Adapters written for the read-only API need three changes:
+
+1. Replace `comptime View = MyView` with `comptime View[mut: Bool] = MyView`.
+2. Change `bind_host` and `prepare_device` to return `Self.View[False]`.
+3. Remove `comptime KernelView = MyView` from the source. `KernelView` still
+   exists as an alias for `View[False]`.
+
+Adapters that do not opt into mutation keep their behavior. Mutable
+declarations of them now fail with "mutable access requires
+Adapter.supports_mutation".
 
 ## Invocation lifetime and failures
 
