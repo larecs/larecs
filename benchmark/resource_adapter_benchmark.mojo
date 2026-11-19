@@ -56,14 +56,22 @@ def adapter[device: Bool, growing: Bool]() raises:
     for _ in world.storage.add_entities(Int32(0), count=512):
         pass
     var context = SystemContext(world)
-    context.run[adapted, on_device=device]()
+    context.run[
+        adapted,
+        backend=(ExecutionBackend.DEVICE if device else ExecutionBackend.HOST),
+    ]()
     var start = perf_counter_ns()
     for i in range(iterations):
         ref source = world.resources.get[Samples]()
         source.samples[0] = Int32(1 + i % 2)
         comptime if growing:
             source.samples.append(1)
-        context.run[adapted, on_device=device]()
+        context.run[
+            adapted,
+            backend=(
+                ExecutionBackend.DEVICE if device else ExecutionBackend.HOST
+            ),
+        ]()
     var elapsed = Float64(perf_counter_ns() - start) / Float64(iterations)
     check(world, Int32(1 + iterations + iterations // 2))
     assert_equal(
