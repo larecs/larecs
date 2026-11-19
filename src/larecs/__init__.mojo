@@ -176,4 +176,12 @@ from .sync import (
     TryAccess,
 )
 
+from .resource_adapter import (
+    DevicePassableResource,
+    ResourceAdapter,
+    ResourceDeviceCache,
+    ReadBuffer,
+    BufferResource,
+)
+
 from .execution import ExecutionBackend
