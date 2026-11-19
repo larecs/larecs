@@ -1,12 +1,17 @@
 """Account for and execute documentation programs without an exclusion list."""
 
 import argparse
+import hashlib
+import io
 import json
 import os
 import platform
 import re
 import subprocess
+import tarfile
+import tempfile
 import textwrap
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -14,6 +19,38 @@ DOCTEST_SOURCES = ("src/larecs", "docs/src")
 LABEL = re.compile(r'doctest="([\w-]+)"')
 EXAMPLE = re.compile(r'{{<\s*example\s+([^>]+)>}}')
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
+RUNNER_REVISION = "77c430669b3ddcf9bfed614de908219909dfdae1"  # v3.0.0
+RUNNER_SHA256 = "aced10e662487c1d1a60f68f35e9fda8f42fa5bb8360fcfe127bf212d816a57b"
+
+
+def doctest_runner(output: Path) -> Path:
+    """Build the pinned Linux runner without the package's AVX-512 requirement."""
+    packaged = ROOT / ".pixi/envs/doctest-runner/bin/mogo-tester"
+    if platform.system() != "Linux":
+        return packaged
+    # The 3.0.0 Linux package contains AVX-512 instructions even in CLI parsing.
+    # Build with the locked Mojo 1.2 compiler for x86-64-v3, while leaving the
+    # project's Mojo 1.0 compiler on PATH when the runner executes examples.
+    url = f"https://codeload.github.com/moseschmiedel/mogo_tester/tar.gz/{RUNNER_REVISION}"
+    with urllib.request.urlopen(url, timeout=60) as response:
+        archive = response.read()
+    if hashlib.sha256(archive).hexdigest() != RUNNER_SHA256:
+        raise ValueError("Doctest runner source checksum differs")
+    runner = (output / "mogo-tester").resolve()
+    with tempfile.TemporaryDirectory(prefix="larecs-doctest-runner-") as directory:
+        with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as source:
+            source.extractall(directory, filter="data")
+        source = Path(directory) / f"mogo_tester-{RUNNER_REVISION}" / "src"
+        subprocess.run(["pixi", "run", "--manifest-path", str(ROOT / "pixi.toml"),
+                        "-e", "doctest-runner", "mojo", "build", "-I", str(source),
+                        "--target-cpu", "x86-64-v3",
+                        "-Xlinker", f"-L{packaged.parent.parent / 'lib'}",
+                        "-Xlinker", f"-rpath-link={packaged.parent.parent / 'lib'}",
+                        "-D", "MOGO_VERSION=v3.0.0", "-o", str(runner),
+                        str(source / "main.mojo")], cwd=ROOT, check=True,
+                       env={**os.environ, "MODULAR_MOJO_MAX_LINKER_DRIVER":
+                            str(ROOT / ".pixi/envs/test/bin/clang")})
+    return runner
 
 
 def regions(source: str) -> dict[str, str]:
@@ -169,7 +206,7 @@ def run() -> None:
     # on the project's Mojo 1.0 PATH. Install separately and invoke it directly.
     subprocess.run(["pixi", "install", "--locked", "-e", "doctest-runner"],
                    cwd=ROOT, check=True)
-    runner = ROOT / ".pixi/envs/doctest-runner/bin/mogo-tester"
+    runner = doctest_runner(output)
     command = [str(runner), "--precompile", "src/larecs",
                *[arg for path in DOCTEST_SOURCES for arg in ("--doctests", path)]]
     for arg in ("-DASSERT=all", "-Xlinker", f"-L{prefix}/lib", "-Xlinker",

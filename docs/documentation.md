@@ -38,6 +38,8 @@ publishing. There is no exclusion list.
 generation. Its locked `doctest-runner` environment supplies mogo-tester 3
 and its Mojo 1.2 runtime; the runner invokes the project’s Mojo 1.0 compiler
 from the test environment. Diagnostics identify the original source lines.
+On Linux, the command downloads checksum-pinned v3.0.0 source and builds the
+runner for x86-64-v3 because the packaged binary requires AVX-512.
 
 Both commands also run backend, resource, and spatial rejection checks, compare
 figure exports, and validate symbol targets, source lines, site links, images,

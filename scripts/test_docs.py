@@ -3,10 +3,25 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from check_docs import Page, Site, check
 from build_figures import check_inventory
-from doc_examples import coverage, inventory, regions, source_doctests
+from doc_examples import coverage, doctest_runner, inventory, regions, source_doctests
+
+
+class RunnerTests(unittest.TestCase):
+    """Reject changed upstream source before building a documentation tool."""
+
+    def test_runner_rejects_source_checksum_mismatch(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                patch("doc_examples.platform.system", return_value="Linux"), \
+                patch("doc_examples.urllib.request.urlopen") as download, \
+                patch("doc_examples.subprocess.run") as build:
+            download.return_value.__enter__.return_value.read.return_value = b"changed source"
+            with self.assertRaisesRegex(ValueError, "source checksum differs"):
+                doctest_runner(Path(directory))
+            build.assert_not_called()
 
 
 class ExampleTests(unittest.TestCase):
