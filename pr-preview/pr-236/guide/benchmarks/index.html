@@ -1,0 +1,2395 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon shortcut" href="/larecs/pr-preview/pr-236/favicon.ico" sizes="32x32" />
+<link rel="icon" href="/larecs/pr-preview/pr-236/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/larecs/pr-preview/pr-236/favicon-dark.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)" />
+<link rel="icon" href="/larecs/pr-preview/pr-236/favicon-16x16.png" type="image/png" sizes="16x16" />
+<link rel="icon" href="/larecs/pr-preview/pr-236/favicon-32x32.png" type="image/png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/larecs/pr-preview/pr-236/apple-touch-icon.png" sizes="180x180" />
+<link fetchpriority="low" href="/larecs/pr-preview/pr-236/site.webmanifest" rel="manifest" />
+<title>Benchmarks – Larecs🌲</title>
+  <meta name="description" content="The focused entity_selection_benchmark.mojo workload compares ordinary full-world host execution with contiguous and disjoint 64-row selections in a 100,000-row world, a selected add/remove chain, and selected device execution when an accelerator is available. On the Apple Metal development host used for the 1.0.0b2 work, one bounded run measured approximately 0.0253 ms for the 100k-row host path, 0.0000664 ms for the contiguous selection, 0.000556 ms for 64 disjoint single-row ranges, 0.00727 ms for the add/remove chain, and 0.379 ms for the device selection. These are development measurements, not a cross-version historical baseline; use the benchmark on target hardware for regression decisions." /><link rel="canonical" href="https://larecs.github.io/larecs/pr-preview/pr-236/guide/benchmarks/" itemprop="url" />
+
+<meta property="og:title" content="Benchmarks" />
+<meta property="og:description" content="The focused entity_selection_benchmark.mojo workload compares ordinary
+full-world host execution with contiguous and disjoint 64-row selections in a
+100,000-row world, a selected add/remove chain, and selected device execution when
+an accelerator is available. On the Apple Metal development host used for the
+1.0.0b2 work, one bounded run measured approximately 0.0253 ms for the 100k-row
+host path, 0.0000664 ms for the contiguous selection, 0.000556 ms for 64 disjoint
+single-row ranges, 0.00727 ms for the add/remove chain, and 0.379 ms for the device
+selection. These are development measurements, not a cross-version historical
+baseline; use the benchmark on target hardware for regression decisions." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://larecs.github.io/larecs/pr-preview/pr-236/guide/benchmarks/" /><meta property="article:section" content="guide" />
+
+
+
+  <meta itemprop="name" content="Benchmarks">
+  <meta itemprop="description" content="The focused entity_selection_benchmark.mojo workload compares ordinary full-world host execution with contiguous and disjoint 64-row selections in a 100,000-row world, a selected add/remove chain, and selected device execution when an accelerator is available. On the Apple Metal development host used for the 1.0.0b2 work, one bounded run measured approximately 0.0253 ms for the 100k-row host path, 0.0000664 ms for the contiguous selection, 0.000556 ms for 64 disjoint single-row ranges, 0.00727 ms for the add/remove chain, and 0.379 ms for the device selection. These are development measurements, not a cross-version historical baseline; use the benchmark on target hardware for regression decisions.">
+  <meta itemprop="wordCount" content="5567">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Benchmarks">
+  <meta name="twitter:description" content="The focused entity_selection_benchmark.mojo workload compares ordinary full-world host execution with contiguous and disjoint 64-row selections in a 100,000-row world, a selected add/remove chain, and selected device execution when an accelerator is available. On the Apple Metal development host used for the 1.0.0b2 work, one bounded run measured approximately 0.0253 ms for the 100k-row host path, 0.0000664 ms for the contiguous selection, 0.000556 ms for 64 disjoint single-row ranges, 0.00727 ms for the add/remove chain, and 0.379 ms for the device selection. These are development measurements, not a cross-version historical baseline; use the benchmark on target hardware for regression decisions.">
+
+    <link rel="preload" href="/larecs/pr-preview/pr-236/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
+    <link href="/larecs/pr-preview/pr-236/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
+
+
+
+  <link href="/larecs/pr-preview/pr-236/css/custom.min.9bee5f6c5763936a54791b28473d100341aa53851f2713fe365229a4fb4b4ffd.css" rel="stylesheet" integrity="sha256-m&#43;5fbFdjk2pUeRsoRz0QA0GqU4UfJxP&#43;NlIppPtLT/0=" />
+
+
+  <script>
+     
+    const defaultTheme = 'system';
+
+    const setDarkTheme = () => {
+      document.documentElement.classList.add("dark");
+      document.documentElement.style.colorScheme = "dark";
+    }
+    const setLightTheme = () => {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.style.colorScheme = "light";
+    }
+
+    if ("color-theme" in localStorage) {
+      localStorage.getItem("color-theme") === "dark" ? setDarkTheme() : setLightTheme();
+    } else {
+      defaultTheme === "dark" ? setDarkTheme() : setLightTheme();
+      if (defaultTheme === "system") {
+        window.matchMedia("(prefers-color-scheme: dark)").matches ? setDarkTheme() : setLightTheme();
+      }
+    }
+  </script>
+
+  
+</head>
+<body dir="ltr"><div class="nav-container hx-sticky hx-top-0 hx-z-20 hx-w-full hx-bg-transparent print:hx-hidden">
+  <div class="nav-container-blur hx-pointer-events-none hx-absolute hx-z-[-1] hx-h-full hx-w-full hx-bg-white dark:hx-bg-dark hx-shadow-[0_2px_4px_rgba(0,0,0,.02),0_1px_0_rgba(0,0,0,.06)] contrast-more:hx-shadow-[0_0_0_1px_#000] dark:hx-shadow-[0_-1px_0_rgba(255,255,255,.1)_inset] contrast-more:dark:hx-shadow-[0_0_0_1px_#fff]"></div>
+
+  <nav class="hx-mx-auto hx-flex hx-items-center hx-justify-end hx-gap-2 hx-h-16 hx-px-6 hx-max-w-[90rem]">
+    <a class="hx-flex hx-items-center hover:hx-opacity-75 ltr:hx-mr-auto rtl:hx-ml-auto" href="/larecs/pr-preview/pr-236/">
+        <img class="hx-block dark:hx-hidden" src="/larecs/pr-preview/pr-236/images/logo.svg" alt="Larecs🌲" height="20" width="20" />
+        <img class="hx-hidden dark:hx-block" src="/larecs/pr-preview/pr-236/images/logo.svg" alt="Larecs🌲" height="20" width="20" />
+        <span class="hx-mx-2 hx-font-extrabold hx-inline hx-select-none" title="Larecs🌲">Larecs🌲</span>
+    </a><a
+            title="Get started"
+            href="/larecs/pr-preview/pr-236/start"
+            
+            class="hx-text-sm contrast-more:hx-text-gray-700 contrast-more:dark:hx-text-gray-100 hx-relative -hx-ml-2 hx-hidden hx-whitespace-nowrap hx-p-2 md:hx-inline-block hx-text-gray-600 hover:hx-text-gray-800 dark:hx-text-gray-400 dark:hover:hx-text-gray-200"
+          >
+            <span class="hx-text-center">Get started</span>
+          </a><a
+            title="User guide"
+            href="/larecs/pr-preview/pr-236/guide"
+            
+            class="hx-text-sm contrast-more:hx-text-gray-700 contrast-more:dark:hx-text-gray-100 hx-relative -hx-ml-2 hx-hidden hx-whitespace-nowrap hx-p-2 md:hx-inline-block hx-font-medium"
+          >
+            <span class="hx-text-center">User guide</span>
+          </a><a
+            title="API"
+            href="/larecs/pr-preview/pr-236/larecs"
+            
+            class="hx-text-sm contrast-more:hx-text-gray-700 contrast-more:dark:hx-text-gray-100 hx-relative -hx-ml-2 hx-hidden hx-whitespace-nowrap hx-p-2 md:hx-inline-block hx-text-gray-600 hover:hx-text-gray-800 dark:hx-text-gray-400 dark:hover:hx-text-gray-200"
+          >
+            <span class="hx-text-center">API</span>
+          </a><div class="search-wrapper hx-relative md:hx-w-64">
+  <div class="hx-relative hx-flex hx-items-center hx-text-gray-900 contrast-more:hx-text-gray-800 dark:hx-text-gray-300 contrast-more:dark:hx-text-gray-300">
+    <input
+      placeholder="Search..."
+      class="search-input hx-block hx-w-full hx-appearance-none hx-rounded-lg hx-px-3 hx-py-2 hx-transition-colors hx-text-base hx-leading-tight md:hx-text-sm hx-bg-black/[.05] dark:hx-bg-gray-50/10 focus:hx-bg-white dark:focus:hx-bg-dark placeholder:hx-text-gray-500 dark:placeholder:hx-text-gray-400 contrast-more:hx-border contrast-more:hx-border-current"
+      type="search"
+      value=""
+      spellcheck="false"
+    />
+    <kbd
+      class="hx-absolute hx-my-1.5 hx-select-none ltr:hx-right-1.5 rtl:hx-left-1.5 hx-h-5 hx-rounded hx-bg-white hx-px-1.5 hx-font-mono hx-text-[10px] hx-font-medium hx-text-gray-500 hx-border dark:hx-border-gray-100/20 dark:hx-bg-dark/50 contrast-more:hx-border-current contrast-more:hx-text-current contrast-more:dark:hx-border-current hx-items-center hx-gap-1 hx-transition-opacity hx-pointer-events-none hx-hidden sm:hx-flex"
+    >
+      CTRL K
+    </kbd>
+  </div>
+
+  <div>
+    <ul
+      class="search-results hextra-scrollbar hx-hidden hx-border hx-border-gray-200 hx-bg-white hx-text-gray-100 dark:hx-border-neutral-800 dark:hx-bg-neutral-900 hx-absolute hx-top-full hx-z-20 hx-mt-2 hx-overflow-auto hx-overscroll-contain hx-rounded-xl hx-py-2.5 hx-shadow-xl hx-max-h-[min(calc(50vh-11rem-env(safe-area-inset-bottom)),400px)] md:hx-max-h-[min(calc(100vh-5rem-env(safe-area-inset-bottom)),400px)] hx-inset-x-0 ltr:md:hx-left-auto rtl:md:hx-right-auto contrast-more:hx-border contrast-more:hx-border-gray-900 contrast-more:dark:hx-border-gray-50 hx-w-screen hx-min-h-[100px] hx-max-w-[min(calc(100vw-2rem),calc(100%+20rem))]"
+      style="transition: max-height 0.2s ease 0s;"
+    ></ul>
+  </div>
+</div>
+
+          <a class="hx-p-2 hx-text-current" target="_blank" rel="noreferrer" href="https://github.com/larecs/larecs" title="GitHub"><svg height=24 fill="currentColor" viewBox="3 3 18 18">
+  <path d="M12 3C7.0275 3 3 7.12937 3 12.2276C3 16.3109 5.57625 19.7597 9.15374 20.9824C9.60374 21.0631 9.77249 20.7863 9.77249 20.5441C9.77249 20.3249 9.76125 19.5982 9.76125 18.8254C7.5 19.2522 6.915 18.2602 6.735 17.7412C6.63375 17.4759 6.19499 16.6569 5.8125 16.4378C5.4975 16.2647 5.0475 15.838 5.80124 15.8264C6.51 15.8149 7.01625 16.4954 7.18499 16.7723C7.99499 18.1679 9.28875 17.7758 9.80625 17.5335C9.885 16.9337 10.1212 16.53 10.38 16.2993C8.3775 16.0687 6.285 15.2728 6.285 11.7432C6.285 10.7397 6.63375 9.9092 7.20749 9.26326C7.1175 9.03257 6.8025 8.08674 7.2975 6.81794C7.2975 6.81794 8.05125 6.57571 9.77249 7.76377C10.4925 7.55615 11.2575 7.45234 12.0225 7.45234C12.7875 7.45234 13.5525 7.55615 14.2725 7.76377C15.9937 6.56418 16.7475 6.81794 16.7475 6.81794C17.2424 8.08674 16.9275 9.03257 16.8375 9.26326C17.4113 9.9092 17.76 10.7281 17.76 11.7432C17.76 15.2843 15.6563 16.0687 13.6537 16.2993C13.98 16.5877 14.2613 17.1414 14.2613 18.0065C14.2613 19.2407 14.25 20.2326 14.25 20.5441C14.25 20.7863 14.4188 21.0746 14.8688 20.9824C16.6554 20.364 18.2079 19.1866 19.3078 17.6162C20.4077 16.0457 20.9995 14.1611 21 12.2276C21 7.12937 16.9725 3 12 3Z"></path>
+</svg>
+<span class="hx-sr-only">GitHub</span>
+          </a><button type="button" aria-label="Menu" class="hamburger-menu -hx-mr-2 hx-rounded hx-p-2 active:hx-bg-gray-400/20 md:hx-hidden"><svg height=24 fill="none" viewBox="0 0 24 24" stroke="currentColor"><g><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8H20"></path></g><g><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16H20"></path></g></svg></button>
+  </nav>
+</div>
+
+  <div class='hx-mx-auto hx-flex hx-max-w-screen-xl'>
+    <div class="mobile-menu-overlay [transition:background-color_1.5s_ease] hx-fixed hx-inset-0 hx-z-10 hx-bg-black/80 dark:hx-bg-black/60 hx-hidden"></div>
+<aside class="sidebar-container hx-flex hx-flex-col print:hx-hidden md:hx-top-16 md:hx-shrink-0 md:hx-w-64 md:hx-self-start max-md:[transform:translate3d(0,-100%,0)] md:hx-sticky">
+  
+  <div class="hx-px-4 hx-pt-4 md:hx-hidden">
+    <div class="search-wrapper hx-relative md:hx-w-64">
+  <div class="hx-relative hx-flex hx-items-center hx-text-gray-900 contrast-more:hx-text-gray-800 dark:hx-text-gray-300 contrast-more:dark:hx-text-gray-300">
+    <input
+      placeholder="Search..."
+      class="search-input hx-block hx-w-full hx-appearance-none hx-rounded-lg hx-px-3 hx-py-2 hx-transition-colors hx-text-base hx-leading-tight md:hx-text-sm hx-bg-black/[.05] dark:hx-bg-gray-50/10 focus:hx-bg-white dark:focus:hx-bg-dark placeholder:hx-text-gray-500 dark:placeholder:hx-text-gray-400 contrast-more:hx-border contrast-more:hx-border-current"
+      type="search"
+      value=""
+      spellcheck="false"
+    />
+    <kbd
+      class="hx-absolute hx-my-1.5 hx-select-none ltr:hx-right-1.5 rtl:hx-left-1.5 hx-h-5 hx-rounded hx-bg-white hx-px-1.5 hx-font-mono hx-text-[10px] hx-font-medium hx-text-gray-500 hx-border dark:hx-border-gray-100/20 dark:hx-bg-dark/50 contrast-more:hx-border-current contrast-more:hx-text-current contrast-more:dark:hx-border-current hx-items-center hx-gap-1 hx-transition-opacity hx-pointer-events-none hx-hidden sm:hx-flex"
+    >
+      CTRL K
+    </kbd>
+  </div>
+
+  <div>
+    <ul
+      class="search-results hextra-scrollbar hx-hidden hx-border hx-border-gray-200 hx-bg-white hx-text-gray-100 dark:hx-border-neutral-800 dark:hx-bg-neutral-900 hx-absolute hx-top-full hx-z-20 hx-mt-2 hx-overflow-auto hx-overscroll-contain hx-rounded-xl hx-py-2.5 hx-shadow-xl hx-max-h-[min(calc(50vh-11rem-env(safe-area-inset-bottom)),400px)] md:hx-max-h-[min(calc(100vh-5rem-env(safe-area-inset-bottom)),400px)] hx-inset-x-0 ltr:md:hx-left-auto rtl:md:hx-right-auto contrast-more:hx-border contrast-more:hx-border-gray-900 contrast-more:dark:hx-border-gray-50 hx-w-screen hx-min-h-[100px] hx-max-w-[min(calc(100vw-2rem),calc(100%+20rem))]"
+      style="transition: max-height 0.2s ease 0s;"
+    ></ul>
+  </div>
+</div>
+
+  </div>
+  <div class="hextra-scrollbar hx-overflow-y-auto hx-overflow-x-hidden hx-p-4 hx-grow md:hx-h-[calc(100vh-var(--navbar-height)-var(--menu-height))]">
+    <ul class="hx-flex hx-flex-col hx-gap-1 md:hx-hidden">
+      
+      
+          <li class="open"><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/start/"
+    
+  >Get started
+        <span class="hextra-sidebar-collapsible-button"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="hx-h-[18px] hx-min-w-[18px] hx-rounded-sm hx-p-0.5 hover:hx-bg-gray-800/5 dark:hover:hx-bg-gray-100/5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" class="hx-origin-center hx-transition-transform rtl:-hx-rotate-180"></path></svg></span>
+    </a><div class="ltr:hx-pr-0 hx-overflow-hidden">
+        <ul class='hx-relative hx-flex hx-flex-col hx-gap-1 before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] ltr:hx-ml-3 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-mr-3 rtl:hx-pr-3 rtl:before:hx-right-0 dark:before:hx-bg-neutral-800'><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/start/first_simulation/"
+    
+  >Your first simulation
+    </a>
+              
+            </li></ul>
+      </div></li>
+          <li class="open"><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/"
+    
+  >User guide
+        <span class="hextra-sidebar-collapsible-button"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="hx-h-[18px] hx-min-w-[18px] hx-rounded-sm hx-p-0.5 hover:hx-bg-gray-800/5 dark:hover:hx-bg-gray-100/5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" class="hx-origin-center hx-transition-transform rtl:-hx-rotate-180"></path></svg></span>
+    </a><div class="ltr:hx-pr-0 hx-overflow-hidden">
+        <ul class='hx-relative hx-flex hx-flex-col hx-gap-1 before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] ltr:hx-ml-3 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-mr-3 rtl:hx-pr-3 rtl:before:hx-right-0 dark:before:hx-bg-neutral-800'><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/installation/"
+    
+  >Installation
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/entities_components_world/"
+    
+  >Entities, components and the world
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/adding_and_removing_entities/"
+    
+  >Adding and removing entities
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/changing_entities/"
+    
+  >Changing entities
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/queries_iteration/"
+    
+  >Queries and iteration
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/resources/"
+    
+  >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/synchronization/"
+    
+  >Synchronization
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/systems_scheduler/"
+    
+  >Systems and the scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/spatial_clustering/"
+    
+  >Spatial clustering
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col open"><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
+    href="/larecs/pr-preview/pr-236/guide/benchmarks/"
+    
+  >Benchmarks
+    </a>
+  
+    <ul class='hx-flex hx-flex-col hx-gap-1 hx-relative before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] dark:before:hx-bg-neutral-800 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-pr-3 rtl:before:hx-right-0 ltr:hx-ml-3 rtl:hx-mr-3'><li>
+              <a
+                href="#benchmark-methodology"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Benchmark methodology</a>
+            </li>
+          <li>
+              <a
+                href="#threaded-host-execution"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Threaded host execution</a>
+            </li>
+          <li>
+              <a
+                href="#synchronization-primitives"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Synchronization primitives</a>
+            </li>
+          <li>
+              <a
+                href="#shared-host-execution-comparison"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Shared host execution comparison</a>
+            </li>
+          <li>
+              <a
+                href="#versus-array-of-structs"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Versus Array of Structs</a>
+            </li>
+          <li>
+              <a
+                href="#pr-to-pr-performance-checks"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >PR-to-PR performance checks</a>
+            </li>
+          <li>
+              <a
+                href="#small-spatial-benchmarks-on-every-pr"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Small spatial benchmarks on every PR</a>
+            </li>
+          <li>
+              <a
+                href="#deferred-dirty-classification"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Deferred dirty classification</a>
+            </li>
+          <li>
+              <a
+                href="#partitioned-storage-comparison"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Partitioned storage comparison</a>
+            </li>
+          <li>
+              <a
+                href="#resource-execution"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Resource execution</a>
+            </li>
+          <li>
+              <a
+                href="#storage-range-migration"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Storage range migration</a>
+            </li>
+          </ul>
+  
+              
+            </li></ul>
+      </div></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/"
+    
+  >API docs
+        <span class="hextra-sidebar-collapsible-button"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="hx-h-[18px] hx-min-w-[18px] hx-rounded-sm hx-p-0.5 hover:hx-bg-gray-800/5 dark:hover:hx-bg-gray-100/5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" class="hx-origin-center hx-transition-transform rtl:-hx-rotate-180"></path></svg></span>
+    </a><div class="ltr:hx-pr-0 hx-overflow-hidden">
+        <ul class='hx-relative hx-flex hx-flex-col hx-gap-1 before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] ltr:hx-ml-3 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-mr-3 rtl:hx-pr-3 rtl:before:hx-right-0 dark:before:hx-bg-neutral-800'><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ArchetypeRowAccessor/"
+    
+  >ArchetypeRowAccessor
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/AtomicValue/"
+    
+  >AtomicValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/AtomicView/"
+    
+  >AtomicView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/BitMaskFilter/"
+    
+  >BitMaskFilter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/BitPool/"
+    
+  >BitPool
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Captures/"
+    
+  >Captures
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/CompareExchangeResult/"
+    
+  >CompareExchangeResult
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ComponentError/"
+    
+  >ComponentError
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ComponentManager/"
+    
+  >ComponentManager
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/DeviceComponentStorage/"
+    
+  >DeviceComponentStorage
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/DeviceResourceStorage/"
+    
+  >DeviceResourceStorage
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Entity/"
+    
+  >Entity
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/EntityAccessor/"
+    
+  >EntityAccessor
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/EntityError/"
+    
+  >EntityError
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ExecutionBackend/"
+    
+  >ExecutionBackend
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Filter/"
+    
+  >Filter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/grid_cell/"
+    
+  >grid_cell
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/HostStorage/"
+    
+  >HostStorage
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/KernelContext/"
+    
+  >KernelContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/LockGuard/"
+    
+  >LockGuard
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/LockManager/"
+    
+  >LockManager
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/morton_key_3d/"
+    
+  >morton_key_3d
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/mut_capture/"
+    
+  >mut_capture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/MutCapture/"
+    
+  >MutCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/PlainValue/"
+    
+  >PlainValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/read_capture/"
+    
+  >read_capture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ReadCapture/"
+    
+  >ReadCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Replacer/"
+    
+  >Replacer
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Resources/"
+    
+  >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ResourceStorage/"
+    
+  >ResourceStorage
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Scheduler/"
+    
+  >Scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/SpatialClassifier/"
+    
+  >SpatialClassifier
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Synchronized/"
+    
+  >Synchronized
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/SyncView/"
+    
+  >SyncView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/System/"
+    
+  >System
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/SystemContext/"
+    
+  >SystemContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ThreadedExecutionConfig/"
+    
+  >ThreadedExecutionConfig
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/TryAccess/"
+    
+  >TryAccess
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/UnknownError/"
+    
+  >UnknownError
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/World/"
+    
+  >World
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/WorldError/"
+    
+  >WorldError
+    </a>
+              
+            </li></ul>
+      </div></li>
+    </ul>
+
+    <ul class="hx-flex hx-flex-col hx-gap-1 max-md:hx-hidden">
+        
+          <li class="open"><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/start/"
+    
+  >Get started
+        <span class="hextra-sidebar-collapsible-button"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="hx-h-[18px] hx-min-w-[18px] hx-rounded-sm hx-p-0.5 hover:hx-bg-gray-800/5 dark:hover:hx-bg-gray-100/5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" class="hx-origin-center hx-transition-transform rtl:-hx-rotate-180"></path></svg></span>
+    </a><div class="ltr:hx-pr-0 hx-overflow-hidden">
+        <ul class='hx-relative hx-flex hx-flex-col hx-gap-1 before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] ltr:hx-ml-3 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-mr-3 rtl:hx-pr-3 rtl:before:hx-right-0 dark:before:hx-bg-neutral-800'><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/start/first_simulation/"
+    
+  >Your first simulation
+    </a>
+              
+            </li></ul>
+      </div></li>
+          <li class="open"><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/"
+    
+  >User guide
+        <span class="hextra-sidebar-collapsible-button"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="hx-h-[18px] hx-min-w-[18px] hx-rounded-sm hx-p-0.5 hover:hx-bg-gray-800/5 dark:hover:hx-bg-gray-100/5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" class="hx-origin-center hx-transition-transform rtl:-hx-rotate-180"></path></svg></span>
+    </a><div class="ltr:hx-pr-0 hx-overflow-hidden">
+        <ul class='hx-relative hx-flex hx-flex-col hx-gap-1 before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] ltr:hx-ml-3 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-mr-3 rtl:hx-pr-3 rtl:before:hx-right-0 dark:before:hx-bg-neutral-800'><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/installation/"
+    
+  >Installation
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/entities_components_world/"
+    
+  >Entities, components and the world
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/adding_and_removing_entities/"
+    
+  >Adding and removing entities
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/changing_entities/"
+    
+  >Changing entities
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/queries_iteration/"
+    
+  >Queries and iteration
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/resources/"
+    
+  >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/synchronization/"
+    
+  >Synchronization
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/systems_scheduler/"
+    
+  >Systems and the scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/guide/spatial_clustering/"
+    
+  >Spatial clustering
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col open"><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
+    href="/larecs/pr-preview/pr-236/guide/benchmarks/"
+    
+  >Benchmarks
+    </a>
+              
+            </li></ul>
+      </div></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/"
+    
+  >API docs
+        <span class="hextra-sidebar-collapsible-button"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="hx-h-[18px] hx-min-w-[18px] hx-rounded-sm hx-p-0.5 hover:hx-bg-gray-800/5 dark:hover:hx-bg-gray-100/5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" class="hx-origin-center hx-transition-transform rtl:-hx-rotate-180"></path></svg></span>
+    </a><div class="ltr:hx-pr-0 hx-overflow-hidden">
+        <ul class='hx-relative hx-flex hx-flex-col hx-gap-1 before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] ltr:hx-ml-3 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-mr-3 rtl:hx-pr-3 rtl:before:hx-right-0 dark:before:hx-bg-neutral-800'><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ArchetypeRowAccessor/"
+    
+  >ArchetypeRowAccessor
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/AtomicValue/"
+    
+  >AtomicValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/AtomicView/"
+    
+  >AtomicView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/BitMaskFilter/"
+    
+  >BitMaskFilter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/BitPool/"
+    
+  >BitPool
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Captures/"
+    
+  >Captures
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/CompareExchangeResult/"
+    
+  >CompareExchangeResult
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ComponentError/"
+    
+  >ComponentError
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ComponentManager/"
+    
+  >ComponentManager
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/DeviceComponentStorage/"
+    
+  >DeviceComponentStorage
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/DeviceResourceStorage/"
+    
+  >DeviceResourceStorage
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Entity/"
+    
+  >Entity
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/EntityAccessor/"
+    
+  >EntityAccessor
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/EntityError/"
+    
+  >EntityError
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ExecutionBackend/"
+    
+  >ExecutionBackend
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Filter/"
+    
+  >Filter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/grid_cell/"
+    
+  >grid_cell
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/HostStorage/"
+    
+  >HostStorage
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/KernelContext/"
+    
+  >KernelContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/LockGuard/"
+    
+  >LockGuard
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/LockManager/"
+    
+  >LockManager
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/morton_key_3d/"
+    
+  >morton_key_3d
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/mut_capture/"
+    
+  >mut_capture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/MutCapture/"
+    
+  >MutCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/PlainValue/"
+    
+  >PlainValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/read_capture/"
+    
+  >read_capture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ReadCapture/"
+    
+  >ReadCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Replacer/"
+    
+  >Replacer
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Resources/"
+    
+  >Resources
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ResourceStorage/"
+    
+  >ResourceStorage
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Scheduler/"
+    
+  >Scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/SpatialClassifier/"
+    
+  >SpatialClassifier
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/Synchronized/"
+    
+  >Synchronized
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/SyncView/"
+    
+  >SyncView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/System/"
+    
+  >System
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/SystemContext/"
+    
+  >SystemContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/ThreadedExecutionConfig/"
+    
+  >ThreadedExecutionConfig
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/TryAccess/"
+    
+  >TryAccess
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/UnknownError/"
+    
+  >UnknownError
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/World/"
+    
+  >World
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/pr-preview/pr-236/larecs/WorldError/"
+    
+  >WorldError
+    </a>
+              
+            </li></ul>
+      </div></li>
+        
+      </ul>
+    </div>
+  
+  
+    <div class="  hx-sticky hx-bottom-0 hx-bg-white dark:hx-bg-dark hx-mx-4 hx-py-4 hx-shadow-[0_-12px_16px_#fff] hx-flex hx-items-center hx-gap-2 dark:hx-border-neutral-800 dark:hx-shadow-[0_-12px_16px_#111] contrast-more:hx-border-neutral-400 contrast-more:hx-shadow-none contrast-more:dark:hx-shadow-none hx-border-t" data-toggle-animation="show"><div class="hx-flex hx-grow hx-flex-col"><button
+  title="Change theme"
+  data-theme="light"
+  class="theme-toggle hx-group hx-h-7 hx-rounded-md hx-px-2 hx-text-left hx-text-xs hx-font-medium hx-text-gray-600 hx-transition-colors dark:hx-text-gray-400 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50"
+  type="button"
+  aria-label="Change theme"
+>
+  <div class="hx-flex hx-items-center hx-gap-2 hx-capitalize"><svg height=12 class="group-data-[theme=light]:hx-hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg><span class="group-data-[theme=light]:hx-hidden">Light</span><svg height=12 class="group-data-[theme=dark]:hx-hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg><span class="group-data-[theme=dark]:hx-hidden">Dark</span></div>
+</button>
+</div></div></aside>
+    
+<nav class="hextra-toc hx-order-last hx-hidden hx-w-64 hx-shrink-0 xl:hx-block print:hx-hidden hx-px-4" aria-label="table of contents">
+    <div class="hextra-scrollbar hx-sticky hx-top-16 hx-overflow-y-auto hx-pr-4 hx-pt-6 hx-text-sm [hyphens:auto] hx-max-h-[calc(100vh-var(--navbar-height)-env(safe-area-inset-bottom))] ltr:hx--mr-4 rtl:hx--ml-4"><p class="hx-mb-4 hx-font-semibold hx-tracking-tight">On this page</p><ul>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#benchmark-methodology">Benchmark methodology
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#threaded-host-execution">Threaded host execution
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#synchronization-primitives">Synchronization primitives
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#shared-host-execution-comparison">Shared host execution comparison
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#versus-array-of-structs">Versus Array of Structs
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#pr-to-pr-performance-checks">PR-to-PR performance checks
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#small-spatial-benchmarks-on-every-pr">Small spatial benchmarks on every PR
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#deferred-dirty-classification">Deferred dirty classification
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#partitioned-storage-comparison">Partitioned storage comparison
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#growable-store-comparison-on-linux">Growable-store comparison on Linux
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#historical-bounded-block-comparison-on-macos">Historical bounded-block comparison on macOS
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#resource-execution">Resource execution
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#storage-range-migration">Storage range migration
+        </a>
+      </li></ul>
+      <div class="hx-mt-8 hx-border-t hx-bg-white hx-pt-8 hx-shadow-[0_-12px_16px_white] dark:hx-bg-dark dark:hx-shadow-[0_-12px_16px_#111] hx-sticky hx-bottom-0 hx-flex hx-flex-col hx-items-start hx-gap-2 hx-pb-8 dark:hx-border-neutral-800 contrast-more:hx-border-t contrast-more:hx-border-neutral-400 contrast-more:hx-shadow-none contrast-more:dark:hx-border-neutral-400">
+        <button aria-hidden="true" id="backToTop" onClick="scrollUp();" class="hx-transition-all hx-duration-75 hx-opacity-0 hx-text-xs hx-font-medium hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-100 contrast-more:hx-text-gray-800 contrast-more:dark:hx-text-gray-50">
+          <span>Scroll to top</span>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="hx-inline ltr:hx-ml-1 rtl:hx-mr-1 hx-h-3.5 hx-w-3.5 hx-border hx-rounded-full hx-border-gray-500 hover:hx-border-gray-900 dark:hx-border-gray-400 dark:hover:hx-border-gray-100 contrast-more:hx-border-gray-800 contrast-more:dark:hx-border-gray-50">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+
+    <article class="hx-w-full hx-break-words hx-flex hx-min-h-[calc(100vh-var(--navbar-height))] hx-min-w-0 hx-justify-center hx-pb-8 hx-pr-[calc(env(safe-area-inset-right)-1.5rem)]">
+      <main class="hx-w-full hx-min-w-0 hx-max-w-6xl hx-px-6 hx-pt-4 md:hx-px-12">
+        
+  <div class="hx-mt-1.5 hx-flex hx-items-center hx-gap-1 hx-overflow-hidden hx-text-sm hx-text-gray-500 dark:hx-text-gray-400 contrast-more:hx-text-current">
+        <div class="hx-whitespace-nowrap hx-transition-colors hx-min-w-[24px] hx-overflow-hidden hx-text-ellipsis hover:hx-text-gray-900 dark:hover:hx-text-gray-100">
+          <a href="/larecs/pr-preview/pr-236/guide/">User guide</a>
+        </div><svg class="hx-w-3.5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">Benchmarks</div>
+  </div>
+
+        <div class="content">
+          <h1>Benchmarks</h1>
+          <p>The focused <code>entity_selection_benchmark.mojo</code> workload compares ordinary
+full-world host execution with contiguous and disjoint 64-row selections in a
+100,000-row world, a selected add/remove chain, and selected device execution when
+an accelerator is available. On the Apple Metal development host used for the
+1.0.0b2 work, one bounded run measured approximately 0.0253 ms for the 100k-row
+host path, 0.0000664 ms for the contiguous selection, 0.000556 ms for 64 disjoint
+single-row ranges, 0.00727 ms for the add/remove chain, and 0.379 ms for the device
+selection. These are development measurements, not a cross-version historical
+baseline; use the benchmark on target hardware for regression decisions.</p>
+<p>The manual <a href="../../design/research/host-thread-execution.md#measured-sequential-versus-threaded-calls" >host thread dispatch experiment</a>
+compares complete sequential kernel calls with dynamically claimed whole-store
+and contiguous chunk jobs at 1/2/4 worker tasks, including small and large
+increment/compute workloads and single-store cases. Its driver, timing
+boundaries, reproduction commands, and
+Linux measurements are recorded there. It is a restricted feasibility benchmark;
+the current experimental engine adds eligibility and lifecycle checks absent
+from that prototype. Both drivers remain outside the normal PR performance gate.</p>
+<h2>Benchmark methodology<span class="hx-absolute -hx-mt-20" id="benchmark-methodology"></span>
+    <a href="#benchmark-methodology" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Build a focused manual driver once with
+<code>pixi run mojo build -I src benchmark/&lt;benchmark_filename&gt;.mojo -o /tmp/larecs-benchmark</code>,
+then run <code>/tmp/larecs-benchmark</code> repeatedly. Run the complete manual suite with
+<code>pixi run mojo run -I src benchmark/run_benchmarks.mojo</code>.</p>
+<p>When changing storage, queries, classification, row movement, or execution costs,
+add or update representative benchmarks using these criteria:</p>
+<ul>
+<li>Keep the combined PR performance checks near one minute per runner, including
+compilation, warmup, and sampling. Measure cold compilation and execution
+separately on Linux and macOS before expanding the suite. Keep large worlds,
+GPU cases, and the complete benchmark registry in focused manual drivers.</li>
+<li>Use deterministic inputs, bounded calibration or fixed iteration counts, and a
+compact scenario matrix. Spatial cases should cover uniform, dense, sparse,
+and moving entities with different maintenance cadences.</li>
+<li>Compare identical entities and semantic work, with an unchanged-layout control.
+Measure isolated operations and complete frames when useful. Include input
+updates, classification, sorting, movement, location repair, and transfers
+whenever they belong to the claimed workload. State excluded setup and
+maintenance costs; validate results, locations, and payload preservation
+outside the timer, and consume results to prevent dead-code elimination.</li>
+<li>Build each timing binary once, then run it repeatedly. Compare the same current
+driver against baseline and current libraries on the same runner with matching
+compiler versions and optimization settings. Use optimized builds without
+debug info, sanitizers, or tracing. Run builds and measurements sequentially,
+with no competing benchmark jobs, and report compilation separately.</li>
+<li>Warm both binaries, alternate baseline/current order, and use repeated paired
+samples. Keep machine-specific timing baselines out of the repository. See
+<a href="#pr-to-pr-performance-checks" >PR performance checks</a> and
+<a href="#small-spatial-benchmarks-on-every-pr" >spatial checks</a> for baseline selection,
+thresholds, confirmation, and support for revisions predating the spatial API.</li>
+<li>Keep the small regression checks in <code>pixi run tests test</code> on Linux and macOS;
+focused test-file runs omit performance checks. Investigate sustained failures
+and document evidence before changing thresholds; use dedicated measurements
+for smaller regressions.</li>
+<li>Keep scenario matrices and expected-case manifests synchronized. Invalid or
+incomplete reports, build failures, and correctness failures must fail checks.
+Update this guide when changing cases, timing boundaries, sampling, or baseline
+selection. Record hardware, compiler, method, and limitations with performance
+claims; track unmeasured benefits and remaining work in the roadmap.</li>
+</ul>
+<h2>Threaded host execution<span class="hx-absolute -hx-mt-20" id="threaded-host-execution"></span>
+    <a href="#threaded-host-execution" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><code>benchmark/threaded_execution.mojo</code> measures the implemented public
+<code>SystemContext.run[kernel, threaded=True]()</code> against unchanged sequential calls.
+Both worlds have identical initial rows, arithmetic, and layout. The driver
+covers 1/2/4 worker tasks, one/four stores, balanced and seven-to-one skewed
+stores, 1,024–1,048,576 total rows, and increments or 32 dependent arithmetic
+rounds per row. It forces <code>min_parallel_rows=0</code> to expose dispatch overhead;
+configured one-worker runs still use whole-range sequential fallback.</p>
+<p>Each case warms both paths twice, calibrates the sequential path to a 10 ms
+batch or at most 4,096 calls, then alternates order across five paired samples.
+Complete-call timing includes discovery, validation, spatial-invalidation checks,
+resource binding, context allocation, atomic claiming, dispatch, join, cleanup,
+and world-size consumption. Construction, initial runtime warmup, compilation, and exact result
+validation are excluded. Every final row is validated against all warmup,
+calibration, and measured calls. No resources or spatial classifiers are bound;
+shared-resource, selected, and partitioned correctness lives in the tests,
+while their performance remains unmeasured here.</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">pixi run mojo build -I src benchmark/threaded_execution.mojo -o /tmp/larecs-threaded-benchmark
+</span></span><span class="line"><span class="cl">/tmp/larecs-threaded-benchmark
+</span></span><span class="line"><span class="cl">/tmp/larecs-threaded-benchmark
+</span></span><span class="line"><span class="cl">/tmp/larecs-threaded-benchmark</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>Build once without debug info, tracing, or sanitizers. Run measurements without
+other builds or benchmark jobs. Each <code>PAIR</code> line contains skew flag, base rows
+per store, store count, arithmetic rounds, worker count, pair index, calls per
+batch, sequential ns/call, and threaded ns/call. In skewed cases, total rows
+are ten times the base row count. Report compilation separately and retain
+hardware/compiler details; this synthetic comparison establishes no portable
+cutoff, fixed speedup, or application-level benefit.</p>
+<p>At revision <code>4489ceb</code>, on Linux x86-64 (<code>7.2.5-3-omarchy</code>), AMD Ryzen 7 PRO
+5850U (8 cores, 16 hardware threads), Mojo 1.0.0 (<code>ed45d567</code>), and MAX 26.5.0,
+the optimized build took 17.57 seconds in the installed environment; this is not a cold-cache
+compilation measurement. Three serial binary runs took 7.12, 7.48, and 7.70
+seconds after regression builds completed. All 30 scenarios and 450 paired
+measurements passed exact result validation. Raw local output is retained in
+ignored <code>output/threaded-execution/run-{1,2,3}.txt</code> files.</p>
+<p>Four-worker results below summarize 15 pairs per case. Times are medians in
+microseconds per complete call; speedup is the median paired ratio, so it need
+not equal the ratio of the displayed medians.</p>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: right">Total rows</th>
+          <th style="text-align: right">Stores</th>
+          <th>Work per row</th>
+          <th style="text-align: right">Sequential µs</th>
+          <th style="text-align: right">Threaded µs</th>
+          <th style="text-align: right">Speedup</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: right">1,024</td>
+          <td style="text-align: right">4 balanced</td>
+          <td>increment</td>
+          <td style="text-align: right">0.718</td>
+          <td style="text-align: right">16.072</td>
+          <td style="text-align: right">0.04×</td>
+      </tr>
+      <tr>
+          <td style="text-align: right">65,536</td>
+          <td style="text-align: right">4 balanced</td>
+          <td>32 rounds</td>
+          <td style="text-align: right">1,869.585</td>
+          <td style="text-align: right">550.040</td>
+          <td style="text-align: right">3.44×</td>
+      </tr>
+      <tr>
+          <td style="text-align: right">262,144</td>
+          <td style="text-align: right">1</td>
+          <td>increment</td>
+          <td style="text-align: right">100.969</td>
+          <td style="text-align: right">46.486</td>
+          <td style="text-align: right">2.24×</td>
+      </tr>
+      <tr>
+          <td style="text-align: right">1,048,576</td>
+          <td style="text-align: right">4 balanced</td>
+          <td>increment</td>
+          <td style="text-align: right">406.295</td>
+          <td style="text-align: right">141.176</td>
+          <td style="text-align: right">2.95×</td>
+      </tr>
+      <tr>
+          <td style="text-align: right">1,048,576</td>
+          <td style="text-align: right">1</td>
+          <td>32 rounds</td>
+          <td style="text-align: right">32,106.429</td>
+          <td style="text-align: right">8,967.991</td>
+          <td style="text-align: right">3.50×</td>
+      </tr>
+      <tr>
+          <td style="text-align: right">163,840</td>
+          <td style="text-align: right">4 skewed</td>
+          <td>32 rounds</td>
+          <td style="text-align: right">4,999.816</td>
+          <td style="text-align: right">1,455.091</td>
+          <td style="text-align: right">3.39×</td>
+      </tr>
+  </tbody>
+</table>
+<p>This is one developer machine with unpinned affinity and frequency. Tiny
+increments lose substantially when the row cutoff is explicitly disabled;
+the default cutoff avoids that dispatch. These measurements cover neither
+macOS arm64 nor application kernels, shared-resource workloads, exact selections,
+spatial maintenance, or partitioned layouts. The engine remains experimental.</p>
+<h2>Synchronization primitives<span class="hx-absolute -hx-mt-20" id="synchronization-primitives"></span>
+    <a href="#synchronization-primitives" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><code>benchmark/synchronization_benchmark.mojo</code> is a focused manual comparison of
+100,000 sequential scalar increments using a plain scalar control, direct Mojo
+relaxed atomics, Larecs relaxed atomic views, and uncontended write guards. Every
+case performs equivalent increments and consumes results. Setup and final exact
+total validation are excluded; guard acquisition, payload access, and release
+are included. These are isolated uncontended costs, not complete ECS execution,
+contention, allocation, transfer, or GPU measurements. No new timing cases are
+added to the normal PR performance suite.</p>
+<p>Build once without debug information, sanitizers, or tracing, warm the binary,
+then run repeated samples without other builds or benchmark jobs:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">pixi run mojo build -I src benchmark/synchronization_benchmark.mojo -o /tmp/larecs-synchronization
+</span></span><span class="line"><span class="cl">/tmp/larecs-synchronization</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>Report compilation time separately from execution and retain hardware/compiler
+details with timing claims. Concurrent compound access and exact atomic totals
+are correctness checks in <code>test/synchronization_test.mojo</code>; contended performance
+and complete binding/transfer measurements remain roadmap work.</p>
+<h2>Shared host execution comparison<span class="hx-absolute -hx-mt-20" id="shared-host-execution-comparison"></span>
+    <a href="#shared-host-execution-comparison" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>The focused selection driver also measures thin and lexical host kernels over
+seven matching archetypes (512 rows each) alongside six nonmatching archetypes
+(512 rows each). All matching rows perform the same increment; the closure also
+counts range invocations. Construction and result checks are excluded, and
+checks outside the timer verify row count, every row against <code>Bencher.num_iters</code>,
+and the closure&rsquo;s exact invocation count and accumulated values.
+These cases remain manual benchmarks; they are not added to the small PR suite.</p>
+<p>On Apple M4, macOS 27.0.1, Mojo 1.0.0 (<code>ed45d567</code>), the shared host setup refactor
+in <code>1cd32ba</code> was compared with <code>688fb670c87ced6b08c920e2c3527a1890218c6f</code>
+using the <strong>same updated driver</strong> and compiler environment. Build one optimized
+binary against an isolated baseline checkout and one against the current source, without
+<code>-g</code>, sanitizers, or tracing. Warm each once, then alternate baseline/current
+order across five paired samples with no concurrent builds or benchmark jobs.
+The driver uses fixed iterations: 100 full-world calls, 1,000 multi-archetype
+calls, 10,000 contiguous selected calls, and 1,000 disjoint selected calls.</p>
+<table>
+  <thead>
+      <tr>
+          <th>Host workload</th>
+          <th>Baseline median</th>
+          <th>Refactor median</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>100,000 rows, full-world thin</td>
+          <td>23.33 µs</td>
+          <td>22.89 µs</td>
+      </tr>
+      <tr>
+          <td>3,584 rows, seven matching archetypes, thin</td>
+          <td>1.269 µs</td>
+          <td>1.034 µs</td>
+      </tr>
+      <tr>
+          <td>Same rows, lexical closure</td>
+          <td>1.089 µs</td>
+          <td>0.885 µs</td>
+      </tr>
+      <tr>
+          <td>64 selected contiguous rows in a 100k world</td>
+          <td>69.0 ns</td>
+          <td>18.5 ns</td>
+      </tr>
+      <tr>
+          <td>64 selected disjoint single-row ranges in a 100k world</td>
+          <td>690 ns</td>
+          <td>257 ns</td>
+      </tr>
+  </tbody>
+</table>
+<p>The unchanged mutation controls measured 10.13 → 10.09 µs for a 64-row
+add/remove chain and 107 → 98 µs for the first 512-row disjoint mutation pass.
+The existing selected device case ran on the actual Apple M4 accelerator and
+measured 276.31 → 267.52 µs. These short synthetic batches are local evidence,
+not portable timing baselines or application speedup claims. Full-world row
+work dominates discovery at 100k rows; small selections benefit from avoiding
+matching-range allocation. Compilation is excluded from every operation timing.
+The initial baseline driver build took 18.65 seconds; a repeated current build
+took 1.36 seconds with local compiler caches populated. These build times are not comparable cold-compilation
+measurements and establish no compilation speedup. Linux operation timings
+remain unmeasured locally.</p>
+<p>Reproduce with the current driver against both libraries:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">pixi run mojo build -I /path/to/baseline/src benchmark/entity_selection_benchmark.mojo -o /tmp/larecs-selection-base
+</span></span><span class="line"><span class="cl">pixi run mojo build -I src benchmark/entity_selection_benchmark.mojo -o /tmp/larecs-selection-current
+</span></span><span class="line"><span class="cl">/tmp/larecs-selection-base
+</span></span><span class="line"><span class="cl">/tmp/larecs-selection-current</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<h2>Versus Array of Structs<span class="hx-absolute -hx-mt-20" id="versus-array-of-structs"></span>
+    <a href="#versus-array-of-structs" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>The plots below show the iteration time per entity in the classical Position-Velocity example.
+That is, iterate all entities with components <code>Position</code> and <code>Velocity</code>, and add velocity to position:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="n">position.x</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">velocity.x</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">position.y</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">velocity.y</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>The benchmark is performed with different amounts of &ldquo;payload components&rdquo;,
+where each of them has two <code>Float64</code> fields, just like <code>Position</code> and <code>Velocity</code>.
+Further, the total number of entities is varied from 100 to 1 million.</p>
+<p>
+    <img src="../images/aos_benchmark.svg" alt="AoS-benchmarks" loading="lazy" /></p>
+<p>The documentation workflow (<code>.github/workflows/publish.yml</code>) regenerates this
+plot for each published commit on a GitHub-hosted <code>ubuntu-latest</code> runner,
+using the Mojo version pinned in <code>benchmark/plots/pixi.lock</code>. The workflow
+does not record the runner&rsquo;s CPU or cache sizes, and the hardware behind that
+runner label can change between runs. Read the plot as a comparison on one
+machine, not as a prediction for other hardware. Each run keeps the raw
+results as its <code>aos-benchmark</code> artifact. To measure your own machine, run
+<code>pixi run plots</code> in <code>benchmark/plots</code>.</p>
+<h2>PR-to-PR performance checks<span class="hx-absolute -hx-mt-20" id="pr-to-pr-performance-checks"></span>
+    <a href="#pr-to-pr-performance-checks" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><code>pixi run performance-check --base &lt;revision&gt;</code> compares the current library
+with another Git revision on the same machine. Without <code>--base</code>, local runs
+compare the working tree against committed <code>HEAD</code>; GitHub PR runs use the exact
+PR base SHA, and main-branch push runs use the previous push commit. The tested
+current revision is the checkout SHA (normally the PR merge commit in CI).
+The complete <code>pixi run tests test</code> command runs the gate on Linux and macOS
+following correctness tests. Focused test-file runs omit it.</p>
+<p>The coordinator builds the same current driver against both source trees with
+the installed Mojo compiler, using optimized builds without tracing, debug
+information, or sanitizers. It warms both binaries, then runs five pairs,
+alternating baseline/current order. A case becomes a candidate only if four
+pairs and the paired medians show <strong>over 30% slowdown and over 500 ns extra
+operation/frame time</strong>. Candidates are checked in a fresh five-pair round;
+only candidates recurring in both rounds fail. Invalid/incomplete reports,
+incorrect results, compilation failures, unavailable baselines, and timeouts
+fail rather than silently skipping coverage.</p>
+<p>The two focused drivers avoid the expensive complete benchmark registry:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Core case</th>
+          <th>Sizes</th>
+          <th>Timed work</th>
+          <th>Excluded setup and validation</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>access</code></td>
+          <td>512/2,048 matching rows</td>
+          <td>Stable-ID component reads and integer checksum</td>
+          <td>World construction; exact per-entity payload checks</td>
+      </tr>
+      <tr>
+          <td><code>query</code></td>
+          <td>512/2,048 matching rows</td>
+          <td>Fresh filtered iterator, row visits, and checksum</td>
+          <td>Construction of two matching archetypes and equally many excluded tag-only rows; payload checks</td>
+      </tr>
+      <tr>
+          <td><code>execute</code></td>
+          <td>512/2,048 rows</td>
+          <td>Ordinary host dispatch and integer increments</td>
+          <td>Construction; check every row&rsquo;s accumulated increments</td>
+      </tr>
+      <tr>
+          <td><code>selected_execute</code></td>
+          <td>64 selected rows amid 512/2,048 background rows</td>
+          <td>Host dispatch over a reusable contiguous selection</td>
+          <td>Construction and selection creation/release; selected and untouched-row checks</td>
+      </tr>
+      <tr>
+          <td><code>selected_mutation</code></td>
+          <td>Same selection/background sizes</td>
+          <td>Add/remove a tag, including partial-archetype movement and location repair</td>
+          <td>Construction; final membership, absence of tags, payload, and background-location checks</td>
+      </tr>
+      <tr>
+          <td><code>batch_cycle</code></td>
+          <td>512/2,048 rows</td>
+          <td>Batch creation, payload initialization, removal, and recycling</td>
+          <td>World construction and first validation/warmup cycle; recycled payload, membership, and surviving control-row checks</td>
+      </tr>
+  </tbody>
+</table>
+<p>Core calibration doubles from 8 to at most 8,192 operations, stopping at 5 ms
+per case. Fast cases can reach the cap first. Each duration is <strong>per complete
+operation</strong>, not per entity. Read cases consume the checksum inside the timer;
+execution writes are checked after timing, with observable lengths consumed
+inside the timer. Spatial boundaries and its unchanged matrix are below.</p>
+<p>Run one driver with <code>pixi run core-benchmarks</code> or <code>pixi run spatial-benchmarks</code>.
+Select a gate with <code>pixi run performance-check --suite core --base &lt;revision&gt;</code>
+or <code>--suite spatial</code>; repeat <code>--suite</code> to select multiple drivers. The original
+<code>pixi run spatial-performance-check</code> remains a spatial-only compatibility command.</p>
+<p>Reports default to the ignored <code>output/performance/</code> directory; use <code>--output</code>
+to choose another directory. <code>report.json</code> includes the schema version,
+requested/resolved/effective baselines, current checkout SHA and dirty state,
+driver SHA-256 hashes, compiler, OS/CPU, thresholds, compilation and sampling
+costs, all paired measurements, and both confirmation rounds when needed.
+<code>summary.md</code> gives median times, paired changes, candidates, and confirmed
+failures. Candidates whose confirmation did not finish are labeled unconfirmed;
+only a completed confirmation can label a candidate transient. Process logs
+retain build, warmup, execution, and error diagnostics.
+GitHub adds the Markdown to the job summary and uploads the reports/logs as
+<code>performance-&lt;runner&gt;-&lt;attempt&gt;</code> artifacts for 30 days, including failed checks.
+This uses read-only PR permissions and works without publishing PR comments.
+Require the existing build/test checks in branch protection to enforce the gate.</p>
+<p>The initial unchanged-library comparison against <code>688fb67</code> on Apple M4,
+macOS 27 arm64, Mojo 1.0.0 (<code>ed45d567</code>), took <strong>55.3 seconds</strong>: core builds
+9.3/9.6 seconds and sampling 2.6 seconds; spatial builds 5.8/5.4 seconds and
+sampling 22.2 seconds. Builds and samples ran sequentially; no concurrent
+builds or benchmark jobs ran. These are driver compilation costs in an already
+installed environment, not dependency installation time.</p>
+<p>The first <a href="https://github.com/larecs/larecs/actions/runs/37112210067" target="_blank" rel="noopener">hosted run</a>
+compared the same unchanged library against <code>688fb67</code>, using PR merge checkout
+<code>ba8b180</code>, Mojo 1.0.0 (<code>ed45d567</code>), the same current driver on each side, fresh
+output binaries, sequential compilation/sampling, and five alternating pairs.
+Both suites passed without confirmation, and both artifact uploads succeeded:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Runner</th>
+          <th>CPU / OS</th>
+          <th style="text-align: right">All driver builds</th>
+          <th style="text-align: right">All sampling</th>
+          <th style="text-align: right">Total gate</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>macos-latest</code></td>
+          <td>Apple M2 Pro (Virtual), macOS 26.6.2 arm64</td>
+          <td style="text-align: right">43.1 s</td>
+          <td style="text-align: right">22.1 s</td>
+          <td style="text-align: right">66.1 s</td>
+      </tr>
+      <tr>
+          <td><code>ubuntu-latest</code></td>
+          <td>AMD EPYC 7763, Linux 6.17 x86_64 / glibc 2.39</td>
+          <td style="text-align: right">50.2 s</td>
+          <td style="text-align: right">24.6 s</td>
+          <td style="text-align: right">75.3 s</td>
+      </tr>
+  </tbody>
+</table>
+<p>These are one-run runtime measurements, not speed comparisons between platforms
+or evidence that the runner&rsquo;s load is stable. Full correctness tests, examples,
+package checks, and environment installation are excluded from these gate
+costs. The combined check stays near a minute; further coverage requires new
+budget measurements on both platforms. Confirmation adds sampling cost for
+affected suites; command deadlines bound failures rather than promising
+a one-minute runtime for all error/confirmation paths.</p>
+<p>There are no checked-in machine-specific golden timings. Driver changes affect
+both sides; compare historical evidence only when hashes and environments are
+compatible. Compiler upgrades do not measure compiler-to-compiler changes.
+These broad thresholds target substantial regressions on shared runners;
+smaller or cumulative regressions, larger worlds, heap-backed payloads, disjoint
+selections, and device costs need focused measurements or future coverage. See
+<a href="../../design/decisions/0011-pr-performance-regression-checks.md" >decision 0011</a>
+and the <a href="../../roadmap.md#performance-regression-coverage" >roadmap</a>.</p>
+<h2>Small spatial benchmarks on every PR<span class="hx-absolute -hx-mt-20" id="small-spatial-benchmarks-on-every-pr"></span>
+    <a href="#small-spatial-benchmarks-on-every-pr" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Run <code>pixi run spatial-benchmarks</code> for one bounded CPU-only comparison, or
+<code>pixi run spatial-performance-check --base &lt;revision&gt;</code> for a regression check.
+The complete <code>pixi run tests test</code> command runs this suite through the shared
+coordinator after successful correctness tests, on both Linux and macOS PR
+runners. Focused test-file runs omit it. The existing 100,000-row maintenance benchmark and the full benchmark
+suite remain manual measurements.</p>
+<p>The small driver uses <strong>512 and 2,048 entities</strong>, one archetype, an integer cell
+key and a 128-byte SIMD payload per row. It inserts rows in a deterministic
+scrambled order, then compares the same stable-ID cell visits before and after
+spatial ordering. Its 32 cases cover:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Workload</th>
+          <th>Cell distribution</th>
+          <th>Timed work</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Static cell aggregates</td>
+          <td>Uniform: 8 entities/cell</td>
+          <td>Read keys and all payload lanes; sum and square each cell&rsquo;s aggregate</td>
+      </tr>
+      <tr>
+          <td>Static cell aggregates</td>
+          <td>Dense: 64 entities/cell</td>
+          <td>Same operation, with fewer occupied cells</td>
+      </tr>
+      <tr>
+          <td>Static cell aggregates</td>
+          <td>Sparse: 8 entities/cell, key gaps of 1,024</td>
+          <td>Same operation across nonconsecutive occupied keys</td>
+      </tr>
+      <tr>
+          <td>Maintenance alone</td>
+          <td>All three distributions</td>
+          <td>Clean explicit boundary, or reverse keys via stable-ID access and sort/move/repair every pass</td>
+      </tr>
+      <tr>
+          <td>Moving cell aggregates</td>
+          <td>Uniform</td>
+          <td>Update every entity&rsquo;s cell, aggregate cells, maintain every frame or every fourth frame</td>
+      </tr>
+  </tbody>
+</table>
+<p>Static workload timing excludes construction, registration, and the initial
+maintenance pass. Mobile timing includes input updates and the selected
+maintenance cadence; its scrambled control performs the same updates and cell
+visits without maintenance. Maintenance-only reversal and conservative marking via mutable stable-ID access
+are included in timing. A clean ordered boundary uses deferred maintenance in the
+current library and full classification in older baseline libraries. This is an
+intentional maintenance-contract change; use the dedicated comparison below for
+an explicit full-scan control.
+Checksums validate aggregate results and payload preservation, and a query
+validates maintenance&rsquo;s output order, outside the timer. These are synthetic
+cell aggregates; full neighborhood algorithms, additional archetypes, transfer
+costs, and larger working sets remain separate measurements.</p>
+<p>Each batch doubles from 8 to at most 8,192 frames, stopping once it takes 20 ms.
+The checker compiles <strong>the same current driver</strong> against the current library
+and the PR&rsquo;s base commit, warms both binaries, then collects five paired runs
+with alternating execution order. It reports median frame times and paired
+changes for both ordered and scrambled controls. A case fails only when at
+least four pairs show both
+<strong>over 30% slowdown and over 500 ns extra time</strong>, and the paired medians exceed
+those thresholds. A suspected regression must recur in a fresh five-pair run.
+This broad threshold catches substantial regressions on shared runners;
+smaller changes need dedicated measurements. No machine-specific timing
+baseline is checked in.</p>
+<p>The baseline comes from the GitHub PR event&rsquo;s base SHA. Local runs default to
+committed <code>HEAD</code>; pass <code>--base</code> to compare another revision. An unavailable full
+SHA is fetched over public HTTPS. Since release PR #174 predates the spatial
+API, spatial PR #175 bootstraps against <code>42234f3b43d4dda58a674842374115f78ec2f08d</code>,
+the implementation before this benchmark addition. Subsequent PRs whose base
+has the spatial API use their actual base. Compilation, malformed/missing
+records, checksum failures, and sustained regressions all fail the check.</p>
+<h2>Deferred dirty classification<span class="hx-absolute -hx-mt-20" id="deferred-dirty-classification"></span>
+    <a href="#deferred-dirty-classification" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Build <code>pixi run mojo build -I src benchmark/dirty_spatial.mojo -o /tmp/larecs-dirty-spatial</code>,
+then run that binary with no concurrent compilation or benchmark jobs.
+It constructs identical scrambled 2,048/32,768-entity worlds with 72 component
+bytes per row plus entity IDs, establishes initial spatial order, warms both
+paths, and alternates five paired samples of sixteen frames (1,024 frames for
+clean boundaries to resolve their small cost). The 24 scenarios
+cover uniform (16 entities/cell), dense (256/cell), and sparse (16/cell with
+key gaps of 128) distributions, with 0, 1, 1/64, or all identities updated.
+Each updated identity receives two reference writes per frame; classification
+observes final values. On alternating frames those writes cancel. Other frames
+advance cells by one. Both paths perform identical updates and semantic work.</p>
+<p>The deferred path uses automatic tracking. Its control requests a full rebuild
+after those same writes. Timings include updates, marking, key scratch allocation,
+classification, sorting, typed movement of all columns, and location repair.
+Construction, registration, initial maintenance, and correctness checks are
+excluded. Every sample validates complete key order, each identity/location,
+the expected final input for every identity, and all eight payload lanes outside timing through read-only queries. Output
+records rows, distribution, dirty count, pair number, and deferred/full frame ns.
+This compares current deferred maintenance with current explicit full rebuilds;
+it does not measure a historical implementation or total application speedup.</p>
+<p>Clean calls do no row work. Dirty calls still copy O(entity-ID capacity) keys
+and inspect affected archetypes, so sparse classification is not O(D) complete
+maintenance. Full rebuilds currently reset sparse membership and caches. Dense
+updates may favor contiguous full classification; structural-heavy workloads
+use full rebuilds. Retained keys/membership cost at least nine bytes per allocated
+ID plus queue capacity (full ID/generation identities and allocator slack).
+Scratch and movement metadata add temporary memory. These are layout costs,
+not measured application memory usage.</p>
+<p>A local run on <strong>Apple M4, arm64, Mojo 1.0.0 (<code>ed45d567</code>)</strong> with implementation
+<code>76868ef</code> (based on <code>0241e91</code>) built the optimized driver in <strong>4.74 seconds</strong>.
+Five warmed pairs gave these median complete-frame times for 32,768 entities:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Distribution</th>
+          <th style="text-align: right">Dirty identities</th>
+          <th style="text-align: right">Deferred</th>
+          <th style="text-align: right">Explicit full rebuild</th>
+          <th style="text-align: right">Deferred/full</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Uniform</td>
+          <td style="text-align: right">1</td>
+          <td style="text-align: right">0.685 ms</td>
+          <td style="text-align: right">1.076 ms</td>
+          <td style="text-align: right">0.637</td>
+      </tr>
+      <tr>
+          <td>Uniform</td>
+          <td style="text-align: right">512</td>
+          <td style="text-align: right">0.749 ms</td>
+          <td style="text-align: right">1.133 ms</td>
+          <td style="text-align: right">0.661</td>
+      </tr>
+      <tr>
+          <td>Dense</td>
+          <td style="text-align: right">512</td>
+          <td style="text-align: right">0.811 ms</td>
+          <td style="text-align: right">1.194 ms</td>
+          <td style="text-align: right">0.679</td>
+      </tr>
+      <tr>
+          <td>Sparse</td>
+          <td style="text-align: right">1</td>
+          <td style="text-align: right">0.097 ms</td>
+          <td style="text-align: right">0.490 ms</td>
+          <td style="text-align: right">0.198</td>
+      </tr>
+      <tr>
+          <td>Sparse</td>
+          <td style="text-align: right">512</td>
+          <td style="text-align: right">0.112 ms</td>
+          <td style="text-align: right">0.497 ms</td>
+          <td style="text-align: right">0.226</td>
+      </tr>
+      <tr>
+          <td>Uniform</td>
+          <td style="text-align: right">32,768</td>
+          <td style="text-align: right">0.850 ms</td>
+          <td style="text-align: right">0.858 ms</td>
+          <td style="text-align: right">0.991</td>
+      </tr>
+  </tbody>
+</table>
+<p>Across both sizes and all distributions, nonzero sparse-update scenarios took
+19.5–67.9% of the full-rebuild frame time. Clean boundaries measured approximately
+3–4 ns (close to timer resolution), versus 0.031/0.490 ms full rebuilds at the two
+sizes. Fully dirty frames took 99.1–104.6% of the explicit control. An earlier
+version that resolved every dirty identity separately took 131–141% for fully
+dirty frames; the accepted all-ID-dirty fallback avoids that column/location
+setup cost. Neither path can avoid moving clean rows when regrouping demands it.</p>
+<p>The separate same-driver PR gate against <code>0241e91</code> passed all 12 core and 32
+spatial cases in <strong>41.1 seconds</strong> including four sequential compilations and
+five paired samples. It found no confirmed regression under the existing
+30%/500 ns rule. It still measured approximately <strong>15–19%</strong> overhead for reversing
+maintenance, <strong>10–14%</strong> for maintained mobile frames, and <strong>3–8%</strong> for ordinary
+stable-ID access. Those costs remain visible tradeoffs, not claims of zero
+regression. Linux evidence comes from the PR checks; actual GPU execution is
+validated separately and is not included in these CPU performance numbers.</p>
+<h2>Partitioned storage comparison<span class="hx-absolute -hx-mt-20" id="partitioned-storage-comparison"></span>
+    <a href="#partitioned-storage-comparison" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Build the optimized standalone driver once:
+<code>pixi run mojo build -I src benchmark/partitioned_spatial.mojo -o /tmp/larecs-partition-benchmark</code>.
+Run that binary without concurrent compilation or benchmark jobs. Partitioning
+is explicitly selected at registration; the control is the <strong>same current
+library&rsquo;s deferred row reordering</strong>, not forced full classification or a
+historical library with different invalidation costs. The existing core/spatial
+PR gate separately measures changes to the default paths against the exact base.</p>
+<p>The driver constructs identical deterministic scrambled 2,048/32,768-row worlds
+with two component-defined archetypes, 64-byte SIMD payloads, an integer input,
+and an additional eight-byte column on half the rows. It compares one growable
+store per logical cluster with row reordering for uniform (16 identities per cell), dense
+(1,024 per cell), and singleton sparse (one identity per cell, key spacing 128)
+distributions. Each configuration warms both layouts with one sixteen-frame
+batch, then alternates their order for five paired sixteen-frame samples.</p>
+<p>The 48 scenarios cover maintenance with 1, 1/64, or all identities updated;
+ordinary read-only query scans and host execution with unchanged layouts;
+and complete cell frames with the same updates, maintenance every frame (or
+every fourth frame for 1/64 updates), all-lane per-cell aggregation, and cyclic
+adjacent-cell aggregate products. Both layouts use identical entities, input
+updates, and semantic work. The scan controls still call the clean boundary.
+All measured update frames include marking, pending key allocation/copy,
+classification, directory construction or sorting, column growth/movement,
+source swap-removal, location repair, and allocation reclamation as applicable.
+Cell frames also include query setup, cell scratch allocation, aggregation,
+and neighbor arithmetic. Construction, initial placement, policy/device setup,
+and validation are excluded. There are no device transfers in these CPU timings.</p>
+<p>Every sample checks all identities once, final inputs, all payload lanes,
+entity locations, default key order or homogeneous cluster stores, and equal
+complete spatial checksums outside timing. Query/host scan reductions are also
+checked against their complete expected sums. Results are consumed inside the
+timer. This is a synthetic spatial workload, not a game/simulation speedup,
+collision detection, or a persistent neighbor index.</p>
+<p><code>MEMORY</code> records report initial maintained <strong>capacity-derived owned bytes</strong>;
+<code>MEMORY_AFTER_MOVEMENT</code> reports retained buffers after 96 fully moving frames:
+physical-directory slots, component/ID buffers, entity locations, key/dirty
+caches, queued identities, and recycled-slot capacity. Counted allocations are
+physical-directory plus row-column/ID allocations. Graph/pool allocations,
+allocator overhead, device state, classifier configuration, and all temporary
+maintenance/query/cell scratch are excluded; these records are not RSS or peak
+memory measurements. The components are trivial and have no hidden payload heap.
+Columns in a store share capacity, but each column and the IDs allocate
+separately. <code>PAIR</code> records give rows, distribution, mode, update count, cadence,
+pair index, reordering ns/frame, and partition ns/frame.</p>
+<h3>Growable-store comparison on Linux<span class="hx-absolute -hx-mt-20" id="growable-store-comparison-on-linux"></span>
+    <a href="#growable-store-comparison-on-linux" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>The same current driver was built against committed base <code>df0e6c5638beaab2bf3784a2b4784044a7c2707e</code>
+(256-row-capped blocks) and the growable-store implementation from decision 0014.
+This local run used <strong>AMD Ryzen 7 PRO 5850U, Linux 7.2.5-3-omarchy x86_64,
+Mojo 1.0.0 (<code>ed45d567</code>)</strong>, normal optimized builds without tracing, sanitizers,
+or debug information. Cold builds ran sequentially and took <strong>11.13 s / 11.11 s</strong>
+(base/current). No other builds or benchmark jobs ran during timing; background
+desktop services remained active. Five pairs of fresh binary invocations alternated
+base/current order. Each invocation used the warmup, five paired sixteen-frame
+samples per case, timing boundaries, and complete validation described above.
+Values below are medians of the five per-invocation medians, in milliseconds.
+All 48 cases validated in all ten invocations. Median complete driver execution
+including validation was <strong>13.10 s / 11.33 s</strong> (base/current).</p>
+<p>Driver SHA-256: <code>37795c49baa95f1b911d43327d413097b85a5f60f92f3137accf7abfa9a90ad9</code>.</p>
+<table>
+  <thead>
+      <tr>
+          <th>Distribution</th>
+          <th>Timed work, 32,768 rows</th>
+          <th style="text-align: right">Capped blocks</th>
+          <th style="text-align: right">Growable stores</th>
+          <th style="text-align: right">Growable / capped</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Uniform</td>
+          <td>Maintenance, 512 updates/frame</td>
+          <td style="text-align: right">0.416</td>
+          <td style="text-align: right">0.256</td>
+          <td style="text-align: right">0.61</td>
+      </tr>
+      <tr>
+          <td>Dense</td>
+          <td>Maintenance, 512 updates/frame</td>
+          <td style="text-align: right">0.111</td>
+          <td style="text-align: right">0.072</td>
+          <td style="text-align: right">0.65</td>
+      </tr>
+      <tr>
+          <td>Dense</td>
+          <td>Complete frame, all moving</td>
+          <td style="text-align: right">6.032</td>
+          <td style="text-align: right">4.295</td>
+          <td style="text-align: right">0.71</td>
+      </tr>
+      <tr>
+          <td>Singleton sparse</td>
+          <td>Complete frame, all moving</td>
+          <td style="text-align: right">20.400</td>
+          <td style="text-align: right">17.231</td>
+          <td style="text-align: right">0.84</td>
+      </tr>
+      <tr>
+          <td>Dense</td>
+          <td>Ordinary query scan, clean</td>
+          <td style="text-align: right">0.430</td>
+          <td style="text-align: right">0.427</td>
+          <td style="text-align: right">0.99</td>
+      </tr>
+      <tr>
+          <td>Dense</td>
+          <td>Ordinary CPU scan, clean</td>
+          <td style="text-align: right">0.030</td>
+          <td style="text-align: right">0.031</td>
+          <td style="text-align: right">1.03</td>
+      </tr>
+      <tr>
+          <td>Uniform</td>
+          <td>Ordinary CPU scan, clean</td>
+          <td style="text-align: right">0.068</td>
+          <td style="text-align: right">0.070</td>
+          <td style="text-align: right">1.03</td>
+      </tr>
+      <tr>
+          <td>Singleton sparse</td>
+          <td>Ordinary CPU scan, clean</td>
+          <td style="text-align: right">0.337</td>
+          <td style="text-align: right">0.344</td>
+          <td style="text-align: right">1.02</td>
+      </tr>
+  </tbody>
+</table>
+<p>Dense initial placement used <strong>64 stores and 225 counted allocations</strong>, versus
+128 blocks and 449 allocations in the base. Initial counted owned bytes fell
+from 4,448,265 to 4,403,209. After 96 fully moving frames, growable dense stores
+retained <strong>7,847,945 bytes and 64,512 row slots</strong>, versus 5,062,665 bytes and
+32,768 slots for capped blocks. Destination stores can grow while their old rows
+are still awaiting transfer, and nonempty stores retain that spare capacity.
+Fewer stores therefore do not guarantee less retained memory. These remain
+capacity-derived buffer measurements, with the exclusions described above.</p>
+<p>Full scans changed by -0.8% to +4.3% across these distributions; small timing
+differences on this desktop runner do not establish a scan improvement.
+Maintenance and fully moving frame results favor growable stores here, but
+singleton clusters still have separate allocations and substantial traversal
+overhead. This is CPU-only synthetic evidence; macOS, GPU, application, peak
+memory, and additional component-width comparisons remain on the roadmap.
+Local raw reports are retained under <code>output/performance/growable_clusters/</code>.</p>
+<h3>Historical bounded-block comparison on macOS<span class="hx-absolute -hx-mt-20" id="historical-bounded-block-comparison-on-macos"></span>
+    <a href="#historical-bounded-block-comparison-on-macos" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>The measurements below are historical evidence for decision 0013’s
+256-row-capped blocks, not timings for the current growable-store layout.
+Dense clusters now use fewer stores; sparse clusters still require separate
+allocations. Rerun the driver before making performance claims about the new layout.</p>
+<p>A local optimized run on <strong>Apple M4, macOS 27.0.1 arm64, Mojo 1.0.0
+(<code>ed45d567</code>)</strong>, implementation <code>f3d99cd</code> (base <code>6037850</code>), built in
+<strong>7.59 seconds</strong> and completed
+execution/validation in <strong>8.88 seconds</strong>.
+Driver SHA-256: <code>da005387b10958c875771cdfb16cebbe455aa7e883631ef36f021734f355a787</code>.
+No concurrent builds or benchmark jobs ran. Representative medians across five
+warmed pairs for 32,768 rows were:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Distribution</th>
+          <th>Timed work</th>
+          <th>Updates / cadence</th>
+          <th style="text-align: right">Reordering</th>
+          <th style="text-align: right">Partitions</th>
+          <th style="text-align: right">Partition / reorder</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Uniform</td>
+          <td>Maintenance</td>
+          <td>1 / every frame</td>
+          <td style="text-align: right">0.626 ms</td>
+          <td style="text-align: right">0.336 ms</td>
+          <td style="text-align: right">0.54</td>
+      </tr>
+      <tr>
+          <td>Uniform</td>
+          <td>Maintenance</td>
+          <td>512 / every frame</td>
+          <td style="text-align: right">1.334 ms</td>
+          <td style="text-align: right">0.381 ms</td>
+          <td style="text-align: right">0.29</td>
+      </tr>
+      <tr>
+          <td>Dense</td>
+          <td>Maintenance</td>
+          <td>1 / every frame</td>
+          <td style="text-align: right">0.600 ms</td>
+          <td style="text-align: right">0.017 ms</td>
+          <td style="text-align: right">0.03</td>
+      </tr>
+      <tr>
+          <td>Dense</td>
+          <td>Maintenance</td>
+          <td>512 / every frame</td>
+          <td style="text-align: right">1.348 ms</td>
+          <td style="text-align: right">0.096 ms</td>
+          <td style="text-align: right">0.07</td>
+      </tr>
+      <tr>
+          <td>Uniform</td>
+          <td>Complete cell frame</td>
+          <td>512 / every fourth frame</td>
+          <td style="text-align: right">0.627 ms</td>
+          <td style="text-align: right">0.393 ms</td>
+          <td style="text-align: right">0.63</td>
+      </tr>
+      <tr>
+          <td>Dense</td>
+          <td>Complete cell frame</td>
+          <td>512 / every fourth frame</td>
+          <td style="text-align: right">0.651 ms</td>
+          <td style="text-align: right">0.293 ms</td>
+          <td style="text-align: right">0.45</td>
+      </tr>
+      <tr>
+          <td>Uniform</td>
+          <td>Complete cell frame</td>
+          <td>All / every frame</td>
+          <td style="text-align: right">1.956 ms</td>
+          <td style="text-align: right">2.785 ms</td>
+          <td style="text-align: right">1.42</td>
+      </tr>
+      <tr>
+          <td>Dense</td>
+          <td>Complete cell frame</td>
+          <td>All / every frame</td>
+          <td style="text-align: right">1.881 ms</td>
+          <td style="text-align: right">3.125 ms</td>
+          <td style="text-align: right">1.66</td>
+      </tr>
+      <tr>
+          <td>Singleton sparse</td>
+          <td>Complete cell frame</td>
+          <td>All / every frame</td>
+          <td style="text-align: right">1.357 ms</td>
+          <td style="text-align: right">17.011 ms</td>
+          <td style="text-align: right">12.54</td>
+      </tr>
+      <tr>
+          <td>Uniform</td>
+          <td>Ordinary query scan</td>
+          <td>Clean</td>
+          <td style="text-align: right">0.149 ms</td>
+          <td style="text-align: right">0.175 ms</td>
+          <td style="text-align: right">1.17</td>
+      </tr>
+      <tr>
+          <td>Dense</td>
+          <td>Ordinary query scan</td>
+          <td>Clean</td>
+          <td style="text-align: right">0.149 ms</td>
+          <td style="text-align: right">0.148 ms</td>
+          <td style="text-align: right">0.99</td>
+      </tr>
+      <tr>
+          <td>Singleton sparse</td>
+          <td>Ordinary query scan</td>
+          <td>Clean</td>
+          <td style="text-align: right">0.149 ms</td>
+          <td style="text-align: right">0.237 ms</td>
+          <td style="text-align: right">1.59</td>
+      </tr>
+      <tr>
+          <td>Uniform</td>
+          <td>Ordinary host scan</td>
+          <td>Clean</td>
+          <td style="text-align: right">0.019 ms</td>
+          <td style="text-align: right">0.045 ms</td>
+          <td style="text-align: right">2.36</td>
+      </tr>
+      <tr>
+          <td>Dense</td>
+          <td>Ordinary host scan</td>
+          <td>Clean</td>
+          <td style="text-align: right">0.019 ms</td>
+          <td style="text-align: right">0.022 ms</td>
+          <td style="text-align: right">1.16</td>
+      </tr>
+      <tr>
+          <td>Singleton sparse</td>
+          <td>Ordinary host scan</td>
+          <td>Clean</td>
+          <td style="text-align: right">0.020 ms</td>
+          <td style="text-align: right">0.155 ms</td>
+          <td style="text-align: right">7.92</td>
+      </tr>
+  </tbody>
+</table>
+<p>Initial maintained capacity and allocation evidence for those worlds:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Layout / distribution</th>
+          <th style="text-align: right">Counted owned bytes</th>
+          <th style="text-align: right">Counted row/directory allocations</th>
+          <th style="text-align: right">Partition blocks</th>
+          <th style="text-align: right">Row capacity / live rows</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Reordering, all distributions</td>
+          <td style="text-align: right">4,359,561</td>
+          <td style="text-align: right">8</td>
+          <td style="text-align: right">0</td>
+          <td style="text-align: right">32,768 / 32,768</td>
+      </tr>
+      <tr>
+          <td>Partitions, uniform</td>
+          <td style="text-align: right">7,241,737</td>
+          <td style="text-align: right">14,337</td>
+          <td style="text-align: right">4,096</td>
+          <td style="text-align: right">32,768 / 32,768</td>
+      </tr>
+      <tr>
+          <td>Partitions, dense</td>
+          <td style="text-align: right">4,448,265</td>
+          <td style="text-align: right">449</td>
+          <td style="text-align: right">128</td>
+          <td style="text-align: right">32,768 / 32,768</td>
+      </tr>
+      <tr>
+          <td>Partitions, singleton sparse</td>
+          <td style="text-align: right">27,426,825</td>
+          <td style="text-align: right">114,689</td>
+          <td style="text-align: right">32,768</td>
+          <td style="text-align: right">32,768 / 32,768</td>
+      </tr>
+  </tbody>
+</table>
+<p>All initial blocks were fully occupied at their allocated capacities. Component
+capacity alone therefore understates partition overhead: physical-store metadata
+and many separate allocations matter, especially for singleton clusters. At
+2,048 rows counted bytes were 273,801 for reordering versus 452,617 uniform,
+278,025 dense, and 1,714,185 singleton partition storage. After 96 fully moving
+frames, counted retained bytes were <strong>4,883,849</strong> for
+reordering versus <strong>10,116,809</strong> uniform, <strong>5,062,665</strong> dense, and <strong>51,019,785</strong>
+singleton partitions at 32,768 rows. Uniform partition row capacity grew to
+58,320; dense/singleton row capacity remained 32,768. Empty blocks released their
+row allocations, while partial block growth and high-water directory/queue
+capacity remained. These are retained-buffer measurements, not peak memory.</p>
+<p>Small dense/uniform updates took less elapsed maintenance time with partitions,
+while directory rebuilding and per-block scans dominated singleton cases. The
+benchmark measures total elapsed costs, not byte-movement counters.
+Fully moving workloads were slower despite local transfer. Keep partitions
+opt-in, and retain the reordering default. The measured bounded-block
+implementation copied identity-capacity keys,
+inspected blocks, and could move unchanged rows during same-cluster compaction.
+The current layout retains key copying and directory scans but removes
+cross-block compaction; destination growth can still relocate existing columns.
+Cluster selection scans metadata. Application workloads,
+other component widths, structural-heavy frames, Linux comparative timings,
+process/peak memory, and device timings remain on the roadmap. GPU functional
+integration ran on the actual local accelerator; it is separate evidence from
+these CPU performance measurements.</p>
+<p>The separate default-path PR gate against <code>6037850</code> passed all twelve core and
+32 spatial cases in <strong>49.2 seconds</strong>, including four sequential builds and five
+paired samples. It required no regression confirmation. Ordinary 2,048-row
+query/host execution changes were +0.1%/-0.6%, stable-ID access was +3.9%, and
+selected mutation was +0.9% in that run. These small shared-machine differences
+are not a zero-overhead guarantee; the existing 30%/500 ns rule is unchanged.
+Hosted Linux/macOS evidence is retained by the PR checks.</p>
+<h2>Resource execution<span class="hx-absolute -hx-mt-20" id="resource-execution"></span>
+    <a href="#resource-execution" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><code>resource_execution_benchmark.mojo</code> uses the current execution API. Compare the
+same workload against the base library, adapting only backend call spelling
+when the base predates <code>ExecutionBackend</code>. It measures complete calls over 512 Int32 rows with either no
+resources or one legacy scalar resource. <code>resource_adapter_benchmark.mojo</code>
+measures current read-only adapters over the same rows and 4,096 initial Int32
+samples. Only the first sample is read; the entire source is uploaded. Each timed
+adapter call edits that sample, and growth cases append one sample per call.
+Host calls use 10,000 iterations; GPU calls use 100. One warmup invocation precedes
+each timer. Construction and final checks are excluded; validation, leases,
+component transfers, resource uploads/downloads, allocation growth, and
+synchronization are included when applicable. Exact outputs, row counts, source
+values, and final sample lengths are checked outside timing.</p>
+<p>Copy the current driver for the baseline build:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">cp benchmark/resource_execution_benchmark.mojo /tmp/resource_base.mojo</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>If the base accepts <code>on_device: Bool</code> rather than <code>backend: ExecutionBackend</code>,
+adapt only that copy before compiling it:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">python - <span class="s">&lt;&lt;&#39;PYCODE&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s">from pathlib import Path
+</span></span></span><span class="line"><span class="cl"><span class="s">import re
+</span></span></span><span class="line"><span class="cl"><span class="s">
+</span></span></span><span class="line"><span class="cl"><span class="s">path = Path(&#34;/tmp/resource_base.mojo&#34;)
+</span></span></span><span class="line"><span class="cl"><span class="s">source = path.read_text().replace(&#34;    ExecutionBackend,\n&#34;, &#34;&#34;)
+</span></span></span><span class="line"><span class="cl"><span class="s">source, count = re.subn(
+</span></span></span><span class="line"><span class="cl"><span class="s">    r&#34;backend=\(\s*ExecutionBackend\.DEVICE if device else ExecutionBackend\.HOST\s*\)&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="s">    &#34;on_device=device&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="s">    source,
+</span></span></span><span class="line"><span class="cl"><span class="s">)
+</span></span></span><span class="line"><span class="cl"><span class="s">assert count == 4, &#34;Review the driver before adapting a changed call matrix&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">assert &#34;ExecutionBackend&#34; not in source.split(&#39;from std.time&#39;, 1)[1]
+</span></span></span><span class="line"><span class="cl"><span class="s">path.write_text(source)
+</span></span></span><span class="line"><span class="cl"><span class="s">PYCODE</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>This maps the same compile-time <code>device</code> boolean to the older keyword; kernels,
+row counts, iterations, warmup, validation, and timing boundaries stay identical.
+Do not substitute a historical driver with different workloads. Device comparisons
+require a working accelerator on both sides; an older host fallback is not a
+device measurement. For a base using <code>on_gpu</code>, use that keyword instead.</p>
+<p>Build optimized binaries once without debug information, sanitizers, or tracing:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">pixi run mojo build -I /path/to/base/src /tmp/resource_base.mojo -o /tmp/resource-base
+</span></span><span class="line"><span class="cl">pixi run mojo build -I src benchmark/resource_execution_benchmark.mojo -o /tmp/resource-current
+</span></span><span class="line"><span class="cl">pixi run mojo build -I src benchmark/resource_adapter_benchmark.mojo -o /tmp/resource-adapters</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>On Apple M4, macOS 27.0.1, Mojo <code>1.0.0 (ed45d567)</code>, compare base <code>6a3841b</code>
+against this implementation with the same driver. Warm each binary, then run five
+paired samples, alternating base/current order, with no concurrent compilation
+or benchmark jobs. Median per-call means were:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Complete invocation</th>
+          <th>Base</th>
+          <th>Current</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Host, no resource</td>
+          <td>294.2 ns</td>
+          <td>299.6 ns</td>
+      </tr>
+      <tr>
+          <td>Host, legacy scalar resource</td>
+          <td>299.8 ns</td>
+          <td>350.7 ns</td>
+      </tr>
+      <tr>
+          <td>GPU, no resource</td>
+          <td>250.50 µs</td>
+          <td>251.52 µs</td>
+      </tr>
+      <tr>
+          <td>GPU, legacy scalar resource</td>
+          <td>243.51 µs</td>
+          <td>268.59 µs</td>
+      </tr>
+      <tr>
+          <td>Host, edited adapter</td>
+          <td>—</td>
+          <td>449.1 ns</td>
+      </tr>
+      <tr>
+          <td>Host, edited adapter plus growth</td>
+          <td>—</td>
+          <td>451.4 ns</td>
+      </tr>
+      <tr>
+          <td>GPU, edited adapter</td>
+          <td>—</td>
+          <td>323.76 µs</td>
+      </tr>
+      <tr>
+          <td>GPU, edited adapter plus growth</td>
+          <td>—</td>
+          <td>303.54 µs</td>
+      </tr>
+  </tbody>
+</table>
+<p>The scalar GPU case costs about 10.3% more with staged publication and lifetime
+protection. These measurements establish the cost of this synthetic workload,
+not an application speedup or Tree-D shading result. Short GPU batches are noisy;
+the growth-case ordering does not establish a growth benefit. Source/sample allocation
+and scientific preprocessing during initial construction are excluded; incremental
+host append and device allocation growth are included in growth cases. Existing
+allocation capacity is reused in nongrowing cases; contents are uploaded every run.</p>
+<p>Sequential base/current/adapter driver builds took 1.18/3.00/3.01 seconds with
+existing compiler caches and no competing builds. These are recorded build costs,
+not comparable cold-compilation measurements.
+Linux resource timings and cold compilation remain unmeasured. These focused
+manual cases do not enlarge the normal PR performance matrix.</p>
+<h2>Storage range migration<span class="hx-absolute -hx-mt-20" id="storage-range-migration"></span>
+    <a href="#storage-range-migration" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>The <a href="../../design/research/entity-range-migration.md" >#170 comparison</a> uses the
+current selection and migration drivers against PR212, including the 100k-row
+ordinary host path and 65,536-row whole-archetype batches. Concurrent sibling
+builds overlapped every sample, so these results support no controlled
+regression or speedup claim. Query/range metadata sharing is checked directly
+in the cursor regression tests.</p>
+
+        </div>
+        <div class="hx-mt-16"></div>
+        <div class="hx-mb-8 hx-flex hx-items-center hx-border-t hx-pt-8 dark:hx-border-neutral-800 contrast-more:hx-border-neutral-400 dark:contrast-more:hx-border-neutral-400 print:hx-hidden"><a
+        href="/larecs/pr-preview/pr-236/guide/spatial_clustering/"
+        title="Spatial clustering"
+        class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-pr-4 rtl:hx-pl-4"
+      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Spatial clustering</a></div>
+        
+      </main>
+    </article>
+  </div>
+
+      <footer class="hextra-footer hx-bg-gray-100 hx-pb-[env(safe-area-inset-bottom)] dark:hx-bg-neutral-900 print:hx-bg-transparent"><div
+      class="hextra-custom-footer hx-max-w-screen-xl hx-pl-[max(env(safe-area-inset-left),1.5rem)] hx-pr-[max(env(safe-area-inset-right),1.5rem)] hx-text-gray-600 dark:hx-text-gray-400"
+    ></div><div
+        class="hx-max-w-screen-xl hx-mx-auto hx-flex hx-justify-center hx-py-12 hx-pl-[max(env(safe-area-inset-left),1.5rem)] hx-pr-[max(env(safe-area-inset-right),1.5rem)] hx-text-gray-600 dark:hx-text-gray-400 md:hx-justify-start"
+      >
+        <div class="hx-flex hx-w-full hx-flex-col hx-items-center sm:hx-items-start"><div class="hx-font-semibold"><a class="hx-flex hx-text-sm hx-items-center hx-gap-1 hx-text-current" target="_blank" rel="noopener noreferrer" title="Hextra GitHub Homepage" href="https://github.com/imfing/hextra">
+    <span>Powered by Hextra<svg height=1em class="hx-inline-block ltr:hx-ml-1 rtl:hx-mr-1 hx-align-[-2.5px]" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="m 105.50024,22.224647 c -9.59169,-5.537563 -21.40871,-5.537563 -31.000093,0 L 39.054693,42.689119 C 29.463353,48.226675 23.55484,58.460531 23.55484,69.535642 v 40.928918 c 0,11.07542 5.908513,21.3092 15.499853,26.84652 l 35.445453,20.46446 c 9.591313,5.53732 21.408404,5.53732 31.000094,0 l 35.44507,-20.46446 c 9.59131,-5.53732 15.49985,-15.7711 15.49985,-26.84652 V 69.535642 c 0,-11.075111 -5.90854,-21.308967 -15.49985,-26.846523 z M 34.112797,85.737639 c -1.384445,2.397827 -1.384445,5.352099 0,7.749927 l 24.781554,42.922974 c 1.38437,2.39783 3.942853,3.87496 6.711592,3.87496 h 49.563107 c 2.76905,0 5.3273,-1.47713 6.71144,-3.87496 l 24.78194,-42.922974 c 1.38414,-2.397828 1.38414,-5.3521 0,-7.749927 L 121.88049,42.814746 c -1.38414,-2.397828 -3.94239,-3.874964 -6.71144,-3.874964 H 65.605944 c -2.768739,0 -5.327223,1.477059 -6.711592,3.874964 z" style="stroke-width:0.774993" /></svg></span>
+  </a></div></div>
+      </div></footer>
+    
+    <script defer src="/larecs/pr-preview/pr-236/js/main.min.d0f0346255ba9418db8fcf7f9440ca4e532e06276d8df17497e19e1045ee360b.js" integrity="sha256-0PA0YlW6lBjbj89/lEDKTlMuBidtjfF0l&#43;GeEEXuNgs="></script>
+
+
+<script defer src="/larecs/pr-preview/pr-236/lib/flexsearch/flexsearch.bundle.min.0425860527cc9968f9f049421c7a56b39327d475e2e3a8f550416be3a9134327.js" integrity="sha256-BCWGBSfMmWj58ElCHHpWs5Mn1HXi46j1UEFr46kTQyc="></script>
+    <script defer src="/larecs/pr-preview/pr-236/en.search.min.46ee515b74dc32e7ab8add4e79255f3b37255e7c1fad486b725f892f6a1a59ad.js" integrity="sha256-Ru5RW3TcMuerit1OeSVfOzclXnwfrUhrcl&#43;JL2oaWa0="></script>
+
+
+  </body>
+</html>
