@@ -9,11 +9,31 @@ Larecs is a performance-critical Entity Component System library written in Mojo
   related parent issues. Tell the developer which issue you are working on. If
   none fits, ask whether to create one (use the `issue-description` skill), and
   start without an issue only when the developer says so.
-- Work on a branch linked to the issue. Create it with
+- Work on a feature branch linked to the issue. Create it with
   `gh issue develop <N> --name <branch> --base <base> --checkout`, where `<base>`
-  is `main` or, for stacked work, the branch the work builds on. When an issue
-  exists, create the work branch only this way, not with `git switch -c`,
-  `git checkout -b`, or `git branch`.
+  is `main` or, when the work needs an unpromoted feature, that feature's
+  branch. Never base work on `nightly` and never merge `nightly` into a
+  feature branch; merging `main` into it is fine. When an issue exists, create
+  the work branch only this way, not with `git switch -c`, `git checkout -b`,
+  or `git branch`.
+- Record user-visible changes in one fragment per feature,
+  `changelog.d/<feature>.md`, never in `changelog.md`. Group entries under
+  `### Breaking changes`, `### Added`, `### Changed`, `### Fixed`, or
+  `### Removed`, describe current behavior, and end each entry with the links
+  of every PR that shaped it, such as
+  `([#187](https://github.com/larecs/larecs/pull/187))`. A follow-up PR
+  rewrites the entry and appends its link. PRs with no user-visible change get
+  the `no-changelog` label instead.
+- Open PRs from the feature branch into `nightly` and merge them with a merge
+  commit once checks pass. Open a PR into `main` only when the developer asks
+  to promote a feature or prepare a release; it comes from the same feature
+  branch, so promoted commits are identical on both branches. When the
+  developer names features to promote by their changelog entries, find the
+  fragments and their branches, promote stacked branches bottom-up, and
+  consolidate refinements on the branch before opening the PR.
+- Rebuild `nightly` only when the developer asks, with
+  `scripts/rebuild_nightly.sh`; [CONTRIBUTING.md](CONTRIBUTING.md) and
+  `docs/src/guide/development_workflow.md` describe the full lifecycle.
 - If tooling already started you on its own branch, such as a managed worktree,
   create the linked branch with `gh issue develop` without `--checkout`, then
   run `git fetch origin <branch>` and `git switch <branch>` before your first
@@ -64,12 +84,8 @@ Use the `pr-description` skill to write or revise a description; `.github/pull_r
   and use the `mojo-syntax` skill.
 - When changing storage, queries, classification, row movement, or execution costs,
   add or update representative benchmarks. Read the
-  [benchmark methodology](docs/src/inside/development/benchmarks.md#benchmark-methodology) and
+  [benchmark methodology](docs/src/guide/benchmarks.md#benchmark-methodology) and
   relevant workload sections before changing benchmarks or reporting performance.
-- Before writing, restructuring, or reviewing guide pages, the README, API
-  docstrings, or docs navigation, read the `larecs-docs` skill at
-  `.agents/skills/larecs-docs/SKILL.md`, together with the global
-  `writing-docs` skill when available.
 
 ## Issue Writing
 
@@ -92,4 +108,4 @@ Use the `pr-description` skill to write or revise a description; `.github/pull_r
 - Format code: `pixi run mojo format src test benchmark`
 - Generate API docs: `pixi run mojo doc -o docs/src/larecs.json src/larecs`
 - Benchmark commands, baseline selection, and regression thresholds:
-  [benchmark guide](docs/src/inside/development/benchmarks.md).
+  [benchmark guide](docs/src/guide/benchmarks.md).
