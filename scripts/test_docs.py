@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from check_docs import Page, Site, check
+from build_figures import check_inventory
 from doc_examples import coverage, inventory, regions, source_doctests
 
 
@@ -141,6 +142,25 @@ class ExampleTests(unittest.TestCase):
         self.assertEqual(len(skipped["hardware_skips"]), 1)
         with self.assertRaisesRegex(ValueError, "Missing or ambiguous"):
             coverage(prefix + 'PASS\n' + doctests, [program], self.root)
+
+
+class FigureTests(unittest.TestCase):
+    """Keep Typst coverage strict alongside independently sourced site images."""
+
+    def test_separate_images_do_not_hide_missing_or_unexpected_exports(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            sources = [output / 'figure.typ']
+            for name in ('figure', 'aos_benchmark', 'development-workflow'):
+                (output / f'{name}.svg').touch()
+            check_inventory(sources, output)
+            (output / 'figure.svg').unlink()
+            with self.assertRaisesRegex(ValueError, 'Figure source/export inventory differs'):
+                check_inventory(sources, output)
+            (output / 'figure.svg').touch()
+            (output / 'unexpected.svg').touch()
+            with self.assertRaisesRegex(ValueError, 'Figure source/export inventory differs'):
+                check_inventory(sources, output)
 
 
 class PublishingTests(unittest.TestCase):

@@ -6,6 +6,16 @@ import tempfile
 from pathlib import Path
 
 
+def check_inventory(sources: list[Path], output: Path) -> None:
+    """Require every Typst export, allowing the separately sourced site images."""
+    # The publishing benchmark generates its plot; the feature workflow SVG
+    # comes from docs/src/guide/images rather than a Typst figure source.
+    separate_images = {"aos_benchmark", "development-workflow"}
+    exports = {path.stem for path in output.glob("*.svg")} - separate_images
+    if {path.stem for path in sources} != exports:
+        raise ValueError("Figure source/export inventory differs")
+
+
 def build(check=False) -> None:
     """Compile every figure, or reject drift from the committed SVG exports."""
     root = Path(__file__).resolve().parent.parent
@@ -14,8 +24,8 @@ def build(check=False) -> None:
     sources = [path for path in sorted(figures.glob("*.typ")) if not path.name.startswith("_")]
     if not sources:
         raise ValueError("No documentation figure sources found")
-    if check and {path.stem for path in sources} != {path.stem for path in output.glob("*.svg")}:
-        raise ValueError("Figure source/export inventory differs")
+    if check:
+        check_inventory(sources, output)
     with tempfile.TemporaryDirectory() as directory:
         for source in sources:
             committed = output / source.with_suffix(".svg").name
