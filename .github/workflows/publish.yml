@@ -111,16 +111,25 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # Main and preview deployments push to the same branch; run them one at a time.
-    concurrency:
-      group: gh-pages
-      cancel-in-progress: false
+    # Main deployments rebase onto concurrent preview pushes without cancelling older jobs.
     steps:
       - name: Download HTML artifacts
         uses: actions/download-artifact@v4
         with:
           name: public
           path: public
+      - name: Disable Jekyll at the Pages root
+        run: |
+          mkdir -p pages-root
+          touch pages-root/.nojekyll
+      - name: Publish the root marker without deleting site content
+        uses: JamesIves/github-pages-deploy-action@v4.9.0
+        with:
+          branch: gh-pages
+          folder: pages-root
+          clean: false
+          force: false
+          attempt-limit: 10
       - name: Deploy, keeping PR previews
         uses: JamesIves/github-pages-deploy-action@v4.9.0
         with:
@@ -129,6 +138,7 @@ jobs:
           target-folder: dev
           clean-exclude: ${{ env.PREVIEW_UMBRELLA }}/
           force: false
+          attempt-limit: 10
 
   preview:
     name: Deploy PR preview
