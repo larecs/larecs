@@ -8,9 +8,8 @@ from pathlib import Path
 
 def check_inventory(sources: list[Path], output: Path) -> None:
     """Require every Typst export, allowing the separately sourced site images."""
-    # The publishing benchmark generates its plot; the feature workflow SVG
-    # comes from docs/src/guide/images rather than a Typst figure source.
-    separate_images = {"aos_benchmark", "development-workflow"}
+    # The publishing benchmark generates its plot separately from Typst.
+    separate_images = {"aos_benchmark"}
     exports = {path.stem for path in output.glob("*.svg")} - separate_images
     if {path.stem for path in sources} != exports:
         raise ValueError("Figure source/export inventory differs")

@@ -151,7 +151,7 @@ class FigureTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
             sources = [output / 'figure.typ']
-            for name in ('figure', 'aos_benchmark', 'development-workflow'):
+            for name in ('figure', 'aos_benchmark'):
                 (output / f'{name}.svg').touch()
             check_inventory(sources, output)
             (output / 'figure.svg').unlink()

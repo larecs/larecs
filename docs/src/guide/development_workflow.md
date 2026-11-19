@@ -10,7 +10,7 @@ without review, and the same branch is later promoted to `main` through a
 reviewed PR. Because both branches receive the same commits, `main` and
 `nightly` never need to be reconciled.
 
-![Feature branches merge into nightly for testing and into main when promoted; nightly is rebuilt after each release](/images/development-workflow.svg)
+![Feature branches merge into nightly for testing and into main when promoted; nightly is rebuilt after each release](images/development-workflow.svg)
 
 *A feature branch reaches `nightly` once per PR and `main` once, when it is
 promoted. The rebuilt `nightly` keeps only features that were not promoted.*
