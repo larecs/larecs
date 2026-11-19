@@ -23,6 +23,49 @@ Linux measurements are recorded there. It is a restricted feasibility benchmark;
 the current experimental engine adds eligibility and lifecycle checks absent
 from that prototype. Both drivers remain outside the normal PR performance gate.
 
+## Benchmark methodology
+
+Build a focused manual driver once with
+`pixi run mojo build -I src benchmark/<benchmark_filename>.mojo -o /tmp/larecs-benchmark`,
+then run `/tmp/larecs-benchmark` repeatedly. Run the complete manual suite with
+`pixi run mojo run -I src benchmark/run_benchmarks.mojo`.
+
+When changing storage, queries, classification, row movement, or execution costs,
+add or update representative benchmarks using these criteria:
+
+- Keep the combined PR performance checks near one minute per runner, including
+  compilation, warmup, and sampling. Measure cold compilation and execution
+  separately on Linux and macOS before expanding the suite. Keep large worlds,
+  GPU cases, and the complete benchmark registry in focused manual drivers.
+- Use deterministic inputs, bounded calibration or fixed iteration counts, and a
+  compact scenario matrix. Spatial cases should cover uniform, dense, sparse,
+  and moving entities with different maintenance cadences.
+- Compare identical entities and semantic work, with an unchanged-layout control.
+  Measure isolated operations and complete frames when useful. Include input
+  updates, classification, sorting, movement, location repair, and transfers
+  whenever they belong to the claimed workload. State excluded setup and
+  maintenance costs; validate results, locations, and payload preservation
+  outside the timer, and consume results to prevent dead-code elimination.
+- Build each timing binary once, then run it repeatedly. Compare the same current
+  driver against baseline and current libraries on the same runner with matching
+  compiler versions and optimization settings. Use optimized builds without
+  debug info, sanitizers, or tracing. Run builds and measurements sequentially,
+  with no competing benchmark jobs, and report compilation separately.
+- Warm both binaries, alternate baseline/current order, and use repeated paired
+  samples. Keep machine-specific timing baselines out of the repository. See
+  [PR performance checks](#pr-to-pr-performance-checks) and
+  [spatial checks](#small-spatial-benchmarks-on-every-pr) for baseline selection,
+  thresholds, confirmation, and support for revisions predating the spatial API.
+- Keep the small regression checks in `pixi run tests test` on Linux and macOS;
+  focused test-file runs omit performance checks. Investigate sustained failures
+  and document evidence before changing thresholds; use dedicated measurements
+  for smaller regressions.
+- Keep scenario matrices and expected-case manifests synchronized. Invalid or
+  incomplete reports, build failures, and correctness failures must fail checks.
+  Update this guide when changing cases, timing boundaries, sampling, or baseline
+  selection. Record hardware, compiler, method, and limitations with performance
+  claims; track unmeasured benefits and remaining work in the roadmap.
+
 ## Threaded host execution
 
 `benchmark/threaded_execution.mojo` measures the implemented public
