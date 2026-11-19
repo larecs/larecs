@@ -140,7 +140,7 @@ export class Documentation {
       return '<details><summary>Complete runnable program</summary>\n\n' + `[Source: \`${attrs.file}\`](${url})\n` + fence(source.replace(/^\s*# (?:end)?region .*\n/gm, '')) + '\n</details>\n';
     });
   }
-  page(route, title, body, weight = 0, hidden = false, filePath, source) {
+  page(route, title, body, { weight = 0, hidden = false, filePath, source, label } = {}) {
     body = transformProse(body, (prose) => prose.replace(/\]\(([^\s)]+)\)/g, (whole, href) => {
       if (/^(?:https?:|#|mailto:)/.test(href)) return whole;
       const url = new URL(href.replace(/^\//, ''), href.startsWith('/') ? base : base + (route ? route + '/' : ''));
@@ -149,7 +149,7 @@ export class Documentation {
     }));
     body = transformProse(body, prose => prose.replace(/!\[[^\]]*\]\([^\s)]+\.svg\)/g, image => '\n<div class="diagram">\n\n' + image + '\n\n</div>\n')).replaceAll('```mojo-render', '```mojo');
     const id = route || 'index';
-    this.pages.set(id, { id, body, filePath: filePath || resolve(root, `docs/site/src/content/docs/${id}.md`), data: { title, slug: route, sidebar: { order: weight, hidden }, ...(source ? { source } : {}) } });
+    this.pages.set(id, { id, body, filePath: filePath || resolve(root, `docs/site/src/content/docs/${id}.md`), data: { title, slug: route, sidebar: { order: weight, hidden, ...(label ? { label } : {}) }, ...(source ? { source } : {}) } });
   }
   authored() {
     for (const path of files('docs/src', '.md')) {
@@ -161,7 +161,7 @@ export class Documentation {
       const body = this.shortcodes(this.extract(bodyParts.join('+++'), owner));
       if (data.draft) continue;
       for (const alias of data.aliases || []) this.redirects[alias.replace(/^\/|\/$/g, '') + '/'] = route + '/';
-      this.page(route, data.title, body, data.weight || 0, data.sidebar?.exclude || false, path);
+      this.page(route, data.title, body, { weight: data.weight || 0, hidden: data.sidebar?.exclude || false, filePath: path });
     }
   }
   declaration(item) {
@@ -254,7 +254,7 @@ export class Documentation {
             details = this.source(this.api.symbols[symbol].source_url, true);
             item.overloads.forEach((overload, index) => { details += `\n<div class="api-member" id="${item.name}-${index}">\n\n` + this.contract(overload, name, itemOwner) + '\n</div>\n'; });
           } else details = this.typePage(item, symbol, itemOwner);
-          this.page(target.replace(/^\/|\/$/g, ''), item.name, details, 0, false, undefined, this.api.symbols[symbol].source_url);
+          this.page(target.replace(/^\/|\/$/g, ''), item.name, details, { source: this.api.symbols[symbol].source_url });
         }
       }
       if (module.aliases?.length) body += '\n## Comptime values\n';
@@ -263,7 +263,10 @@ export class Documentation {
         this.sectionSafe(item.name, sections, name);
         body += (item.name !== item.name.toLowerCase() ? `\n<a id="${item.name}"></a>\n` : '') + '\n### `' + item.name + '`\n\n<div class="api-member">\n\n' + this.contract(item, name, owner) + '\n</div>\n';
       }
-      this.page(route, name, body);
+      // A module with member pages becomes a sidebar group; its own page leads it as the overview.
+      const grouped = ['structs', 'traits', 'functions'].some((group) => module[group]?.length);
+      // Every module page shares one order so groups and leaf modules stay alphabetical.
+      this.page(route, name, body, { weight: -1, ...(grouped ? { label: 'Overview' } : {}) });
       modules.push(module);
     }
     const summary = (qualified) => {
@@ -277,7 +280,7 @@ export class Documentation {
   }
   load() {
     this.authored(); this.apiPages();
-    this.page('404', 'Page not found', 'The requested page does not exist. Use the navigation or search to find it.', 0, true);
+    this.page('404', 'Page not found', 'The requested page does not exist. Use the navigation or search to find it.', { hidden: true });
     rmSync(resolve(root, 'docs/test'), { recursive: true, force: true });
     write('docs/site/data/redirects.json', JSON.stringify(this.redirects, null, 2) + '\n');
     return [...this.pages.values()];
