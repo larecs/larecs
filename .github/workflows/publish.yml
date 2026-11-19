@@ -71,5 +71,8 @@ jobs:
         with:
           target_branch: gh-pages
           build_dir: docs/site/public
+          # Write .nojekyll: Jekyll omits directories starting with "_", such
+          # as the _astro/ assets of Starlight PR previews.
+          jekyll: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
