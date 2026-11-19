@@ -477,7 +477,9 @@ def test_selection_segments() raises:
 
         assert_equal(_run_selected(world, store), selected)
         assert_equal(_run_selected(world, store), 0)
-        # A write to an unselected row changes only that column's revision.
+        # A write to an unselected row conservatively changes the whole
+        # column, so every selected float segment is uploaded again. The
+        # integer column keeps its revision and stays reused.
         world.storage.set(Entity(4), Float32(1))
         assert_equal(_run_selected(world, store), 3 * size_of[Float32]())
         assert_equal(world.storage.read[Int32](Entity(1)), 3)
