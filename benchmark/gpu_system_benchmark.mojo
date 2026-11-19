@@ -172,18 +172,26 @@ def _populate(mut world: WorldType) raises -> Entity:
     Returns:
         The first entity added, so a caller can observe the kernel's output.
     """
-    var first = Entity()
-    var index = 0
-    for ref entity in world.storage.add_entities(
+    var context = SystemContext(world)
+    var selected = context.add_entities(
         Position(1.0, 0.0), Velocity(0.0, 1.0), count=ENTITY_COUNT
-    ):
-        var radius = 1.0 + Float32(index) * 1e-6
-        entity.unsafe_get[Position]().x = radius
-        entity.unsafe_get[Velocity]().dy = rsqrt(radius)
-        if index == 0:
-            first = entity.get_entity()
-        index += 1
-    return first
+    )
+
+    def initialize(rows: KernelContext[Filter().include[Position, Velocity]()]):
+        """Initializes selected orbital rows with distinct radii.
+
+        Args:
+            rows: Newly created position and velocity rows.
+        """
+        for entity in rows:
+            var radius = 1.0 + Float32(entity.idx) * 1e-6
+            entity.get[Position]().x = radius
+            entity.get[Velocity]().dy = rsqrt(radius)
+
+    selected.run(initialize)
+    selected^.release()
+    var query = world.storage.query[Filter().include[Position, Velocity]()]()
+    return query.__next__().get_entity()
 
 
 def _run_once[steps: Int, on_device: Bool](mut world: WorldType) raises:

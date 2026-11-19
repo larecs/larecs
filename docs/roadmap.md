@@ -25,15 +25,16 @@ behavioral contract.
 - [ ] Share batch mutation internals while preserving the whole-archetype bulk
   fast path and exact partial-row behavior. Avoid routing large batches through
   per-entity movement.
-- [ ] Migrate callers that use mutation-result iterators for selected execution.
+- [x] Migrate callers that use mutation-result iterators for selected execution.
   Keep low-level storage operations usable through a documented adapter or
   return type; `HostStorage` cannot itself return a selection borrowing `World`.
-- [ ] Replace `_WorldEntityIterator` query duties before removing that type and
+- [x] Replace `_WorldEntityIterator` query duties before removing that type and
   mutation-only `has_start_indices`. Preserve query lock lifetime, iteration,
   and supported copy/move behavior.
-- [ ] Update `test/world_entity_iterator_test.mojo`, `test/world_test.mojo`, and
+- [x] Update `test/world_entity_iterator_test.mojo`, `test/world_test.mojo`, and
   affected callers. Cover ordinary queries, low-level compatibility, batch
-  results, lock release, and selected mutation chains.
+  results, lock release, and selected mutation chains. See
+  [decision 0022](design/decisions/0024-locked-storage-ranges.md).
 
 ### Measure selection and ordinary-path performance
 

@@ -514,8 +514,9 @@ Hosted Linux/macOS evidence is retained by the PR checks.
 
 ## Resource execution
 
-`resource_execution_benchmark.mojo` builds unchanged against the PR base and
-current library. It measures complete calls over 512 Int32 rows with either no
+`resource_execution_benchmark.mojo` uses the current execution API. Compare the
+same workload against the base library, adapting only backend call spelling
+when the base predates `ExecutionBackend`. It measures complete calls over 512 Int32 rows with either no
 resources or one legacy scalar resource. `resource_adapter_benchmark.mojo`
 measures current read-only adapters over the same rows and 4,096 initial Int32
 samples. Only the first sample is read; the entire source is uploaded. Each timed
@@ -526,10 +527,43 @@ component transfers, resource uploads/downloads, allocation growth, and
 synchronization are included when applicable. Exact outputs, row counts, source
 values, and final sample lengths are checked outside timing.
 
+Copy the current driver for the baseline build:
+
+```sh
+cp benchmark/resource_execution_benchmark.mojo /tmp/resource_base.mojo
+```
+
+If the base accepts `on_device: Bool` rather than `backend: ExecutionBackend`,
+adapt only that copy before compiling it:
+
+```sh
+python - <<'PYCODE'
+from pathlib import Path
+import re
+
+path = Path("/tmp/resource_base.mojo")
+source = path.read_text().replace("    ExecutionBackend,\n", "")
+source, count = re.subn(
+    r"backend=\(\s*ExecutionBackend\.DEVICE if device else ExecutionBackend\.HOST\s*\)",
+    "on_device=device",
+    source,
+)
+assert count == 4, "Review the driver before adapting a changed call matrix"
+assert "ExecutionBackend" not in source.split('from std.time', 1)[1]
+path.write_text(source)
+PYCODE
+```
+
+This maps the same compile-time `device` boolean to the older keyword; kernels,
+row counts, iterations, warmup, validation, and timing boundaries stay identical.
+Do not substitute a historical driver with different workloads. Device comparisons
+require a working accelerator on both sides; an older host fallback is not a
+device measurement. For a base using `on_gpu`, use that keyword instead.
+
 Build optimized binaries once without debug information, sanitizers, or tracing:
 
 ```sh
-pixi run mojo build -I /path/to/base/src benchmark/resource_execution_benchmark.mojo -o /tmp/resource-base
+pixi run mojo build -I /path/to/base/src /tmp/resource_base.mojo -o /tmp/resource-base
 pixi run mojo build -I src benchmark/resource_execution_benchmark.mojo -o /tmp/resource-current
 pixi run mojo build -I src benchmark/resource_adapter_benchmark.mojo -o /tmp/resource-adapters
 ```
@@ -563,3 +597,12 @@ existing compiler caches and no competing builds. These are recorded build costs
 not comparable cold-compilation measurements.
 Linux resource timings and cold compilation remain unmeasured. These focused
 manual cases do not enlarge the normal PR performance matrix.
+
+## Storage range migration
+
+The [#170 comparison](../../design/research/entity-range-migration.md) uses the
+current selection and migration drivers against PR212, including the 100k-row
+ordinary host path and 65,536-row whole-archetype batches. Concurrent sibling
+builds overlapped every sample, so these results support no controlled
+regression or speedup claim. Query/range metadata sharing is checked directly
+in the cursor regression tests.
