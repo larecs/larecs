@@ -14,6 +14,8 @@ from .component import ComponentType, ComponentManager
 from .debug_utils import debug_warn
 from .gpu_launch import max_resident_blocks
 from .resource import ResourceType, Resources
+from .resource_adapter import _TransferFrame
+from .resource_representation import _plain_device_value
 
 
 struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
@@ -353,6 +355,80 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
                 data.unsafe_ptr().unsafe_bitcast[UInt8]()
             )
 
+    def stage_from_host[
+        mut: Bool, origin: Origin[mut=mut], //, T: ComponentType
+    ](
+        mut self,
+        frame: _TransferFrame,
+        data: Span[T, origin],
+        *,
+        offset: Int = 0,
+    ) raises:
+        """Snapshots a host column range into native staging for queued upload.
+
+        Parameters:
+            mut: Source span mutability.
+            origin: Source borrow origin.
+            T: Component type.
+
+        Args:
+            frame: Invocation staging owner.
+            data: Source component range.
+            offset: First destination row.
+
+        Raises:
+            Error: If allocation or transfer fails.
+        """
+        if len(data) == 0:
+            return
+        self.ensure_column[T](len(data) + offset)
+        comptime id = Self.component_manager.get_id[T]()
+        frame.upload(
+            self._columns[id]
+            .unsafe_value()
+            .create_sub_buffer[DType.uint8](
+                offset * size_of[T](), len(data) * size_of[T]()
+            ),
+            data.unsafe_ptr().unsafe_bitcast[UInt8]().unsafe_mut_cast[False](),
+        )
+
+    def stage_to_host[
+        T: ComponentType
+    ](
+        self,
+        mut frame: _TransferFrame,
+        column_ptr: Pointer[T, MutUntrackedOrigin],
+        *,
+        offset: Int = 0,
+        length: Int = -1,
+    ) raises:
+        """Stages a device column range without publishing partial downloads.
+
+        Parameters:
+            T: Component type.
+
+        Args:
+            frame: Invocation staging and publication owner.
+            column_ptr: Destination host component range.
+            offset: First device source row.
+            length: Row count, or -1 for the remaining column.
+
+        Raises:
+            Error: If the range is invalid or the transfer fails.
+        """
+        comptime id = Self.component_manager.get_id[T]()
+        var count = length if length >= 0 else self._length - offset
+        if offset < 0 or count < 0 or count > self._length - offset:
+            raise Error("Invalid staged component download range")
+        frame.download(
+            self._columns[id]
+            .unsafe_value()
+            .create_sub_buffer[DType.uint8](
+                offset * size_of[T](), count * size_of[T]()
+            ),
+            column_ptr.unsafe_bitcast[UInt8](),
+        )
+
     def get_device_ptr[
         T: ComponentType
     ](mut self) raises -> DevicePointer[
@@ -447,6 +523,9 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
                 "DeviceResourceStorage.upload[T: ResourceType](ref value: T)"
             )
         ):
+            comptime assert _plain_device_value[
+                T
+            ](), "Device resources require pointer-free trivial plain values"
             comptime id = Self.resources.index_of[T]()
             comptime assert id != -1, "T is not part of `resources`"
 
@@ -480,6 +559,9 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
                 "DeviceResourceStorage.download[T: ResourceType](mut value: T)"
             )
         ):
+            comptime assert _plain_device_value[
+                T
+            ](), "Device resources require pointer-free trivial plain values"
             comptime id = Self.resources.index_of[T]()
             comptime assert id != -1, "T is not part of `resources`"
 
@@ -510,6 +592,9 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
                 "DeviceResourceStorage.get_device_ptr[T: ResourceType]()"
             )
         ):
+            comptime assert _plain_device_value[
+                T
+            ](), "Device resources require pointer-free trivial plain values"
             comptime id = Self.resources.index_of[T]()
             comptime assert id != -1, "T is not part of `resources`"
 
