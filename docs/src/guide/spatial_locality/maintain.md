@@ -13,6 +13,8 @@ values stay the same. It does not find exact neighbors.
 Start with [Update entities with systems and kernels](../../systems_kernels)
 and [Create and remove entities in batches](../../structural_changes).
 
+{{< legacy-anchor "declare-eligible-classifier-inputs" >}}
+
 ## Classify particles by grid cell
 
 The stage uses the [portable particle
@@ -35,6 +37,8 @@ width 1 lies in cell -1. {{< api morton_key_3d >}} combines the cell coordinates
 into one key; the planar simulation leaves z at 0. Both raise for coordinates
 outside their documented bounds instead of clamping.
 
+{{< legacy-anchor "run-movement-before-explicit-maintenance" >}}
+
 ## Maintain placement after movement
 
 Movement and maintenance stay separate steps:
@@ -55,6 +59,8 @@ selection first, because [empty queries and selections hold
 locks](../../../reference/compatibility#empty-queries-and-selections-hold-structural-locks).
 Discard component references before maintenance, and look components up again by
 entity handle afterwards.
+
+{{< legacy-anchor "compare-row-ordering-with-growable-partitions" >}}
 
 ## Choose a placement policy
 
@@ -77,6 +83,8 @@ and the entity ID of a row move together. In partition mode, a new particle, or
 one whose components changed, waits in a *staging store*: a physical store for
 rows that the next maintenance pass will place. Queries and kernels still visit
 staged rows.
+
+{{< legacy-anchor "select-exact-maintained-cluster-membership" >}}
 
 ## Select one cluster
 
@@ -109,6 +117,8 @@ on the host.
 
 ## Variations
 
+{{< legacy-anchor "track-dirty-inputs-and-choose-a-cadence" >}}
+
 ### Choose a maintenance cadence
 
 A pass with no dirty particles returns without touching rows. Otherwise it
@@ -132,6 +142,8 @@ call `world.storage.mark_spatial_dirty(entity)` for each changed particle, or
 
 Device movement marks the same particles dirty when it copies `Position` back.
 Maintenance and classification still run on the host afterwards.
+
+{{< legacy-anchor "execute-and-troubleshoot" >}}
 
 ## Failures and limits
 

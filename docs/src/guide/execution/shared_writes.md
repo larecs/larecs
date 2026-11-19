@@ -66,6 +66,10 @@ threads' unfinished results, as the [capture
 count](../captures#declare-explicit-slots-for-a-thin-kernel) does with global
 thread zero. A thread-zero branch is not a barrier.
 
+{{< legacy-anchor "match-ordering-and-backend-support" >}}
+
+{{< legacy-anchor "use-standalone-host-primitives-when-you-own-the-storage" >}}
+
 ### Update data you own with atomic or guarded values
 
 These primitives work on storage you own, outside the world:
@@ -87,6 +91,8 @@ A false `is_acquired` means *Busy*: the single attempt met a conflicting guard,
 a state that changed during the attempt, or the maximum reader count. Larecs
 does not retry. Record the unfinished work for a later pass, or skip the update
 only if your application can lose it.
+
+{{< legacy-anchor "run-and-troubleshoot" >}}
 
 ## Failures and limits
 

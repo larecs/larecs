@@ -13,6 +13,10 @@ Written outputs still copy back to the host after every call.
 
 Start with [Execute on a device](../device).
 
+{{< legacy-anchor "enable-reuse-and-invalidate-escaped-writes" >}}
+
+{{< legacy-anchor "keep-the-kernel-independent-of-transfer-policy" >}}
+
 ## Enable reuse for a world
 
 The stage uses the [portable particle model](../#the-portable-particle-model)
@@ -51,6 +55,8 @@ Larecs keeps device allocations between calls whether or not reuse is enabled;
 a kept allocation says nothing about whether its bytes are current. With reuse
 enabled, a read-only [portable resource](../portable_resources) whose source is
 current skips `prepare_device` and reuses its view.
+
+{{< legacy-anchor "know-which-operations-advance-revisions" >}}
 
 ## Invalidate a write Larecs cannot see
 
@@ -92,6 +98,8 @@ at values. They keep device copies current.
 
 `world.reuse_device_copies(False)` discards the reuse records; the next device
 call uploads every input again. Calls stay synchronous either way.
+
+{{< legacy-anchor "troubleshooting" >}}
 
 ## Failures and limits
 

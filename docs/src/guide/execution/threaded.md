@@ -13,6 +13,10 @@ registration order. Threaded execution is
 
 Start with [Update entities with systems and kernels](../../systems_kernels).
 
+{{< legacy-anchor "configure-and-check-the-result" >}}
+
+{{< legacy-anchor "keep-inputs-portable-and-work-independent" >}}
+
 ## Move particles in threaded chunks
 
 The stage uses the [portable particle model](../#the-portable-particle-model)
@@ -52,6 +56,8 @@ pixi run mojo run -I src examples/particles/threaded.mojo
 The program prints a PASS line when all three runs move every particle to
 `(0.5, 1.0)`.
 
+{{< legacy-anchor "respect-chunk-boundaries-and-lifetimes" >}}
+
 ## How Larecs splits the rows
 
 Larecs splits each matching physical store into *kernel chunks*: contiguous
@@ -89,6 +95,8 @@ splits only the selection's rows.
 Ordinary resources in a threaded call must be read-only values without
 pointers or owned memory. To read a list or buffer, wrap it in a
 [portable resource](../portable_resources).
+
+{{< legacy-anchor "troubleshooting" >}}
 
 ## Failures and limits
 
