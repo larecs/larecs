@@ -33,7 +33,7 @@ Larecs is a performance-critical Entity Component System library written in Mojo
   consolidate refinements on the branch before opening the PR.
 - Rebuild `nightly` only when the developer asks, with
   `scripts/rebuild_nightly.sh`; [CONTRIBUTING.md](CONTRIBUTING.md) and
-  `docs/src/guide/development_workflow.md` describe the full lifecycle.
+  `docs/development_workflow.md` describe the full lifecycle.
 - If tooling already started you on its own branch, such as a managed worktree,
   create the linked branch with `gh issue develop` without `--checkout`, then
   run `git fetch origin <branch>` and `git switch <branch>` before your first
@@ -84,7 +84,7 @@ Use the `pr-description` skill to write or revise a description; `.github/pull_r
   and use the `mojo-syntax` skill.
 - When changing storage, queries, classification, row movement, or execution costs,
   add or update representative benchmarks. Read the
-  [benchmark methodology](docs/src/guide/benchmarks.md#benchmark-methodology) and
+  [benchmark methodology](docs/benchmarks/README.md#benchmark-methodology) and
   relevant workload sections before changing benchmarks or reporting performance.
 
 ## Issue Writing
@@ -108,4 +108,4 @@ Use the `pr-description` skill to write or revise a description; `.github/pull_r
 - Format code: `pixi run mojo format src test benchmark`
 - Generate API docs: `pixi run mojo doc -o docs/src/larecs.json src/larecs`
 - Benchmark commands, baseline selection, and regression thresholds:
-  [benchmark guide](docs/src/guide/benchmarks.md).
+  [benchmark guide](docs/benchmarks/README.md).

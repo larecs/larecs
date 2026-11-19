@@ -18,5 +18,8 @@ extend the same particles with
 The guides explain each task in depth:
 [entities and components](guide/data_model),
 [systems and kernels](guide/systems_kernels),
-[batch creation and removal](guide/structural_changes), and
-[resources](guide/shared_resources). The [API reference](reference) covers imports and exact contracts.
+[batch creation and removal](guide/structural_changes),
+[resources](guide/shared_resources),
+[threaded and device execution](guide/execution_backends), and
+[spatial locality](guide/spatial_locality). The [API reference](larecs) covers
+every declaration.

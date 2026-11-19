@@ -42,9 +42,9 @@ def check_browser(public=None, base=None):
                 if message.type in {"error", "warning"} else None)
         for width in (360, 768, 1440):
             page.set_viewport_size({"width": width, "height": 900})
-            for route in ("start/first_simulation/", "reference/execution/",
+            for route in ("start/first_simulation/", "guide/execution_backends/",
                           "larecs/system/SystemContext/", "larecs/resource_adapter/ResourceAdapter/",
-                          "inside/architecture/storage/", "inside/architecture/execution/"):
+                          "guide/spatial_locality/"):
                 page.goto(urljoin(site.base, route), wait_until="networkidle")
                 page.locator("main").wait_for()
                 page.locator("details").evaluate_all("items => items.forEach(item => item.open = true)")
@@ -83,11 +83,11 @@ def check_browser(public=None, base=None):
         page.set_viewport_size({"width": 360, "height": 900})
         page.goto(site.base, wait_until="networkidle")
         page.locator(".sl-menu-button").click()
-        page.get_by_text("Inside Larecs", exact=True).first.wait_for(state="visible")
-        page.get_by_role("link", name="Reference", exact=True).first.wait_for(state="visible")
+        page.get_by_text("API", exact=True).first.wait_for(state="visible")
+        page.get_by_role("link", name="Run kernels on threads and devices", exact=True).first.wait_for(state="visible")
 
         page.set_viewport_size({"width": 1440, "height": 900})
-        page.goto(urljoin(site.base, "reference/"), wait_until="networkidle")
+        page.goto(urljoin(site.base, "guide/"), wait_until="networkidle")
         page.locator('button[data-open-modal]').click()
         search = page.locator('.pagefind-ui__search-input')
         search.fill("SystemContext")
@@ -113,7 +113,7 @@ def check_browser(public=None, base=None):
                 raise ValueError(f"Redirect loses an incoming anchor: {old}#{fragment}")
 
         # Inspect the same fixed-palette SVG on a light canvas in both themes.
-        page.goto(urljoin(site.base, "inside/architecture/storage/"), wait_until="networkidle")
+        page.goto(urljoin(site.base, "guide/execution_backends/"), wait_until="networkidle")
         for dark in (False, True):
             page.evaluate("dark => document.documentElement.dataset.theme = dark ? 'dark' : 'light'", dark)
             image = page.locator("main img").first

@@ -85,7 +85,7 @@ policy/workload change rather than silently lowering thresholds.
 
 ## Evidence
 
-- [Benchmark guide](../../src/guide/benchmarks.md) defines commands and boundaries.
+- [Benchmark guide](../../benchmarks/README.md) defines commands and boundaries.
 - [Coordinator](../../../scripts/check_performance.py),
   [core driver](../../../benchmark/core_smoke.mojo), and
   [spatial driver](../../../benchmark/spatial_smoke.mojo).

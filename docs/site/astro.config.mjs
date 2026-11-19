@@ -21,17 +21,9 @@ export default defineConfig({
       { label: 'Guides', items: [
         'guide', 'guide/data_model', 'guide/systems_kernels',
         'guide/single_entity', 'guide/structural_changes', 'guide/shared_resources',
-        { label: 'Execution', items: ['guide/execution', { autogenerate: { directory: 'guide/execution' } }] },
-        { label: 'Spatial locality', items: ['guide/spatial_locality', { autogenerate: { directory: 'guide/spatial_locality' } }] },
-        { label: 'Performance', items: ['guide/performance', { autogenerate: { directory: 'guide/performance' } }] },
+        'guide/execution_backends', 'guide/spatial_locality',
       ] },
-      { label: 'Reference', items: ['reference', { autogenerate: { directory: 'reference' } }] },
       { label: 'API', items: ['larecs', { autogenerate: { directory: 'larecs', collapsed: true } }] },
-      { label: 'Inside Larecs', collapsed: true, items: [
-        'inside',
-        { label: 'Architecture', items: ['inside/architecture', { autogenerate: { directory: 'inside/architecture' } }] },
-        { label: 'Development', items: ['inside/development', { autogenerate: { directory: 'inside/development' } }] },
-      ] },
     ],
   }), larecsDocumentation()],
 });

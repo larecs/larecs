@@ -73,6 +73,16 @@ explanation, navigation, or precision.
 
 ## Proposed navigation and page content
 
+> **Superseded scope.** The published site now keeps only Start, seven Guides,
+> and the generated API. Guides cover the data model, systems and kernels, single
+> entities, structural changes, shared resources (with portable resources and
+> shared writes), execution backends (threaded, device, captures, and copy
+> reuse), and spatial locality; each states its own limits. The curated
+> Reference, Architecture, Development, and performance pages below were not
+> kept. Benchmark methodology, regression checks, measurement reports, the
+> development workflow, and the documentation build live as repository
+> Markdown under `docs/`.
+
 Use one movement simulation with `Position`, `Velocity.dx/dy`, a `Time.delta`
 resource, and a `Move` system. Start with a sequential host run whose final
 position is asserted. Add selection, device, and threading variants without

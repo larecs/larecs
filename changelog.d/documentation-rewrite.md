@@ -1,10 +1,11 @@
 ### Changed
 
-- Rebuild documentation around runnable particle simulations, focused task guides,
-  a compiler-derived API reference, and architecture and development material.
-  Load source content directly through Astro and Starlight, preserve legacy URLs
-  and preview deployments, and require complete source doctest execution before
-  publishing.
+- Rebuild documentation around runnable particle simulations, seven task guides,
+  and a compiler-derived API reference. Load source content directly through
+  Astro and Starlight, keep preview deployments, and require complete source
+  doctest execution before publishing. Maintainer workflow, benchmark
+  methodology, and measurement reports move out of the published site into
+  `docs/`.
   ([#219](https://github.com/larecs/larecs/pull/219),
   [#232](https://github.com/larecs/larecs/pull/232),
   [#236](https://github.com/larecs/larecs/pull/236),

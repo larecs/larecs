@@ -59,6 +59,3 @@ components. Keep the handle to find the entity again, for example with
   simulation work.
 - [Create and remove entities in batches](../structural_changes) for creating
   many entities at once.
-
-[Archetypes, columns, and locations](../../inside/architecture/storage) explains
-how logical composition maps to physical stores and typed component lifecycles.

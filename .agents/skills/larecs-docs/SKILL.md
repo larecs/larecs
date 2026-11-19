@@ -27,15 +27,18 @@ before adding or moving a page.
 
 | Section | Kind | Voice |
 | --- | --- | --- |
-| Start | Overview, install, first simulation (tutorial) | "you" |
+| Start | Overview, install, tutorials | "you" |
 | Guides | Task-oriented how-to pages | "you" |
-| Reference | Curated contracts plus generated API pages | "you", or neutral |
-| Inside Larecs | Architecture, design rationale, development, benchmarks | "we" |
+| API | Generated from `mojo doc` | "you", or neutral |
 
-Users read Start, Guides, and Reference without needing Inside Larecs; those
-pages link inward for rationale. Never label a page or section by audience.
-Inside Larecs explains accepted decisions from `docs/design/` and links to
-them; it does not restate the decision records.
+The site has seven guides: data model, systems and kernels, single entity,
+structural changes, shared resources (including portable resources and shared
+writes), execution backends (threaded, device, captures, and copy reuse), and
+spatial locality. Extend one of them before adding a page. Each guide states the
+limits of its feature beside it; there are no curated reference or architecture
+pages. Never label a page or section by audience. Maintainer material lives
+outside the site: `docs/development_workflow.md`, `docs/benchmarks/`, and
+`docs/documentation.md`.
 
 ## Running example: particles
 
@@ -103,7 +106,7 @@ edits unless the finding requires changing them.
   per page. Link other pages by their built-site path and check heading anchors
   against the generated IDs. Methods with overloads get `#name-0`, `#name-1`.
 - Published pages cannot reach `docs/design/*.md` by relative path; link the
-  Inside Larecs page or the GitHub file URL.
+  GitHub file URL.
 - Terms follow `GLOSSARY.md`; add new terms there in the same change.
 - Figures are Typst/CeTZ sources in `docs/figures/` (adapted from the master
   thesis with current names such as physical store, partition, selection,
@@ -119,7 +122,7 @@ drifted before: component and resource eligibility per execution target,
 kernel invocation granularity (per physical store, selected range, or threaded
 chunk), device transfers and copy reuse, synchronization bindings (standalone
 primitives only), exports from the `larecs` root, and performance claims
-(link the `docs/src/inside/development/reports/` measurements with their environment).
+(link the `docs/benchmarks/reports/` measurements with their environment).
 
 ## API docstrings
 

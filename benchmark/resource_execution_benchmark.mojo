@@ -1,7 +1,7 @@
 """Fixed complete resource invocations with matched base/current workloads.
 
 Bases predating ExecutionBackend need the call-spelling adaptation documented
-in docs/src/guide/benchmarks.md; keep all workload and timing code identical.
+in docs/benchmarks/reports/resources.md; keep all workload and timing code identical.
 Construction and final checks are excluded; transfers and synchronization are
 included.
 """

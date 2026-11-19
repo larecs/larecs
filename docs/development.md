@@ -1,7 +1,7 @@
 # Development reference
 
 Read the [design index](design/README.md) before changing ECS semantics and the
-[benchmark guide](src/inside/development/benchmarks.md#benchmark-methodology) before changing
+[benchmark guide](benchmarks/README.md#benchmark-methodology) before changing
 performance-sensitive code or benchmark checks.
 
 ## Coding standards
@@ -139,7 +139,7 @@ figure export comparisons, site-wide links and anchors, export/source checks,
 preview/browser fixtures, and clean reproducibility checks. `pixi run build-docs`
 is the shorter generation and content-check cycle.
 
-[Build documentation and figures](src/inside/development/documentation.md)
+[Build documentation and figures](documentation.md)
 records supported environments, browser setup, the strict-warning transition,
 retired doctest exclusions, and source/generated boundaries. Keep the package
 initializer's `Exports:` list aligned with imports. Document `out` results under

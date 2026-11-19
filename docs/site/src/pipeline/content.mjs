@@ -123,7 +123,7 @@ export class Documentation {
       if (kind === 'api') return `[${args[1] || args[0]}](${base}${this.link(args[0])})`;
       if (kind === 'source') return `[Source](https://github.com/larecs/larecs/blob/${this.api.revision}/src/larecs/${args[0]})`;
       if (kind === 'repo') return `[${args[1] || args[0]}](https://github.com/larecs/larecs/blob/${this.api.revision}/${args[0]})`;
-      if (kind === 'api-status') return `Development reference · Larecs ${this.api.version} · revision \`${this.api.revision.slice(0, 12)}\`. [Compatibility and status](${base}reference/compatibility/).`;
+      if (kind === 'api-status') return `Development reference · Larecs ${this.api.version} · revision \`${this.api.revision.slice(0, 12)}\`. Threaded and device execution are experimental.`;
       if (kind !== 'example') throw new Error(`Unknown shortcode: ${kind}`);
       const attrs = Object.fromEntries(args.map((arg) => { const at = arg.indexOf('='); return [arg.slice(0, at), arg.slice(at + 1)]; }));
       const path = resolve(root, 'examples', attrs.file);

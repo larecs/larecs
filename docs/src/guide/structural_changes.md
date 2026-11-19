@@ -63,7 +63,7 @@ Selections are movable but not copyable.
 ## Empty and invalid batches
 
 - `add_entities` with `count=0` returns an empty selection that
-  [still holds a lock](../../reference/compatibility#empty-queries-and-selections-hold-structural-locks).
+  still holds a lock.
 - Running a kernel on an empty selection never runs the kernel body.
 - A negative `count` raises.
 
@@ -89,6 +89,3 @@ selection, and has no `run` method. Inside systems, use
   compares selections with queries and entity handles.
 - [Change one entity's components](../single_entity) shows the
   single-entity storage operations.
-
-[Structural transitions](../../inside/architecture/storage#structural-transitions-and-identity)
-traces typed movement, swap-removal, and entity-location repair.

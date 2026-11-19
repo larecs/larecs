@@ -5,9 +5,8 @@ Larecs was inspired by the Go ECS [Arche](https://github.com/mlange-42/arche);
 its storage and execution architecture has since diverged.
 Larecs 1.0 is currently in beta, so public APIs may still change before the
 stable 1.0.0 release. After that release, public APIs follow semantic
-versioning unless they are explicitly marked experimental. See
-[compatibility and status](https://larecs.github.io/larecs/dev/reference/compatibility/)
-for the experimental features.
+versioning unless they are explicitly marked experimental: threaded host
+execution, device execution, mutable resource adapters, and device-copy reuse.
 
 ## Features
 
@@ -133,7 +132,7 @@ such values qualify without declaring `TrivialRegisterPassable`. A resource
 that owns data, such as a `List`, can still reach threaded and device kernels
 through an adapter like `BufferResource`, which exposes a read-only view. A
 kernel that accesses an ineligible type fails to compile. See the
-[portable resources guide](https://larecs.github.io/larecs/dev/guide/execution/portable_resources/)
+[resources guide](https://larecs.github.io/larecs/dev/guide/shared_resources/#read-owning-data-on-any-target)
 for details.
 
 Heap-owning components are a newer and less exercised path than plain-value

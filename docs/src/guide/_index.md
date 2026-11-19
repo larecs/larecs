@@ -10,16 +10,14 @@ open = true
 Complete [Your first simulation](../start/first_simulation) before choosing a
 task. Each guide extends the particle simulation with one feature.
 
-| Group | Tasks |
+| Guide | Tasks |
 | --- | --- |
-| Data model | [Model entities and components](data_model). |
-| Systems and kernels | [Declare kernel access, order systems, and inspect entities](systems_kernels). |
-| Single entities | [Read, change, add, and remove one entity's components](single_entity). |
-| Structural changes | [Create and change batches with scoped selections](structural_changes). |
-| Resources | [Share values with resources](shared_resources). |
-| [Execution](execution) | Select host/device, pass captures, bind portable resources, run host chunks, reuse device copies, and coordinate shared output. |
-| [Spatial locality](spatial_locality) | Classify particles, maintain placement explicitly, and select exact clusters. |
-| [Performance](performance) | Validate work, profile dominant systems, and measure complete steps. |
+| [Model data with entities and components](data_model) | Define components, declare the world, and keep entity handles. |
+| [Update entities with systems and kernels](systems_kernels) | Declare kernel access, order systems, and inspect entities. |
+| [Change one entity's components](single_entity) | Read, change, add, and remove one entity's components. |
+| [Create and remove entities in batches](structural_changes) | Create and change batches with scoped selections. |
+| [Share values with resources](shared_resources) | Share values, read owning data on any target, and combine results from many invocations. |
+| [Run kernels on threads and devices](execution_backends) | Run threaded host chunks or device launches, pass local values, and reuse device copies. |
+| [Maintain particle locality](spatial_locality) | Classify particles, maintain placement, and select exact clusters. |
 
-Use [compatibility and status](../reference/compatibility) for experimental limits
-and [errors and migration](../reference/errors) for diagnostics.
+The [API reference](../larecs) documents every declaration.
