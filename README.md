@@ -4,7 +4,7 @@ Larecs🌲 is a performance-oriented archetype-based ECS for [Mojo](https://www.
 Its architecture is based on the Go ECS [Arche](https://github.com/mlange-42/arche).
 Larecs 1.0 is currently in beta, so public APIs may still change before the
 stable 1.0.0 release. After that release, public APIs follow semantic
-versioning unless they are explicitly marked experimental. GPU execution is
+versioning unless they are explicitly marked experimental. Device execution is
 currently such an experimental API.
 
 ## Features
@@ -13,14 +13,14 @@ currently such an experimental API.
 - High performance due to archetypes and Mojo's compile-time programming
 - Compile-time checks thanks to usage of parameters
 - Native support for [resources](https://mlange-42.github.io/arche/guide/resources/) and scheduling
-- Systems can run their component-processing kernels on the CPU or (experimentally) on a GPU accelerator via `SystemContext.run(..., on_gpu=True)`
+- Systems can run their component-processing kernels on the host or (experimentally) on an accelerator device via `SystemContext.run(..., on_device=True)`
 - Tested and benchmarked
 - More features coming soon...
 
 Larecs🌲 depends on [Tracy](https://github.com/wolfpld/tracy) via the
 [Mojo Tracy bindings](https://github.com/moseschmiedel/mojo-tracy) for its
 built-in instrumentation (see [Profiling with Tracy](#profiling-with-tracy)
-below) and on [MAX](https://www.modular.com/max) for GPU execution support;
+below) and on [MAX](https://www.modular.com/max) for device execution support;
 both are pulled in automatically by Pixi. Beyond Mojo, MAX, and Tracy,
 Larecs🌲 has no other external dependencies.
 
@@ -213,20 +213,20 @@ The result should look something like this:
 
 ## Limitations
 
-### Component type requirements differ between host and GPU execution
+### Component type requirements differ between host and device execution
 
-Any `Copyable & Deinitable` struct can be used as a component for CPU
+Any `Copyable & Deinitable` struct can be used as a component for host
 (host-only) execution -- this is no longer restricted to trivial/POD types.
 
-Components accessed by a system that runs its kernel on a GPU
-(`SystemContext.run(..., on_gpu=True)`) are subject to a stricter
-constraint: GPU transfer moves component columns between host and device
+Components accessed by a system that runs its kernel on a device
+(`SystemContext.run(..., on_device=True)`) are subject to a stricter
+constraint: device transfer moves component columns between host and device
 buffers via a raw byte copy that never runs a type's copy constructor or
 destructor, so such components must additionally be
 `TrivialRegisterPassable` (bitwise-copyable, with no heap-allocated state
 and no custom copy/move/destroy logic -- the same requirement applies to
-resources read by a GPU kernel). Using a type with heap-allocated memory in
-a component accessed on the GPU will corrupt or leak that memory.
+resources read by a device kernel). Using a type with heap-allocated memory in
+a component accessed on the device will corrupt or leak that memory.
 
 Heap-allocated (non-trivial) components for host-only use are permitted by
 the type system, but are a comparatively new and lightly-exercised path

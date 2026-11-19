@@ -78,9 +78,9 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                 # it rather than attempting then immediately catching a
                 # doomed call: only `self.storage` (host storage) gets built,
                 # `self._device_storage` stays empty, and
-                # `SystemContext.run(..., on_gpu=True)` already compiles out
+                # `SystemContext.run(..., on_device=True)` already compiles out
                 # its entire device path under this same `has_accelerator()`
-                # check (see `system.mojo`), so no GPU method is reachable
+                # check (see `system.mojo`), so no device method is reachable
                 # from a world built this way.
                 self._device_storage = None
             else:
@@ -93,20 +93,20 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                     # routine, expected condition even on a build that
                     # supports GPU compilation (most hosts don't have one
                     # plugged in), so this constructor -- unlike
-                    # `SystemContext.run(..., on_gpu=True)`, which does
+                    # `SystemContext.run(..., on_device=True)`, which does
                     # raise a clear error when it actually needs a device --
                     # must not fail outright here just because a device
                     # context could not be created. But it must not stay
                     # silent either: the only sign of this failure from
                     # here on is `self._device_storage` being empty, and
-                    # the first thing a caller who *did* expect a GPU sees
+                    # the first thing a caller who *did* expect a device sees
                     # is an unrelated-looking error much later, at the
-                    # first `on_gpu=True` run. Surface the real cause now,
+                    # first `on_device=True` run. Surface the real cause now,
                     # in debug builds, at the point it actually occurred.
                     self._device_storage = None
                     debug_warn(
-                        t"World.__init__: GPU device storage did not"
-                        t" initialize ({String(e)}); on_gpu=True system"
+                        t"World.__init__: device storage did not"
+                        t" initialize ({String(e)}); on_device=True system"
                         t" runs will raise until a working accelerator is"
                         t" available."
                     )
