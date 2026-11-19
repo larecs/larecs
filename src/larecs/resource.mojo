@@ -11,6 +11,7 @@ from .resource_adapter import (
     DevicePassableResource,
     ResourceDeviceCache,
     _TransferFrame,
+    _TransferStats,
 )
 from std.reflection import reflect
 from std.sys import size_of
@@ -178,17 +179,40 @@ struct Resources[
 
 
 @fieldwise_init
+struct _ResourceEntry(Copyable, Movable):
+    """One stored source and the revision of its last host mutation."""
+
+    var box: UnsafeBox
+    var revision: UInt64
+
+
+@fieldwise_init
 struct ResourceStorage(Copyable, Movable, Sized):
-    """Manages resources."""
+    """Manages resources.
+
+    Every resource carries a revision that conservatively advances on each
+    Larecs access that may mutate it (decision 0021). Worlds that opt into
+    device copy reuse skip uploading resources whose device copy was
+    transferred at the current revision. Mutations through references
+    obtained before a later Larecs call, or through raw pointers, are not
+    detected: re-obtain references after a run, or call
+    `invalidate_device[T]()`.
+    """
 
     comptime IdType = StringSlice[ImmStaticOrigin]
     """The type of the internal type IDs."""
 
-    var _storage: Dict[Self.IdType, UnsafeBox]
+    var _storage: Dict[Self.IdType, _ResourceEntry]
     var _bindings: Set[Self.IdType]
     var _leases: Set[Self.IdType]
     var _device_cache: Dict[Self.IdType, ResourceDeviceCache]
     var _poisoned: Bool
+    var _clock: UInt64
+    """Last issued revision; values are never reused by this storage."""
+    var _device_revisions: Dict[Self.IdType, UInt64]
+    """Revision at which each device copy matched the host source."""
+    var _reuse_device: Bool
+    """Whether device runs may skip uploads of unchanged resources."""
 
     def __init__(out self, *, copy: Self):
         """Copies host sources and type metadata, resetting device allocations.
@@ -203,6 +227,9 @@ struct ResourceStorage(Copyable, Movable, Sized):
         self._leases = Set[Self.IdType]()
         self._device_cache = Dict[Self.IdType, ResourceDeviceCache]()
         self._poisoned = False
+        self._clock = copy._clock
+        self._device_revisions = Dict[Self.IdType, UInt64]()
+        self._reuse_device = copy._reuse_device
 
     def __init__(out self, *, deinit move: Self):
         """Moves idle sources and their context-local caches together.
@@ -217,6 +244,9 @@ struct ResourceStorage(Copyable, Movable, Sized):
         self._leases = move._leases^
         self._device_cache = move._device_cache^
         self._poisoned = move._poisoned
+        self._clock = move._clock
+        self._device_revisions = move._device_revisions^
+        self._reuse_device = move._reuse_device
 
     def __deinit__(deinit self):
         """Rejects destruction or table replacement while sources are leased."""
@@ -251,11 +281,14 @@ struct ResourceStorage(Copyable, Movable, Sized):
         Constructs an empty resource container.
         """
         with Zone(function_name="ResourceStorage.__init__()"):
-            self._storage = Dict[Self.IdType, UnsafeBox]()
+            self._storage = Dict[Self.IdType, _ResourceEntry]()
             self._bindings = Set[Self.IdType]()
             self._leases = Set[Self.IdType]()
             self._device_cache = Dict[Self.IdType, ResourceDeviceCache]()
             self._poisoned = False
+            self._clock = 0
+            self._device_revisions = Dict[Self.IdType, UInt64]()
+            self._reuse_device = False
 
     @always_inline("nodebug")
     def __len__(self) -> Int:
@@ -322,7 +355,9 @@ struct ResourceStorage(Copyable, Movable, Sized):
                 comptime assert conforms_to(T, DevicePassableResource)
                 _validate_adapter_type[T]()
                 self._bindings.add(id)
-            self._storage[id] = UnsafeBox(resource^)
+            self._storage[id] = _ResourceEntry(
+                UnsafeBox(resource^), self._next_revision()
+            )
 
     def set[
         *Ts: ResourceType, add_if_not_found: Bool = False
@@ -393,7 +428,9 @@ struct ResourceStorage(Copyable, Movable, Sized):
             )
         ):
             try:
-                self._storage[id].unsafe_get[type_of(resource)]() = resource^
+                ref entry = self._storage[id]
+                entry.box.unsafe_get[type_of(resource)]() = resource^
+                entry.revision = self._next_revision()
             except:
                 comptime if add_if_not_found:
                     self._add(id, resource^)
@@ -434,6 +471,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
                 self._bindings.discard(id)
                 if id in self._device_cache:
                     _ = self._device_cache.pop(id)
+                self._drop_device_record(id)
             except DictKeyError:
                 raise Error(t"The resource `{id}` does not exist.")
 
@@ -458,9 +496,136 @@ struct ResourceStorage(Copyable, Movable, Sized):
             the ownership relation between the resource container and its
             separately allocated resource values. Tying this reference to
             the storage origin is not a suitable interim replacement.
+
+            Through mutable storage, every call counts as a mutation and
+            invalidates the resource's device copy, even if the reference is
+            only read. Use ``read`` for reads between device runs. Writes
+            through a reference kept across a later run are not detected;
+            re-obtain it or call ``invalidate_device[T]()``.
+        """
+        comptime id = reflect[T].name()
+        self._check(id)
+        comptime if origin_of(self).mut:
+            _ = Pointer(to=self).unsafe_mut_cast[True]()[]._touch(id)
+        return self._get_bound[T]()
+
+    @always_inline
+    def read[T: ResourceType](self) raises -> ref[UnsafeAnyOrigin[mut=False]] T:
+        """Gets an immutable resource reference without counting a mutation.
+
+        Unlike ``get`` through mutable storage, this keeps an unchanged
+        resource's device copy reusable in worlds that opted into
+        ``reuse_device_copies``.
+
+        Parameters:
+            T: The type of the resource to read.
+
+        Raises:
+            Error: If the resource is missing, leased, or storage is unusable.
+
+        Returns:
+            An immutable reference with ``UnsafeAnyOrigin``; see ``get``.
         """
         self._check(reflect[T].name())
         return self._get_bound[T]()
+
+    def invalidate_device[T: ResourceType](mut self):
+        """Marks one resource's device copy stale.
+
+        Call this after mutating a resource through a reference obtained
+        before a later Larecs call, or through a raw pointer, in a world that
+        reuses device copies. The next device run uploads the resource again.
+
+        Parameters:
+            T: The resource type whose device copy is invalidated.
+        """
+        self._drop_device_record(reflect[T].name())
+
+    def _invalidate_device_copies(mut self):
+        """Marks every resource's device copy stale."""
+        self._device_revisions.clear()
+
+    def _set_reuse_device(mut self, enabled: Bool):
+        """Enables or disables skipping unchanged resource uploads.
+
+        Disabling discards every device copy record.
+
+        Args:
+            enabled: Whether device runs may reuse unchanged device copies.
+        """
+        self._reuse_device = enabled
+        if not enabled:
+            self._invalidate_device_copies()
+
+    @always_inline
+    def _next_revision(mut self) -> UInt64:
+        """Issues a fresh revision.
+
+        Returns:
+            A value greater than every revision issued before.
+        """
+        self._clock += 1
+        return self._clock
+
+    @always_inline
+    def _touch(mut self, id: Self.IdType) -> UInt64:
+        """Advances a resource's revision after a possible mutation.
+
+        Args:
+            id: Source identity; missing sources are ignored.
+
+        Returns:
+            The new revision, or 0 if the source is missing.
+        """
+        var revision = self._next_revision()
+        try:
+            self._storage[id].revision = revision
+        except DictKeyError:
+            return 0
+        return revision
+
+    def _revision(self, id: Self.IdType) -> UInt64:
+        """Returns a resource's current revision.
+
+        Args:
+            id: Source identity.
+
+        Returns:
+            The revision of the last possible mutation, or 0 if missing.
+        """
+        try:
+            return self._storage[id].revision
+        except DictKeyError:
+            return 0
+
+    def _device_copy_current(self, id: Self.IdType) -> Bool:
+        """Checks whether a reusable device copy matches the host source.
+
+        Args:
+            id: Source identity.
+
+        Returns:
+            Whether reuse is enabled, a cache exists, and its record matches.
+        """
+        if not self._reuse_device or id not in self._device_cache:
+            return False
+        try:
+            return self._device_revisions[id] == self._storage[id].revision
+        except DictKeyError:
+            return False
+
+    @always_inline
+    def _drop_device_record(mut self, id: Self.IdType):
+        """Marks one device copy unknown.
+
+        Args:
+            id: Source identity.
+        """
+        if id in self._device_revisions:
+            try:
+                _ = self._device_revisions.pop(id)
+            except DictKeyError:
+                pass
 
     def _get_bound[
         T: ResourceType
@@ -479,7 +644,7 @@ struct ResourceStorage(Copyable, Movable, Sized):
         with Zone(function_name="ResourceStorage.get[T: ResourceType]()"):
             try:
                 return Pointer(
-                    to=self._storage[reflect[T].name()].unsafe_get[T]()
+                    to=self._storage[reflect[T].name()].box.unsafe_get[T]()
                 ).as_unsafe_any_origin()[]
             except DictKeyError:
                 raise Error(
@@ -647,11 +812,16 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
     def bind_host(mut self) raises:
         """Constructs host descriptors without queueing device work.
 
+        Advances the revision of every resource declared writable, since the
+        host kernel may mutate it.
+
         Raises:
             Error: If host descriptor construction fails.
         """
         comptime for i in range(len(Self.spec)):
             comptime T = Self.spec.ResourceTypes[i]
+            comptime if Self.spec._mode[T] != 1:
+                _ = self._storage[]._touch(reflect[T].name())
             ref source = self._storage[]._get_bound[T]()
             comptime if conforms_to(T, DevicePassableResource):
                 comptime assert conforms_to(T, DevicePassableResource)
@@ -700,6 +870,11 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
     ]:
         """Uploads current resources using source-keyed context-local caches.
 
+        Skips preparation and upload of a resource whose device copy matches
+        its current revision when the world reuses device copies. Every
+        other device copy, and every copy the kernel may write, is marked
+        unknown before work is queued, so a failure leaves no stale record.
+
         Args:
             context: The world's device queue.
             frame: Invocation-owned staging and publication state.
@@ -720,6 +895,10 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
             ref storage = self._storage[]
             if id not in storage._device_cache:
                 storage._device_cache[id] = ResourceDeviceCache(context)
+            var reuse = storage._device_copy_current(id)
+            # Copies the kernel may write are unknown until commit_device.
+            if not reuse or Self.spec._mode[T] != 1:
+                storage._drop_device_record(id)
             ref source = storage._get_bound[T]()
             ref cache = storage._device_cache[id]
             if cache.context._handle != context._handle:
@@ -728,17 +907,20 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
                 )
             comptime if conforms_to(T, DevicePassableResource):
                 comptime assert conforms_to(T, DevicePassableResource)
-                var view = T.Adapter.prepare_device(
-                    Pointer(to=source).unsafe_bitcast[T.Adapter.Source]()[],
-                    cache,
-                )
-                _ = cache._descriptor(view)
+                if not reuse:
+                    cache._uploaded = _TransferStats()
+                    var view = T.Adapter.prepare_device(
+                        Pointer(to=source).unsafe_bitcast[T.Adapter.Source]()[],
+                        cache,
+                    )
+                    _ = cache._descriptor(view)
+                    frame.uploaded.add(cache._uploaded)
                 result[i] = rebind[
                     DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
                 ](cache._buffers[-1].device_ptr())
             else:
                 var descriptor = cache._ensure(-1, max(1, size_of[T]()))
-                if size_of[T]() > 0:
+                if size_of[T]() > 0 and not reuse:
                     frame.upload(
                         descriptor.create_sub_buffer[DType.uint8](
                             0, size_of[T]()
@@ -753,6 +935,25 @@ struct _ResourceInvocation[spec: Resources, origin: MutOrigin](Movable):
         # DevicePointer borrows the cached DeviceBuffer object itself. Never
         # form it from the temporary native handle returned by _ensure.
         return result^
+
+    def commit_device(mut self):
+        """Records device copies after successful synchronization and publication.
+
+        Advances the revision of every resource the kernel could write, since
+        publication changed its host value. With device copy reuse enabled,
+        stamps each device copy with the revision it now matches.
+        """
+        ref storage = self._storage[]
+        comptime for i in range(len(Self.spec)):
+            comptime T = Self.spec.ResourceTypes[i]
+            comptime id = reflect[T].name()
+            var revision: UInt64
+            comptime if Self.spec._mode[T] == 3:
+                revision = storage._touch(id)
+            else:
+                revision = storage._revision(id)
+            if storage._reuse_device and id in storage._device_cache:
+                storage._device_revisions[id] = revision
 
     def download(mut self, mut frame: _TransferFrame) raises:
         """Stages mutable plain resources without publishing partial results.
