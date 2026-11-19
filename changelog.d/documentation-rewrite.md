@@ -18,4 +18,5 @@
   [#246](https://github.com/larecs/larecs/pull/246),
   [#247](https://github.com/larecs/larecs/pull/247),
   [#277](https://github.com/larecs/larecs/pull/277),
-  [#279](https://github.com/larecs/larecs/pull/279))
+  [#279](https://github.com/larecs/larecs/pull/279),
+  [#282](https://github.com/larecs/larecs/pull/282))
