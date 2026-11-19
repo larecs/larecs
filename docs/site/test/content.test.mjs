@@ -72,7 +72,7 @@ test('real BitMaskFilter constructor links expanded public aliases without repla
     assert.ok(rendered.includes(`href="${base}larecs/bitmask/#BitMask"`), rendered);
   }
   const rendered = docs.contract(constructor, 'filter.BitMaskFilter', 'fixture');
-  assert.ok(rendered.includes('`include`: <code') && rendered.includes('`exclude`: <code'));
+  assert.ok(rendered.includes('<strong class="api-name">include</strong> (<code') && rendered.includes('<strong class="api-name">exclude</strong> (<code'));
   assert.equal((rendered.match(/larecs\/bitmask\/#BitMask/g) || []).length, 2);
   assert.ok(rendered.includes(constructor.signature));
 });
@@ -131,11 +131,21 @@ test('fresh preview installs locked Node dependencies before Astro starts', asyn
 test('real contracts show linked parameter, argument and result types', () => {
   const added = docs.contract(method('host_storage', 'HostStorage', 'add_entity'), 'host_storage.HostStorage', 'fixture');
   assert.ok(added.includes('larecs/component/#ComponentType'));
-  assert.ok(added.includes('**Returns**\n\n<code class="api-type"><a href="' + base + 'larecs/entity/Entity/">Entity</a></code>'));
+  assert.ok(added.includes('<p class="api-label">Returns:</p>\n\n- <code class="api-type"><a href="' + base + 'larecs/entity/Entity/">Entity</a></code>'));
   const world = docs.contract(method('world', 'World', '__init__'), 'world.World', 'fixture');
-  assert.ok(world.includes('`execution_config`: <code class="api-type"><a href="' + base + 'larecs/execution/ThreadedExecutionConfig/">'));
+  assert.ok(world.includes('<strong class="api-name">execution_config</strong> (<code class="api-type"><a href="' + base + 'larecs/execution/ThreadedExecutionConfig/">'));
 });
 
+test('type pages group members under section headings', () => {
+  docs.apiPages();
+  const world = docs.pages.get('larecs/world/World').body;
+  const order = ['## Parameters', '## Fields', '## Implemented traits', '## Methods', '### `__init__`'].map((heading) => world.indexOf(heading));
+  assert.ok(order.every((index, i) => index >= 0 && (i === 0 || index > order[i - 1])), order.join());
+  assert.ok(world.startsWith('\n<p class="api-source lg:sl-hidden">'));
+  assert.ok(!world.includes('<strong class="api-name">self</strong> (<code class="api-type"><a href="' + base + 'larecs/world/World/">Self'));
+  assert.equal(docs.pages.get('larecs/world/World').data.source, docs.api.symbols['world.World'].source_url);
+  assert.throws(() => docs.sectionSafe('Methods', ['Methods'], 'fixture'), /collides with a section heading/);
+});
 test('legacy guide fragments survive Astro rendering', () => {
   assert.equal(docs.shortcodes('{{< legacy-anchor "old-section" >}}'), '<a id="old-section"></a>');
 });

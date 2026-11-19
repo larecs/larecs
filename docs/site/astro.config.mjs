@@ -14,7 +14,7 @@ export default defineConfig({
     disable404Route: true,
     description: 'An Entity Component System for Mojo',
     social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/larecs/larecs' }],
-    components: { SiteTitle: './src/components/SiteTitle.astro' },
+    components: { SiteTitle: './src/components/SiteTitle.astro', PageSidebar: './src/components/PageSidebar.astro' },
     customCss: ['./src/styles/api.css'],
     sidebar: [
       { label: 'Start', items: ['start', { autogenerate: { directory: 'start' } }] },

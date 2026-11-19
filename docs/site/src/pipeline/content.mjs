@@ -140,7 +140,7 @@ export class Documentation {
       return '<details><summary>Complete runnable program</summary>\n\n' + `[Source: \`${attrs.file}\`](${url})\n` + fence(source.replace(/^\s*# (?:end)?region .*\n/gm, '')) + '\n</details>\n';
     });
   }
-  page(route, title, body, weight = 0, hidden = false, filePath) {
+  page(route, title, body, weight = 0, hidden = false, filePath, source) {
     body = transformProse(body, (prose) => prose.replace(/\]\(([^\s)]+)\)/g, (whole, href) => {
       if (/^(?:https?:|#|mailto:)/.test(href)) return whole;
       const url = new URL(href.replace(/^\//, ''), href.startsWith('/') ? base : base + (route ? route + '/' : ''));
@@ -149,7 +149,7 @@ export class Documentation {
     }));
     body = transformProse(body, prose => prose.replace(/!\[[^\]]*\]\([^\s)]+\.svg\)/g, image => '\n<div class="diagram">\n\n' + image + '\n\n</div>\n')).replaceAll('```mojo-render', '```mojo');
     const id = route || 'index';
-    this.pages.set(id, { id, body, filePath: filePath || resolve(root, `docs/site/src/content/docs/${id}.md`), data: { title, slug: route, sidebar: { order: weight, hidden } } });
+    this.pages.set(id, { id, body, filePath: filePath || resolve(root, `docs/site/src/content/docs/${id}.md`), data: { title, slug: route, sidebar: { order: weight, hidden }, ...(source ? { source } : {}) } });
   }
   authored() {
     for (const path of files('docs/src', '.md')) {
@@ -164,62 +164,116 @@ export class Documentation {
       this.page(route, data.title, body, data.weight || 0, data.sidebar?.exclude || false, path);
     }
   }
-  contract(item, context, owner) {
-    if (['module', 'struct', 'trait', 'alias', 'function'].includes(item.kind) && !item.summary && !item.overloads) throw new Error(`Missing declaration documentation: ${context}.${item.name}`);
-    let text = (item.summary || '') + '\n\n', exact = item.signature || '';
+  declaration(item) {
+    let exact = item.signature || '';
     if (item.kind === 'alias' && item.value !== 'fn_literal') exact += (item.type ? ': ' + item.type : '') + ' = ' + (item.value || '');
-    if (exact) {
-      const readable = exact.replace(/\s+where \(eq .*$/, '').replace(/: (\w+)\[[a-z_]\w*\.\w+[^\[\]]*\]/g, ': $1');
-      const formatted = formatDeclaration(readable);
-      text += declaration(formatted);
-      if (exact !== formatted) text += '\n<details><summary>Exact declaration</summary>\n' + declaration(exact) + '\n</details>\n';
+    if (!exact) return '';
+    const readable = exact.replace(/\s+where \(eq .*$/, '').replace(/: (\w+)\[[a-z_]\w*\.\w+[^\[\]]*\]/g, ': $1');
+    const formatted = formatDeclaration(readable);
+    let text = declaration(formatted);
+    if (exact !== formatted) text += '\n<details class="api-exact"><summary>Exact declaration</summary>\n' + declaration(exact) + '\n</details>\n';
+    return text;
+  }
+  values(values, context) {
+    return values.map((value) => '- <strong class="api-name">' + escapeHtml(value.name) + '</strong>'
+      + (value.type ? ' (' + this.typeAnnotation(value, context) + ')' : '')
+      + (value.description ? ': ' + value.description : '') + '\n').join('');
+  }
+  traits(item) {
+    return '<p class="api-traits">' + item.parentTraits.map((trait) => '<code>' + escapeHtml(trait.name) + '</code>').join(' ') + '</p>\n';
+  }
+  /** Declaration box, prose, and labelled argument lists for one declaration. */
+  contract(item, context, owner, { sections = false } = {}) {
+    if (['module', 'struct', 'trait', 'alias', 'function'].includes(item.kind) && !item.summary && !item.overloads) throw new Error(`Missing declaration documentation: ${context}.${item.name}`);
+    const label = (name) => sections ? `\n## ${name}\n\n` : `\n<p class="api-label">${name}:</p>\n\n`;
+    let text = this.declaration(item) + '\n' + (item.summary || '') + '\n\n' + (item.description || '') + '\n';
+    for (const [key, name] of [['parameters', 'Parameters'], ['fields', 'Fields'], ['args', 'Args']]) {
+      // The receiver and undocumented results are already visible in the declaration.
+      const values = (item[key] || []).filter((value) => key !== 'args' || value.name !== 'self' || value.description);
+      if (values.length) text += label(name) + this.values(values, context);
     }
-    text += '\n' + (item.description || '') + '\n';
-    if (item.parentTraits?.length) text += '\n**Traits**\n\n' + item.parentTraits.map((trait) => '`' + trait.name + '`').join(', ') + '\n';
-    for (const [key, label] of [['parameters', 'Parameters'], ['args', 'Arguments'], ['fields', 'Fields']]) {
-      if (!item[key]?.length) continue;
-      text += `\n**${label}**\n\n`;
-      for (const value of item[key]) text += '- `' + value.name + '`' + (value.type ? ': ' + this.typeAnnotation(value, context) : '') + ' — ' + (value.description || '') + '\n';
-    }
-    for (const [key, label] of [['returns', 'Returns'], ['raisesDoc', 'Raises'], ['constraints', 'Constraints']]) {
+    if (sections && item.parentTraits?.length) text += label('Implemented traits') + this.traits(item);
+    for (const [key, name] of [['returns', 'Returns'], ['raisesDoc', 'Raises'], ['constraints', 'Constraints']]) {
       let value = item[key];
+      if (value && typeof value === 'object' && key === 'returns' && !value.doc) continue;
       if (value && typeof value === 'object') {
         const annotation = value.type && (value.type !== 'None' || value.doc) ? this.typeAnnotation(value, context) : '';
-        value = annotation + (annotation && value.doc ? ' — ' : '') + (value.doc || '');
+        value = annotation + (annotation && value.doc ? ': ' : '') + (value.doc || '');
       }
-      if (value) text += `\n**${label}**\n\n${value}\n`;
+      if (value) text += label(name) + (sections ? '' : '- ') + value + '\n';
     }
     return transformProse(this.extract(text, owner), (prose) => this.prose(prose, context));
   }
+  /** Rejects member names whose heading slug would shadow a section heading. */
+  sectionSafe(name, sections, context) {
+    const slug = name.toLowerCase();
+    if (sections.some((section) => section.toLowerCase().replaceAll(' ', '-') === slug)) throw new Error(`API member ${context}.${name} collides with a section heading`);
+  }
+  source(url, page = false) {
+    return `\n<p class="api-source${page ? ' lg:sl-hidden' : ''}"><a href="${escapeHtml(url)}">View source</a></p>\n`;
+  }
+  typePage(item, symbol, owner) {
+    const sections = ['Parameters', 'Fields', 'Args', 'Implemented traits', 'Returns', 'Raises', 'Constraints', 'Comptime members', 'Methods'];
+    let details = this.source(this.api.symbols[symbol].source_url, true) + this.contract(item, symbol, owner, { sections: true });
+    const aliasHeading = (alias) => (alias.name !== alias.name.toLowerCase() ? `\n<a id="${alias.name}"></a>\n` : '') + '\n### `' + alias.name + '`\n\n';
+    if (item.aliases?.length) details += '\n## Comptime members\n';
+    for (const alias of item.aliases || []) {
+      this.sectionSafe(alias.name, sections, symbol);
+      details += aliasHeading(alias) + '<div class="api-member">\n\n' + this.contract(alias, symbol, owner) + '\n</div>\n';
+    }
+    if (item.functions?.length) details += '\n## Methods\n';
+    for (const member of item.functions || []) {
+      this.sectionSafe(member.name, sections, symbol);
+      details += '\n### `' + member.name + '`\n' + this.source(this.api.symbols[`${symbol}.${member.name}`].source_url);
+      (member.overloads || [member]).forEach((overload, index) => {
+        details += `\n<div class="api-member" id="${member.name}-${index}">\n\n` + this.contract(overload, symbol, owner) + '\n</div>\n';
+      });
+    }
+    return details;
+  }
+  summaryList(items, link) {
+    return items.map((item) => `- [\`${item.name}\`](${base}${link(item)})` + (item.summary || item.overloads?.[0]?.summary ? ': ' + (item.summary || item.overloads[0].summary) : '') + '\n').join('');
+  }
   apiPages() {
-    const rootLinks = [];
+    const modules = [];
     for (const module of this.decl.modules) {
       const name = module.name;
       if (name === '__init__') continue;
       if (!module.summary) throw new Error(`Missing module documentation: ${name}`);
       const route = 'larecs/' + name, owner = 'larecs/larecs_' + name;
+      const sections = ['Structs', 'Traits', 'Functions', 'Comptime values'];
       let body = this.contract(module, name, owner);
-      for (const group of ['aliases', 'structs', 'traits', 'functions']) for (const item of module[group] || []) {
-        if (!item.summary && !item.overloads) throw new Error(`Missing declaration documentation: ${name}.${item.name}`);
-        const symbol = `${name}.${item.name}`;
-        const aliasHeading = (alias) => (alias.name !== alias.name.toLowerCase() ? `\n<a id="${alias.name}"></a>\n` : '') + '\n## `' + alias.name + '`\n';
-        if (group === 'aliases') { body += aliasHeading(item) + this.contract(item, name, owner); continue; }
-        const target = this.api.symbols[symbol].target, itemOwner = `larecs/larecs_${name}_${item.name}`;
-        body += `\n- [${item.name}](${base}${target})\n`;
-        let details = `[Source](${this.api.symbols[symbol].source_url})\n\n` + this.contract(item, symbol, itemOwner);
-        for (const alias of item.aliases || []) details += aliasHeading(alias) + this.contract(alias, symbol, itemOwner);
-        for (const member of item.functions || []) {
-          details += '\n## `' + member.name + '`\n\n' + `[Source](${this.api.symbols[`${symbol}.${member.name}`].source_url})\n`;
-          (member.overloads || [member]).forEach((overload, index) => { details += `\n<a id="${member.name}-${index}"></a>\n\n` + this.contract(overload, symbol, itemOwner); });
+      for (const [group, heading] of [['structs', 'Structs'], ['traits', 'Traits'], ['functions', 'Functions']]) {
+        const items = module[group] || [];
+        if (items.length) body += `\n## ${heading}\n\n` + this.summaryList(items, (item) => this.api.symbols[`${name}.${item.name}`].target);
+        for (const item of items) {
+          if (!item.summary && !item.overloads) throw new Error(`Missing declaration documentation: ${name}.${item.name}`);
+          const symbol = `${name}.${item.name}`, target = this.api.symbols[symbol].target, itemOwner = `larecs/larecs_${name}_${item.name}`;
+          let details;
+          if (group === 'functions') {
+            details = this.source(this.api.symbols[symbol].source_url, true);
+            item.overloads.forEach((overload, index) => { details += `\n<div class="api-member" id="${item.name}-${index}">\n\n` + this.contract(overload, name, itemOwner) + '\n</div>\n'; });
+          } else details = this.typePage(item, symbol, itemOwner);
+          this.page(target.replace(/^\/|\/$/g, ''), item.name, details, 0, false, undefined, this.api.symbols[symbol].source_url);
         }
-        for (const overload of item.overloads || []) details += this.contract(overload, name, itemOwner);
-        this.page(target.replace(/^\/|\/$/g, ''), item.name, details);
+      }
+      if (module.aliases?.length) body += '\n## Comptime values\n';
+      for (const item of module.aliases || []) {
+        if (!item.summary) throw new Error(`Missing declaration documentation: ${name}.${item.name}`);
+        this.sectionSafe(item.name, sections, name);
+        body += (item.name !== item.name.toLowerCase() ? `\n<a id="${item.name}"></a>\n` : '') + '\n### `' + item.name + '`\n\n<div class="api-member">\n\n' + this.contract(item, name, owner) + '\n</div>\n';
       }
       this.page(route, name, body);
-      rootLinks.push(`- [${name}](${base}${route}/)`);
+      modules.push(module);
     }
-    const exports = Object.keys(this.api.exports).map((name) => `- [\`${name}\`](${base}${this.api.symbols[name].target})`).join('\n');
-    this.page('larecs', 'API docs', '## Root exports\n\n' + exports + '\n\n## Modules\n\n' + rootLinks.join('\n'));
+    const summary = (qualified) => {
+      const [module, item] = qualified.split('.');
+      const declaration = this.decl.modules.find((entry) => entry.name === module);
+      const found = ['structs', 'traits', 'functions', 'aliases'].flatMap((group) => declaration[group] || []).find((entry) => entry.name === item);
+      return found?.summary || found?.overloads?.[0]?.summary || '';
+    };
+    const exports = Object.entries(this.api.exports).map(([name, qualified]) => `- [\`${name}\`](${base}${this.api.symbols[name].target})` + (summary(qualified) ? ': ' + summary(qualified) : '')).join('\n');
+    this.page('larecs', 'API docs', '## Root exports\n\n' + exports + '\n\n## Modules\n\n' + this.summaryList(modules, (module) => `larecs/${module.name}/`));
   }
   load() {
     this.authored(); this.apiPages();

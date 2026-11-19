@@ -1,0 +1,12 @@
+---
+import Default from '@astrojs/starlight/components/PageSidebar.astro';
+const { source } = Astro.locals.starlightRoute.entry.data;
+---
+{source && <div class="api-sidebar-source sl-hidden lg:sl-block"><a href={source}>View source</a></div>}
+<Default />
+<style>
+  .api-sidebar-source { padding: 1rem var(--sl-sidebar-pad-x) 0; }
+  .api-sidebar-source a { font-size: var(--sl-text-sm); color: var(--sl-color-gray-2); text-decoration: none; }
+  .api-sidebar-source a:hover { color: var(--sl-color-white); }
+  .api-sidebar-source a::before { content: '</> '; font-family: var(--sl-font-mono); font-size: var(--sl-text-xs); }
+</style>
