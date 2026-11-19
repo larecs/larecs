@@ -24,9 +24,10 @@ def main() raises:
             cases = {
                 "callable_device": (f"    {target}.run[backend=ExecutionBackend.DEVICE](kernel)\n", "Value-taking kernel callables require ExecutionBackend.HOST"),
                 "lexical_device": ("    var calls = 0\n    def closure(rows: KernelContext[Filter().include[Int32]()]) {mut calls}:\n        calls += 1\n" + f"    {target}.run[backend=ExecutionBackend.DEVICE](closure)\n", "Value-taking kernel callables require ExecutionBackend.HOST"),
+                "callable_threaded": (f"    {target}.run[backend=ExecutionBackend.HOST_THREADED](kernel)\n", "Value-taking kernel callables require ExecutionBackend.HOST"),
                 "boolean": (f"    {target}.run[kernel, backend=True]()\n", "ExecutionBackend"),
                 "old_flag": (f"    {target}.run[kernel, on_gpu=True]()\n", "on_gpu"),
-                "invalid": (f"    {target}.run[kernel, backend=ExecutionBackend(2)]()\n", "Invalid execution backend"),
+                "invalid": (f"    {target}.run[kernel, backend=ExecutionBackend(99)]()\n", "Invalid execution backend"),
                 "runtime": (f"    var backend = ExecutionBackend.HOST\n    {target}.run[kernel, backend=backend]()\n", "cannot use a dynamic value in a parameter list"),
                 "host_callable": (f"    {target}.run[backend=ExecutionBackend.HOST](kernel)\n", None),
             }
