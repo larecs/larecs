@@ -1,6 +1,10 @@
-# Decision 0004: Scoped selection errors
+---
+id: "0004"
+title: "Scoped selection errors"
+status: accepted
+---
 
-Status: Accepted.
+# Decision 0004: Scoped selection errors
 
 ## Context
 

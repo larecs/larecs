@@ -83,3 +83,293 @@ which uses very powerful hardware.
 Particularly, the processors have 256MB of cache.
 On a laptop or desktop computer with typically much less cache,
 Larecs🌲 will outperform AoS for everything but the smallest setups.
+
+## Small spatial benchmarks on every PR
+
+Run `pixi run spatial-benchmarks` for one bounded CPU-only comparison, or
+`pixi run spatial-performance-check --base <revision>` for a regression check.
+The complete `pixi run tests test` command runs this check after successful
+correctness tests, on both Linux and macOS PR runners. Focused test-file runs
+omit it. The existing 100,000-row maintenance benchmark and the full benchmark
+suite remain manual measurements.
+
+The small driver uses **512 and 2,048 entities**, one archetype, an integer cell
+key and a 128-byte SIMD payload per row. It inserts rows in a deterministic
+scrambled order, then compares the same stable-ID cell visits before and after
+spatial ordering. Its 32 cases cover:
+
+| Workload | Cell distribution | Timed work |
+| --- | --- | --- |
+| Static cell aggregates | Uniform: 8 entities/cell | Read keys and all payload lanes; sum and square each cell's aggregate |
+| Static cell aggregates | Dense: 64 entities/cell | Same operation, with fewer occupied cells |
+| Static cell aggregates | Sparse: 8 entities/cell, key gaps of 1,024 | Same operation across nonconsecutive occupied keys |
+| Maintenance alone | All three distributions | Clean explicit boundary, or reverse keys via stable-ID access and sort/move/repair every pass |
+| Moving cell aggregates | Uniform | Update every entity's cell, aggregate cells, maintain every frame or every fourth frame |
+
+Static workload timing excludes construction, registration, and the initial
+maintenance pass. Mobile timing includes input updates and the selected
+maintenance cadence; its scrambled control performs the same updates and cell
+visits without maintenance. Maintenance-only reversal and conservative marking via mutable stable-ID access
+are included in timing. A clean ordered boundary uses deferred maintenance in the
+current library and full classification in older baseline libraries. This is an
+intentional maintenance-contract change; use the dedicated comparison below for
+an explicit full-scan control.
+Checksums validate aggregate results and payload preservation, and a query
+validates maintenance's output order, outside the timer. These are synthetic
+cell aggregates; full neighborhood algorithms, additional archetypes, transfer
+costs, and larger working sets remain separate measurements.
+
+Each batch doubles from 8 to at most 8,192 frames, stopping once it takes 20 ms.
+The checker compiles **the same current driver** against the current library
+and the PR's base commit, warms both binaries, then collects five paired runs
+with alternating execution order. It reports median frame times and current
+ordered/scrambled ratios. A case fails only when at least four pairs show both
+**over 30% slowdown and over 500 ns extra time**, and the paired medians exceed
+those thresholds. A suspected regression must recur in a fresh five-pair run.
+This broad threshold catches substantial regressions on shared runners;
+smaller changes need dedicated measurements. No machine-specific timing
+baseline is checked in.
+
+The baseline comes from the GitHub PR event's base SHA. Local runs default to
+committed `HEAD`; pass `--base` to compare another revision. An unavailable full
+SHA is fetched over public HTTPS. Since release PR #174 predates the spatial
+API, spatial PR #175 bootstraps against `42234f3b43d4dda58a674842374115f78ec2f08d`,
+the implementation before this benchmark addition. Subsequent PRs whose base
+has the spatial API use their actual base. Compilation, malformed/missing
+records, checksum failures, and sustained regressions all fail the check.
+
+
+## Deferred dirty classification
+
+Build `pixi run mojo build -I src benchmark/dirty_spatial.mojo -o /tmp/larecs-dirty-spatial`,
+then run that binary with no concurrent compilation or benchmark jobs.
+It constructs identical scrambled 2,048/32,768-entity worlds with 72 component
+bytes per row plus entity IDs, establishes initial spatial order, warms both
+paths, and alternates five paired samples of sixteen frames (1,024 frames for
+clean boundaries to resolve their small cost). The 24 scenarios
+cover uniform (16 entities/cell), dense (256/cell), and sparse (16/cell with
+key gaps of 128) distributions, with 0, 1, 1/64, or all identities updated.
+Each updated identity receives two reference writes per frame; classification
+observes final values. On alternating frames those writes cancel. Other frames
+advance cells by one. Both paths perform identical updates and semantic work.
+
+The deferred path uses automatic tracking. Its control requests a full rebuild
+after those same writes. Timings include updates, marking, key scratch allocation,
+classification, sorting, typed movement of all columns, and location repair.
+Construction, registration, initial maintenance, and correctness checks are
+excluded. Every sample validates complete key order, each identity/location,
+the expected final input for every identity, and all eight payload lanes outside timing through read-only queries. Output
+records rows, distribution, dirty count, pair number, and deferred/full frame ns.
+This compares current deferred maintenance with current explicit full rebuilds;
+it does not measure a historical implementation or total application speedup.
+
+Clean calls do no row work. Dirty calls still copy O(entity-ID capacity) keys
+and inspect affected archetypes, so sparse classification is not O(D) complete
+maintenance. Full rebuilds currently reset sparse membership and caches. Dense
+updates may favor contiguous full classification; structural-heavy workloads
+use full rebuilds. Retained keys/membership cost at least nine bytes per allocated
+ID plus queue capacity (full ID/generation identities and allocator slack).
+Scratch and movement metadata add temporary memory. These are layout costs,
+not measured application memory usage.
+
+A local run on **Apple M4, arm64, Mojo 1.0.0 (`ed45d567`)** with implementation
+`76868ef` (based on `0241e91`) built the optimized driver in **4.74 seconds**.
+Five warmed pairs gave these median complete-frame times for 32,768 entities:
+
+| Distribution | Dirty identities | Deferred | Explicit full rebuild | Deferred/full |
+| --- | ---: | ---: | ---: | ---: |
+| Uniform | 1 | 0.685 ms | 1.076 ms | 0.637 |
+| Uniform | 512 | 0.749 ms | 1.133 ms | 0.661 |
+| Dense | 512 | 0.811 ms | 1.194 ms | 0.679 |
+| Sparse | 1 | 0.097 ms | 0.490 ms | 0.198 |
+| Sparse | 512 | 0.112 ms | 0.497 ms | 0.226 |
+| Uniform | 32,768 | 0.850 ms | 0.858 ms | 0.991 |
+
+Across both sizes and all distributions, nonzero sparse-update scenarios took
+19.5–67.9% of the full-rebuild frame time. Clean boundaries measured approximately
+3–4 ns (close to timer resolution), versus 0.031/0.490 ms full rebuilds at the two
+sizes. Fully dirty frames took 99.1–104.6% of the explicit control. An earlier
+version that resolved every dirty identity separately took 131–141% for fully
+dirty frames; the accepted all-ID-dirty fallback avoids that column/location
+setup cost. Neither path can avoid moving clean rows when regrouping demands it.
+
+The separate same-driver PR gate against `0241e91` passed all 12 core and 32
+spatial cases in **41.1 seconds** including four sequential compilations and
+five paired samples. It found no confirmed regression under the existing
+30%/500 ns rule. It still measured approximately **15–19%** overhead for reversing
+maintenance, **10–14%** for maintained mobile frames, and **3–8%** for ordinary
+stable-ID access. Those costs remain visible tradeoffs, not claims of zero
+regression. Linux evidence comes from the PR checks; actual GPU execution is
+validated separately and is not included in these CPU performance numbers.
+
+## Partitioned storage comparison
+
+Build the optimized standalone driver once:
+`pixi run mojo build -I src benchmark/partitioned_spatial.mojo -o /tmp/larecs-partition-benchmark`.
+Run that binary without concurrent compilation or benchmark jobs. Partitioning
+is explicitly selected at registration; the control is the **same current
+library's deferred row reordering**, not forced full classification or a
+historical library with different invalidation costs. The existing core/spatial
+PR gate separately measures changes to the default paths against the exact base.
+
+The driver constructs identical deterministic scrambled 2,048/32,768-row worlds
+with two component-defined archetypes, 64-byte SIMD payloads, an integer input,
+and an additional eight-byte column on half the rows. It compares one growable
+store per logical cluster with row reordering for uniform (16 identities per cell), dense
+(1,024 per cell), and singleton sparse (one identity per cell, key spacing 128)
+distributions. Each configuration warms both layouts with one sixteen-frame
+batch, then alternates their order for five paired sixteen-frame samples.
+
+The 48 scenarios cover maintenance with 1, 1/64, or all identities updated;
+ordinary read-only query scans and CPU execution with unchanged layouts;
+and complete cell frames with the same updates, maintenance every frame (or
+every fourth frame for 1/64 updates), all-lane per-cell aggregation, and cyclic
+adjacent-cell aggregate products. Both layouts use identical entities, input
+updates, and semantic work. The scan controls still call the clean boundary.
+All measured update frames include marking, pending key allocation/copy,
+classification, directory construction or sorting, column growth/movement,
+source swap-removal, location repair, and allocation reclamation as applicable.
+Cell frames also include query setup, cell scratch allocation, aggregation,
+and neighbor arithmetic. Construction, initial placement, policy/device setup,
+and validation are excluded. There are no device transfers in these CPU timings.
+
+Every sample checks all identities once, final inputs, all payload lanes,
+entity locations, default key order or homogeneous cluster stores, and equal
+complete spatial checksums outside timing. Query/CPU scan reductions are also
+checked against their complete expected sums. Results are consumed inside the
+timer. This is a synthetic spatial workload, not a game/simulation speedup,
+collision detection, or a persistent neighbor index.
+
+`MEMORY` records report initial maintained **capacity-derived owned bytes**;
+`MEMORY_AFTER_MOVEMENT` reports retained buffers after 96 fully moving frames:
+physical-directory slots, component/ID buffers, entity locations, key/dirty
+caches, queued identities, and recycled-slot capacity. Counted allocations are
+physical-directory plus row-column/ID allocations. Graph/pool allocations,
+allocator overhead, device state, classifier configuration, and all temporary
+maintenance/query/cell scratch are excluded; these records are not RSS or peak
+memory measurements. The components are trivial and have no hidden payload heap.
+Columns in a store share capacity, but each column and the IDs allocate
+separately. `PAIR` records give rows, distribution, mode, update count, cadence,
+pair index, reordering ns/frame, and partition ns/frame.
+
+### Growable-store comparison on Linux
+
+The same current driver was built against committed base `df0e6c5638beaab2bf3784a2b4784044a7c2707e`
+(256-row-capped blocks) and the growable-store implementation from decision 0014.
+This local run used **AMD Ryzen 7 PRO 5850U, Linux 7.2.5-3-omarchy x86_64,
+Mojo 1.0.0 (`ed45d567`)**, normal optimized builds without tracing, sanitizers,
+or debug information. Cold builds ran sequentially and took **11.13 s / 11.11 s**
+(base/current). No other builds or benchmark jobs ran during timing; background
+desktop services remained active. Five pairs of fresh binary invocations alternated
+base/current order. Each invocation used the warmup, five paired sixteen-frame
+samples per case, timing boundaries, and complete validation described above.
+Values below are medians of the five per-invocation medians, in milliseconds.
+All 48 cases validated in all ten invocations. Median complete driver execution
+including validation was **13.10 s / 11.33 s** (base/current).
+
+Driver SHA-256: `37795c49baa95f1b911d43327d413097b85a5f60f92f3137accf7abfa9a90ad9`.
+
+| Distribution | Timed work, 32,768 rows | Capped blocks | Growable stores | Growable / capped |
+| --- | --- | ---: | ---: | ---: |
+| Uniform | Maintenance, 512 updates/frame | 0.416 | 0.256 | 0.61 |
+| Dense | Maintenance, 512 updates/frame | 0.111 | 0.072 | 0.65 |
+| Dense | Complete frame, all moving | 6.032 | 4.295 | 0.71 |
+| Singleton sparse | Complete frame, all moving | 20.400 | 17.231 | 0.84 |
+| Dense | Ordinary query scan, clean | 0.430 | 0.427 | 0.99 |
+| Dense | Ordinary CPU scan, clean | 0.030 | 0.031 | 1.03 |
+| Uniform | Ordinary CPU scan, clean | 0.068 | 0.070 | 1.03 |
+| Singleton sparse | Ordinary CPU scan, clean | 0.337 | 0.344 | 1.02 |
+
+Dense initial placement used **64 stores and 225 counted allocations**, versus
+128 blocks and 449 allocations in the base. Initial counted owned bytes fell
+from 4,448,265 to 4,403,209. After 96 fully moving frames, growable dense stores
+retained **7,847,945 bytes and 64,512 row slots**, versus 5,062,665 bytes and
+32,768 slots for capped blocks. Destination stores can grow while their old rows
+are still awaiting transfer, and nonempty stores retain that spare capacity.
+Fewer stores therefore do not guarantee less retained memory. These remain
+capacity-derived buffer measurements, with the exclusions described above.
+
+Full scans changed by -0.8% to +4.3% across these distributions; small timing
+differences on this desktop runner do not establish a scan improvement.
+Maintenance and fully moving frame results favor growable stores here, but
+singleton clusters still have separate allocations and substantial traversal
+overhead. This is CPU-only synthetic evidence; macOS, GPU, application, peak
+memory, and additional component-width comparisons remain on the roadmap.
+Local raw reports are retained under `output/performance/growable_clusters/`.
+
+### Historical bounded-block comparison on macOS
+
+The measurements below are historical evidence for decision 0013’s
+256-row-capped blocks, not timings for the current growable-store layout.
+Dense clusters now use fewer stores; sparse clusters still require separate
+allocations. Rerun the driver before making performance claims about the new layout.
+
+A local optimized run on **Apple M4, macOS 27.0.1 arm64, Mojo 1.0.0
+(`ed45d567`)**, implementation `f3d99cd` (base `6037850`), built in
+**7.59 seconds** and completed
+execution/validation in **8.88 seconds**.
+Driver SHA-256: `da005387b10958c875771cdfb16cebbe455aa7e883631ef36f021734f355a787`.
+No concurrent builds or benchmark jobs ran. Representative medians across five
+warmed pairs for 32,768 rows were:
+
+| Distribution | Timed work | Updates / cadence | Reordering | Partitions | Partition / reorder |
+| --- | --- | --- | ---: | ---: | ---: |
+| Uniform | Maintenance | 1 / every frame | 0.626 ms | 0.336 ms | 0.54 |
+| Uniform | Maintenance | 512 / every frame | 1.334 ms | 0.381 ms | 0.29 |
+| Dense | Maintenance | 1 / every frame | 0.600 ms | 0.017 ms | 0.03 |
+| Dense | Maintenance | 512 / every frame | 1.348 ms | 0.096 ms | 0.07 |
+| Uniform | Complete cell frame | 512 / every fourth frame | 0.627 ms | 0.393 ms | 0.63 |
+| Dense | Complete cell frame | 512 / every fourth frame | 0.651 ms | 0.293 ms | 0.45 |
+| Uniform | Complete cell frame | All / every frame | 1.956 ms | 2.785 ms | 1.42 |
+| Dense | Complete cell frame | All / every frame | 1.881 ms | 3.125 ms | 1.66 |
+| Singleton sparse | Complete cell frame | All / every frame | 1.357 ms | 17.011 ms | 12.54 |
+| Uniform | Ordinary query scan | Clean | 0.149 ms | 0.175 ms | 1.17 |
+| Dense | Ordinary query scan | Clean | 0.149 ms | 0.148 ms | 0.99 |
+| Singleton sparse | Ordinary query scan | Clean | 0.149 ms | 0.237 ms | 1.59 |
+| Uniform | Ordinary CPU scan | Clean | 0.019 ms | 0.045 ms | 2.36 |
+| Dense | Ordinary CPU scan | Clean | 0.019 ms | 0.022 ms | 1.16 |
+| Singleton sparse | Ordinary CPU scan | Clean | 0.020 ms | 0.155 ms | 7.92 |
+
+Initial maintained capacity and allocation evidence for those worlds:
+
+| Layout / distribution | Counted owned bytes | Counted row/directory allocations | Partition blocks | Row capacity / live rows |
+| --- | ---: | ---: | ---: | ---: |
+| Reordering, all distributions | 4,359,561 | 8 | 0 | 32,768 / 32,768 |
+| Partitions, uniform | 7,241,737 | 14,337 | 4,096 | 32,768 / 32,768 |
+| Partitions, dense | 4,448,265 | 449 | 128 | 32,768 / 32,768 |
+| Partitions, singleton sparse | 27,426,825 | 114,689 | 32,768 | 32,768 / 32,768 |
+
+All initial blocks were fully occupied at their allocated capacities. Component
+capacity alone therefore understates partition overhead: physical-store metadata
+and many separate allocations matter, especially for singleton clusters. At
+2,048 rows counted bytes were 273,801 for reordering versus 452,617 uniform,
+278,025 dense, and 1,714,185 singleton partition storage. After 96 fully moving
+frames, counted retained bytes were **4,883,849** for
+reordering versus **10,116,809** uniform, **5,062,665** dense, and **51,019,785**
+singleton partitions at 32,768 rows. Uniform partition row capacity grew to
+58,320; dense/singleton row capacity remained 32,768. Empty blocks released their
+row allocations, while partial block growth and high-water directory/queue
+capacity remained. These are retained-buffer measurements, not peak memory.
+
+Small dense/uniform updates took less elapsed maintenance time with partitions,
+while directory rebuilding and per-block scans dominated singleton cases. The
+benchmark measures total elapsed costs, not byte-movement counters.
+Fully moving workloads were slower despite local transfer. Keep partitions
+opt-in, and retain the reordering default. The measured bounded-block
+implementation copied identity-capacity keys,
+inspected blocks, and could move unchanged rows during same-cluster compaction.
+The current layout retains key copying and directory scans but removes
+cross-block compaction; destination growth can still relocate existing columns.
+Cluster selection scans metadata. Application workloads,
+other component widths, structural-heavy frames, Linux comparative timings,
+process/peak memory, and GPU timings remain on the roadmap. GPU functional
+integration ran on the actual local accelerator; it is separate evidence from
+these CPU performance measurements.
+
+The separate default-path PR gate against `6037850` passed all twelve core and
+32 spatial cases in **49.2 seconds**, including four sequential builds and five
+paired samples. It required no regression confirmation. Ordinary 2,048-row
+query/CPU execution changes were +0.1%/-0.6%, stable-ID access was +3.9%, and
+selected mutation was +0.9% in that run. These small shared-machine differences
+are not a zero-overhead guarantee; the existing 30%/500 ns rule is unchanged.
+Hosted Linux/macOS evidence is retained by the PR checks.

@@ -81,6 +81,72 @@ leave gaps beyond the heap-backed resource work above.
 
 ## Unscheduled — no release target
 
+### Spatial component locality
+
+[Decision 0005](design/decisions/0005-filtered-spatial-row-reordering.md)
+accepts filtered clustering and periodic row reordering within archetypes.
+The design is accepted; the internal typed permutation foundation is implemented
+under [decision 0009](design/decisions/0009-typed-row-permutation-foundation.md).
+Classifier registration and explicit maintenance are implemented under
+[decision 0010](design/decisions/0010-spatial-classifier-maintenance.md). Spatial
+performance evidence includes small synthetic cell workloads; complete
+application and memory measurements remain pending.
+Deferred dirty-entity classification is implemented under
+[decision 0008](design/decisions/0008-dirty-entity-spatial-classification.md) and
+[decision 0012](design/decisions/0012-deferred-spatial-maintenance.md). Applications
+still choose explicit maintenance boundaries; structural mutations use full
+rebuilds. Opt-in cluster-local partitions and exact maintained cluster selections
+use one growable store per logical cluster under
+[decision 0014](design/decisions/0014-growable-cluster-stores.md).
+Synthetic paired comparisons cover clean, sparse, and dense updates;
+complete application benefits remain unmeasured.
+
+- [x] Define and implement classifier registration with explicit read-only
+  filters, key/ordering types, configuration binding, and grid/encoding helpers.
+  Specify coordinate bounds and collision handling.
+- [x] Implement the internal typed row-permutation primitive, structural-lock
+  rejection, location repair, and pre-movement validation. Cover cycles, fixed
+  rows, empty archetypes, heap-owned values, and nontrivial lifetimes in
+  `test/host_storage_lifecycle_test.mojo`; add a permutation-only benchmark.
+- [x] Implement explicit maintenance that skips nonmatching archetypes,
+  scans and classifies every eligible row, and permutes all columns and entity
+  IDs while preserving locations, component lifetimes, and structural locks.
+  Specify allocation/movement error guarantees.
+- [x] Cover filter eligibility, negative coordinates, equal-key grouping,
+  already ordered and empty archetypes, unchanged query membership, valid locations,
+  classification of all eligible rows on full rebuilds and dirty identities on
+  other boundaries, absence of implicit
+  maintenance after writes or kernel/system completion, nontrivial component
+  lifetimes, classifier failures, lock rejection,
+  and CPU/GPU execution and copy-back after maintenance. Add public guides when
+  the API is implemented.
+- [x] Compare small uniform, dense, sparse, and mobile cell workloads against
+  scrambled rows, including maintenance cadences; run bounded same-runner
+  base-versus-PR performance checks on every full CI test run.
+- [x] Defer and deduplicate classifier-input invalidations across reference access,
+  CPU/selected execution, structural changes, and GPU copy-back. Preserve locks,
+  identities, eligibility, error retries, and component lifetimes; compare against
+  explicit full scans in `benchmark/dirty_spatial.mojo`.
+- [ ] Evaluate finer structural invalidation and avoid whole-capacity key scratch
+  copying on sparse passes if measured application costs justify the complexity.
+- [x] Compare partitioned storage with deferred row reordering using uniform,
+  dense, singleton sparse, and moving synthetic cell workloads; include all
+  maintenance costs, ordinary query/CPU scan throughput, capacity-derived memory,
+  allocation counts, occupancy, and maintenance cadence in the benchmark guide.
+- [ ] Repeat the historical macOS bounded-block comparisons with growable stores.
+- [ ] Measure complete application spatial workloads, process/peak memory, GPU
+  timing, additional component widths, and structural-heavy maintenance.
+  Synthetic cell-frame results do not establish application benefit.
+- [ ] Define overlapping-filter behavior before supporting multiple registered
+  clustering functions; preserve one physical row order per archetype.
+- [x] Adopt opt-in [partitioned storage](design/decisions/0006-partitioned-spatial-archetype-storage.md)
+  with growable cluster stores, staging, swap-removal, reclamation, exact selections,
+  and ordinary/batch/CPU/GPU integration under decision 0014.
+- [ ] Evaluate persistent cluster directories, growth/shrink policies,
+  and high-water metadata reclamation if measured workload costs justify them.
+
+### Other features
+
 - [ ] Add CI that executes GPU tests on actual accelerator hardware. Deferred
   until a suitable free or sponsored runner is available; retain existing GPU
   tests for local hardware runs. Require accelerator availability so skipped
