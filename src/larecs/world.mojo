@@ -5,6 +5,8 @@ Provides `World`, which owns a [..host_storage.HostStorage], a
 """
 
 from std.sys import has_accelerator
+from std.os import abort
+from .execution import ThreadedExecutionConfig
 
 from tracy import Zone
 
@@ -47,6 +49,11 @@ struct World[*component_types: ComponentType](Copyable, Sized):
     var _device_storage: Optional[Self.DeviceComponentStorage]
     """[..device_storage.DeviceComponentStorage Component Storage] associated with the world."""
 
+    var _threaded_config: ThreadedExecutionConfig
+    """Fixed scheduling policy, preserved by idle copies and moves."""
+    var _execution_active: Bool
+    """Caller-confined flag protecting threaded invocation lifetimes."""
+
     var _execution_unusable: Bool
     """Completion health retained even if the public resource table is replaced."""
 
@@ -63,20 +70,32 @@ struct World[*component_types: ComponentType](Copyable, Sized):
     """Typed maintenance adapter paired with the policy box."""
 
     def _check_execution(self) raises:
-        """Rejects execution after device completion could not be confirmed.
+        """Rejects reentrant execution or unconfirmed prior device completion.
 
         Raises:
-            Error: If a previous queue failure made this world unusable.
+            Error: If threaded execution is active or a prior queue failure
+                made this world unusable.
         """
+        if self._execution_active:
+            raise Error("World execution is already active")
         if self._execution_unusable:
             raise Error("World is unusable after unconfirmed device completion")
 
-    def __init__(out self):
-        """
-        Creates a new [.World].
+    def __init__(
+        out self,
+        *,
+        execution_config: ThreadedExecutionConfig = ThreadedExecutionConfig(),
+    ):
+        """Creates a world with fixed optional threaded scheduling settings.
+
+        Args:
+            execution_config: Scheduling policy; kernels remain sequential unless
+                explicitly invoked with ``threaded=True``.
         """
         with Zone(function_name="World.__init__()"):
             self.storage = Self.HostStorage()
+            self._threaded_config = execution_config.copy()
+            self._execution_active = False
             self._execution_unusable = False
             self._spatial_classifier = None
             self._spatial_maintenance = None
@@ -125,6 +144,61 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                     )
 
             self.resources = ResourceStorage()
+
+    def __init__(out self, *, copy: Self):
+        """Copies an idle world and preserves its scheduling policy.
+
+        Args:
+            copy: Idle source world; active copies abort unconditionally.
+        """
+        if copy._execution_active:
+            abort("Cannot copy an executing world")
+        self.storage = copy.storage.copy()
+        self._device_storage = copy._device_storage.copy()
+        self._threaded_config = copy._threaded_config.copy()
+        self._execution_active = False
+        self._execution_unusable = copy._execution_unusable
+        self.resources = copy.resources.copy()
+        self._spatial_classifier = copy._spatial_classifier.copy()
+        self._spatial_maintenance = copy._spatial_maintenance.copy()
+
+    def __init__(out self, *, deinit move: Self):
+        """Transfers an idle world, including scheduling policy and device state.
+
+        Args:
+            move: Idle source world; active moves abort unconditionally.
+        """
+        if move._execution_active:
+            abort("Cannot move an executing world")
+        self.storage = move.storage^
+        self._device_storage = move._device_storage^
+        self._threaded_config = move._threaded_config^
+        self._execution_active = False
+        self._execution_unusable = move._execution_unusable
+        self.resources = move.resources^
+        self._spatial_classifier = move._spatial_classifier^
+        self._spatial_maintenance = move._spatial_maintenance^
+
+    def __deinit__(deinit self):
+        """Rejects destruction or replacement while worker pointers are live."""
+        if self._execution_active:
+            abort("Cannot destroy an executing world")
+        # Mojo destroys unused fields eagerly, even inside __deinit__. Keep
+        # every owner alive until the active-invocation check has completed.
+        _ = self.storage^
+        _ = self._device_storage^
+        _ = self.resources^
+        _ = self._spatial_classifier^
+        _ = self._spatial_maintenance^
+        _ = self._threaded_config^
+
+    def execution_config(self) -> ThreadedExecutionConfig:
+        """Returns a copy of the world's immutable scheduling policy.
+
+        Returns:
+            Settings preserved by idle world copies and moves.
+        """
+        return self._threaded_config.copy()
 
     def __len__(self, out size: Int):
         """
