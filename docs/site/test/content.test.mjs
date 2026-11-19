@@ -135,3 +135,7 @@ test('real contracts show linked parameter, argument and result types', () => {
   const world = docs.contract(method('world', 'World', '__init__'), 'world.World', 'fixture');
   assert.ok(world.includes('`execution_config`: <code class="api-type"><a href="' + base + 'larecs/execution/ThreadedExecutionConfig/">'));
 });
+
+test('legacy guide fragments survive Astro rendering', () => {
+  assert.equal(docs.shortcodes('{{< legacy-anchor "old-section" >}}'), '<a id="old-section"></a>');
+});

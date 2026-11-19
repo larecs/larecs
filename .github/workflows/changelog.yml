@@ -1,0 +1,34 @@
+name: Changelog
+
+# Feature branches record user-visible changes in a changelog.d/ fragment.
+# PRs into `nightly` must add or update a fragment that links the PR; PRs
+# into `main` must carry a fragment. Label a PR `no-changelog` to skip the
+# check. See scripts/changelog.py.
+
+on:
+  pull_request:
+    branches: [main, nightly]
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+
+permissions: {}
+
+jobs:
+  check:
+    name: Changelog fragment
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Check changelog fragment
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          args=(check --base "origin/${BASE_REF}" --pr "${PR_NUMBER}")
+          if [[ "${BASE_REF}" == "nightly" ]]; then args+=(--require-link); fi
+          python3 scripts/changelog.py "${args[@]}"

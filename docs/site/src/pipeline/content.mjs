@@ -119,6 +119,7 @@ export class Documentation {
     return text.replace(/{{<\s*(.*?)\s*>}}/g, (whole, content) => {
       if (content.startsWith('/*')) return whole.replace('/*', '').replace('*/', '');
       const [kind, ...args] = words(content);
+      if (kind === 'legacy-anchor') return `<a id="${escapeHtml(args[0])}"></a>`;
       if (kind === 'api') return `[${args[1] || args[0]}](${base}${this.link(args[0])})`;
       if (kind === 'source') return `[Source](https://github.com/larecs/larecs/blob/${this.api.revision}/src/larecs/${args[0]})`;
       if (kind === 'repo') return `[${args[1] || args[0]}](https://github.com/larecs/larecs/blob/${this.api.revision}/${args[0]})`;
