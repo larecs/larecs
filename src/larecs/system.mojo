@@ -12,7 +12,7 @@ from std.reflection import reflect_fn
 
 from max.gpu.host import DevicePointer
 from max.algorithm import parallelize
-from .execution import _ExecutionGuard
+from .execution import _ExecutionGuard, ExecutionBackend
 from .lock import LockGuard
 from .sync import AtomicValue
 from .resource_representation import _plain_device_value
@@ -20,7 +20,6 @@ from .resource_representation import _plain_device_value
 from tracy import Zone
 
 from .archetype import Archetype as _Archetype
-from .execution import ExecutionBackend
 from .world import World
 from .host_storage import _sort_entity_ranges
 from .entity import EntityRange
@@ -839,7 +838,7 @@ struct EntitySelection[
             capture_spec: Explicit read-only and mutable capture slots.
             KernelFunc: Thin kernel function to invoke.
             Bindings: Inferred explicit capture binding types.
-            backend: HOST (default), HOST_THREADED, or DEVICE.
+            backend: HOST (default), HOST_THREADED, or DEVICE; no device fallback.
 
         Args:
             bindings: Capture bindings in ``capture_spec`` order.
@@ -852,7 +851,6 @@ struct EntitySelection[
                 or device execution fails.
         """
         _validate_backend[backend]()
-
         comptime if backend == ExecutionBackend.HOST_THREADED:
             comptime assert (
                 len(Bindings) == 0
@@ -1047,7 +1045,7 @@ struct EntitySelection[
             capture_spec: Explicit read-only and mutable capture slots.
             KernelFunc: Inferred unified closure type.
             Bindings: Inferred explicit capture binding types.
-            backend: HOST (default), HOST_THREADED, or DEVICE.
+            backend: Must be HOST; value-taking device callables are unsupported.
 
         Args:
             kernel_func: Closure invoked once per matching selected range.
@@ -1056,11 +1054,10 @@ struct EntitySelection[
         Raises:
             Error: If explicit bindings or required resources are invalid.
         """
-        _validate_backend[backend]()
         comptime assert (
             backend == ExecutionBackend.HOST
         ), "Value-taking kernel callables require ExecutionBackend.HOST"
-
+        _validate_backend[backend]()
         self._world[]._check_execution()
         _validate_resource_spec[
             required_resources, backend == ExecutionBackend.DEVICE
@@ -1724,8 +1721,8 @@ struct SystemContext[
         On the GPU, zero matching rows are a no-op: no columns or resource
         buffers are prepared, no transfers are queued, and no kernel is
         launched. The world's device storage and all required resources are
-        still validated, in that order. Without accelerator support,
-        ``backend=ExecutionBackend.DEVICE`` retains the CPU fallback behavior.
+        still validated, in that order. Selecting DEVICE without accelerator
+        support raises an error, including for empty matches.
 
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
@@ -1734,7 +1731,7 @@ struct SystemContext[
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
-            backend: HOST (default), HOST_THREADED, or DEVICE.
+            backend: HOST (default), HOST_THREADED, or DEVICE; no device fallback.
 
         Args:
             bindings: Explicit read-only and mutable bindings in declared slot order.
@@ -1746,16 +1743,15 @@ struct SystemContext[
                 overflow; context preparation fails; or the device execution
                 path fails to allocate or synchronize.
         """
-        _validate_backend[backend]()
-
         with Zone(
             function_name=String(
                 t"SystemContext.run[filter: Filter, required_resources:"
                 t" Resources, //, KernelFunc:"
                 t" {reflect_fn[KernelFunc].display_name()} , *, backend:"
-                t" Bool]()"
+                t" ExecutionBackend]()"
             )
         ):
+            _validate_backend[backend]()
             comptime if backend == ExecutionBackend.HOST_THREADED:
                 comptime assert (
                     len(Bindings) == 0
@@ -1827,7 +1823,7 @@ struct SystemContext[
                 for ref archetype in matching_archetypes.copy():
                     length += len(archetype)
 
-                # `backend=ExecutionBackend.DEVICE` moves every accessed component and resource
+                # Device execution moves every accessed component and resource
                 # across the host/device boundary as raw bytes (see
                 # `DeviceComponentStorage`/`DeviceResourceStorage`): the
                 # destination is never constructed through `T`'s copy
@@ -1836,7 +1832,7 @@ struct SystemContext[
                 # logic) would be silently corrupted or leaked by that copy,
                 # so reject it here at compile time rather than at the
                 # `DeviceBuffer` call sites below where the failure would be
-                # far less legible. Host execution (`backend=ExecutionBackend.HOST`) is
+                # far less legible. Host execution is
                 # unaffected -- it never takes this branch.
                 comptime assert constrain_device_safe_components[
                     *filter._include.ComponentTypes
@@ -2023,7 +2019,7 @@ struct SystemContext[
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
-            backend: HOST (default), HOST_THREADED, or DEVICE.
+            backend: Must be HOST; value-taking device callables are unsupported.
 
         Args:
             kernel_func: The kernel closure to run once per matching
@@ -2039,19 +2035,18 @@ struct SystemContext[
         Raises:
             Error: If a required resource is missing.
         """
-        _validate_backend[backend]()
-        comptime assert (
-            backend == ExecutionBackend.HOST
-        ), "Value-taking kernel callables require ExecutionBackend.HOST"
-
         with Zone(
             function_name=(
                 "SystemContext.run[filter: Filter, required_resources:"
                 " Resources, //, KernelFunc: def(KernelContext[filter,"
                 " required_resources]) -> None, *, backend:"
-                " Bool](kernel_func: KernelFunc)"
+                " ExecutionBackend](kernel_func: KernelFunc)"
             )
         ):
+            comptime assert (
+                backend == ExecutionBackend.HOST
+            ), "Value-taking kernel callables require ExecutionBackend.HOST"
+            _validate_backend[backend]()
             self.world[]._check_execution()
             _validate_resource_spec[
                 required_resources, backend == ExecutionBackend.DEVICE

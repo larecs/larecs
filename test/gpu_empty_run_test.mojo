@@ -210,7 +210,9 @@ def test_launch_probe_compiles_for_host() raises:
     world.resources.add(Marker(7), Required(42))
     var entity = world.storage.add_entity(Float32(2))
     var context = SystemContext(world)
-    context.run[touch[Filter().include[Float32]()]]()
+    context.run[
+        touch[Filter().include[Float32]()], backend=ExecutionBackend.HOST
+    ]()
     assert_equal(world.storage.get[Float32](entity), 9.0)
     assert_equal(world.resources.get[Marker]().value, 7)
 
