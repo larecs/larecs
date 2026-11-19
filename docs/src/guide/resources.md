@@ -25,6 +25,7 @@ keyed by their runtime type name.
 
 ```mojo {doctest="guide_resources" global=true}
 from larecs import (
+    ExecutionBackend,
     World,
     Entity,
     SystemContext,
@@ -219,11 +220,14 @@ Host kernels may also capture surrounding values and access resources through
 `context.run(kernel)`. See [Capturing host kernels](../systems_scheduler#capturing-host-kernels)
 for an example. Device entry points use the non-capturing `context.run[kernel]()` form.
 
-To run this same kernel on a device, replace its host `run` call with:
+Import `ExecutionBackend` from `larecs` and replace the host `run` call with:
 
 ```mojo
     context.run[move_with_time, backend=ExecutionBackend.DEVICE]()
 ```
+
+Host execution is the default. DEVICE requires a working accelerator and raises
+when unavailable, including for empty matches; it never falls back to HOST.
 
 For device execution, components must conform to `TrivialRegisterPassable`.
 Ordinary resources need a supported pointer-free representation with trivial
@@ -254,7 +258,7 @@ the original source type and receives its read-only `ReadBuffer` view on both
 backends:
 
 ```mojo
-from larecs import BufferResource, Filter, KernelContext, Resources, SystemContext, World
+from larecs import ExecutionBackend, BufferResource, Filter, KernelContext, Resources, SystemContext, World
 
 comptime Samples = BufferResource[DType.int32]
 comptime required = Resources().read[Samples]()
@@ -309,10 +313,10 @@ provide interpolation, coordinate lookup, or other read-only operations.
 ```
 
 ```mojo {doctest="guide_custom_resource" global=true}
-from larecs import ExecutionBackend
 from std.sys import has_accelerator
 from std.testing import assert_equal
 from larecs import (
+    ExecutionBackend,
     DevicePassableResource,
     ResourceAdapter,
     ResourceDeviceCache,
