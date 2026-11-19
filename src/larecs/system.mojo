@@ -11,12 +11,18 @@ from std.sys import has_accelerator
 from std.reflection import reflect_fn
 
 from max.gpu.host import DevicePointer
+from max.algorithm import parallelize
+from .execution import _ExecutionGuard
+from .lock import LockGuard
+from .sync import AtomicValue
+from .resource_representation import _plain_device_value
 
 from tracy import Zone
 
 from .archetype import Archetype as _Archetype
 from .execution import ExecutionBackend
 from .world import World
+from .host_storage import _sort_entity_ranges
 from .entity import EntityRange
 from .error import LarecsError, WorldError
 from .component import (
@@ -235,6 +241,198 @@ def _host_kernel_context[
         length=Int32(row_count),
         thread_count=1,
     )
+
+
+def _validate_threaded_spec[
+    filter: Filter, required_resources: Resources, capture_spec: Captures
+]():
+    """Checks eligibility independently of worker count or sequential fallback.
+
+    Parameters:
+        filter: Accessed components, excluding filter-only exclusions.
+        required_resources: Explicit read-only plain values or adapted sources.
+        capture_spec: Must be empty for threaded kernels.
+
+    Constraints:
+        Accessed components and ordinary resources must be pointer-free values;
+        resources must be read-only, and explicit captures are unsupported.
+    """
+    comptime assert (
+        len(capture_spec) == 0
+    ), "Threaded execution does not support captures"
+    comptime for i in range(len(filter)):
+        comptime assert _plain_device_value[
+            filter._include.ComponentTypes[i]
+        ](), "Threaded components require pointer-free trivial plain values"
+    comptime for i in range(len(required_resources)):
+        comptime T = required_resources.ResourceTypes[i]
+        comptime assert (
+            required_resources._mode[T] == 1
+        ), "Threaded resources require explicit read access"
+        comptime if not conforms_to(T, DevicePassableResource):
+            comptime assert _plain_device_value[T](), (
+                "Threaded resources require pointer-free plain values or"
+                " KernelView adapters"
+            )
+
+
+def _run_threaded[
+    filter: Filter,
+    required_resources: Resources,
+    capture_spec: Captures,
+    KernelFunc: def(
+        KernelContext[filter, required_resources, capture_spec]
+    ) thin -> None,
+    selected: Bool,
+    *WorldTs: ComponentType,
+](mut world: World[*WorldTs], saved_ranges: List[EntityRange]) raises:
+    """Prepares all ranges on the caller, then drains disjoint host jobs and joins.
+
+    Parameters:
+        filter: Kernel component access declaration.
+        required_resources: Read-only invocation resource declarations.
+        capture_spec: Empty capture declaration, retained in the kernel type.
+        KernelFunc: Nonraising thin kernel invoked once per prepared context.
+        selected: Use saved exact ranges rather than discovering whole stores.
+        WorldTs: Component types supported by the world.
+
+    Args:
+        world: Caller-confined world, retained until every worker joins.
+        saved_ranges: Selection membership; ignored for ordinary execution.
+
+    Raises:
+        Error: If execution, resources, ranges, or checked arithmetic are invalid.
+        Preparation completes before any kernel writes; worker failures are fatal.
+    """
+    _validate_threaded_spec[filter, required_resources, capture_spec]()
+    world._check_execution()
+    var active = _ExecutionGuard(
+        Pointer[Bool, MutUntrackedOrigin](
+            unsafe_from_address=Int(Pointer(to=world._execution_active))
+        )
+    )
+    var structural_lock = LockGuard(Pointer(to=world.storage._locks))
+    var binding = _bind_host_resources[required_resources](world.resources)
+    var resources = ResourceAccessor[required_resources](
+        binding.pointers.copy()
+    )
+    var captures = CaptureAccessor[capture_spec]({uninitialized = True})
+    var ranges = List[EntityRange]()
+    comptime bitmask = filter.get_bitmask_filter[*WorldTs]()
+    comptime if selected:
+        ranges = saved_ranges.copy()
+    else:
+        for index in range(len(world.storage._archetypes)):
+            ref store = world.storage._archetypes[index]
+            if len(store) and bitmask.matches(store.get_mask()):
+                ranges.append(EntityRange(index, 0, len(store)))
+    var total = 0
+    for rows in ranges:
+        if rows.archetype_index < 0 or rows.archetype_index >= len(
+            world.storage._archetypes
+        ):
+            raise Error("Invalid threaded store index")
+        ref store = world.storage._archetypes[rows.archetype_index]
+        if (
+            rows.first_row < 0
+            or rows.row_count < 0
+            or rows.first_row > len(store)
+            or rows.row_count > len(store) - rows.first_row
+        ):
+            raise Error("Invalid threaded row range")
+        if not bitmask.matches(store.get_mask()):
+            continue
+        if rows.row_count > Int(Int64.MAX) - total:
+            raise Error("Threaded matched-row count overflows Int")
+        total += rows.row_count
+    comptime if selected:
+        # Validate a sorted copy, preserving whole-range fallback call order.
+        var ordered = ranges.copy()
+        _sort_entity_ranges(ordered)
+        var previous_store = -1
+        var previous_end = 0
+        for rows in ordered:
+            if rows.row_count == 0 or not bitmask.matches(
+                world.storage._archetypes[rows.archetype_index].get_mask()
+            ):
+                continue
+            if (
+                rows.archetype_index == previous_store
+                and rows.first_row < previous_end
+            ):
+                raise Error("Threaded selected ranges overlap")
+            previous_store = rows.archetype_index
+            previous_end = rows.first_row + rows.row_count
+    var config = world.execution_config()
+    var parallel = config.workers() > 1 and total >= config.min_parallel_rows()
+    var chunk_size = max(1, total)
+    if parallel:
+        var target = config.workers() * config.chunks_per_worker()
+        chunk_size = max(1, total // target + Int(total % target != 0))
+    var contexts = List[
+        KernelContext[filter, required_resources, capture_spec]
+    ]()
+    for rows in ranges:
+        if (
+            not bitmask.matches(
+                world.storage._archetypes[rows.archetype_index].get_mask()
+            )
+            or rows.row_count == 0
+        ):
+            continue
+        ref store = world.storage._archetypes.unsafe_get(rows.archetype_index)
+        var first = rows.first_row
+        var remaining = rows.row_count
+        while remaining > 0:
+            var count = min(chunk_size, remaining)
+            if count > Int(Int32.MAX):
+                raise Error("Threaded context exceeds Int32 row limit")
+            contexts.append(
+                _host_kernel_context[filter, required_resources, capture_spec](
+                    store, first, count, resources, captures
+                )
+            )
+            first += count
+            remaining -= count
+    var job_count = len(contexts)
+    var workers = min(config.workers(), job_count)
+    # Each worker can make one terminal claim after all useful claims.
+    if job_count > Int(UInt32.MAX) - workers:
+        raise Error("Threaded job cursor would overflow UInt32")
+    # Publish write invalidation only after every fallible preparation step.
+    # Keep this range predicate synchronized with context preparation above.
+    for rows in ranges:
+        if rows.row_count > 0 and bitmask.matches(
+            world.storage._archetypes[rows.archetype_index].get_mask()
+        ):
+            world.storage._mark_spatial_range[filter](
+                rows.archetype_index, rows.first_row, rows.row_count
+            )
+    if not parallel or workers <= 1:
+        for job in contexts:
+            KernelFunc(job)
+    else:
+        var jobs = contexts.unsafe_ptr()
+        var cursor_owner = AtomicValue[UInt32](0)
+        var cursor = cursor_owner.write_view()
+
+        def worker(lane: Int) {imm jobs, imm job_count, imm cursor}:
+            """Claims jobs dynamically until all prepared contexts are consumed.
+
+            Args:
+                lane: Runtime worker-task index; work is allocated by the cursor.
+            """
+            while True:
+                var index = Int(cursor.fetch_add(1))
+                if index >= job_count:
+                    break
+                KernelFunc(jobs[unsafe_offset=index])
+
+        parallelize(worker, workers, workers)
+    _ = contexts^
+    binding.release()
+    _ = structural_lock^
+    _ = active^
 
 
 struct EntitySelection[
@@ -506,22 +704,34 @@ struct EntitySelection[
             capture_spec: Explicit read-only and mutable capture slots.
             KernelFunc: Thin kernel function to invoke.
             Bindings: Inferred explicit capture binding types.
-            backend: Compile-time execution backend; HOST by default.
+            backend: HOST (default), HOST_THREADED, or DEVICE.
 
         Args:
             bindings: Capture bindings in ``capture_spec`` order.
 
         Raises:
-            Error: If bindings or resources are invalid, or device execution fails.
+            Error: If the world is unusable or already executing; selected ranges
+                are invalid or overlap; bindings or resources are invalid;
+                structural lock slots are exhausted; threaded row totals, job
+                counts, or context sizes overflow; context preparation fails;
+                or device execution fails.
         """
         _validate_backend[backend]()
 
+        comptime if backend == ExecutionBackend.HOST_THREADED:
+            comptime assert (
+                len(Bindings) == 0
+            ), "Threaded execution does not support captures"
+            _run_threaded[
+                filter, required_resources, capture_spec, KernelFunc, True
+            ](self._world[], self._ranges)
+            return
         self._world[]._check_execution()
         _validate_resource_spec[
             required_resources, backend == ExecutionBackend.DEVICE
         ]()
         var host_captures = _bind_captures[capture_spec](*bindings)
-        comptime if backend == ExecutionBackend.HOST:
+        comptime if backend != ExecutionBackend.DEVICE:
             var resource_binding = _bind_host_resources[required_resources](
                 self._world[].resources
             )
@@ -711,7 +921,7 @@ struct EntitySelection[
             capture_spec: Explicit read-only and mutable capture slots.
             KernelFunc: Inferred unified closure type.
             Bindings: Inferred explicit capture binding types.
-            backend: Compile-time execution backend; HOST by default.
+            backend: HOST (default), HOST_THREADED, or DEVICE.
 
         Args:
             kernel_func: Closure invoked once per matching selected range.
@@ -1380,14 +1590,17 @@ struct SystemContext[
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
-            backend: Compile-time execution backend; HOST by default.
+            backend: HOST (default), HOST_THREADED, or DEVICE.
 
         Args:
             bindings: Explicit read-only and mutable bindings in declared slot order.
 
         Raises:
-            Error: If a required resource is missing, or if the device
-                execution path fails to allocate or synchronize.
+            Error: If the world is unusable or already executing; bindings or
+                required resources are invalid; structural lock slots are
+                exhausted; threaded row totals, job counts, or context sizes
+                overflow; context preparation fails; or the device execution
+                path fails to allocate or synchronize.
         """
         _validate_backend[backend]()
 
@@ -1399,12 +1612,20 @@ struct SystemContext[
                 t" Bool]()"
             )
         ):
+            comptime if backend == ExecutionBackend.HOST_THREADED:
+                comptime assert (
+                    len(Bindings) == 0
+                ), "Threaded execution does not support captures"
+                _run_threaded[
+                    filter, required_resources, capture_spec, KernelFunc, False
+                ](self.world[], List[EntityRange]())
+                return
             self.world[]._check_execution()
             _validate_resource_spec[
                 required_resources, backend == ExecutionBackend.DEVICE
             ]()
             var host_captures = _bind_captures[capture_spec](*bindings)
-            comptime if backend == ExecutionBackend.HOST:
+            comptime if backend != ExecutionBackend.DEVICE:
                 var resource_binding = _bind_host_resources[required_resources](
                     self.world[].resources
                 )
@@ -1654,7 +1875,7 @@ struct SystemContext[
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
-            backend: Compile-time execution backend; HOST by default.
+            backend: HOST (default), HOST_THREADED, or DEVICE.
 
         Args:
             kernel_func: The kernel closure to run once per matching
@@ -1739,7 +1960,9 @@ def _validate_backend[backend: ExecutionBackend]() raises:
         Error: If DEVICE is selected without accelerator compilation support.
     """
     comptime assert (
-        backend == ExecutionBackend.HOST or backend == ExecutionBackend.DEVICE
+        backend == ExecutionBackend.HOST
+        or backend == ExecutionBackend.DEVICE
+        or backend == ExecutionBackend.HOST_THREADED
     ), "Invalid execution backend"
     comptime if backend == ExecutionBackend.DEVICE and not has_accelerator():
         raise Error("ExecutionBackend.DEVICE requires accelerator support")
