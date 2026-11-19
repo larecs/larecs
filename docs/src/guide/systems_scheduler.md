@@ -260,6 +260,7 @@ The slot index is compile-time; two slots may have the same value type.
 ```
 
 ```mojo {doctest="guide_gpu_captures" global=true}
+from larecs import ExecutionBackend
 from larecs import (
     World, SystemContext, KernelContext, Filter,
     Captures, ReadCapture, MutCapture, read_capture, mut_capture,
@@ -337,8 +338,9 @@ default. Pass `backend=ExecutionBackend.DEVICE` to run a compatible kernel on an
 same kernel function works on both targets unchanged; see the
 {{< api SystemContext.run >}} and {{< api KernelContext >}} API docs for
 details. GPU execution requires an available accelerator and the corresponding
-Mojo GPU toolchain. On systems without one, `backend=ExecutionBackend.DEVICE` kernels fall back to
-CPU execution.
+Mojo GPU toolchain. Selecting `ExecutionBackend.DEVICE` raises if accelerator
+compilation support or a working device context is unavailable, including for
+empty matches. It never falls back to CPU execution.
 
 Required resources use the same `context.resources.get[T]()` API on the GPU.
 Resource transfer constraints, shared-write safety, and the non-capturing
