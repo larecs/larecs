@@ -70,10 +70,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # PR preview deployments push to gh-pages in the same group; run one at a time.
-    concurrency:
-      group: gh-pages
-      cancel-in-progress: false
+    # No concurrency group: a newer pending job in a group cancels an older
+    # one, which would drop main deployments. Preview deployments write only
+    # under pr-preview/, so concurrent pushes rebase without conflicts.
     steps:
       - name: Download HTML artifacts
         uses: actions/download-artifact@v4
@@ -94,3 +93,4 @@ jobs:
             pr-preview/
             dev/
           force: false
+          attempt-limit: 10
