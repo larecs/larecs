@@ -6,7 +6,7 @@
 # `-g`. See "Known issues" in AGENTS.md for the full writeup.
 
 # Covers `Filter.read`/`Filter.write`, the per-component access modes that
-# let `SystemContext.run`'s GPU path skip an upload or download direction
+# let `SystemContext.run`'s device path skip an upload or download direction
 # it doesn't need (see `Filter.include`'s docstring and `SystemContext.run`
 # in src/larecs/system.mojo). `EntityAccessor.get`/`set` reject the wrong
 # direction at compile time, so the behavior worth testing at runtime is
@@ -21,7 +21,7 @@ from std.testing import *
 from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter
 
 
-# `TrivialRegisterPassable` satisfies `GPUComponentType` (see
+# `TrivialRegisterPassable` satisfies `DeviceComponentType` (see
 # component.mojo): `SystemContext.run(..., backend=ExecutionBackend.DEVICE)` moves component
 # columns as raw bytes, which is only compile-time-permitted for a type
 # with no non-trivial state.
@@ -85,7 +85,7 @@ def test_gpu_read_only_component_uploads_latest_host_state() raises:
     """A read-only filter re-uploads `Value` from the host on every run.
 
     `Value` already has a device column holding `10` in every row, left
-    behind by an earlier write-only kernel run against this same world (GPU
+    behind by an earlier write-only kernel run against this same world (device
     columns are reused across calls). This test then overwrites one
     entity's `Value` directly on the host, bypassing any kernel, before
     running a kernel that only reads `Value`. If the read-only upload were

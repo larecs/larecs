@@ -11,8 +11,8 @@ Component-processing code should use the [systems and kernels
 API](../systems_scheduler): the scheduler runs a system, and the system calls
 {{< api SystemContext.run >}} with a kernel that receives a
 {{< api KernelContext >}}. The system owns the application logic and lifecycle;
-the kernel describes the filtered component work that can execute on the CPU
-or GPU.
+the kernel describes the filtered component work that can execute on the host
+or device.
 
 ```mojo {doctest="guide_vectorization" global=true}
 from larecs import Scheduler, System, SystemContext, KernelContext, Filter
@@ -53,8 +53,8 @@ def main() raises:
     scheduler.run(1)
 ```
 
-The CPU path runs the kernel against each matching archetype's homogeneous
-component columns. The GPU path distributes the same entity loop across GPU
+The host path runs the kernel against each matching archetype's homogeneous
+component columns. The device path distributes the same entity loop across GPU
 threads and copies only the component directions declared by the filter. For
 example, `move_filter` uploads both component columns but downloads only the
 modified `Position` column.
@@ -66,7 +66,7 @@ available accelerator:
 context.run[move_entities, backend=ExecutionBackend.DEVICE]()
 ```
 
-GPU execution requires GPU-safe component types and the corresponding Mojo
+Device execution requires device-safe component types and the corresponding Mojo
 toolchain. If you need explicit CPU `SIMD` batching, that is not part of the
 public systems API yet; avoid depending on archetype storage internals, whose
 layout and iteration contracts may change.

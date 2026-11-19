@@ -1,7 +1,7 @@
 # SKIP_ASAN
 # SKIP_DEBUG
 
-"""Hardware tests for packed GPU execution on entity selections."""
+"""Hardware tests for packed device execution on entity selections."""
 
 from std.sys import has_accelerator
 from std.testing import assert_equal, TestSuite
@@ -29,21 +29,21 @@ from larecs import (
 
 @fieldwise_init
 struct Position(Copyable, TrivialRegisterPassable):
-    """GPU-safe scalar position."""
+    """Device-safe scalar position."""
 
     var value: Float32
 
 
 @fieldwise_init
 struct Tag(Copyable, TrivialRegisterPassable):
-    """GPU-safe marker component."""
+    """Device-safe marker component."""
 
     var value: Int32
 
 
 @fieldwise_init
 struct VisitTotal(ResourceType, TrivialRegisterPassable):
-    """GPU-safe selected-row visit total."""
+    """Device-safe selected-row visit total."""
 
     var value: Int32
 
@@ -86,7 +86,7 @@ def update_with_bindings(
 
 
 def test_gpu_selection_packs_nonzero_ranges_and_reuses_storage() raises:
-    """GPU upload and scatter touch only selected rows across changing sizes.
+    """Device upload and scatter touch only selected rows across changing sizes.
 
     Raises:
         Error: If device execution or an assertion fails.
@@ -119,7 +119,7 @@ def test_gpu_selection_packs_nonzero_ranges_and_reuses_storage() raises:
 
 
 def test_gpu_selection_preserves_resources_captures_and_write_only() raises:
-    """Selected GPU execution copies resources, captures, and writes back.
+    """Selected device execution copies resources, captures, and writes back.
 
     Raises:
         Error: If device execution or an assertion fails.
@@ -173,7 +173,7 @@ def test_gpu_selection_packs_disjoint_ranges_across_archetypes() raises:
 
 
 def main() raises:
-    """Runs GPU entity-selection tests.
+    """Runs device entity-selection tests.
 
     Raises:
         Error: If any discovered test fails.

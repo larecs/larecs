@@ -17,7 +17,7 @@ from larecs import (
 
 @fieldwise_init
 struct Value(Copyable, TrivialRegisterPassable):
-    """GPU-safe benchmark value."""
+    """Device-safe benchmark value."""
 
     var value: Float32
 
@@ -40,7 +40,7 @@ def increment(context: KernelContext[Filter().include[Value]()]):
     """Increments every execution row.
 
     Args:
-        context: Value rows for this execution range or packed GPU launch.
+        context: Value rows for this execution range or packed device launch.
     """
     for entity in context:
         entity.get[Value]().value += 1.0
@@ -60,7 +60,7 @@ def _populate(mut world: World[Value, SelectedTag]) raises:
 
 
 def _bench_full_world(mut bencher: Bencher):
-    """Measures the unchanged ordinary full-world CPU path.
+    """Measures the unchanged ordinary full-world host path.
 
     Args:
         bencher: Benchmark driver.
@@ -93,7 +93,7 @@ struct ArchetypeTag[index: Int](Copyable, TrivialRegisterPassable):
 
 
 def _bench_many_archetypes[closure: Bool](mut bencher: Bencher):
-    """Measures lazy CPU discovery across matching and nonmatching archetypes.
+    """Measures lazy host discovery across matching and nonmatching archetypes.
 
     Parameters:
         closure: Whether to invoke a lexical closure or thin kernel.
@@ -135,7 +135,7 @@ def _bench_many_archetypes[closure: Bool](mut bencher: Bencher):
             increment(rows)
 
         def run_once() {mut context, imm lexical_kernel}:
-            """Runs one filtered CPU invocation, aborting on unexpected failure.
+            """Runs one filtered host invocation, aborting on unexpected failure.
             """
             try:
                 comptime if closure:
@@ -144,7 +144,7 @@ def _bench_many_archetypes[closure: Bool](mut bencher: Bencher):
                     context.run[increment]()
             except e:
                 print(e)
-                abort("Multi-archetype CPU benchmark workload failed")
+                abort("Multi-archetype host benchmark workload failed")
 
         bencher.iter(run_once)
         var count = 0
@@ -154,24 +154,24 @@ def _bench_many_archetypes[closure: Bool](mut bencher: Bencher):
             count += 1
             var value = row.get[Value]().value
             if value != expected_value:
-                abort("Multi-archetype CPU benchmark skipped or repeated rows")
+                abort("Multi-archetype host benchmark skipped or repeated rows")
             total += value
         if count != 3584 or total <= 0:
-            abort("Multi-archetype CPU benchmark validation failed")
+            abort("Multi-archetype host benchmark validation failed")
         comptime if closure:
             if calls != bencher.num_iters * 7 or total != Float32(calls * 512):
                 abort("Multi-archetype closure benchmark visit count failed")
         keep(total)
     except e:
         print(e)
-        abort("Multi-archetype CPU benchmark setup failed")
+        abort("Multi-archetype host benchmark setup failed")
 
 
-def _bench_contiguous_selection[on_gpu: Bool](mut bencher: Bencher):
+def _bench_contiguous_selection[on_device: Bool](mut bencher: Bencher):
     """Measures repeated execution on one small contiguous selection.
 
     Parameters:
-        on_gpu: Whether to execute on the accelerator.
+        on_device: Whether to execute on the accelerator.
 
     Args:
         bencher: Benchmark driver.
@@ -189,7 +189,7 @@ def _bench_contiguous_selection[on_gpu: Bool](mut bencher: Bencher):
                 selection.run[
                     increment,
                     backend=(
-                        ExecutionBackend.DEVICE if on_gpu else ExecutionBackend.HOST
+                        ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
                     ),
                 ]()
                 keep(len(selection))
@@ -204,7 +204,7 @@ def _bench_contiguous_selection[on_gpu: Bool](mut bencher: Bencher):
 
 
 def _bench_disjoint_selection(mut bencher: Bencher):
-    """Measures repeated CPU execution over disjoint single-row ranges.
+    """Measures repeated host execution over disjoint single-row ranges.
 
     Args:
         bencher: Benchmark driver.

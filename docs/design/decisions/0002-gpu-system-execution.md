@@ -1,21 +1,25 @@
 ---
 id: "0002"
-title: "GPU system execution and transfer boundaries"
+title: "Device system execution and transfer boundaries"
 status: accepted
 ---
 
-# Decision 0002: GPU system execution and transfer boundaries
+# Decision 0002: Device system execution and transfer boundaries
 
 ## Context
 
-`SystemContext.run(..., on_gpu=True)` runs the same filtered kernel source as
-the CPU path. Matching entities may occupy multiple archetypes, while a GPU
+`SystemContext.run(..., on_device=True)` runs the same filtered kernel source as
+the host path. Matching entities may occupy multiple archetypes, while a device
 kernel needs a compact device-side row range. Host and device columns also have
 different ownership and lifetime rules.
 
 ## Decision
 
-- Preserve one user-authored kernel implementation for CPU and GPU execution.
+[Decision 0015](0015-host-device-execution-terminology.md) records the beta
+host/device API renames; this decision's execution and transfer rules remain
+unchanged.
+
+- Preserve one user-authored kernel implementation for host and device execution.
   Target selection belongs at the `run` call, not in a separate kernel body.
 - Pack matching archetype rows into device component columns at distinct
   offsets, launch over the packed length, and scatter written rows back to
@@ -27,7 +31,7 @@ different ownership and lifetime rules.
   readable/writable values for each call. Synchronize before returning so
   callers observe completed writes and may safely reuse host state.
 - Transfer only component and resource types supported by the current raw-byte
-  GPU path. Heap-backed resources need a separate ownership and encoding
+  device path. Heap-backed resources need a separate ownership and encoding
   design. Explicit captures and required resources follow their declared
   binding and copy-back rules.
 - Use the [grid-stride iteration decision](0003-grid-stride-entity-iteration.md)
@@ -42,14 +46,14 @@ claiming that component values are resident or synchronized across calls.
 
 ## Consequences
 
-GPU execution is experimental and may cost more than CPU execution for small
+Device execution is experimental and may cost more than host execution for small
 or memory-bound workloads. Host/device transfer and synchronization remain in
 the call path. Adding residency or a different transfer model requires a new
 decision covering invalidation, ownership, and visibility to host callers.
 The portability requirement also applies to future kernel APIs. The current
-CPU-only lexical closure overload and GPU transfer type restrictions are gaps
-to resolve or reject explicitly, not evidence that every CPU callable already
-runs on a GPU.
+host-only lexical closure overload and device transfer type restrictions are gaps
+to resolve or reject explicitly, not evidence that every host callable already
+runs on a device.
 
 [Decision 0013](0013-cluster-local-partition-blocks.md) extends host placement
 with opt-in partition blocks. Packing and scattering traverse each matching
