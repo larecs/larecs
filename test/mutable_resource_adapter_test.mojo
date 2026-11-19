@@ -12,7 +12,7 @@ from fixtures.finalization import (
 )
 from std.sys import has_accelerator
 from std.testing import assert_equal, assert_true, assert_raises, TestSuite
-from larecs import World, SystemContext, Filter
+from larecs import ExecutionBackend, World, SystemContext, Filter
 from fixtures.scatter import (
     Cell,
     Seen,
@@ -98,11 +98,11 @@ def test_device_write_and_read_write() raises:
         var world = _world(3000, 7, 1024)
         world.reuse_device_copies(True)
         var context = SystemContext(world)
-        context.run[scatter_write, on_device=True]()
+        context.run[scatter_write, backend=ExecutionBackend.DEVICE]()
         _check_cells(world.resources.read[Scatter](), 3000, 7, 1)
-        context.run[scatter_append, on_device=True]()
+        context.run[scatter_append, backend=ExecutionBackend.DEVICE]()
         _check_cells(world.resources.read[Scatter](), 3000, 7, 2)
-        context.run[scatter_write, on_device=True]()
+        context.run[scatter_write, backend=ExecutionBackend.DEVICE]()
         _check_cells(world.resources.read[Scatter](), 3000, 7, 1)
         # Mutable sources are prepared on every run, even with copy reuse.
         assert_equal(world.resources.read[Scatter]().prepared, 3)
@@ -110,7 +110,7 @@ def test_device_write_and_read_write() raises:
         # Host and device runs share one representation and contract.
         context.run[scatter_append]()
         _check_cells(world.resources.read[Scatter](), 3000, 7, 2)
-        context.run[scatter_read, on_device=True]()
+        context.run[scatter_read, backend=ExecutionBackend.DEVICE]()
         for entity in world.storage.query[Filter().read[Seen]()]():
             assert_true(entity.get[Seen]().count > 0)
     else:
@@ -127,11 +127,11 @@ def test_device_collisions_and_overflow() raises:
         # 5000 threads contend for two cell counters, 2500 per counter.
         var world = _world(5000, 2, 2500)
         var context = SystemContext(world)
-        context.run[scatter_write, on_device=True]()
+        context.run[scatter_write, backend=ExecutionBackend.DEVICE]()
         _check_cells(world.resources.read[Scatter](), 5000, 2, 1)
         world.resources.get[Scatter]() = Scatter(2, 100, strict=True)
         with assert_raises(contains="Scatter capacity exceeded: 4800 dropped"):
-            context.run[scatter_write, on_device=True]()
+            context.run[scatter_write, backend=ExecutionBackend.DEVICE]()
         # Published outputs remain and the world stays usable.
         ref grid = world.resources.read[Scatter]()
         assert_equal(grid.count(0), 100)
@@ -143,7 +143,7 @@ def test_device_collisions_and_overflow() raises:
                 total += value
         assert_equal(grid.total(), total)
         world.resources.get[Scatter]() = Scatter(2, 2500)
-        context.run[scatter_write, on_device=True]()
+        context.run[scatter_write, backend=ExecutionBackend.DEVICE]()
         _check_cells(world.resources.read[Scatter](), 5000, 2, 1)
     else:
         _skip("test_device_collisions_and_overflow")
@@ -160,9 +160,9 @@ def test_device_empty_query() raises:
         world.resources.get[Scatter]().counts[1] = 2
         world.resources.get[Scatter]().stats[0] = 5
         var context = SystemContext(world)
-        context.run[scatter_append, on_device=True]()
+        context.run[scatter_append, backend=ExecutionBackend.DEVICE]()
         assert_equal(world.resources.read[Scatter]().count(1), 2)
-        context.run[scatter_write, on_device=True]()
+        context.run[scatter_write, backend=ExecutionBackend.DEVICE]()
         assert_equal(world.resources.read[Scatter]().count(1), 0)
         assert_equal(world.resources.read[Scatter]().total(), 0)
         assert_equal(world.resources.read[Scatter]().prepared, 2)
@@ -182,7 +182,7 @@ def test_device_selection() raises:
         var world = _world(10, 2, 64)
         var context = SystemContext(world)
         with context.add_entities(Cell(1), Int32(50), count=300) as selection:
-            selection.run[scatter_write, on_device=True]()
+            selection.run[scatter_write, backend=ExecutionBackend.DEVICE]()
         ref grid = world.resources.read[Scatter]()
         assert_equal(grid.count(0), 0)
         assert_equal(grid.count(1), 64)
@@ -206,11 +206,11 @@ def test_device_all_finalizers_run_after_error() raises:
             with assert_raises(
                 contains="Scatter capacity exceeded: 31 dropped"
             ):
-                context.run[write_pair, on_device=True]()
+                context.run[write_pair, backend=ExecutionBackend.DEVICE]()
             check_pair(world, 32, run + 1)
         with context.add_entities(Int32(7), count=8) as selection:
             with assert_raises(contains="Scatter capacity exceeded: 7 dropped"):
-                selection.run[write_pair, on_device=True]()
+                selection.run[write_pair, backend=ExecutionBackend.DEVICE]()
         check_pair(world, 8, 3)
     else:
         _skip("test_device_all_finalizers_run_after_error")
@@ -227,12 +227,12 @@ def test_device_empty_finalizers_run_after_error() raises:
         seed_pair(world)
         var context = SystemContext(world)
         with assert_raises(contains="Scatter capacity exceeded: 31 dropped"):
-            context.run[preserve_pair, on_device=True]()
+            context.run[preserve_pair, backend=ExecutionBackend.DEVICE]()
         check_pair(world, 32, 1)
         assert_equal(world._last_device_upload.bytes, 0)
         var selection = context._empty_selection()
         with assert_raises(contains="Scatter capacity exceeded: 31 dropped"):
-            selection.run[preserve_pair, on_device=True]()
+            selection.run[preserve_pair, backend=ExecutionBackend.DEVICE]()
         selection^.release()
         check_pair(world, 32, 2)
     else:

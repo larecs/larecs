@@ -7,6 +7,7 @@ Requires a working GPU; build without debug info on Apple Metal.
 from std.sys import has_accelerator
 from std.testing import assert_equal, assert_false
 from larecs import (
+    ExecutionBackend,
     World,
     SystemContext,
     KernelContext,
@@ -159,7 +160,7 @@ def main() raises:
     var context = SystemContext(world)
     context.run[sample_kernel]()
     check_components(world, 10)
-    context.run[sample_kernel, on_device=True]()
+    context.run[sample_kernel, backend=ExecutionBackend.DEVICE]()
     check_components(world, 19)
     context.run[sample_kernel]()
     check_components(world, 28)

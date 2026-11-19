@@ -5,6 +5,7 @@ from std.sys import has_accelerator, size_of
 from std.testing import *
 
 from larecs import (
+    ExecutionBackend,
     EntityRange,
     World,
     Entity,
@@ -136,7 +137,7 @@ def _run(mut world: TestWorld) raises -> Int:
         Bytes uploaded by the invocation.
     """
     var context = SystemContext(world)
-    context.run[accumulate, on_device=True]()
+    context.run[accumulate, backend=ExecutionBackend.DEVICE]()
     return world._last_device_upload.bytes
 
 
@@ -412,7 +413,7 @@ def test_alternating_filters_evict_segments() raises:
         var context = SystemContext(world)
         for i in range(3):
             # Both filters pack their first store at offset 0.
-            context.run[read_float_only_rows, on_device=True]()
+            context.run[read_float_only_rows, backend=ExecutionBackend.DEVICE]()
             assert_equal(world._last_device_upload.bytes, size_of[Float32]())
             assert_true(_run(world) >= rows * size_of[Float32]())
             _check_ints(world, Int32(i + 1))
@@ -457,7 +458,7 @@ def _run_selected(mut world: TestWorld, store: Int) raises -> Int:
     var selection = context._empty_selection()
     selection._ranges.append(EntityRange(store, 0, 2))
     selection._ranges.append(EntityRange(store, 4, 1))
-    selection.run[accumulate, on_device=True]()
+    selection.run[accumulate, backend=ExecutionBackend.DEVICE]()
     selection^.release()
     return world._last_device_upload.bytes
 

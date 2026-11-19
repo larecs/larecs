@@ -8,6 +8,7 @@ from std.sys.info import is_gpu
 from std.testing import *
 
 from larecs import (
+    ExecutionBackend,
     World,
     SystemContext,
     KernelContext,
@@ -274,7 +275,7 @@ def _run_sum(mut world: World[Int32]) raises -> Int:
         Bytes uploaded by the invocation.
     """
     var context = SystemContext(world)
-    context.run[sum_kernel, on_device=True]()
+    context.run[sum_kernel, backend=ExecutionBackend.DEVICE]()
     return world._last_device_upload.bytes
 
 
@@ -484,10 +485,10 @@ def test_device_writes_stamp_copies() raises:
         world.reuse_device_copies(True)
         var context = SystemContext(world)
         var revision = _revision[Counter](world)
-        context.run[count_kernel, on_device=True]()
+        context.run[count_kernel, backend=ExecutionBackend.DEVICE]()
         assert_equal(world._last_device_upload.bytes, size_of[Int32]())
         assert_true(_revision[Counter](world) > revision)
-        context.run[count_kernel, on_device=True]()
+        context.run[count_kernel, backend=ExecutionBackend.DEVICE]()
         assert_equal(world._last_device_upload.bytes, 0)
         assert_equal(world.resources.read[Counter]().value, 2)
         _check_rows(world, 2)
@@ -529,17 +530,17 @@ def test_failure_after_upload_reuploads() raises:
         _ = world.storage.add_entities(Int32(0), count=5)
         world.reuse_device_copies(True)
         var context = SystemContext(world)
-        context.run[flaky_kernel, on_device=True]()
+        context.run[flaky_kernel, backend=ExecutionBackend.DEVICE]()
         _check_rows(world, 3)
         var flaky = Pointer(to=world.resources.get[Flaky]())
         flaky[].fail = True
         world.resources.invalidate_device[Flaky]()
         with assert_raises():
-            context.run[flaky_kernel, on_device=True]()
+            context.run[flaky_kernel, backend=ExecutionBackend.DEVICE]()
         assert_false(world.resources._poisoned)
         flaky[].fail = False
         flaky[].samples[0] = 4
-        context.run[flaky_kernel, on_device=True]()
+        context.run[flaky_kernel, backend=ExecutionBackend.DEVICE]()
         assert_true(world._last_device_upload.bytes > 0)
         _check_rows(world, 4)
 

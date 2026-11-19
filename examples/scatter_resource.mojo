@@ -13,6 +13,7 @@ Run with `pixi run mojo run -I src examples/scatter_resource.mojo`.
 from std.sys import has_accelerator
 from std.testing import assert_equal
 from larecs import (
+    ExecutionBackend,
     AtomicView,
     DevicePassableResource,
     Filter,
@@ -331,7 +332,7 @@ def main() raises:
     context.run[fill_grid, threaded=True]()
     check(world.resources.read[Grid]())
     comptime if has_accelerator():
-        context.run[fill_grid, on_device=True]()
+        context.run[fill_grid, backend=ExecutionBackend.DEVICE]()
         check(world.resources.read[Grid]())
         print("Filled the grid on host, threaded host, and device.")
     else:
