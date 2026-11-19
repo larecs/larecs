@@ -34,6 +34,38 @@ struct NonTriviallyMovableResource(ResourceType):
         self.value = move.value
 
 
+@fieldwise_init
+struct OwningResource(ResourceType):
+    var values: List[Int]
+
+
+@fieldwise_init
+struct NestedOwningResource(ResourceType):
+    var resource: OwningResource
+
+
+@fieldwise_init
+struct PointerResource(ResourceType):
+    var value: Pointer[Int, ImmUntrackedOrigin]
+
+
+@fieldwise_init
+struct ArrayResource(ResourceType):
+    var values: Array[Float32, 4]
+
+
+def test_device_resource_representation() raises:
+    """Rejects owning and pointer-bearing resources, including nested fields.
+
+    Raises:
+        Error: If raw-byte validation accepts an unsafe representation.
+    """
+    assert_false(constrain_device_safe_resources[OwningResource]())
+    assert_false(constrain_device_safe_resources[NestedOwningResource]())
+    assert_false(constrain_device_safe_resources[PointerResource]())
+    assert_false(constrain_device_safe_resources[ArrayResource]())
+
+
 def test_gpu_resource_movability() raises:
     """Checks empty, trivial, and mixed resource lists.
 
