@@ -8,7 +8,7 @@ from std.testing import *
 from std.memory import alloc, dealloc, Layout, Allocation
 
 from larecs.host_storage import HostStorage
-from larecs import World, SpatialClassifier
+from larecs import World, SpatialClassifier, SystemContext, Components
 from larecs.entity import EntityAccessor
 from larecs.entity import Entity
 from larecs.filter import Filter
@@ -361,6 +361,7 @@ def test_host_storage_replace_same_non_trivial_component_in_place() raises:
     _ = storage^
     # Teardown owns only the replacement, not the already-destroyed old value.
     assert_equal(old_counters.del_counter() - old_base_dels, 1)
+    assert_equal(new_counters.del_counter(), 1)
     _ = new_counters.del_counter()
     _ = old_counters.del_counter()
 
@@ -588,6 +589,386 @@ def test_spatial_maintenance_preserves_component_lifetimes() raises:
     assert_equal(world.storage.get[Int](entities[2]), 0)
     _ = world^
     assert_equal(counters.del_counter() - deletes, 3)
+
+
+@fieldwise_init
+struct RetainedValue[counter_origin: MutOrigin](Copyable, Movable):
+    """A tracked component with an owning payload retained by migration.
+
+    Parameters:
+        counter_origin: The origin of the lifecycle counter pointers.
+    """
+
+    var tracked: MemTestStruct[
+        Self.counter_origin, Self.counter_origin, Self.counter_origin
+    ]
+    var payload: String
+
+
+comptime RetainedComponent = RetainedValue[MutUnsafeAnyOrigin]
+
+
+def test_host_storage_replace_migration_and_swap_lifecycle() raises:
+    """Destroy replacements once and move retained values through swap removal.
+
+    Raises:
+        Error: If storage operations or lifecycle assertions fail.
+    """
+    for target_index in range(2):
+        var old = LifecycleCounters()
+        var replacement = LifecycleCounters()
+        var retained = LifecycleCounters()
+        var storage = HostStorage[
+            TrackedComponent, RetainedComponent, Position, Int
+        ]()
+        var entities = List[Entity]()
+        for i in range(2):
+            entities.append(
+                storage.add_entity(
+                    old.component(),
+                    RetainedComponent(retained.component(), String(i)),
+                    Position(1, 2),
+                )
+            )
+        var base_moves = retained.move_counter()
+        var base_copies = retained.copy_counter()
+        storage.replace[TrackedComponent, Position]().by(
+            replacement.component(), Int(7), entity=entities[target_index]
+        )
+        assert_equal(old.del_counter(), 1)
+        assert_equal(retained.del_counter(), 0)
+        assert_equal(retained.copy_counter(), base_copies)
+        assert_equal(retained.move_counter() - base_moves, 2 - target_index)
+        assert_equal(storage.get[Int](entities[target_index]), 7)
+        for i in range(2):
+            assert_equal(
+                storage.get[RetainedComponent](entities[i]).payload, String(i)
+            )
+        # The remaining entity must still resolve after the final row swaps in.
+        storage.remove_entity(entities[1 - target_index])
+        assert_equal(old.del_counter(), 2)
+        assert_equal(retained.del_counter(), 1)
+        _ = storage^
+        assert_equal(old.del_counter(), 2)
+        assert_equal(replacement.del_counter(), 1)
+        assert_equal(retained.del_counter(), 2)
+
+
+def test_host_storage_replace_batch_migration_lifecycle() raises:
+    """Destroy batch replacements and move retained values into appended rows.
+
+    Raises:
+        Error: If storage operations or lifecycle assertions fail.
+    """
+    var old = LifecycleCounters()
+    var replacement = LifecycleCounters()
+    var retained = LifecycleCounters()
+    var existing = LifecycleCounters()
+    var storage = HostStorage[
+        TrackedComponent, RetainedComponent, Position, Int
+    ]()
+    var destination_entity = storage.add_entity(
+        existing.component(),
+        RetainedComponent(existing.component(), "existing"),
+        Int(99),
+    )
+    for i in range(3):
+        _ = storage.add_entity(
+            old.component(),
+            RetainedComponent(retained.component(), String(i)),
+            Position(1, 2),
+        )
+    var base_moves = retained.move_counter()
+    var base_copies = retained.copy_counter()
+    var count = 0
+    for entity in storage.replace[TrackedComponent, Position]().by[
+        filter=Filter().include[TrackedComponent, Position]()
+    ](replacement.component(), Int(7)):
+        assert_equal(storage.get[Int](entity), 7)
+        assert_equal(
+            storage.get[RetainedComponent](entity).payload, String(count)
+        )
+        count += 1
+    assert_equal(count, 3)
+    assert_equal(old.del_counter(), 3)
+    assert_equal(retained.del_counter(), 0)
+    assert_equal(retained.copy_counter(), base_copies)
+    assert_equal(retained.move_counter() - base_moves, 3)
+    assert_equal(storage.get[Int](destination_entity), 99)
+    assert_equal(existing.del_counter(), 0)
+    _ = storage^
+    assert_equal(old.del_counter(), 3)
+    assert_equal(retained.del_counter(), 3)
+    assert_equal(existing.del_counter(), 2)
+    # Batch prototypes and intermediate copies must also be destroyed once.
+    assert_equal(replacement.del_counter(), replacement.copy_counter() + 1)
+
+
+def test_host_storage_replace_batch_same_archetype_lifecycle() raises:
+    """Assign batch replacements in place while retaining other live values.
+
+    Raises:
+        Error: If storage operations or lifecycle assertions fail.
+    """
+    var old = LifecycleCounters()
+    var replacement = LifecycleCounters()
+    var retained = LifecycleCounters()
+    var storage = HostStorage[TrackedComponent, RetainedComponent]()
+    for i in range(3):
+        _ = storage.add_entity(
+            old.component(),
+            RetainedComponent(retained.component(), String(i)),
+        )
+    var base_moves = retained.move_counter()
+    var base_copies = retained.copy_counter()
+    var count = 0
+    for entity in storage.replace[TrackedComponent]().by[
+        filter=Filter().include[TrackedComponent]()
+    ](replacement.component()):
+        assert_equal(
+            storage.get[RetainedComponent](entity).payload, String(count)
+        )
+        count += 1
+    assert_equal(count, 3)
+    assert_equal(old.del_counter(), 3)
+    assert_equal(retained.del_counter(), 0)
+    assert_equal(retained.move_counter(), base_moves)
+    assert_equal(retained.copy_counter(), base_copies)
+    _ = storage^
+    assert_equal(old.del_counter(), 3)
+    assert_equal(retained.del_counter(), 3)
+    assert_equal(replacement.del_counter(), replacement.copy_counter() + 1)
+
+
+def test_host_storage_replace_owning_strings() raises:
+    """Exercise owning replacement values in single and batch migration.
+
+    Raises:
+        Error: If storage operations or payload assertions fail.
+    """
+    var storage = HostStorage[String, Int]()
+    var old_payload = String("old owning payload ") * 128
+    var new_payload = String("new owning payload ") * 128
+    for _ in range(32):
+        _ = storage.add_entity(old_payload.copy())
+    for entity in storage.replace[String]().by[
+        filter=Filter().include[String]().exclude[Int]()
+    ](new_payload.copy(), Int(7)):
+        assert_equal(storage.get[String](entity), new_payload)
+    for _ in range(32):
+        var entity = storage.add_entity(old_payload.copy())
+        storage.replace[String]().by(new_payload.copy(), Int(9), entity=entity)
+        assert_equal(storage.get[String](entity), new_payload)
+        storage.replace[String]().by(old_payload.copy(), entity=entity)
+        assert_equal(storage.get[String](entity), old_payload)
+
+
+def test_host_storage_add_overlap_preserves_rows() raises:
+    """Reject partial and full overlap without changing stored rows.
+
+    Raises:
+        Error: If overlap validation or a storage invariant fails.
+    """
+    comptime for partial in range(2):
+        var storage = HostStorage[Int, Float64]()
+        var entity = storage.add_entity(Int(7))
+        var neighbor = storage.add_entity(Int(11))
+        var location = storage._entity_locations[entity.get_id()]
+        var archetype_count = len(storage._archetypes)
+
+        with assert_raises(
+            contains=ComponentError.existing_components_on_add.msg()
+        ):
+            comptime if partial:
+                storage.add(entity, Int(9), Float64(2))
+            else:
+                storage.add(entity, Int(9))
+
+        assert_equal(len(storage._archetypes), archetype_count)
+        assert_equal(len(storage._entity_pool), 2)
+        assert_equal(len(storage.query[Filter()]()), 2)
+        assert_equal(len(storage.query[Filter().include[Float64]()]()), 0)
+        assert_equal(storage.get[Int](entity), 7)
+        assert_equal(storage.get[Int](neighbor), 11)
+        assert_equal(
+            storage._entity_locations[entity.get_id()].archetype_index,
+            location.archetype_index,
+        )
+        assert_equal(
+            storage._entity_locations[entity.get_id()].entity_index,
+            location.entity_index,
+        )
+
+        # A disjoint add and a swap removal must still use the original row.
+        storage.add(entity, Float64(2))
+        assert_equal(storage.get[Int](entity), 7)
+        assert_equal(storage.get[Float64](entity), 2)
+        storage.remove_entity(entity)
+        assert_equal(storage.get[Int](neighbor), 11)
+        storage.remove_entity(neighbor)
+        assert_equal(len(storage.query[Filter()]()), 0)
+
+
+def test_host_storage_replace_overlap_uses_retained_components() raises:
+    """Subtract removed types before checking partial or full overlap.
+
+    Raises:
+        Error: If replacement validation or stored values are incorrect.
+    """
+    comptime for partial in range(2):
+        var storage = HostStorage[Int, Float64, Bool]()
+        var entity = storage.add_entity(Int(7), Float64(2))
+        var location = storage._entity_locations[entity.get_id()]
+        var archetype_count = len(storage._archetypes)
+
+        with assert_raises(
+            contains=ComponentError.existing_components_on_add.msg()
+        ):
+            comptime if partial:
+                storage.replace[Float64]().by(Int(9), Float64(3), entity=entity)
+            else:
+                storage.replace[Float64]().by(Int(9), entity=entity)
+
+        assert_equal(len(storage._archetypes), archetype_count)
+        assert_equal(len(storage._entity_pool), 1)
+        assert_equal(len(storage.query[Filter()]()), 1)
+        assert_equal(storage.get[Int](entity), 7)
+        assert_equal(storage.get[Float64](entity), 2)
+        assert_equal(
+            storage._entity_locations[entity.get_id()].archetype_index,
+            location.archetype_index,
+        )
+        assert_equal(
+            storage._entity_locations[entity.get_id()].entity_index,
+            location.entity_index,
+        )
+
+        # Re-adding a removed type is legal, including with a new type.
+        storage.replace[Int]().by(Int(9), Bool(True), entity=entity)
+        assert_equal(storage.get[Int](entity), 9)
+        assert_equal(storage.get[Float64](entity), 2)
+        assert_true(storage.get[Bool](entity))
+        assert_equal(len(storage.query[Filter()]()), 1)
+        storage.remove_entity(entity)
+        assert_equal(len(storage.query[Filter()]()), 0)
+
+
+def test_host_storage_rejected_overlap_preserves_lifecycles() raises:
+    """Rejected adds and replacements must not touch retained ownership.
+
+    Raises:
+        Error: If rejection moves, copies, or destroys a retained component.
+    """
+    var counters = LifecycleCounters()
+    var storage = HostStorage[TrackedComponent, Int, Float64, Bool]()
+    var entity = storage.add_entity(counters.component(), Int(7), Bool(True))
+    var base_copies = counters.copy_counter()
+    var base_moves = counters.move_counter()
+    var base_dels = counters.del_counter()
+
+    with assert_raises(
+        contains=ComponentError.existing_components_on_add.msg()
+    ):
+        storage.add(entity, Int(9), Float64(2))
+    with assert_raises(
+        contains=ComponentError.existing_components_on_add.msg()
+    ):
+        storage.replace[Bool]().by(Int(9), Float64(2), entity=entity)
+
+    assert_equal(counters.copy_counter(), base_copies)
+    assert_equal(counters.move_counter(), base_moves)
+    assert_equal(counters.del_counter(), base_dels)
+    assert_equal(storage.get[Int](entity), 7)
+    assert_true(storage.get[Bool](entity))
+    assert_true(storage.has[TrackedComponent](entity))
+    storage.remove_entity(entity)
+    assert_equal(counters.del_counter() - base_dels, 1)
+    assert_equal(len(storage.query[Filter()]()), 0)
+    _ = storage^
+    assert_equal(counters.del_counter() - base_dels, 1)
+
+
+def test_host_storage_single_batch_migration_roundtrip() raises:
+    """Keep identity and values through the same single and batch transitions.
+
+    Exercise retained, removed, replaced and added sets together, append to an
+    occupied destination, replace in place, and return to the original mask.
+
+    Raises:
+        Error: If structural operations, locations, or payload checks fail.
+    """
+    comptime for batch in range(2):
+        var storage = HostStorage[Int, String, Float64, Bool]()
+        var destination = storage.add_entity(Int(99), String("existing"), True)
+        var entities = List[Entity]()
+        for i in range(5):
+            entities.append(storage.add_entity(i, String(i), Float64(i)))
+        comptime if batch:
+            var count = 0
+            for entity in storage.replace[String, Float64]().by[
+                filter=Filter().include[Int, String, Float64]()
+            ](String("replacement"), True):
+                assert_equal(storage.get[Int](entity), count)
+                count += 1
+            assert_equal(count, 5)
+        else:
+            for entity in entities:
+                storage.replace[String, Float64]().by(
+                    String("replacement"), True, entity=entity
+                )
+        for i in range(5):
+            assert_equal(storage.get[Int](entities[i]), i)
+            assert_equal(storage.get[String](entities[i]), "replacement")
+            assert_true(storage.has[Bool](entities[i]))
+            assert_false(storage.has[Float64](entities[i]))
+        assert_equal(storage.get[String](destination), "existing")
+        storage.remove_entity(destination)
+        comptime if batch:
+            _ = storage.replace[String]().by[
+                filter=Filter().include[Int, String, Bool]()
+            ](String("in place"))
+            _ = storage.replace[Bool]().by[
+                filter=Filter().include[Int, String, Bool]()
+            ](Float64(7))
+        else:
+            for entity in entities:
+                storage.replace[String]().by(String("in place"), entity=entity)
+                storage.replace[Bool]().by(Float64(7), entity=entity)
+        assert_equal(len(storage.query[Filter()]()), 5)
+        for i in range(5):
+            var entity = entities[i]
+            assert_equal(storage.get[Int](entity), i)
+            assert_equal(storage.get[String](entity), "in place")
+            assert_equal(storage.get[Float64](entity), 7)
+            assert_false(storage.has[Bool](entity))
+            storage.remove_entity(entity)
+        assert_equal(len(storage.query[Filter()]()), 0)
+
+
+def test_selection_replacement_uses_migration_lifecycle() raises:
+    """Destroy replaced values when exact selections change archetype.
+
+    Raises:
+        Error: If selected mutation or a lifecycle assertion fails.
+    """
+    var old = LifecycleCounters()
+    var replacement = LifecycleCounters()
+    var world = World[TrackedComponent, Int]()
+    var context = SystemContext(world)
+    var selection = context.add_entities(old.component(), count=2)
+    var baseline = old.del_counter()
+    selection.replace[remove=Components[TrackedComponent]()](
+        replacement.component(), Int(7)
+    )
+    assert_equal(old.del_counter() - baseline, 2)
+    assert_equal(len(selection), 2)
+    selection^.release()
+    for row in world.storage.query[Filter().include[Int]()]():
+        assert_equal(row.get[Int](), 7)
+    _ = context^
+    _ = world^
+    assert_equal(old.del_counter(), old.copy_counter() + 1)
+    assert_equal(replacement.del_counter(), replacement.copy_counter() + 1)
 
 
 comptime functions = __functions_in_module()
