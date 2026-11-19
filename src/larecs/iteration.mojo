@@ -181,7 +181,7 @@ struct _ArchetypeIterator[
 
 
 struct EntityAccessorIterator[filter: Filter](Iterator, Movable):
-    """Iterates filtered component rows with CPU or GPU-appropriate strides.
+    """Iterates filtered component rows with host or device-appropriate strides.
 
     The iterator does not enumerate entity IDs or archetypes. It walks the
     dense rows described by ``KernelContext`` and yields an
@@ -190,17 +190,17 @@ struct EntityAccessorIterator[filter: Filter](Iterator, Movable):
     filter's compile-time component order to select a column, then use the
     row offset to access that column's structure-of-arrays (SoA) element.
 
-    On the CPU, iteration starts at row ``0`` and advances by ``1``. The
+    On the host, iteration starts at row ``0`` and advances by ``1``. The
     context therefore describes one homogeneous component range, normally a
-    single matching archetype. On a GPU, ``is_gpu()`` removes the CPU path at
+    single matching archetype. On a device, ``is_gpu()`` removes the host path at
     compile time: each thread starts at ``global_idx.x`` and advances by the
     total number of threads in the launch. This gives every thread the rows
     ``global_idx.x``, ``global_idx.x + thread_count``, and so on, while the
     bounds check stops at ``context.length``.
 
-    The same kernel source is consequently valid on both targets. CPU
+    The same kernel source is consequently valid on both targets. Host
     contexts contain host pointers, while the device-passable host context is
-    converted to device pointers before a GPU launch. The iterator itself
+    converted to device pointers before a device launch. The iterator itself
     performs no host/device copy or synchronization; callers must ensure the
     columns are initialized, have at least ``context.length`` rows, and that
     each row is written by at most one concurrent thread.
@@ -221,7 +221,7 @@ struct EntityAccessorIterator[filter: Filter](Iterator, Movable):
         """Initializes row traversal for the current execution target.
 
         Args:
-            context: The component-column pointers, row count, and GPU launch
+            context: The component-column pointers, row count, and device launch
                 thread count used by the iterator.
         """
         var start: Int32 = 0

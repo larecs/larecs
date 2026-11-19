@@ -52,11 +52,11 @@ def scale_and_record(
     context.captures.get[1]() += context.length
 
 
-def check_capture_round_trip[on_gpu: Bool]() raises:
+def check_capture_round_trip[on_device: Bool]() raises:
     """Checks read-only and copy-back bindings of the same value type.
 
     Parameters:
-        on_gpu: Whether to execute on the GPU.
+        on_device: Whether to execute on the device.
 
     Raises:
         Error: If execution or an assertion fails.
@@ -69,7 +69,9 @@ def check_capture_round_trip[on_gpu: Bool]() raises:
     var context = SystemContext(world)
     context.run[
         scale_and_record,
-        backend=(ExecutionBackend.DEVICE if on_gpu else ExecutionBackend.HOST),
+        backend=(
+            ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+        ),
     ](read_capture(factor), mut_capture(result))
     assert_equal(factor, 3)
     assert_equal(world.storage.get[Int32](entity), 12)
@@ -77,7 +79,7 @@ def check_capture_round_trip[on_gpu: Bool]() raises:
 
 
 def test_cpu_capture_bindings() raises:
-    """Checks bindings on the CPU.
+    """Checks bindings on the host.
 
     Raises:
         Error: If execution or an assertion fails.
@@ -95,11 +97,11 @@ def test_gpu_capture_bindings() raises:
         check_capture_round_trip[True]()
 
 
-def check_repeated_and_empty_bindings[on_gpu: Bool]() raises:
+def check_repeated_and_empty_bindings[on_device: Bool]() raises:
     """Checks repeated transfers, partial GPU blocks, and multiple archetypes.
 
     Parameters:
-        on_gpu: Whether to execute on the GPU.
+        on_device: Whether to execute on the device.
 
     Raises:
         Error: If execution or an assertion fails.
@@ -111,7 +113,9 @@ def check_repeated_and_empty_bindings[on_gpu: Bool]() raises:
     var context = SystemContext(world)
     context.run[
         scale_and_record,
-        backend=(ExecutionBackend.DEVICE if on_gpu else ExecutionBackend.HOST),
+        backend=(
+            ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+        ),
     ](read_capture(factor), mut_capture(processed))
     assert_equal(processed, 9)
     # Re-borrow the world after the first context's last use.
@@ -123,13 +127,17 @@ def check_repeated_and_empty_bindings[on_gpu: Bool]() raises:
     var populated_context = SystemContext(world)
     populated_context.run[
         scale_and_record,
-        backend=(ExecutionBackend.DEVICE if on_gpu else ExecutionBackend.HOST),
+        backend=(
+            ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+        ),
     ](read_capture(factor), mut_capture(processed))
     assert_equal(processed, 46)
     factor = 4
     populated_context.run[
         scale_and_record,
-        backend=(ExecutionBackend.DEVICE if on_gpu else ExecutionBackend.HOST),
+        backend=(
+            ExecutionBackend.DEVICE if on_device else ExecutionBackend.HOST
+        ),
     ](read_capture(factor), mut_capture(processed))
     assert_equal(processed, 83)
     var total: Int32 = 0
@@ -139,7 +147,7 @@ def check_repeated_and_empty_bindings[on_gpu: Bool]() raises:
 
 
 def test_cpu_repeated_and_empty_bindings() raises:
-    """Checks repeated and empty CPU invocations.
+    """Checks repeated and empty host invocations.
 
     Raises:
         Error: If execution or an assertion fails.
@@ -148,7 +156,7 @@ def test_cpu_repeated_and_empty_bindings() raises:
 
 
 def test_gpu_repeated_and_empty_bindings() raises:
-    """Checks repeated and empty GPU invocations.
+    """Checks repeated and empty device invocations.
 
     Raises:
         Error: If execution or an assertion fails.

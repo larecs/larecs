@@ -13,12 +13,12 @@ The changed-entity execution work in issue #170.
 ## Decision
 
 Use locked, exact-range entity selections with in-place mutations and
-reusable CPU/GPU execution. The requirements and consequences follow below.
+reusable host/device execution. The requirements and consequences follow below.
 
 ## Purpose
 
-Let systems create or structurally modify a batch of entities, then execute CPU
-or GPU kernels on exactly that batch. Support further component addition,
+Let systems create or structurally modify a batch of entities, then execute host
+or device kernels on exactly that batch. Support further component addition,
 removal, and replacement on the returned batch.
 
 The result is a locked, range-based `EntitySelection`. It does not track entity
@@ -40,7 +40,7 @@ identity-tracking proposal.
   to their existing access declarations.
 - Unrelated entity creation, deletion, and archetype changes remain blocked.
 - A kernel skips nonmatching selected entities without reporting a filter error.
-  If no entities match, it performs no kernel invocation or GPU launch.
+  If no entities match, it performs no kernel invocation or device launch.
 - A filtered component operation keeps only entities actually modified in the
   resulting selection.
   Skipped entities remain unchanged in the world and leave the selection.
@@ -50,7 +50,7 @@ identity-tracking proposal.
 - An empty result is a valid locked selection. Its lifetime follows the same
   ownership rules as a nonempty result.
 
-An intended workflow is: create a batch, initialize it with a GPU kernel, add
+An intended workflow is: create a batch, initialize it with a device kernel, add
 components to the batch, run another kernel, replace or remove components, then
 release the selection. Each structural step updates that same selection.
 
@@ -58,8 +58,8 @@ release the selection. Each structural step updates that same selection.
 
 Use `EntitySelection` as the public type and `.run(...)` as its execution method.
 Mirror `SystemContext.run`'s supported kernel forms, filter inference, resource
-requirements, explicit capture bindings, and CPU/GPU switch. Retain the CPU
-closure overload; do not add unsupported GPU lexical captures.
+requirements, explicit capture bindings, and host/device switch. Retain the host
+closure overload; do not add unsupported device lexical captures.
 
 Use the existing storage API's naming and overload conventions when exposing
 batch creation and component operations through `SystemContext` and selections.
@@ -78,7 +78,7 @@ Compiler validation on Mojo 1.0 established the following concrete surface:
 - `SystemContext.remove[*Ts, filter=...]() -> EntitySelection`
 - `SystemContext.replace[remove=Components[*Ts](), filter=...](components...)`
 - in-place `EntitySelection.add`, `remove`, and `replace` (`mut self`, no return
-  value) with the same direct replacement form; reusable thin/CPU-closure `EntitySelection.run`; and
+  value) with the same direct replacement form; reusable thin/host-closure `EntitySelection.run`; and
   consuming `selection^.release()`.
 
 Mojo rejects two variadic type packs in one signature, so replacement uses a
@@ -132,7 +132,7 @@ as modification; no component equality comparison is required. A request with
 no component changes produces an empty selection, consistent with existing
 batch behavior.
 
-No stable entity ordering or CPU/GPU-equivalent row numbering is introduced.
+No stable entity ordering or host/device-equivalent row numbering is introduced.
 Entity identities remain stable; execution row indices retain the existing
 backend-local meaning.
 
@@ -201,11 +201,11 @@ execution supplies whole matching archetypes; selected execution supplies the
 intersection of selection ranges and kernel filters. Keep the ordinary path
 lazy where possible to avoid an additional range allocation on every call.
 
-CPU execution offsets each component pointer by the range start and passes the
+Host execution offsets each component pointer by the range start and passes the
 range length to `KernelContext`. It invokes the kernel for each matching range,
 sharing the invocation's resource and capture bindings.
 
-GPU execution computes the total matching length, packs readable component
+Device execution computes the total matching length, packs readable component
 spans into device columns, allocates writable columns, and launches over the
 packed rows. Copy writable component spans back to their original host ranges.
 Preserve write-only handling and existing resource/capture upload and copy-back
@@ -228,7 +228,7 @@ no kernel-driven changes.
   implementation of mutation semantics. Document any changed return types.
 - Do not add selection entity deletion, long-lived identity tracking, selection
   unions, copying, asynchronous execution, or general concurrency guarantees.
-- Heap-backed GPU resources and resource synchronization are separate work.
+- Heap-backed device resources and resource synchronization are separate work.
 - `ResourceStorage.get` retains `UnsafeAnyOrigin` until Mojo can model the
   ownership relationship between `Resources` and stored resource values.
 
@@ -236,7 +236,7 @@ no kernel-driven changes.
 
 Only selected, matching entities are executed or modified, including when source
 or destination archetypes also contain unselected entities. Chained mutations
-preserve identity and valid locations. CPU and GPU produce the expected component
+preserve identity and valid locations. Host and device produce the expected component
 values, captures, and resources. Locks prevent unrelated structural mutations,
 transfer safely through chains, and release on normal and exceptional exits.
 Ordinary queries and full-world execution retain their behavior. Benchmarks
@@ -259,19 +259,19 @@ their internals are consolidated. The accepted requirements are
 `test/entity_selection_test.mojo`, `test/gpu_entity_selection_test.mojo`, and
 `benchmark/entity_selection_benchmark.mojo` provide implementation evidence.
 
-CPU execution now shares `_bind_cpu_resources` and `_cpu_kernel_context` in
+Host execution now shares `_bind_host_resources` and `_host_kernel_context` in
 [`system.mojo`](../../../src/larecs/system.mojo) across ordinary/selected and
 thin/value-taking entry points. Resources and explicit captures bind once per
 invocation; the shared context builder offsets columns by the range start and
-uses the exact range length. Ordinary CPU execution fixes the initial archetype
+uses the exact range length. Ordinary host execution fixes the initial archetype
 count, then scans those indices lazily and reacquires each archetype from storage
-so it does not retain the archetype-list buffer across callbacks. Selected CPU
+so it does not retain the archetype-list buffer across callbacks. Selected host
 execution reads its existing ranges directly. Matching-range
-metadata and aggregate row counting are confined to GPU execution.
+metadata and aggregate row counting are confined to device execution.
 [`cpu_execution_test.mojo`](../../../test/cpu_execution_test.mojo) covers both
-range sources, both CPU kernel forms, shared heap-backed resources and explicit
+range sources, both host kernel forms, shared heap-backed resources and explicit
 captures, disjoint offsets, empty ranges, and exclusion/exclusive filters.
-The [focused comparison](../../src/guide/benchmarks.md#shared-cpu-execution-comparison)
+The [focused comparison](../../src/guide/benchmarks.md#shared-host-execution-comparison)
 records paired baseline/current measurements and their limitations.
 This implements the existing execution contract without changing the API;
 batch mutation consolidation and query iterator migration remain on the roadmap.
