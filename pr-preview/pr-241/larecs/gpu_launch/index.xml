@@ -1,0 +1,116 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Larecs🌲 – gpu_launch</title>
+    <link>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/gpu_launch/</link>
+    <description>Recent content in gpu_launch on Larecs🌲</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	  <atom:link href="https://larecs.github.io/larecs/pr-preview/pr-241/larecs/gpu_launch/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+      
+        
+      
+    
+    
+    <item>
+      <title>gpu_grid_dim</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/gpu_launch/gpu_grid_dim/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/gpu_launch/gpu_grid_dim/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;24a607075a78&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mojo function&lt;a href=&#34;https://github.com/larecs/larecs/blob/24a607075a785e147383eb3a23ef813860a146a1/src/larecs/gpu_launch.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;h1&gt;&lt;code&gt;gpu_grid_dim&lt;/code&gt;&lt;/h1&gt;&lt;script lang=&#34;JS&#34;&gt;
+function expandAll() {
+    var inputs = document.getElementsByTagName(&#39;details&#39;);
+
+    for(var i = 0; i &lt; inputs.length; i++) {
+        inputs[i].open = true;
+    }
+}
+
+function collapseAll() {
+    var inputs = document.getElementsByTagName(&#39;details&#39;);
+
+    for(var i = 0; i &lt; inputs.length; i++) {
+        inputs[i].open = false;
+    }
+}
+&lt;/script&gt;
+&lt;a class=&#34;&#34; onclick=&#34;expandAll()&#34; style=&#34;cursor:pointer;&#34;&gt;Expand&amp;nbsp;all&lt;/a&gt;&amp;nbsp;&amp;nbsp;
+&lt;a class=&#34;&#34; onclick=&#34;collapseAll()&#34; style=&#34;cursor:pointer;&#34;&gt;Collapse&amp;nbsp;all&lt;/a&gt;
+&lt;p&gt;Returns the number of blocks to launch for &lt;code&gt;length&lt;/code&gt; matching rows.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;gpu_grid_dim&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;length&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;Int&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;max_grid_dim&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;Int&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;Int&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Launches one thread per row, but never more blocks than
+&lt;code&gt;max_grid_dim&lt;/code&gt;. Above that cap, the threads of the launch cover the
+remaining rows through the grid-stride loop of &lt;code&gt;EntityAccessorIterator&lt;/code&gt;,
+so the grid stays at roughly one wave of blocks instead of scheduling a
+block per &lt;code&gt;BLOCK_SIZE&lt;/code&gt; rows.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;length&lt;/strong&gt; (&lt;code&gt;Int&lt;/code&gt;): The number of rows the kernel processes.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;max_grid_dim&lt;/strong&gt; (&lt;code&gt;Int&lt;/code&gt;): The maximum number of blocks to launch. A value
+below &lt;code&gt;1&lt;/code&gt; disables the cap.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Int&lt;/code&gt;: The grid dimension; &lt;code&gt;0&lt;/code&gt; if &lt;code&gt;length&lt;/code&gt; is &lt;code&gt;0&lt;/code&gt;.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>max_resident_blocks</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/gpu_launch/max_resident_blocks/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/gpu_launch/max_resident_blocks/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;24a607075a78&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mojo function&lt;a href=&#34;https://github.com/larecs/larecs/blob/24a607075a785e147383eb3a23ef813860a146a1/src/larecs/gpu_launch.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;h1&gt;&lt;code&gt;max_resident_blocks&lt;/code&gt;&lt;/h1&gt;&lt;script lang=&#34;JS&#34;&gt;
+function expandAll() {
+    var inputs = document.getElementsByTagName(&#39;details&#39;);
+
+    for(var i = 0; i &lt; inputs.length; i++) {
+        inputs[i].open = true;
+    }
+}
+
+function collapseAll() {
+    var inputs = document.getElementsByTagName(&#39;details&#39;);
+
+    for(var i = 0; i &lt; inputs.length; i++) {
+        inputs[i].open = false;
+    }
+}
+&lt;/script&gt;
+&lt;a class=&#34;&#34; onclick=&#34;expandAll()&#34; style=&#34;cursor:pointer;&#34;&gt;Expand&amp;nbsp;all&lt;/a&gt;&amp;nbsp;&amp;nbsp;
+&lt;a class=&#34;&#34; onclick=&#34;collapseAll()&#34; style=&#34;cursor:pointer;&#34;&gt;Collapse&amp;nbsp;all&lt;/a&gt;
+&lt;p&gt;Returns a thread-based upper bound on resident &lt;code&gt;BLOCK_SIZE&lt;/code&gt; blocks.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;max_resident_blocks&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;device_context&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;DeviceContext&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;Int&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This is the number of multiprocessors times the number of blocks of
+&lt;code&gt;BLOCK_SIZE&lt;/code&gt; threads each one&amp;rsquo;s thread limit allows, i.e. at most one
+full wave. A kernel&amp;rsquo;s register and shared-memory use can make fewer
+blocks resident at once; this bound does not account for them.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;device_context&lt;/strong&gt; (&lt;code&gt;DeviceContext&lt;/code&gt;): The device to query.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Int&lt;/code&gt;: The upper bound on resident blocks, or &lt;code&gt;0&lt;/code&gt; if the device does not
+report the required attributes.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+  </channel>
+</rss>

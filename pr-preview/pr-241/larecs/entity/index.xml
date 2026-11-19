@@ -1,0 +1,340 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Larecs🌲 – entity</title>
+    <link>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/entity/</link>
+    <description>Recent content in entity on Larecs🌲</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	  <atom:link href="https://larecs.github.io/larecs/pr-preview/pr-241/larecs/entity/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+      
+        
+      
+    
+    
+    <item>
+      <title>Entity</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/entity/Entity/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/entity/Entity/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;24a607075a78&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mojo struct&lt;a href=&#34;https://github.com/larecs/larecs/blob/24a607075a785e147383eb3a23ef813860a146a1/src/larecs/entity.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;h1&gt;&lt;code&gt;Entity&lt;/code&gt;&lt;/h1&gt;&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nd&#34;&gt;@register_passable_trivial&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nc&#34;&gt;Entity&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;Entity identifier. Holds an entity ID and it&amp;rsquo;s generation for recycling.&lt;/p&gt;
+&lt;p&gt;Entities are only created via the &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/larecs/world/World/&#34; &gt;&lt;code&gt;World&lt;/code&gt;&lt;/a&gt;, using &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/larecs/host_storage/HostStorage/#add_entity&#34; &gt;&lt;code&gt;HostStorage.add_entity&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;⚠️ Important:
+Entities are intended to be stored and passed around via copy, not via pointers!
+The zero value should be used to indicate &amp;ldquo;nil&amp;rdquo;, and can be checked with &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/larecs/entity/Entity/#is_zero&#34; &gt;&lt;code&gt;Entity.is_zero&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Implemented traits&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;implemented-traits&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#implemented-traits&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;code&gt;AnyType&lt;/code&gt;, &lt;code&gt;Boolable&lt;/code&gt;, &lt;code&gt;Copyable&lt;/code&gt;, &lt;code&gt;Deinitable&lt;/code&gt;, &lt;code&gt;Equatable&lt;/code&gt;, &lt;code&gt;Hashable&lt;/code&gt;, &lt;code&gt;ImplicitlyCopyable&lt;/code&gt;, &lt;code&gt;Movable&lt;/code&gt;, &lt;code&gt;RegisterPassable&lt;/code&gt;, &lt;code&gt;TrivialRegisterPassable&lt;/code&gt;, &lt;code&gt;Writable&lt;/code&gt;&lt;/p&gt;
+&lt;h2&gt;Methods&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;methods&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#methods&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;script lang=&#34;JS&#34;&gt;
+function expandAll() {
+    var inputs = document.getElementsByTagName(&#39;details&#39;);
+
+    for(var i = 0; i &lt; inputs.length; i++) {
+        inputs[i].open = true;
+    }
+}
+
+function collapseAll() {
+    var inputs = document.getElementsByTagName(&#39;details&#39;);
+
+    for(var i = 0; i &lt; inputs.length; i++) {
+        inputs[i].open = false;
+    }
+}
+&lt;/script&gt;
+&lt;a class=&#34;&#34; onclick=&#34;expandAll()&#34; style=&#34;cursor:pointer;&#34;&gt;Expand&amp;nbsp;all&lt;/a&gt;&amp;nbsp;&amp;nbsp;
+&lt;a class=&#34;&#34; onclick=&#34;collapseAll()&#34; style=&#34;cursor:pointer;&#34;&gt;Collapse&amp;nbsp;all&lt;/a&gt;
+&lt;h3&gt;&lt;code&gt;__init__&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;__init__&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#__init__&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Initializes the entity from an &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/larecs/archetype/ArchetypeRowAccessor/&#34; &gt;&lt;code&gt;ArchetypeRowAccessor&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;fm&#34;&gt;__init__&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;accessor&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ArchetypeRowAccessor&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;filter&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;accessor.filter&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;])&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Self&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;accessor&lt;/strong&gt; (&lt;code&gt;ArchetypeRowAccessor[filter=accessor.filter]&lt;/code&gt;): The entity accessor to initialize from.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Self&lt;/code&gt;&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;__bool__&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;__bool__&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#__bool__&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Returns whether this entity is not the zero entity.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;fm&#34;&gt;__bool__&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Bool&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Bool&lt;/code&gt;: True if this entity is not the zero entity.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;__eq__&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;__eq__&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#__eq__&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Compares two entities for equality.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;fm&#34;&gt;__eq__&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;other&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Bool&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;other&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;): The other entity to compare to.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Bool&lt;/code&gt;: True if both entities have the same ID and generation.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;__ne__&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;__ne__&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#__ne__&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Compares two entities for inequality.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;fm&#34;&gt;__ne__&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;other&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Bool&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;other&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;): The other entity to compare to.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Bool&lt;/code&gt;: True if the entities differ in ID or generation.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;__str__&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;__str__&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#__str__&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Returns a string representation of the entity.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;fm&#34;&gt;__str__&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;String&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;String&lt;/code&gt;: A string of the form &amp;ldquo;Entity(id, generation)&amp;rdquo;.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;__hash__&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;__hash__&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#__hash__&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Returns a unique hash of the entity.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;fm&#34;&gt;__hash__&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;H&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Hasher&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;](&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;mut&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;hasher&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;H&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Parameters:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;H&lt;/strong&gt; (&lt;code&gt;Hasher&lt;/code&gt;): The hasher type to use.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;hasher&lt;/strong&gt; (&lt;code&gt;H&lt;/code&gt;): The hasher to update with the entity&amp;rsquo;s ID and generation.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;code&gt;get_id&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;get_id&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#get_id&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Returns the entity&amp;rsquo;s ID.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;get_id&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;EntityId&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;EntityId&lt;/code&gt;: The entity&amp;rsquo;s ID.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;get_generation&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;get_generation&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#get_generation&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Returns the entity&amp;rsquo;s generation.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;get_generation&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;UInt32&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;UInt32&lt;/code&gt;: The entity&amp;rsquo;s generation.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;is_zero&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;is_zero&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#is_zero&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Returns whether this entity is the reserved zero entity.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;is_zero&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Bool&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Bool&lt;/code&gt;: True if this entity is the reserved zero entity.&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>EntityAccessor</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/entity/EntityAccessor/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/entity/EntityAccessor/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;24a607075a78&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mojo struct&lt;a href=&#34;https://github.com/larecs/larecs/blob/24a607075a785e147383eb3a23ef813860a146a1/src/larecs/entity.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;h1&gt;&lt;code&gt;EntityAccessor&lt;/code&gt;&lt;/h1&gt;&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nd&#34;&gt;@memory_only&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nc&#34;&gt;EntityAccessor&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;filter&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Filter&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;filter&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;_include&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;filter&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;_exclude&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;filter&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;_is_exclusive&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;filter&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;_read&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;filter&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;_written&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]]&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;Non-owning mutable accessor for a single entity.&lt;/p&gt;
+&lt;h2&gt;Parameters&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;parameters&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#parameters&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;filter&lt;/strong&gt; (&lt;code&gt;Filter[filter._include, filter._exclude, filter._is_exclusive, filter._read, filter._written]&lt;/code&gt;): The comptime &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/larecs/filter/Filter/&#34; &gt;&lt;code&gt;Filter&lt;/code&gt;&lt;/a&gt; controlling which components are accessible via this accessor.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Fields&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;fields&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#fields&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;idx&lt;/strong&gt; (&lt;code&gt;Int&lt;/code&gt;): The index of the entity row in the component table.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Implemented traits&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;implemented-traits&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#implemented-traits&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;code&gt;AnyType&lt;/code&gt;, &lt;code&gt;Copyable&lt;/code&gt;, &lt;code&gt;Deinitable&lt;/code&gt;, &lt;code&gt;Movable&lt;/code&gt;&lt;/p&gt;
+&lt;h2&gt;Methods&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;methods&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#methods&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;script lang=&#34;JS&#34;&gt;
+function expandAll() {
+    var inputs = document.getElementsByTagName(&#39;details&#39;);
+
+    for(var i = 0; i &lt; inputs.length; i++) {
+        inputs[i].open = true;
+    }
+}
+
+function collapseAll() {
+    var inputs = document.getElementsByTagName(&#39;details&#39;);
+
+    for(var i = 0; i &lt; inputs.length; i++) {
+        inputs[i].open = false;
+    }
+}
+&lt;/script&gt;
+&lt;a class=&#34;&#34; onclick=&#34;expandAll()&#34; style=&#34;cursor:pointer;&#34;&gt;Expand&amp;nbsp;all&lt;/a&gt;&amp;nbsp;&amp;nbsp;
+&lt;a class=&#34;&#34; onclick=&#34;collapseAll()&#34; style=&#34;cursor:pointer;&#34;&gt;Collapse&amp;nbsp;all&lt;/a&gt;
+&lt;h3&gt;&lt;code&gt;get&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;get&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#get&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Loads an included component value for this entity.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;get&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;T&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ComponentType&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;](&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ref&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;UntrackedOrigin&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;TypeList.contains&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;filter&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;_include.ComponentTypes.values&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]()]]&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;T&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Returns a mutable reference when the kernel&amp;rsquo;s filter marked &lt;code&gt;T&lt;/code&gt;
+writable (via &lt;code&gt;Filter.include&lt;/code&gt; or &lt;code&gt;Filter.write&lt;/code&gt;), and an
+immutable reference when the filter marked &lt;code&gt;T&lt;/code&gt; read-only (via
+&lt;code&gt;Filter.read&lt;/code&gt;). This is enforced by the compiler, not just
+documented: the returned reference&amp;rsquo;s own type differs between the
+two cases, so writing through a read-only &lt;code&gt;get&lt;/code&gt; is a compile
+error rather than a runtime one.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Parameters:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;T&lt;/strong&gt; (&lt;code&gt;ComponentType&lt;/code&gt;): The component type to load.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Returns:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;ref[UntrackedOrigin[TypeList.contains[filter._include.ComponentTypes.values]()]] T&lt;/code&gt;: A reference to the component value for this entity.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Constraints:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;T&lt;/code&gt; must be included by the kernel&amp;rsquo;s filter and marked
+readable (via &lt;code&gt;Filter.read&lt;/code&gt; or &lt;code&gt;Filter.include&lt;/code&gt;). A
+write-only component&amp;rsquo;s previous value is never uploaded to
+the kernel, so reading it would read uninitialized or stale
+device memory; use &lt;code&gt;set&lt;/code&gt; to write it instead.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;set&lt;/code&gt;&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;set&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#set&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Stores a component value for this entity in device storage.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;set&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;T&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ComponentType&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;](&lt;/span&gt;&lt;span class=&#34;bp&#34;&gt;self&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;var&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;component&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;T&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Parameters:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;T&lt;/strong&gt; (&lt;code&gt;ComponentType&lt;/code&gt;): The component type to store.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Args:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;self&lt;/strong&gt; (&lt;code&gt;Self&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;component&lt;/strong&gt; (&lt;code&gt;T&lt;/code&gt;): The component value to store.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Constraints:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;T&lt;/code&gt; must be included by the kernel&amp;rsquo;s filter and marked
+writable (via &lt;code&gt;Filter.write&lt;/code&gt; or &lt;code&gt;Filter.include&lt;/code&gt;).&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>EntityLocation</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/entity/EntityLocation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/entity/EntityLocation/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;24a607075a78&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mojo struct&lt;a href=&#34;https://github.com/larecs/larecs/blob/24a607075a785e147383eb3a23ef813860a146a1/src/larecs/entity.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;h1&gt;&lt;code&gt;EntityLocation&lt;/code&gt;&lt;/h1&gt;&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nd&#34;&gt;@register_passable_trivial&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nc&#34;&gt;EntityLocation&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;Indicates where an entity is currently stored.&lt;/p&gt;
+&lt;h2&gt;Fields&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;fields&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#fields&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;entity_index&lt;/strong&gt; (&lt;code&gt;Int&lt;/code&gt;): Entity&amp;rsquo;s current row in its physical store.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;archetype_index&lt;/strong&gt; (&lt;code&gt;Int&lt;/code&gt;): Physical store index currently storing the entity.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Implemented traits&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;implemented-traits&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#implemented-traits&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;code&gt;AnyType&lt;/code&gt;, &lt;code&gt;Copyable&lt;/code&gt;, &lt;code&gt;Deinitable&lt;/code&gt;, &lt;code&gt;ImplicitlyCopyable&lt;/code&gt;, &lt;code&gt;Movable&lt;/code&gt;, &lt;code&gt;RegisterPassable&lt;/code&gt;, &lt;code&gt;TrivialRegisterPassable&lt;/code&gt;&lt;/p&gt;
+
+      </description>
+    </item>
+    
+    <item>
+      <title>EntityRange</title>
+      <link>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/entity/EntityRange/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://larecs.github.io/larecs/pr-preview/pr-241/larecs/entity/EntityRange/</guid>
+      <description>
+        
+        
+        &lt;p&gt;Development reference · Larecs 1.0.0b1 · revision &lt;code&gt;24a607075a78&lt;/code&gt;. Host threading and device execution are experimental. &lt;a href=&#34;https://larecs.github.io/larecs/pr-preview/pr-241/reference/compatibility/&#34;&gt;Compatibility and status&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mojo struct&lt;a href=&#34;https://github.com/larecs/larecs/blob/24a607075a785e147383eb3a23ef813860a146a1/src/larecs/entity.mojo&#34;&gt;Source&lt;/a&gt;&lt;/p&gt;
+&lt;h1&gt;&lt;code&gt;EntityRange&lt;/code&gt;&lt;/h1&gt;&lt;div class=&#34;hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code&#34;&gt;
+
+&lt;div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mojo&#34; data-lang=&#34;mojo&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nd&#34;&gt;@register_passable_trivial&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nc&#34;&gt;EntityRange&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&#34;hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0&#34;&gt;
+  &lt;button
+    class=&#34;hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50&#34;
+    title=&#34;Copy code&#34;
+  &gt;
+    &lt;div class=&#34;copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+    &lt;div class=&#34;success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4&#34;&gt;&lt;/div&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;A bounded contiguous set of entity rows in one physical store.&lt;/p&gt;
+&lt;p&gt;Args:
+archetype_index: The physical store index containing the rows (a partition block when enabled).
+first_row: The first included row in the archetype.
+row_count: The number of included rows.&lt;/p&gt;
+&lt;h2&gt;Fields&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;fields&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#fields&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;archetype_index&lt;/strong&gt; (&lt;code&gt;Int&lt;/code&gt;): Physical store index containing the rows.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;first_row&lt;/strong&gt; (&lt;code&gt;Int&lt;/code&gt;): Index of the first included row.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;row_count&lt;/strong&gt; (&lt;code&gt;Int&lt;/code&gt;): Number of included rows.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Implemented traits&lt;span class=&#34;hx-absolute -hx-mt-20&#34; id=&#34;implemented-traits&#34;&gt;&lt;/span&gt;
+    &lt;a href=&#34;#implemented-traits&#34; class=&#34;subheading-anchor&#34; aria-label=&#34;Permalink for this section&#34;&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;code&gt;AnyType&lt;/code&gt;, &lt;code&gt;Copyable&lt;/code&gt;, &lt;code&gt;Deinitable&lt;/code&gt;, &lt;code&gt;ImplicitlyCopyable&lt;/code&gt;, &lt;code&gt;Movable&lt;/code&gt;, &lt;code&gt;RegisterPassable&lt;/code&gt;, &lt;code&gt;TrivialRegisterPassable&lt;/code&gt;&lt;/p&gt;
+
+      </description>
+    </item>
+    
+  </channel>
+</rss>
