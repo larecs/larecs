@@ -110,8 +110,8 @@ resolution for later rebuilds. Pushing requires permission to bypass the
 `nightly` branch rules.
 
 The rebuild retains branches whose tips advanced or were rewritten after their
-nightly merge. Rewritten branches are identified by standard Git or GitHub
-merge messages; use `--add` if a custom merge message prevents discovery.
+nightly merge. Advanced or rewritten branches are identified by standard Git or
+GitHub merge messages; use `--add` if a custom merge message prevents discovery.
 Publishing atomically saves the previous nightly tip under
 `nightly-history/<commit>` before replacing `nightly`. Keep these archive
 branches: the feature branch check uses them to detect accidental merges from

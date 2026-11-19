@@ -81,22 +81,19 @@ collect_branches() {
         candidates=("${sorted[@]}")
     fi
 
-    local commit branch subject merged_tip ordered=() assigned=" "
+    local commit branch subject source ordered=() assigned=" "
     while read -r commit; do
         subject="$(git log -1 --format=%s "$commit")"
-        merged_tip="$(git rev-parse --verify "$commit^2" 2>/dev/null || true)"
-        if [[ -n "$merged_tip" ]] && git merge-base --is-ancestor "$merged_tip" "$remote/main"; then
-            merged_tip=""
-        fi
+        source="${subject#* from }"
         for branch in "${candidates[@]+"${candidates[@]}"}"; do
             [[ "$assigned" == *" $branch "* ]] && continue
-            # An advanced tip still contains the merged revision. A rewritten
-            # tip is identified by the standard Git or GitHub merge subject.
+            # Contained tips are already tested. Advanced or rewritten tips
+            # require the branch's own merge subject: a shared ancestor alone
+            # could also belong to a stacked branch never merged into nightly.
             if git merge-base --is-ancestor "$remote/$branch" "$commit" \
-                || { [[ -n "$merged_tip" ]] && git merge-base --is-ancestor "$merged_tip" "$remote/$branch" 2>/dev/null; } \
                 || [[ "$subject" == "Merge branch '$branch' into nightly" ]] \
                 || [[ "$subject" == "Merge remote-tracking branch '$remote/$branch' into nightly" ]] \
-                || [[ "$subject" == "Merge pull request #"*" from "*"/$branch" ]]; then
+                || { [[ "$subject" == "Merge pull request #"*" from "* ]] && [[ "${source#*/}" == "$branch" ]]; }; then
                 ordered+=("$branch")
                 assigned+="$branch "
             fi
