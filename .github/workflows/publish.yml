@@ -73,8 +73,8 @@ jobs:
 
       - name: Copy benchmark results to docs
         run: |
-          mkdir -p docs/src/guide/images
-          cp benchmark/plots/results/aos_benchmark.svg docs/src/guide/images/
+          mkdir -p docs/site/static/images
+          cp benchmark/plots/results/aos_benchmark.svg docs/site/static/images/
 
       - name: Use the preview base URL for pull requests
         if: ${{ github.event_name == 'pull_request' }}
