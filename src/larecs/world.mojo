@@ -115,8 +115,8 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                 # it rather than attempting then immediately catching a
                 # doomed call: only `self.storage` (host storage) gets built,
                 # `self._device_storage` stays empty, and
-                # `SystemContext.run(..., backend=ExecutionBackend.DEVICE)` already compiles out
-                # its entire device path under this same `has_accelerator()`
+                # DEVICE requests raise before execution and compile out
+                # the entire device path under this same `has_accelerator()`
                 # check (see `system.mojo`), so no device method is reachable
                 # from a world built this way.
                 self._device_storage = None
@@ -130,7 +130,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                     # routine, expected condition even on a build that
                     # supports GPU compilation (most hosts don't have one
                     # plugged in), so this constructor -- unlike
-                    # `SystemContext.run(..., backend=ExecutionBackend.DEVICE)`, which does
+                    # explicit DEVICE execution, which does
                     # raise a clear error when it actually needs a device --
                     # must not fail outright here just because a device
                     # context could not be created. But it must not stay
@@ -138,7 +138,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                     # here on is `self._device_storage` being empty, and
                     # the first thing a caller who *did* expect a device sees
                     # is an unrelated-looking error much later, at the
-                    # first `backend=ExecutionBackend.DEVICE` run. Surface the real cause now,
+                    # first DEVICE run. Surface the real cause now,
                     # in debug builds, at the point it actually occurred.
                     self._device_storage = None
                     debug_warn(

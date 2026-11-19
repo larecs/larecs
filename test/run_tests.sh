@@ -48,12 +48,19 @@ done
 
 # A complete suite run also verifies public compile-time classifier diagnostics.
 # Individual test-file runs retain the existing focused behavior.
+run_backend_contracts=false
 run_spatial_performance=false
 run_synchronization_contracts=false
 run_resource_contracts=false
 run_threaded_contracts=false
 larecs_test_directory="$(cd "$(dirname "$0")" && pwd)"
 for test_path in "${test_args[@]}"; do
+    if [ "${test_path##*/}" = "world_entity_iterator_test.mojo" ]; then
+        python "$larecs_test_directory/check_iteration_contracts.py"
+    fi
+    if [ "${test_path##*/}" = "execution_backend_test.mojo" ]; then
+        run_backend_contracts=true
+    fi
     if [ "${test_path##*/}" = "threaded_execution_test.mojo" ]; then
         run_threaded_contracts=true
     fi
@@ -65,15 +72,21 @@ for test_path in "${test_args[@]}"; do
     fi
     if [ -d "$test_path" ] && \
         [ "$(cd "$test_path" && pwd)" = "$larecs_test_directory" ]; then
+        run_backend_contracts=true
         run_spatial_performance=true
         run_resource_contracts=true
         run_threaded_contracts=true
         run_synchronization_contracts=true
+        python "$larecs_test_directory/check_iteration_contracts.py"
         python "$larecs_test_directory/check_struct_constraints.py"
         bash "$larecs_test_directory/check_spatial_filters.sh"
         break
     fi
 done
+
+if "$run_backend_contracts"; then
+    python "$larecs_test_directory/check_execution_backend_contracts.py"
+fi
 
 if "$run_synchronization_contracts"; then
     python "$larecs_test_directory/check_synchronization_contracts.py"
@@ -87,13 +100,6 @@ fi
 if "$run_resource_contracts"; then
     python "$larecs_test_directory/check_resource_contracts.py"
 fi
-
-for backend_test_path in "${test_args[@]}"; do
-    if [ -d "$backend_test_path" ] || [ "${backend_test_path##*/}" = "execution_backend_test.mojo" ]; then
-        python "$(dirname "$0")/check_execution_backend_contracts.py"
-        break
-    fi
-done
 
 mogo-tester "${precompile_args[@]}" --asan --mojo-build-args="${mojo_build_args[*]}" "${test_args[@]}"
 

@@ -198,3 +198,10 @@ ordinary queries traverse all matching blocks and staging rows. Logical
 archetype composition and query membership stay the same; row indices name a
 physical store and are not stable identifiers. Query locks and independent copy
 cursors apply across block boundaries too.
+
+Queries return `iteration.LockedEntityRange` through `HostStorage.Iterator`.
+They share immutable store indices across copies; each copy owns its traversal
+position and a separate structural lock. Query access stays read-only. For
+execution on changed rows, use `SystemContext` batch operations and
+`EntitySelection.run`; low-level storage ranges are described in
+[batch creation](../adding_and_removing_entities).
