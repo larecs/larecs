@@ -63,11 +63,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=['build', 'verify', 'serve', 'watch'])
     command = parser.parse_args().command
+    run('npm', 'ci', cwd=ROOT / 'docs/site')
     if command in {'serve', 'watch'}:
         generate()
         run('npm', 'run', 'dev', '--', '--host', '127.0.0.1', cwd=ROOT / 'docs/site')
         return
-    run('npm', 'ci', cwd=ROOT / 'docs/site')
     renderer = generate()
     # Both build and verify gate publishing on execution, never compilation alone.
     run('pixi', 'run', 'doctest')

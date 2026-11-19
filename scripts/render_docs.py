@@ -102,6 +102,10 @@ class Renderer:
         symbol = symbol.removeprefix('larecs.')
         if symbol.startswith('.'):
             dots = len(symbol) - len(symbol.lstrip('.'))
+            if dots == 1:
+                owned = context + symbol
+                if owned in self.api['symbols']:
+                    return self.api['symbols'][owned]['target']
             parts = context.split('.')[:1]
             symbol = '.'.join(parts[:len(parts)-dots+1] + [symbol[dots:]])
         candidates = [symbol, context + '.' + symbol]
@@ -114,8 +118,9 @@ class Renderer:
         # Compiler docstrings use Modo-style [relative.Symbol] references.
         def cross(match):
             symbol = match[1]
-            return f'[{symbol.lstrip(".")}]({BASE}{self.link(symbol, context)})'
-        text = re.sub(r'(?<![!`\w])\[([.\w]+)\](?![(`\[])', cross, text)
+            label = match[2] or symbol.lstrip('.')
+            return f'[{label}]({BASE}{self.link(symbol, context)})'
+        text = re.sub(r'(?<![!`\w])\[([.\w]+)(?:[ \t]+([^\]\n]+))?\](?![(`\[])', cross, text)
         return text
 
     def extract(self, text, owner):
@@ -167,6 +172,9 @@ class Renderer:
                 path += '/'
             return '](' + resolved._replace(path=path).geturl() + ')'
         body = transform_prose(body, lambda text: re.sub(r'\]\(([^\s)]+)\)', destination, text))
+        body = transform_prose(body, lambda text: re.sub(
+            r'!\[[^\]]*\]\([^\s)]+\.svg\)',
+            lambda match: '\n<div class="diagram">\n\n' + match[0] + '\n\n</div>\n', text))
         path = CONTENT / (route + '.md' if route else 'index.md')
         path.parent.mkdir(parents=True, exist_ok=True)
         metadata = {'title': title, 'slug': route, 'sidebar': {'order': weight, 'hidden': hidden}}

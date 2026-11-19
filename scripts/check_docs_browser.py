@@ -70,6 +70,9 @@ def check_browser(public=None, base=None):
                         image.evaluate("image => image.decode()")
                     except Exception as error:
                         raise ValueError(f"Cannot decode {image.get_attribute('src')}: {errors}") from error
+                    if image.get_attribute('src').endswith('.svg'):
+                        if image.evaluate("image => image.getBoundingClientRect().width < 720 || !image.closest('.diagram') || getComputedStyle(image.closest('.diagram')).overflowX !== 'auto'"):
+                            raise ValueError(f"Diagram labels shrink or cannot scroll at {width}px: {route}")
                 checked.append({"route": route, "width": width})
                 if width == 360 and route in {"start/first_simulation/", "larecs/system/SystemContext/"}:
                     page.screenshot(path=str(output / (route.strip("/").replace("/", "-") + ".png")), full_page=True)
