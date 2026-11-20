@@ -72,20 +72,3 @@
   border-radius: 0.25rem;
   background: var(--sl-color-bg-inline-code);
 }
-
-/* Nested sidebar groups (API modules) match the weight and size of sibling links. */
-.sidebar-content ul ul summary {
-  padding-block: 0.3em;
-}
-.sidebar-content ul ul summary .large {
-  font-size: inherit;
-  font-weight: 400;
-  color: var(--sl-color-gray-2);
-}
-@media (min-width: 50rem) {
-  .sidebar-content ul ul summary .large { font-size: var(--sl-text-sm); }
-}
-.sidebar-content ul ul summary:hover .large,
-.sidebar-content ul ul details:has([aria-current='page']) > summary .large {
-  color: var(--sl-color-white);
-}

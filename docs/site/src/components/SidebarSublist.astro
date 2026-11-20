@@ -1,0 +1,183 @@
+---
+/*
+  Starlight's sidebar list with linked groups: a group whose first entry is
+  marked `data-group-overview` renders that page as the group label, so the
+  label opens the overview and the caret toggles the group. Nested group
+  labels share the size and weight of sibling links.
+*/
+import { Badge, Icon } from '@astrojs/starlight/components';
+import SidebarRestorePoint from '@astrojs/starlight/components/SidebarRestorePoint.astro';
+
+interface Props {
+	sublist: any[];
+	nested?: boolean;
+}
+
+const { sublist, nested } = Astro.props;
+const hasCurrent = (entry: any): boolean => entry.type === 'link' ? entry.isCurrent : entry.entries.some(hasCurrent);
+const overview = (entry: any) => entry.entries[0]?.type === 'link' && 'data-group-overview' in entry.entries[0].attrs ? entry.entries[0] : undefined;
+const linkAttrs = ({ 'data-group-overview': _, ...attrs }: Record<string, unknown>) => attrs;
+---
+
+<ul class:list={{ 'top-level': !nested }}>
+	{sublist.map((entry) => {
+		const link = entry.type === 'group' ? overview(entry) : undefined;
+		return <li>
+		{entry.type === 'link' ? (
+			<a
+				href={entry.href}
+				aria-current={entry.isCurrent ? 'page' : undefined}
+				class:list={[{ large: !nested }, entry.attrs.class]}
+				{...linkAttrs(entry.attrs)}
+			>
+				<span>{entry.label}</span>
+				{entry.badge && (
+					<Badge variant={entry.badge.variant} class={entry.badge.class} text={entry.badge.text} />
+				)}
+			</a>
+		) : (
+			<details open={hasCurrent(entry) || !entry.collapsed}>
+				<summary>
+					{link ? (
+						<a href={link.href} class="group-link" aria-current={link.isCurrent ? 'page' : undefined}>
+							<span>{entry.label}</span>
+						</a>
+					) : (
+						<span class="group-label">
+							<span class:list={nested ? 'nested-label' : 'large'}>{entry.label}</span>
+							{entry.badge && (
+								<Badge variant={entry.badge.variant} class={entry.badge.class} text={entry.badge.text} />
+							)}
+						</span>
+					)}
+					<Icon name="right-caret" class="caret" size="1.25rem" />
+				</summary>
+				<SidebarRestorePoint />
+				<Astro.self sublist={link ? entry.entries.slice(1) : entry.entries} nested />
+			</details>
+		)}
+	</li>;
+	})}
+</ul>
+
+<style>
+	@layer starlight.core {
+		ul {
+			--sl-sidebar-item-padding-inline: 0.5rem;
+			list-style: none;
+			padding: 0;
+		}
+
+		li {
+			overflow-wrap: anywhere;
+		}
+
+		ul ul li {
+			margin-inline-start: var(--sl-sidebar-item-padding-inline);
+			border-inline-start: 1px solid var(--sl-color-hairline-light);
+			padding-inline-start: var(--sl-sidebar-item-padding-inline);
+		}
+
+		.large {
+			font-size: var(--sl-text-lg);
+			font-weight: 600;
+			color: var(--sl-color-white);
+		}
+
+		.nested-label {
+			color: var(--sl-color-gray-2);
+		}
+		summary:hover .nested-label {
+			color: var(--sl-color-white);
+		}
+		summary:has(.group-link) {
+			padding-block: 0;
+			padding-inline-start: 0;
+		}
+		.group-link {
+			flex: 1;
+		}
+
+		.top-level > li + li {
+			margin-top: 0.75rem;
+		}
+
+		summary {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0.2em var(--sl-sidebar-item-padding-inline);
+			line-height: 1.4;
+			cursor: pointer;
+			user-select: none;
+		}
+		summary::marker,
+		summary::-webkit-details-marker {
+			display: none;
+		}
+
+		.caret {
+			transition: transform 0.2s ease-in-out;
+			flex-shrink: 0;
+		}
+		:global([dir='rtl']) .caret {
+			transform: rotateZ(180deg);
+		}
+		[open] > summary .caret {
+			transform: rotateZ(90deg);
+		}
+
+		a {
+			display: block;
+			border-radius: 0.25rem;
+			text-decoration: none;
+			color: var(--sl-color-gray-2);
+			padding: 0.3em var(--sl-sidebar-item-padding-inline);
+			line-height: 1.4;
+		}
+
+		a:hover,
+		a:focus {
+			color: var(--sl-color-white);
+		}
+
+		[aria-current='page'],
+		[aria-current='page']:hover,
+		[aria-current='page']:focus {
+			font-weight: 600;
+			color: var(--sl-color-text-invert);
+			background-color: var(--sl-color-text-accent);
+		}
+
+		a > *:not(:last-child),
+		.group-label > *:not(:last-child) {
+			margin-inline-end: 0.25em;
+		}
+
+		@media (min-width: 50rem) {
+			.nested-label {
+			color: var(--sl-color-gray-2);
+		}
+		summary:hover .nested-label {
+			color: var(--sl-color-white);
+		}
+		summary:has(.group-link) {
+			padding-block: 0;
+			padding-inline-start: 0;
+		}
+		.group-link {
+			flex: 1;
+		}
+
+		.top-level > li + li {
+				margin-top: 0.5rem;
+			}
+			.large {
+				font-size: var(--sl-text-base);
+			}
+			a {
+				font-size: var(--sl-text-sm);
+			}
+		}
+	}
+</style>

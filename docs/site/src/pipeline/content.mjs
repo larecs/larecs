@@ -149,7 +149,7 @@ export class Documentation {
     }));
     body = transformProse(body, prose => prose.replace(/!\[[^\]]*\]\([^\s)]+\.svg\)/g, image => '\n<div class="diagram">\n\n' + image + '\n\n</div>\n')).replaceAll('```mojo-render', '```mojo');
     const id = route || 'index';
-    this.pages.set(id, { id, body, filePath: filePath || resolve(root, `docs/site/src/content/docs/${id}.md`), data: { title, slug: route, sidebar: { order: weight, hidden, ...(label ? { label } : {}) }, ...(source ? { source } : {}) } });
+    this.pages.set(id, { id, body, filePath: filePath || resolve(root, `docs/site/src/content/docs/${id}.md`), data: { title, slug: route, sidebar: { order: weight, hidden, ...(label ? { label, attrs: { 'data-group-overview': '' } } : {}) }, ...(source ? { source } : {}) } });
   }
   authored() {
     for (const path of files('docs/src', '.md')) {
@@ -263,7 +263,7 @@ export class Documentation {
         this.sectionSafe(item.name, sections, name);
         body += (item.name !== item.name.toLowerCase() ? `\n<a id="${item.name}"></a>\n` : '') + '\n### `' + item.name + '`\n\n<div class="api-member">\n\n' + this.contract(item, name, owner) + '\n</div>\n';
       }
-      // A module with member pages becomes a sidebar group; its own page leads it as the overview.
+      // A module with member pages becomes a sidebar group whose label opens the module page.
       const grouped = ['structs', 'traits', 'functions'].some((group) => module[group]?.length);
       // Every module page shares one order so groups and leaf modules stay alphabetical.
       this.page(route, name, body, { weight: -1, ...(grouped ? { label: 'Overview' } : {}) });
