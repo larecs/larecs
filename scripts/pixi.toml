@@ -6,14 +6,20 @@ platforms = ["osx-arm64", "linux-64"]
 version = "0.1.0"
 
 [tasks]
-build-docs = "python docs.py build"
-serve-docs = "python docs.py serve"
-watch-docs = "python docs.py watch"
+build-docs = "node ../docs/site/run.mjs build"
+verify-docs = "node ../docs/site/run.mjs verify"
+test-docs = "node ../docs/site/run.mjs verify"
+check-docs-browser = "python check_docs_browser.py"
+test-api-reference = "python -m unittest test_api_reference"
+serve-docs = "node ../docs/site/run.mjs serve"
+watch-docs = "node ../docs/site/run.mjs watch"
+figures = "python build_figures.py"
 
 [dependencies]
 python = ">=3.14.4,<3.15"
-hugo = ">0.148.0,<=0.148.2"
+nodejs = ">=22.23.4,<27"
+typst = ">=0.15.1,<0.16"
 
 [pypi-dependencies]
 perfetto = ">=0.16.0, <0.17"
-pymodo = ">=0.11.13, <0.12"
+playwright = "==1.58.0"

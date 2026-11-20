@@ -63,10 +63,10 @@ struct Components[*ComponentTypes: ComponentType](Sized):
     """
 
     def __len__(self) -> Int:
-        """Returns the number of component types included by the filter.
+        """Returns the number of component types in this list.
 
         Returns:
-            The number of component types.
+            The number of listed component types.
         """
         with Zone(function_name="Components.__len__()"):
             return len(self.ComponentTypes)

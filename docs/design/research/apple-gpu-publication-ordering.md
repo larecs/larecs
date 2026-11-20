@@ -142,7 +142,7 @@ acquire load plus release store builds and runs. CPU
 
 ### Method
 
-Following the [benchmark guide](../../src/guide/benchmarks.md): the parent
+Following the [benchmark guide](../../benchmarks/README.md): the parent
 commit was checked out in a separate worktree, binaries were built once
 without debug info, sanitizers, or tracing, warmed, and then run in paired,
 alternating order.
