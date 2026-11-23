@@ -97,10 +97,18 @@ jobs:
   # Branch rules require this single check, which passes once both builds pass.
   build-gate:
     name: Build gate
+    if: ${{ always() && needs.candidate.result != 'skipped' }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: [candidate, build]
     steps:
-      - run: echo "All builds completed successfully."
+      - name: Require successful package builds
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: |
+          if [[ "$BUILD_RESULT" != success ]]; then
+            echo "::error::Package builds finished with result: $BUILD_RESULT"
+            exit 1
+          fi
   # A verified release tag and successful builds permit uploads to Tree-D.
   # Each job uploads the artifact built for its platform.
   upload:
