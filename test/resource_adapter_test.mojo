@@ -292,7 +292,8 @@ def _run_grid[device: Bool](mut world: World[Int32]) raises:
         Error: If execution fails.
     """
     var context = SystemContext(world)
-    context.run[grid_kernel, on_device=device]()
+    comptime backend = ExecutionBackend.DEVICE if device else ExecutionBackend.HOST
+    context.run[grid_kernel, backend=backend]()
 
 
 def _check_grid_updates[device: Bool]() raises:
