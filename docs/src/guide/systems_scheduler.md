@@ -266,6 +266,7 @@ from larecs import (
     Captures, ReadCapture, MutCapture, read_capture, mut_capture,
 )
 from std.gpu import global_idx
+from std.sys import has_accelerator
 from std.sys.info import is_gpu
 from std.testing import assert_equal
 
@@ -294,21 +295,23 @@ def main() raises:
     Raises:
         Error: If setup, execution, or a result check fails.
     """
-    var world = World[Int32]()
-    var entity = world.storage.add_entity(Int32(4))
-    var factor: Int32 = 3
-    var processed: Int32 = 0
-    var context = SystemContext(world)
-    context.run[scale, backend=ExecutionBackend.DEVICE](
-        read_capture(factor), mut_capture(processed)
-    )
-    assert_equal(world.storage.get[Int32](entity), 12)
-    assert_equal(processed, 1)
+    comptime if has_accelerator():
+        var world = World[Int32]()
+        var entity = world.storage.add_entity(Int32(4))
+        var factor: Int32 = 3
+        var processed: Int32 = 0
+        var context = SystemContext(world)
+        context.run[scale, backend=ExecutionBackend.DEVICE](
+            read_capture(factor), mut_capture(processed)
+        )
+        assert_equal(world.storage.get[Int32](entity), 12)
+        assert_equal(processed, 1)
 ```
 
-Each invocation uploads the current bound values. Mutable slots are shared
-device allocations, and their final values are copied back to the original
-CPU locals before `run` returns. Read-only slots are not downloaded and cannot
+The example runs on machines with an accelerator. Each invocation uploads
+the current bound values. Mutable slots are shared device allocations, and
+their final values are copied back to the original CPU locals before `run`
+returns. Read-only slots are not downloaded and cannot
 be written through `get`. Empty matches leave captures unchanged. Captures
 need no entry in the world's resource storage and can coexist with required
 resources.
