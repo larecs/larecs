@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, ResourceType, BufferResource, DevicePassableResource, ResourceAdapter, ResourceDeviceCache, ResourceAccess
+PRELUDE = """from larecs import World, SystemContext, KernelContext, Filter, Resources, ResourceType, BufferResource, DevicePassableResource, ResourceAdapter, ResourceDeviceCache, ResourceAccess, ExecutionBackend
 from larecs.resource import ResourceStorage, _validate_resource_spec, _ResourceInvocation
 
 @fieldwise_init
