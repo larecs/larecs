@@ -5,8 +5,35 @@ import subprocess
 import tempfile
 
 PRELUDE = """from std.utils import StaticTuple
-from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter, Resources, Captures, ReadCapture, read_capture, mut_capture, ThreadedExecutionConfig, ResourceType, PlainValue
+from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter, Resources, Captures, ReadCapture, read_capture, mut_capture, ThreadedExecutionConfig, BufferResource, DevicePassableResource, ResourceAdapter, ResourceAccess, ResourceDeviceCache, ResourceType, PlainValue
 from larecs.resource import _validate_resource_spec
+
+@fieldwise_init
+struct CounterView(TrivialRegisterPassable):
+    var value: Pointer[Int32, ImmUntrackedOrigin]
+
+@fieldwise_init
+struct CounterFill(TrivialRegisterPassable):
+    var value: Pointer[Int32, MutUntrackedOrigin]
+
+@fieldwise_init
+struct Counter(DevicePassableResource):
+    comptime Adapter = CounterAdapter
+    var value: Int32
+
+struct CounterAdapter(ResourceAdapter):
+    comptime Source = Counter
+    comptime View[mutable: Bool] = CounterFill if mutable else CounterView
+    comptime supports_mutation = True
+    @staticmethod
+    def validate(source: Self.Source) raises:
+        pass
+    @staticmethod
+    def bind_host(source: Self.Source) raises -> Self.View[False]:
+        raise Error("unused")
+    @staticmethod
+    def prepare_device(source: Self.Source, mut cache: ResourceDeviceCache) raises -> Self.View[False]:
+        raise Error("unused")
 
 @fieldwise_init
 struct Owner(Copyable, Movable):
@@ -66,7 +93,7 @@ def thin_program(component="Int32", resources="Resources()", captures="Captures(
 CASES = {
     "declared_nontrivial_threaded_resource": (
         thin_program(resources="Resources().read[Nontrivial]()"),
-        "Threaded resources require pointer-free plain values or KernelView adapters",
+        "Threaded resources require pointer-free plain values or DevicePassableResource adapters",
     ),
     "declared_nontrivial_device_resource": (
         "def main():\n    _validate_resource_spec[Resources().read[Nontrivial](), True]()\n",
@@ -75,7 +102,7 @@ CASES = {
     "owning_component": (thin_program(component="Owner"), "Threaded components require pointer-free trivial plain values"),
     "pointer_component": (thin_program(component="Indirect"), "Threaded components require pointer-free trivial plain values"),
     "undeclared_array_component": (thin_program(component="Undeclared"), "Threaded components require pointer-free trivial plain values"),
-    "owning_read_resource": (thin_program(resources="Resources().read[Owner]()"), "Threaded resources require pointer-free plain values or KernelView adapters"),
+    "owning_read_resource": (thin_program(resources="Resources().read[Owner]()"), "Threaded resources require pointer-free plain values or DevicePassableResource adapters"),
     "mutable_resource": (thin_program(resources="Resources[Int32]()"), "Threaded resources require explicit read access"),
     "read_write_resource": (thin_program(resources="Resources().read_write[Int32]()"), "Threaded resources require explicit read access"),
     "write_resource": (thin_program(resources="Resources().write[Int32]()"), "Threaded resources require explicit read access"),
@@ -83,6 +110,9 @@ CASES = {
     "legacy_threaded_flag": (thin_program(options="threaded=True"), "threaded"),
     "selected_component": (thin_program(component="Owner", selected=True), "Threaded components require pointer-free trivial plain values"),
     "selected_resource": (thin_program(resources="Resources[Int32]()", selected=True), "Threaded resources require explicit read access"),
+    "read_only_adapter_write": (thin_program(resources="Resources().write[BufferResource[DType.int32]]()"), "DevicePassableResource mutable access requires Adapter.supports_mutation"),
+    "sequential_adapter": (thin_program(resources="Resources().read_write[Counter]()"), "Device or threaded mutable adapted access requires Adapter.supports_concurrent_mutation"),
+    "selected_sequential_adapter": (thin_program(resources="Resources().write[Counter]()", selected=True), "Device or threaded mutable adapted access requires Adapter.supports_concurrent_mutation"),
     "selected_legacy_flag": (thin_program(options="threaded=True", selected=True), "threaded"),
 }
 
@@ -114,26 +144,25 @@ from std.testing import assert_equal, assert_false
 comptime W = World[Int32]
 
 @fieldwise_init
-struct View(TrivialRegisterPassable):
+struct ProbeView(TrivialRegisterPassable):
     var active: Pointer[Bool, ImmUntrackedOrigin]
 
 @fieldwise_init
 struct Probe(DevicePassableResource):
-    comptime KernelView = View
     comptime Adapter = Adapter
     var world: Pointer[W, MutUntrackedOrigin]
 
 struct Adapter(ResourceAdapter):
     comptime Source = Probe
-    comptime View = View
+    comptime View[mut: Bool] = ProbeView
     @staticmethod
     def validate(source: Self.Source) raises:
         pass
     @staticmethod
-    def prepare_device(source: Self.Source, mut cache: ResourceDeviceCache) raises -> Self.View:
+    def prepare_device(source: Self.Source, mut cache: ResourceDeviceCache) raises -> Self.View[False]:
         raise Error("host-only test")
     @staticmethod
-    def bind_host(source: Self.Source) raises -> Self.View:
+    def bind_host(source: Self.Source) raises -> Self.View[False]:
 {action}
         return {Pointer[Bool, ImmUntrackedOrigin](unsafe_from_address=Int(Pointer(to=source.world[]._execution_active)))}
 
