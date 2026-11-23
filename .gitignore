@@ -188,3 +188,12 @@ benchmark/simd_benchmark.mojo
 # Profiling & Debuginfo
 *.ptrace
 *.dSYM
+
+# Astro documentation outputs
+docs/site/node_modules/
+docs/site/.astro/
+docs/site/src/content/docs/
+docs/site/data/
+docs/site/public/
+docs/src/larecs.json
+docs/test/

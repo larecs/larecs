@@ -1,21 +1,19 @@
 # Larecs🌲 – Lightweight archetype-based ECS
 
 Larecs🌲 is a performance-oriented archetype-based ECS for [Mojo](https://www.modular.com/mojo)🔥.
-Its architecture is based on the Go ECS [Arche](https://github.com/mlange-42/arche).
+Larecs was inspired by the Go ECS [Arche](https://github.com/mlange-42/arche);
+its storage and execution architecture has since diverged.
 Larecs 1.0 is currently in beta, so public APIs may still change before the
 stable 1.0.0 release. After that release, public APIs follow semantic
-versioning unless they are explicitly marked experimental. Device execution is
-currently such an experimental API.
+versioning unless they are explicitly marked experimental: threaded host
+execution, device execution, mutable resource adapters, and device-copy reuse.
 
 ## Features
 
-- Clean and simple API
-- High performance due to archetypes and Mojo's compile-time programming
-- Compile-time checks thanks to usage of parameters
-- Native support for [resources](https://mlange-42.github.io/arche/guide/resources/) and scheduling
+- Archetype storage and compile-time access checks through Mojo parameters
+- Native support for [resources](https://larecs.github.io/larecs/dev/guide/shared_resources/) and scheduling
 - Systems can run their component-processing kernels on the host or (experimentally) on an accelerator device via `SystemContext.run(..., backend=ExecutionBackend.DEVICE)`
 - Tested and benchmarked
-- More features coming soon...
 
 Larecs🌲 depends on [Tracy](https://github.com/wolfpld/tracy) via the
 [Mojo Tracy bindings](https://github.com/moseschmiedel/mojo-tracy) for its
@@ -26,126 +24,27 @@ Larecs🌲 has no other external dependencies.
 
 ## Installation
 
-This package is written in and for [Mojo](https://docs.modular.com/mojo/manual/get-started)🔥, which needs to be installed in order to compile, test, or use the software. You can build Larecs🌲 as a package as follows:
-
-1. Clone the repository / download the files.
-2. Navigate to the `src/` subfolder.
-3. Execute `mojo precompile larecs -o larecs.mojoc`.
-4. Move the newly created file `larecs.mojoc` to your project's source directory.
-
-### Include source directly for compiler and language server
-
-To access the source while debugging and to adjust the Larecs🌲
-source code, you can include it into run commands of your own
-projects as follows:
-
-```
-mojo run -I "path/to/larecs/src" example.mojo
-```
-
-To let VSCode and the language server know of Larecs🌲, include it as follows:
-
-1. Go to VSCode's `File -> Preferences -> Settings` page.
-2. Go to the `Extensions -> Mojo` section.
-3. Look for the setting `Lsp: Include Dirs`.
-4. Click on `add item` and insert the path to the `src/` subdirectory.
+The [installation guide](https://larecs.github.io/larecs/dev/start/installation/)
+starts with the published Pixi package, then covers the locked development
+environment, supported platforms, using source, and manual precompilation.
 
 ## Usage
 
-Refer to the [API docs](https://larecs.github.io/larecs/) for details
-on how to use Larecs🌲.
+Start with [Your first simulation](https://larecs.github.io/larecs/dev/start/first_simulation/),
+which moves particles with a system and a kernel. Two further tutorials extend
+it with creating and removing particles and with shared configuration. The
+complete programs live in [examples/particles](examples/particles). The
+[API docs](https://larecs.github.io/larecs/dev/larecs/) list every public declaration.
 
-For contributors, [the design record](docs/design/README.md) collects the ECS
-requirements, architecture, and accepted decisions. Start there before changing
+## Contributing
+
+Start with the [contributing guide](CONTRIBUTING.md).
+[The design record](docs/design/README.md) collects the ECS
+requirements, architecture, and accepted decisions. Read it before you change
 behavior; it also explains how to propose or supersede a decision. The
 [roadmap](docs/roadmap.md) tracks upcoming work by priority, and the
 [changelog](changelog.md) records completed changes. The
 [agent guidelines](AGENTS.md) apply to automated contributors.
-
-Below there is a simple example covering the most important functionality.
-Have a look at the `examples` subdirectory for more elaborate examples.
-The example mutates the world directly during setup, then hands it to a
-`Scheduler`; systems are the principal place for state-changing application
-logic, and they delegate filtered component processing to kernels.
-
-```mojo
-# Import the package
-from larecs import (
-    World,
-    Scheduler,
-    System,
-    SystemContext,
-    KernelContext,
-    Filter,
-)
-
-
-# Define components
-@fieldwise_init
-struct Position(Copyable, Movable):
-    var x: Float64
-    var y: Float64
-
-
-@fieldwise_init
-struct IsStatic(Copyable, Movable):
-    pass
-
-
-@fieldwise_init
-struct Velocity(Copyable, Movable):
-    var x: Float64
-    var y: Float64
-
-
-# Define filtered component processing as a kernel
-comptime move_filter = Filter().include[Position].read[Velocity]()
-
-
-def move(context: KernelContext[move_filter]):
-    for entity in context:
-        ref position = entity.get[Position]()
-        ref velocity = entity.get[Velocity]()
-        position.x += velocity.x
-        position.y += velocity.y
-
-
-# Put state-changing application logic in a system
-@fieldwise_init
-struct Move(System):
-    def update(mut self, mut context: SystemContext[...]) raises:
-        context.run[move]()
-
-
-# Run the ECS
-def main() raises:
-    # Create a world, list all components that will / may be used
-    var world = World[Position, Velocity, IsStatic]()
-
-    for _ in range(100):
-        # Add an entity. The returned value is the
-        # entity's ID, which can be used to access the entity later
-        var entity = world.storage.add_entity(Position(0, 0), IsStatic())
-
-        # For example, we may want to change the entity's position
-        world.storage.get[Position](entity).x = 2
-
-        # Or we may want to replace the IsStatic component
-        # of the entity by a Velocity component
-        world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity)
-
-    # Queries provide read-only access to matching components
-    for entity in world.storage.query[
-        Filter().include[Position, Velocity]()
-    ]():
-        _ = entity.get[Position]()
-        _ = entity.get[Velocity]()
-
-    # Run state-changing application logic through the scheduler
-    var scheduler = Scheduler(world^)
-    scheduler.add_system(Move())
-    scheduler.run(1)
-```
 
 ## Development utilities
 
@@ -213,25 +112,31 @@ The result should look something like this:
 
 ## Limitations
 
-### Component type requirements differ between host and device execution
+### Type requirements differ by execution target
 
-Any `Copyable & Deinitable` struct can be used as a component for host
-(host-only) execution -- this is no longer restricted to trivial/POD types.
+Any `Copyable & Deinitable` struct can be a component or a resource,
+including one that owns heap memory. Kernels add requirements for the
+components and resources they access:
 
-Components accessed by a system that runs its kernel on a device
-(`SystemContext.run(..., backend=ExecutionBackend.DEVICE)`) are subject to a stricter
-constraint: device transfer moves component columns between host and device
-buffers via a raw byte copy that never runs a type's copy constructor or
-destructor, so such components must additionally be
-`TrivialRegisterPassable` (bitwise-copyable, with no heap-allocated state
-and no custom copy/move/destroy logic -- the same requirement applies to
-resources read by a device kernel). Using a type with heap-allocated memory in
-a component accessed on the device will corrupt or leak that memory.
+| Execution | Accessed components | Accessed resources |
+| --- | --- | --- |
+| Sequential host (default) | No further requirement | No further requirement |
+| Threaded host (experimental) | Pointer-free values with trivial copy, move, and destruction | Read-only pointer-free values, or `DevicePassableResource` adapters |
+| Device (experimental) | `TrivialRegisterPassable` | Pointer-free values (read or read-write), or `DevicePassableResource` adapters |
 
-Heap-allocated (non-trivial) components for host-only use are permitted by
-the type system, but are a comparatively new and lightly-exercised path
-compared to trivial components; as with resources, using heap-allocated
-data in the ECS should generally be avoided unless you need it.
+Device execution copies component columns as raw bytes and never runs a
+type's copy constructor or destructor, so it requires the
+`TrivialRegisterPassable` declaration. Resources are checked by their
+representation instead: numeric values, `Bool`, and structs built only from
+such values qualify without declaring `TrivialRegisterPassable`. A resource
+that owns data, such as a `List`, can still reach threaded and device kernels
+through an adapter like `BufferResource`, which exposes a read-only view. A
+kernel that accesses an ineligible type fails to compile. See the
+[resources guide](https://larecs.github.io/larecs/dev/guide/shared_resources/#read-owning-data-on-any-target)
+for details.
+
+Heap-owning components are a newer and less exercised path than plain-value
+components. Prefer plain values unless you need owned data.
 
 ## Roadmap
 

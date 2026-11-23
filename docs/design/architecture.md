@@ -44,10 +44,18 @@ archetypes; multiple registrations and overlap resolution remain future work.
 The implementation retains one owned classifier per world with explicit deferred maintenance. Registration and
 maintenance live on `World`; `spatial.mojo` builds keys and permutations before
 `HostStorage` applies typed movement and location repair.
-[Decision 0006](decisions/0006-partitioned-spatial-archetype-storage.md) records
-cluster-local partitions as an undecided alternative, and
-[decision 0007](decisions/0007-special-cluster-component.md) records the rejected
-special built-in placement component proposal. Track implementation in the
+
+Registration selects one of two placement modes. By default, maintenance
+reorders rows inside each matching dense store. With `partitioned=True`, it
+moves eligible rows into growable cluster-local stores, as described in the
+next section; [decision 0006](decisions/0006-partitioned-spatial-archetype-storage.md)
+accepts this opt-in mode and
+[decision 0014](decisions/0014-growable-cluster-stores.md) defines its current
+layout. The decision records keep the alternatives we did not adopt: fixed
+partition blocks ([decision 0013](decisions/0013-cluster-local-partition-blocks.md),
+superseded by 0014) and a special built-in placement component
+([decision 0007](decisions/0007-special-cluster-component.md), rejected).
+Remaining work is tracked in the
 [roadmap](../roadmap.md#spatial-component-locality).
 
 ## Opt-in partition placement

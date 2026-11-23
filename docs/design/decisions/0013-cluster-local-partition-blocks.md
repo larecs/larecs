@@ -125,5 +125,5 @@ rules remain unchanged. No `Cluster` component is introduced.
   and selected kernel on host/device, multi-block packing/scattering, dirty
   copy-back, and subsequent placement.
 - [`partitioned_spatial.mojo`](../../../benchmark/partitioned_spatial.mojo) and
-  [benchmark guide](../../src/guide/benchmarks.md): same-driver paired controls,
+  [benchmark guide](../../benchmarks/README.md): same-driver paired controls,
   maintenance costs, scans, complete cell frames, and capacity-derived memory.

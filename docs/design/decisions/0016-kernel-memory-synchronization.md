@@ -335,7 +335,7 @@ Report sidecar setup and transfer costs separately and in complete execution.
   aggregate raw-byte resource/capture transfer; `test_views_cannot_use_raw_device_transfer`
   verifies the predicates used at those existing boundaries.
   `test/gpu_synchronization_test.mojo` has actual-hardware tests
-  with explicit skip messages. [User guide](../../src/guide/synchronization.md)
+  with explicit skip messages. [User guide](../../src/guide/shared_resources.md)
   documents the implemented slice and unsafe device adapters.
 - On Linux x86_64, Mojo 1.0.0 (`ed45d567`) / MAX 26.5.0, host behavior was
   exercised with four actual CPU workers. Device compile probes use `mojo build
@@ -375,7 +375,7 @@ Report sidecar setup and transfer costs separately and in complete execution.
   [device execution](0002-gpu-system-execution.md), and
   [grid-stride iteration](0003-grid-stride-entity-iteration.md).
 - Current implementation: `src/larecs/lock.mojo`, `resource.mojo`, `capture.mojo`,
-  `system.mojo`, and `iteration.mojo`; [resource guide](../../src/guide/resources.md)
+  `system.mojo`, and `iteration.mojo`; [resource guide](../../src/guide/shared_resources.md)
   describes shared resource writes and raw-byte transfer limits.
 - [Mojo 1.0.0 Atomic reference](https://mojolang.static.modular.com/1.0.0/docs/std/atomic/atomic/Atomic/)
   exposes ordering and scope parameters and target-dependent defaults. This is

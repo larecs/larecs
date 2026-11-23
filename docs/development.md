@@ -1,7 +1,7 @@
 # Development reference
 
 Read the [design index](design/README.md) before changing ECS semantics and the
-[benchmark guide](src/guide/benchmarks.md#benchmark-methodology) before changing
+[benchmark guide](benchmarks/README.md#benchmark-methodology) before changing
 performance-sensitive code or benchmark checks.
 
 ## Coding standards
@@ -129,3 +129,18 @@ osx-arm64. If the default SDK is affected and `SDKROOT` is unset, it exports
 `SDKROOT` pointing at the newest installed SDK without `arm64e.x1` (e.g.
 `MacOSX26.sdk`). This needs an older SDK to be installed; it can be removed
 once conda-forge ships an `ld64` that understands the new stubs.
+
+
+## API reference generation
+
+Run `pixi run verify-docs` from the repository root before publishing. It runs
+compiler JSON and Astro/Starlight generation, checked programs and negative diagnostics,
+figure export comparisons, site-wide links and anchors, export/source checks,
+preview/browser fixtures, and clean reproducibility checks. `pixi run build-docs`
+is the shorter generation and content-check cycle.
+
+[Build documentation and figures](documentation.md)
+records supported environments, browser setup, the strict-warning transition,
+retired doctest exclusions, and source/generated boundaries. Keep the package
+initializer's `Exports:` list aligned with imports. Document `out` results under
+`Returns:`, because the compiler does not classify them as input arguments.

@@ -147,7 +147,7 @@ struct ArchetypeRowAccessor[
             A reference to the component of the entity.
 
         Constraints:
-            `T` must be included by the [..filter.Filter] this accessor
+            `T` must be included by the `Filter` this accessor
             was created with (e.g. via `HostStorage.query`'s
             `Filter.include`). Every archetype an accessor with that
             filter can be created for is guaranteed to carry `T`, so
@@ -1597,15 +1597,8 @@ struct Archetype[
             new_capacity: The minimum required capacity. The actual allocated capacity
                          will be `next_power_of_two(new_capacity)` to maintain power-of-2 growth.
 
-        Example:
-
-        ```mojo
-        # Requesting 100 entities will allocate capacity for 128 (next power of 2)
-        archetype.reserve(100)  # Actually reserves 128
-
-        # Requesting 64 entities allocates exactly 64 (already power of 2)
-        archetype.reserve(64)   # Actually reserves 64
-        ```
+        `archetype.reserve(100)` rounds capacity to 128, the next power of
+        two. `archetype.reserve(64)` requests a power of two directly.
         """
         with Zone(function_name="Archetype.reserve(new_capacity: Int)"):
             self._storage.reserve(new_capacity)
@@ -1760,8 +1753,9 @@ struct Archetype[
         """Overwrites the component with the given Type T for multiple consecutive, already-initialized entities starting with the given index.
 
         Caution: This destroys the existing value at each target row before
-        writing the new one, so every row in `[start_entity_idx, start_entity_idx
-        + count)` must already hold a valid, initialized `T` value. Use
+        writing the new one, so every row in
+        `[start_entity_idx, start_entity_idx + count)` must already hold a
+        valid, initialized `T` value. Use
         [.Archetype.init_component_range] instead for rows that were just
         appended or migrated and have not been initialized for `T` yet.
 

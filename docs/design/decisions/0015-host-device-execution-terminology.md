@@ -57,7 +57,7 @@ does not replace the existing trivial-movability validation of resources.
 - [`system.mojo`](../../../src/larecs/system.mojo),
   [`component.mojo`](../../../src/larecs/component.mojo), and
   [`resource.mojo`](../../../src/larecs/resource.mojo).
-- [Systems guide](../../src/guide/systems_scheduler.md#device-execution).
+- [Systems guide](../../src/guide/execution_backends.md#execute-on-a-device).
 - [`cpu_execution_test.mojo`](../../../test/cpu_execution_test.mojo),
   [`resource_test.mojo`](../../../test/resource_test.mojo), and
   [`gpu_entity_selection_test.mojo`](../../../test/gpu_entity_selection_test.mojo).

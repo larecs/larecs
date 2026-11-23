@@ -325,4 +325,4 @@ local to each chunk; a production API must document these observable semantics.
 - [Existing CPU concurrency tests](../../../test/synchronization_test.mojo)
 - [Synchronization design](../decisions/0016-kernel-memory-synchronization.md),
   [partition layout](../decisions/0014-growable-cluster-stores.md), and
-  [benchmark methods](../../src/guide/benchmarks.md)
+  [benchmark methods](../../benchmarks/README.md)

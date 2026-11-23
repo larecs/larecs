@@ -271,7 +271,7 @@ metadata and aggregate row counting are confined to device execution.
 [`cpu_execution_test.mojo`](../../../test/cpu_execution_test.mojo) covers both
 range sources, both host kernel forms, shared heap-backed resources and explicit
 captures, disjoint offsets, empty ranges, and exclusion/exclusive filters.
-The [focused comparison](../../src/guide/benchmarks.md#shared-host-execution-comparison)
+The [focused comparison](../../benchmarks/reports/selection.md#shared-host-execution-comparison)
 records paired baseline/current measurements and their limitations.
 This implements the existing execution contract without changing the API;
 the storage range and query migration is specified by

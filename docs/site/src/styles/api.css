@@ -1,0 +1,74 @@
+.sl-markdown-content pre { overflow-x: auto; }
+.sl-markdown-content .api-declaration pre,
+.sl-markdown-content .api-declaration pre code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sl-markdown-content .diagram { overflow-x: auto; }
+.sl-markdown-content .diagram img[src$=".svg"] {
+  background: white;
+  min-width: 720px;
+  max-width: none;
+}
+.sl-markdown-content details { margin-block: 1rem; }
+
+/* API reference: tinted signature boxes, labelled lists, and member chips. */
+:root { --larecs-api-tint: color-mix(in srgb, var(--sl-color-accent) 12%, var(--sl-color-bg)); }
+.sl-markdown-content .api-declaration .expressive-code {
+  --code-background: var(--larecs-api-tint);
+}
+.sl-markdown-content .api-declaration .expressive-code .frame {
+  box-shadow: none;
+}
+.sl-markdown-content .api-declaration .expressive-code pre {
+  border: 0;
+  border-radius: 0.375rem;
+}
+.sl-markdown-content .api-member .api-declaration { margin-top: 0; }
+.sl-markdown-content .api-member {
+  padding-inline-start: 1rem;
+}
+.sl-markdown-content .api-member + .api-member {
+  border-top: 1px solid var(--sl-color-hairline);
+  padding-top: 1rem;
+}
+.sl-markdown-content h3:has(code) code,
+.sl-markdown-content h2:has(> code) code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.9em;
+}
+.sl-markdown-content .api-label {
+  font-weight: 600;
+  color: var(--sl-color-white);
+  margin-bottom: -0.5rem;
+}
+.sl-markdown-content .api-name { color: var(--sl-color-white); }
+.sl-markdown-content .api-traits code {
+  color: var(--sl-color-accent-high);
+  background: var(--larecs-api-tint);
+  border: 0;
+}
+.sl-markdown-content .api-source {
+  font-size: var(--sl-text-xs);
+  text-align: end;
+  margin-top: 0;
+}
+@media (min-width: 50rem) {
+  .sl-markdown-content .level-h3 + .api-source { margin-top: -1.75rem; }
+}
+.sl-markdown-content .api-source a { color: var(--sl-color-gray-3); text-decoration: none; }
+.sl-markdown-content .api-source a:hover { color: var(--sl-color-white); }
+.sl-markdown-content .api-exact summary { font-size: var(--sl-text-xs); color: var(--sl-color-gray-3); }
+
+/* Member entries in the API table of contents render as code chips. */
+:root:has(.api-declaration) starlight-toc ul ul a span,
+:root:has(.api-declaration) mobile-starlight-toc ul ul a span {
+  font-family: var(--sl-font-mono);
+  font-size: 0.75rem;
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--sl-color-hairline-light);
+  border-radius: 0.25rem;
+  background: var(--sl-color-bg-inline-code);
+}
