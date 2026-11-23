@@ -5,7 +5,8 @@ import subprocess
 import tempfile
 
 PRELUDE = """from std.utils import StaticTuple
-from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter, Resources, Captures, ReadCapture, read_capture, mut_capture, ThreadedExecutionConfig
+from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter, Resources, Captures, ReadCapture, read_capture, mut_capture, ThreadedExecutionConfig, ResourceType, PlainValue
+from larecs.resource import _validate_resource_spec
 
 @fieldwise_init
 struct Owner(Copyable, Movable):
@@ -18,6 +19,21 @@ struct Indirect(Copyable, Movable):
 @fieldwise_init
 struct Undeclared(Copyable, Movable):
     var values: StaticTuple[Float32, 4]
+
+
+@fieldwise_init
+struct Nontrivial(ResourceType, PlainValue):
+    \"\"\"A numeric resource with a custom copy initializer.\"\"\"
+
+    var value: Int32
+
+    def __init__(out self, *, copy: Self):
+        \"\"\"Copy the value with the user-defined adjustment.
+
+        Args:
+            copy: Source resource.
+        \"\"\"
+        self.value = copy.value + 1
 """
 
 
@@ -48,6 +64,14 @@ def thin_program(component="Int32", resources="Resources()", captures="Captures(
 
 
 CASES = {
+    "declared_nontrivial_threaded_resource": (
+        thin_program(resources="Resources().read[Nontrivial]()"),
+        "Threaded resources require pointer-free plain values or KernelView adapters",
+    ),
+    "declared_nontrivial_device_resource": (
+        "def main():\n    _validate_resource_spec[Resources().read[Nontrivial](), True]()\n",
+        "Device resources require pointer-free trivial plain values or DevicePassableResource",
+    ),
     "owning_component": (thin_program(component="Owner"), "Threaded components require pointer-free trivial plain values"),
     "pointer_component": (thin_program(component="Indirect"), "Threaded components require pointer-free trivial plain values"),
     "undeclared_array_component": (thin_program(component="Undeclared"), "Threaded components require pointer-free trivial plain values"),

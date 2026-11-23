@@ -9,6 +9,7 @@ from std.gpu import global_idx
 from std.sys import has_accelerator
 from std.sys.info import is_gpu
 from std.testing import *
+from std.utils import StaticTuple
 
 from larecs import (
     ExecutionBackend,
@@ -18,6 +19,8 @@ from larecs import (
     Filter,
     Resources,
     ResourceType,
+    PlainValue,
+    ThreadedExecutionConfig,
 )
 
 
@@ -132,6 +135,57 @@ def test_gpu_kernel_local_captures() raises:
     context.run[update_with_local_captures, backend=ExecutionBackend.DEVICE]()
     for entity in world.storage.query[Filter().include[Int32]()]():
         assert_equal(entity.get[Int32](), 7)
+
+
+@fieldwise_init
+struct DeclaredScale(ResourceType, PlainValue):
+    """Holds fixed numeric factors in an opaque scalar tuple."""
+
+    var values: StaticTuple[Int32, 4]
+
+
+def apply_declared_scale(
+    context: KernelContext[Filter().include[Int32](), Resources().read[DeclaredScale]()]
+):
+    """Adds the factors from a declared read resource to each row.
+
+    Args:
+        context: Rows and their read-only factors.
+    """
+    ref values = context.resources.get[DeclaredScale]().values
+    for entity in context:
+        entity.get[Int32]() += values[0] + values[3]
+
+
+def _check_declared_scale[backend: ExecutionBackend]() raises:
+    """Checks that a backend accepts and reads a declared plain resource.
+
+    Parameters:
+        backend: Backend under test.
+
+    Raises:
+        Error: If the backend cannot run the kernel or a component differs.
+    """
+    var world = World[Int32](
+        execution_config=ThreadedExecutionConfig(workers=4, min_parallel_rows=0)
+    )
+    world.resources.add(DeclaredScale(StaticTuple[Int32, 4](3)))
+    _ = world.storage.add_entities(Int32(1), count=257)
+    var context = SystemContext(world)
+    context.run[apply_declared_scale, backend=backend]()
+    for entity in world.storage.query[Filter().include[Int32]()]():
+        assert_equal(entity.get[Int32](), 7)
+
+
+def test_declared_plain_read_resource() raises:
+    """Exercises declared plain resources on both accelerated execution paths.
+
+    Raises:
+        Error: If a backend rejects the resource or produces an unexpected value.
+    """
+    _check_declared_scale[ExecutionBackend.HOST_THREADED]()
+    comptime if has_accelerator():
+        _check_declared_scale[ExecutionBackend.DEVICE]()
 
 
 comptime functions = __functions_in_module()
