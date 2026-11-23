@@ -175,7 +175,7 @@ host jobs. Existing sequential invocation boundaries remain unchanged.
 - [Correctness and actual concurrency](../../../test/threaded_execution_test.mojo),
   [eligibility and lifecycle diagnostics](../../../test/check_threaded_contracts.py),
   [complete-call benchmark](../../../benchmark/threaded_execution.mojo), and
-  [Linux implementation measurements](../../src/guide/benchmarks.md#threaded-host-execution).
+  [Linux implementation measurements](../../benchmarks/reports/threaded.md#threaded-host-execution).
 - [Investigation and measurements](../research/host-thread-execution.md).
 - [Host contexts and dispatch](../../../src/larecs/system.mojo),
   [entity iteration](../../../src/larecs/iteration.mojo), and

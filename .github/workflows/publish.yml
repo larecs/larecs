@@ -5,13 +5,44 @@ on:
     branches:
       - main
   pull_request:
+    # `closed` removes the PR's preview; the build is skipped for it.
+    types: [opened, reopened, synchronize, closed]
 
 permissions: {}
 
+env:
+  # Previews are served from https://larecs.github.io/larecs/pr-preview/pr-<number>/.
+  PREVIEW_UMBRELLA: pr-preview
+
 jobs:
+  changes:
+    name: Detect documentation changes
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - name: Filter changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            docs:
+              - 'docs/**'
+              - 'src/**'
+              - 'examples/**'
+              - 'README.md'
+              - 'pixi.toml'
+              - 'pixi.lock'
+              - 'scripts/**'
+              - '.github/workflows/publish.yml'
+
   publish:
     name: Publish API docs
-    runs-on: ubuntu-latest
+    if: ${{ github.event.action != 'closed' }}
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
 
@@ -27,41 +58,51 @@ jobs:
           curl -ssL https://pixi.sh/install.sh | bash
 
       - name: Run AoS benchmarks
-        run: |
-          cd benchmark/plots
-          pixi run plots
+        run: pixi run --manifest-path benchmark/plots/pixi.toml plots
 
       - name: Archive benchmark results
         uses: actions/upload-artifact@v4
         with:
           name: aos-benchmark
           path: benchmark/plots/results
+          if-no-files-found: error
 
       - name: Copy benchmark results to docs
         run: |
-          mkdir -p docs/src/guide/images
-          cp benchmark/plots/results/aos_benchmark.svg docs/src/guide/images/
+          mkdir -p docs/site/static/images
+          cp benchmark/plots/results/aos_benchmark.svg docs/site/static/images/
 
-      - name: Build docs # Includes 'mojo doc', 'modo build', doctests via mogo-tester, and 'hugo -s docs/site'
+      - name: Use the preview base URL for pull requests
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          echo "DOCS_BASE_URL=https://larecs.github.io/larecs/${PREVIEW_UMBRELLA}/pr-${{ github.event.number }}/" >> "$GITHUB_ENV"
+
+      - name: Verify documentation publishing
         run: |
           pixi install --locked
-          pixi run build-docs
+          pixi install --locked --manifest-path scripts/pixi.toml
+          pixi run --manifest-path scripts/pixi.toml playwright install --with-deps chromium
+          pixi run verify-docs
+
+      - name: Archive documentation verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-verification
+          path: output/docs
+          if-no-files-found: error
 
       - name: Archive Doc-tests
         uses: actions/upload-artifact@v4
         with:
           name: doctest
-          path: docs/test
-      - name: Archive Markdown artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: markdown
-          path: docs/site/content
+          path: output/docs
       - name: Archive HTML artifacts
         uses: actions/upload-artifact@v4
         with:
           name: public
           path: docs/site/public
+          include-hidden-files: true
 
   deploy:
     name: Deploy to GitHub Pages
@@ -70,27 +111,85 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # No concurrency group: a newer pending job in a group cancels an older
-    # one, which would drop main deployments. Preview deployments write only
-    # under pr-preview/, so concurrent pushes rebase without conflicts.
+    # Main deployments rebase onto concurrent preview pushes without cancelling older jobs.
     steps:
       - name: Download HTML artifacts
         uses: actions/download-artifact@v4
         with:
           name: public
           path: public
-      # Jekyll omits directories starting with "_", such as the _astro/ assets
-      # of Starlight PR previews.
-      - name: Disable Jekyll
-        run: touch public/.nojekyll
+      - name: Disable Jekyll at the Pages root
+        run: |
+          mkdir -p pages-root
+          touch pages-root/.nojekyll
+      - name: Publish the root marker without deleting site content
+        uses: JamesIves/github-pages-deploy-action@v4.9.0
+        with:
+          branch: gh-pages
+          folder: pages-root
+          clean: false
+          force: false
+          attempt-limit: 10
       - name: Deploy, keeping PR previews
         uses: JamesIves/github-pages-deploy-action@v4.9.0
         with:
           branch: gh-pages
           folder: public
-          # Previews and the Starlight dev site are deployed by other jobs.
-          clean-exclude: |
-            pr-preview/
-            dev/
+          target-folder: dev
+          clean-exclude: ${{ env.PREVIEW_UMBRELLA }}/
           force: false
           attempt-limit: 10
+
+  preview:
+    name: Deploy PR preview
+    needs: [changes, publish]
+    # Fork PRs get a read-only token, so they build docs but get no preview.
+    if: >-
+      ${{ github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && needs.changes.outputs.docs == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    steps:
+      - name: Checkout Larecs
+        uses: actions/checkout@v6
+      - name: Download HTML artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: public
+          path: public
+      - name: Deploy preview
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          source-dir: public
+          umbrella-dir: ${{ env.PREVIEW_UMBRELLA }}
+          action: deploy
+
+  remove-preview:
+    name: Remove PR preview
+    # Runs for every closed repository PR: a preview may exist from an earlier
+    # push even if the final diff no longer touches documentation.
+    if: >-
+      ${{ github.event_name == 'pull_request'
+      && github.event.action == 'closed'
+      && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    steps:
+      - name: Checkout Larecs
+        uses: actions/checkout@v6
+      - name: Remove preview
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          umbrella-dir: ${{ env.PREVIEW_UMBRELLA }}
+          action: remove

@@ -16,7 +16,8 @@ from ._internal_error import InternalError
 struct EntityPool(Copyable, Movable, Sized):
     """EntityPool is an implementation using implicit linked lists.
 
-    Implements https:#skypjack.github.io/2019-05-06-ecs-baf-part-3/
+    Follows the entity recycling scheme from
+    [ECS back and forth, part 3](https://skypjack.github.io/2019-05-06-ecs-baf-part-3/).
 
     Per-ID generations survive reset. Recycling or resetting advances the
     affected generations modulo 2**32; an ancient handle can alias a new one

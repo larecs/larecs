@@ -155,10 +155,10 @@ struct Resources[
         return {}
 
     def __len__(self) -> Int:
-        """Returns the number of component types included by the filter.
+        """Returns the number of resource types declared in this list.
 
         Returns:
-            The number of resource types.
+            The number of declared resource types.
         """
         with Zone(function_name="Resources.__len__()"):
             return len(self.ResourceTypes)

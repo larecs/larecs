@@ -111,7 +111,7 @@ tracking, multiple registrations, or evidence of net spatial workload speedup.
 - [Filter, coordinate, scan, failure, copy, and lock tests](../../../test/spatial_test.mojo).
 - [Nontrivial component lifetime tests](../../../test/host_storage_lifecycle_test.mojo).
 - [host/device execution and copy-back tests](../../../test/gpu_spatial_test.mojo).
-- [User guide](../../src/guide/spatial_clustering.md).
+- [User guide](../../src/guide/spatial_locality.md).
 - [Complete maintenance cost benchmark](../../../benchmark/spatial_benchmark.mojo),
   including classification, sorting, all-column movement, and location repair.
   These microbenchmarks do not establish net spatial-workload benefit.
@@ -147,7 +147,7 @@ The [small PR benchmark](../../../benchmark/spatial_smoke.mojo) compares
 512/2,048-row uniform, dense, sparse, and mobile cell aggregates, plus separate
 ordered/reversing maintenance costs. The [regression checker](../../../scripts/check_spatial_performance.py)
 builds the same driver against the PR base and current library on each full
-Linux/macOS test run. [Benchmark documentation](../../src/guide/benchmarks.md#small-spatial-benchmarks-on-every-pr)
+Linux/macOS test run. [Benchmark documentation](../../benchmarks/regression.md#small-spatial-benchmarks-on-every-pr)
 defines the timing boundary, cadence, bounded sampling, bootstrap baseline,
 and shared-runner regression threshold. Initial Apple M4 checks took about
 31 seconds including both compilations. Static aggregation showed essentially

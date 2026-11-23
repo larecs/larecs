@@ -1,5 +1,0 @@
-{{- $text := .Get 0 -}}
-{{- $link := (replace $text "." "#") -}}
-{{- if .Get 1 -}}
-    {{- $text = .Get 1 -}}
-{{- end -}}<a href="/larecs/larecs/{{ $link }}" target="_blank"><code>{{ $text }}</code></a>

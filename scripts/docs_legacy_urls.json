@@ -1,0 +1,40 @@
+{
+  "guide/data_model/": [
+    "declare-the-worlds-component-types",
+    "define-components",
+    "keep-entity-handles",
+    "next-steps"
+  ],
+  "guide/": [],
+  "guide/installation/": [
+    "install-the-locked-environment",
+    "troubleshooting",
+    "use-a-precompiled-package",
+    "use-the-source-from-your-own-project"
+  ],
+  "guide/shared_resources/": [
+    "add-read-replace-and-remove-resources",
+    "declare-kernel-access",
+    "define-a-resource",
+    "next-steps"
+  ],
+  "guide/structural_changes/": [
+    "create-entities-outside-a-system",
+    "empty-and-invalid-batches",
+    "end-the-structural-lock-with-with",
+    "next-steps",
+    "remove-entities",
+    "select-exactly-the-entities-you-change",
+    "values-versus-structure"
+  ],
+  "guide/systems_kernels/": [
+    "compare-handles-queries-and-selections",
+    "declare-component-and-resource-access",
+    "how-often-a-kernel-runs",
+    "inspect-entities-outside-a-kernel",
+    "next-steps",
+    "order-systems-and-steps",
+    "troubleshooting",
+    "write-values-without-reading-them"
+  ]
+}

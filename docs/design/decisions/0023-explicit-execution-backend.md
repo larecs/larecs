@@ -50,7 +50,7 @@ There is no new accelerator implementation or change to scheduling policy.
 
 ## Evidence
 
-- [ECS-20](../requirements.md) and [public guide](../../src/guide/systems_scheduler.md#device-execution).
+- [ECS-20](../requirements.md) and [public guide](../../src/guide/execution_backends.md#execute-on-a-device).
 - `src/larecs/execution.mojo` and all four `run` overloads in `src/larecs/system.mojo`.
 - `test/execution_backend_test.mojo` verifies the actual compilation target,
   exact selection membership, defaults, callables and unavailable device errors.

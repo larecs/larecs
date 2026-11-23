@@ -1,25 +1,25 @@
----
-title: "Larecs🌲"
-type: docs
-summary: Larecs🌲 – Lightweight archetype-based ECS for Mojo.
----
++++
+type = "docs"
+title = "Larecs🌲"
+summary = "Larecs🌲 – Lightweight archetype-based ECS for Mojo."
+breadcrumbs = false
++++
 
-## A lightweight archetype-based ECS for Mojo
+Larecs🌲 is a lightweight, performance-oriented archetype-based ECS for
+[Mojo](https://www.modular.com/mojo)🔥.
+Larecs was inspired by the Go ECS [Arche](https://github.com/mlange-42/arche);
+its storage and execution architecture has since diverged.
+To build your first simulation, [install Larecs](start/installation) and
+follow [Your first simulation](start/first_simulation). Two further tutorials
+extend the same particles with
+[creation and removal](start/growing_simulation) and
+[shared configuration](start/shared_configuration).
 
-Larecs🌲 is a performance-oriented archetype-based ECS for [Mojo](https://www.modular.com/mojo)🔥.
-Its architecture is based on the Go ECS [Arche](https://github.com/mlange-42/arche).
-Larecs 1.0 is currently in beta, so public APIs may still change before the
-stable 1.0.0 release. After that release, public APIs follow semantic
-versioning unless they are explicitly marked experimental. Device execution is
-currently such an experimental API.
-
-## Features
-
-- Clean and simple API
-- High performance due to archetypes and Mojo's compile-time programming
-- Support for SIMD via a [`vectorize`](https://docs.modular.com/mojo/stdlib/algorithm/functional/vectorize/)-like syntax
-- Compile-time checks thanks to usage of parameters
-- Native support for [resources](https://mlange-42.github.io/arche/guide/resources/) and scheduling.
-- Tested and benchmarked
-- Packaged dependencies are installed automatically
-- More features coming soon...
+The guides explain each task in depth:
+[entities and components](guide/data_model),
+[systems and kernels](guide/systems_kernels),
+[batch creation and removal](guide/structural_changes),
+[resources](guide/shared_resources),
+[threaded and device execution](guide/execution_backends), and
+[spatial locality](guide/spatial_locality). The [API reference](larecs) covers
+every declaration.

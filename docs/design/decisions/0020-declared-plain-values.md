@@ -68,6 +68,6 @@ under decision 0019's platform-validation requirements.
   component in parallel chunks.
 - [Threaded contracts](../../../test/check_threaded_contracts.py):
   `undeclared_array_component` rejects an undeclared opaque tuple component.
-- [Systems guide](../../src/guide/systems_scheduler.md) documents the author
+- [Systems guide](../../src/guide/execution_backends.md) documents the author
   guarantee; [requirements](../requirements.md) ECS-08 and ECS-18 record the
   updated eligibility contract.
