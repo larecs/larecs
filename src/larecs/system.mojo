@@ -42,7 +42,11 @@ from .resource import (
     _ResourceInvocation,
     _validate_resource_spec,
 )
-from .resource_adapter import DevicePassableResource, _TransferFrame, _TransferStats
+from .resource_adapter import (
+    DevicePassableResource,
+    _TransferFrame,
+    _TransferStats,
+)
 from .device_storage import _Segment
 from .gpu_launch import BLOCK_SIZE, gpu_grid_dim
 from .capture import (
