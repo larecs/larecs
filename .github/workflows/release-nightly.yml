@@ -2,7 +2,7 @@ name: Release nightly
 
 # Publish the branch selected by NIGHTLY_SOURCE to
 # https://prefix.dev/tree-d/nightly. The nightly-published tag tracks the
-# last successful build, so unchanged commits are skipped and failures retry.
+# last successful publication.
 
 on:
   schedule:
@@ -20,6 +20,8 @@ env:
   PUBLISHED_TAG: nightly-published
 
 jobs:
+  # Pin the source commit and derive its version from the last reachable
+  # release, the commit time, and the run number. Skip an already published SHA.
   define:
     name: Define nightly build
     runs-on: ubuntu-latest
@@ -59,6 +61,7 @@ jobs:
             echo 'matrix=[{ "os": "ubuntu-latest", "target-platform": "linux-64" }, { "os": "macos-latest", "target-platform": "osx-arm64" }]'
           } >> "$GITHUB_OUTPUT"
 
+  # Build and test the pinned nightly commit for Linux and macOS.
   build:
     name: Build package
     needs: define
@@ -86,6 +89,8 @@ jobs:
             --channel https://repo.prefix.dev/modular-community
             --channel https://prefix.dev/tree-d
 
+  # Upload both platform packages, then advance the nightly-published tag.
+  # A failed upload leaves the commit eligible for the next run.
   publish:
     name: Publish to Tree-D nightly channel
     needs:

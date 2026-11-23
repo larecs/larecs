@@ -1,7 +1,5 @@
 name: Feature branch
 
-# Keep old nightly integration commits out of main during migration.
-
 on:
   pull_request:
     branches: [main]
@@ -9,6 +7,8 @@ on:
 permissions: {}
 
 jobs:
+  # Check the PR head for nightly integration commits that main lacks.
+  # Those commits can bring unrelated feature work into main.
   base:
     name: Feature branch base
     runs-on: ubuntu-latest
