@@ -22,21 +22,12 @@ Larecs is a high-performance Entity Component System (ECS) library written in Mo
   start without an issue only when the developer says so.
 - Work on a branch linked to the issue. Create it with
   `gh issue develop <N> --name <branch> --base <base> --checkout`, where `<base>`
-  is `nightly` or, for stacked work, the branch the work builds on. When an issue
+  is `main` or, for stacked work, the branch the work builds on. When an issue
   exists, create the work branch only this way, not with `git switch -c`,
   `git checkout -b`, or `git branch`.
-- Open PRs against `nightly`. Target `main` only when the developer asks for a
-  promotion, release preparation, or an urgent stable fix. Every PR into
-  `nightly` adds an Unreleased entry to `changelog.md` ending with its PR link,
-  such as `([#187](https://github.com/larecs/larecs/pull/187))`, or, when it
-  refines a listed feature, rewrites that entry and appends its link.
-- When the developer asks to promote features, they name them as their
-  changelog entries on `nightly` describe them. Bring each feature's final state
-  from `nightly` to a branch from `main` as one change, consolidating related
-  entries and dropping intermediate states, rather than replaying every nightly
-  PR. End each promoted changelog entry with the links of all nightly PRs it
-  covers, and open one PR against `main`. [CONTRIBUTING.md](CONTRIBUTING.md)
-  describes the full lifecycle, including merging `main` back into `nightly`.
+- Open feature PRs against `main` or their parent branch. Record user-visible
+  changes in a changelog fragment. See [CONTRIBUTING.md](CONTRIBUTING.md) for
+  nightly packages and stable release review.
 - If tooling already started you on its own branch, such as a managed worktree,
   create the linked branch with `gh issue develop` without `--checkout`, then
   run `git fetch origin <branch>` and `git switch <branch>` before your first
