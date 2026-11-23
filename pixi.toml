@@ -19,7 +19,7 @@ preview = ["pixi-build"]
 spatial-benchmarks = "mojo run -I src benchmark/spatial_smoke.mojo"
 spatial-performance-check = "python scripts/check_spatial_performance.py"
 spatial-filter-checks = "bash test/check_spatial_filters.sh"
-tests = { cmd = "test/run_tests.sh", default-environment = "test" }
+tests = { cmd = "python scripts/run_pixi_tests.py", default-environment = "test" }
 doctest = { cmd = "scripts/run_doctests.sh", default-environment = "test" }
 benchmarks = { cmd = "mojo run -I src benchmark/run_benchmarks.mojo", default-environment = "default" }
 update-mojo = { cmd = "python scripts/update_mojo.py", default-environment = "default" }
@@ -41,6 +41,12 @@ clang = ">=22.1.8,<23"
 clangxx = ">=22.1.8,<23"
 mogo-tester = ">=2.3.3,<3"
 
+[feature.test-runner]
+channels = ["https://conda.modular.com/max", "conda-forge"]
+
+[feature.test-runner.dependencies]
+mojo = "==1.2.0"
+
 [feature.test.activation.env]
 CC = "clang"
 CXX = "clang++"
@@ -53,6 +59,7 @@ sysroot_linux-64 = ">=2.34,<3"
 
 [environments]
 test = ["test"] # An environment covering the "test" feature
+test-runner = { features = ["test-runner"], no-default-feature = true }
 
 [package]
 name = { workspace = true }
