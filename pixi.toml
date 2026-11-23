@@ -19,7 +19,7 @@ preview = ["pixi-build"]
 spatial-benchmarks = "mojo run -I src benchmark/spatial_smoke.mojo"
 spatial-performance-check = "python scripts/check_spatial_performance.py"
 spatial-filter-checks = "bash test/check_spatial_filters.sh"
-tests = { cmd = "test/run_tests.sh", default-environment = "test" }
+tests = { cmd = "pixi install --locked -e test-runner && MOGO_TESTER_BIN=$PIXI_PROJECT_ROOT/.pixi/envs/test-runner/bin/mogo-tester test/run_tests.sh", default-environment = "test" }
 doctest = { cmd = "scripts/run_doctests.sh", default-environment = "test" }
 benchmarks = { cmd = "mojo run -I src benchmark/run_benchmarks.mojo", default-environment = "default" }
 update-mojo = { cmd = "python scripts/update_mojo.py", default-environment = "default" }
@@ -42,7 +42,7 @@ clangxx = ">=22.1.8,<23"
 mogo-tester = ">=2.3.3,<3"
 
 # Mogo Tester 3 needs the Mojo 1.2 runtime, so it cannot share an environment
-# with Larecs' compiler. test/run_tests.sh runs it from this environment.
+# with Larecs' compiler. The tests task runs it from this environment.
 [feature.test-runner]
 channels = [
   "https://prefix.dev/tree-d",
