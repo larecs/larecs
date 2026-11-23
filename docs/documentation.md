@@ -102,9 +102,13 @@ Use `verify-docs` before publishing.
 
 `DOCS_BASE_URL` selects the deployment prefix. Development docs live at
 `https://larecs.github.io/larecs/dev/`; PR previews use
-`https://larecs.github.io/larecs/pr-preview/pr-<number>/`. A release can build
-at `/larecs/v<version>/` without overwriting development docs. The header
-identifies the development version; no selector advertises unpublished versions.
+`https://larecs.github.io/larecs/pr-preview/pr-<number>/`. Publishing a GitHub
+release verifies its tag and deploys it once to `/larecs/v<version>/`; reruns
+never replace an existing release folder. `scripts/docs_versions.py` then
+refreshes `versions.json` and the `/larecs/` redirect, which opens the newest
+release, or development docs before the first versioned release. The header
+selector reads that manifest at runtime, so published pages list later releases
+without a rebuild. Tags without a site build link to GitHub.
 The [publishing workflow](../.github/workflows/publish.yml) deploys
 only after the execution and rendering gates pass.
 

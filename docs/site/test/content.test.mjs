@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Documentation, regions, transformProse } from '../src/pipeline/content.mjs';
 import { formatDeclaration, tokens } from '../src/pipeline/declaration-layout.mjs';
 import { rootExports, sourceLocations } from '../src/pipeline/api.mjs';
-import { json, read, base } from '../src/pipeline/project.mjs';
+import { json, read, base, deployment } from '../src/pipeline/project.mjs';
 
 import { main } from '../run.mjs';
 
@@ -145,6 +145,11 @@ test('type pages group members under section headings', () => {
   assert.ok(!world.includes('<strong class="api-name">self</strong> (<code class="api-type"><a href="' + base + 'larecs/world/World/">Self'));
   assert.equal(docs.pages.get('larecs/world/World').data.source, docs.api.symbols['world.World'].source_url);
   assert.throws(() => docs.sectionSafe('Methods', ['Methods'], 'fixture'), /collides with a section heading/);
+});
+test('deployment prefixes identify their version and shared root', () => {
+  assert.deepEqual(deployment('https://example.test/larecs/v1.2.0rc1/', '9.9.9'), { kind: 'Release', root: '/larecs/', version: '1.2.0rc1', label: 'v1.2.0rc1' });
+  assert.deepEqual(deployment('https://example.test/larecs/dev/', '9.9.9'), { kind: 'Development', root: '/larecs/', version: '9.9.9', label: 'Development · 9.9.9' });
+  assert.deepEqual(deployment('https://example.test/deploy/pr-preview/pr-999/', '9.9.9'), { kind: 'Preview', root: '/deploy/', version: '9.9.9', label: 'PR #999 preview' });
 });
 test('legacy guide fragments survive Astro rendering', () => {
   assert.equal(docs.shortcodes('{{< legacy-anchor "old-section" >}}'), '<a id="old-section"></a>');

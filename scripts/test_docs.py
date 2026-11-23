@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from check_docs import Page, Site, check
 from build_figures import check_inventory
+from docs_versions import build_manifest, releases, update_pages
 from doc_examples import coverage, doctest_runner, inventory, regions, source_doctests
 
 
@@ -22,6 +23,47 @@ class RunnerTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "source checksum differs"):
                 doctest_runner(Path(directory))
             build.assert_not_called()
+
+
+class VersionTests(unittest.TestCase):
+    """Keep release folders immutable and the version index accurate."""
+
+    def site(self, root, *folders):
+        for folder in folders:
+            (root / folder).mkdir(parents=True)
+            (root / folder / "index.html").write_text(folder)
+
+    def test_versions_sort_prereleases_before_finals(self):
+        self.assertEqual(releases(["v1.0.0", "v1.0.0rc1", "v1.0.0b2", "v1.0.0b10", "pre-gpu", "nightly-published"]),
+                         ["v1.0.0", "v1.0.0rc1", "v1.0.0b10", "v1.0.0b2"])
+
+    def test_manifest_prefers_newest_build_and_links_older_tags(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pages = Path(directory)
+            self.site(pages, "dev", "v1.0.0b1", "v1.0.0")
+            manifest = build_manifest(pages, ["v0.4.0", "v1.0.0", "v1.0.0b1", "pre-gpu"], "owner/repo")
+            self.assertEqual(manifest["default"], "v1.0.0/")
+            self.assertEqual([entry["id"] for entry in manifest["versions"]], ["dev", "v1.0.0", "v1.0.0b1", "v0.4.0"])
+            self.assertEqual(manifest["versions"][-1]["url"], "https://github.com/owner/repo/tree/v0.4.0")
+
+    def test_root_uses_development_before_first_release(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pages = Path(directory)
+            self.site(pages, "dev", "pr-preview/pr-1")
+            update_pages(pages, ["v0.4.0"], "owner/repo")
+            self.assertIn('url=dev/', (pages / "index.html").read_text())
+            self.assertTrue((pages / "pr-preview/pr-1/index.html").is_file())
+
+    def test_existing_release_is_not_replaced(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            pages, first, second = root / "pages", root / "first", root / "second"
+            pages.mkdir()
+            self.site(root, "first", "second")
+            (second / "index.html").write_text("changed")
+            self.assertTrue(update_pages(pages, ["v1.0.0"], "owner/repo", first, "1.0.0"))
+            self.assertFalse(update_pages(pages, ["v1.0.0"], "owner/repo", second, "1.0.0"))
+            self.assertEqual((pages / "v1.0.0/index.html").read_text(), "first")
 
 
 class ExampleTests(unittest.TestCase):
