@@ -57,6 +57,17 @@ git_rr() {
     git -c rerere.enabled=true -c rerere.autoUpdate=true "$@"
 }
 
+lowercase() {
+    printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+remote_owner() {
+    local url owner_pattern='[:/]([^/:]+)/[^/]+$'
+    url="$(git remote get-url "$remote")"
+    if [[ "$url" =~ $owner_pattern ]]; then lowercase "${BASH_REMATCH[1]}"; fi
+    return 0
+}
+
 collect_branches() {
     # Unpromoted remote branches, including tips advanced or rewritten since
     # integration, ordered by their earlier merge on nightly's first-parent line.
@@ -81,7 +92,8 @@ collect_branches() {
         candidates=("${sorted[@]}")
     fi
 
-    local commit branch subject source ordered=() assigned=" "
+    local commit branch subject source owner ordered=() assigned=" "
+    owner="$(remote_owner)"
     while read -r commit; do
         subject="$(git log -1 --format=%s "$commit")"
         source="${subject#* from }"
@@ -90,10 +102,12 @@ collect_branches() {
             # Contained tips are already tested. Advanced or rewritten tips
             # require the branch's own merge subject: a shared ancestor alone
             # could also belong to a stacked branch never merged into nightly.
+            # A pull request subject names this branch only for the same owner.
             if git merge-base --is-ancestor "$remote/$branch" "$commit" \
                 || [[ "$subject" == "Merge branch '$branch' into nightly" ]] \
                 || [[ "$subject" == "Merge remote-tracking branch '$remote/$branch' into nightly" ]] \
-                || { [[ "$subject" == "Merge pull request #"*" from "* ]] && [[ "${source#*/}" == "$branch" ]]; }; then
+                || { [[ "$subject" == "Merge pull request #"*" from "* ]] && [[ "${source#*/}" == "$branch" ]] \
+                    && [[ "$(lowercase "${source%%/*}")" == "$owner" ]]; }; then
                 ordered+=("$branch")
                 assigned+="$branch "
             fi
