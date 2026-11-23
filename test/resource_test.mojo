@@ -3,6 +3,8 @@ from larecs.resource import (
     ResourceType,
     constrain_device_safe_resources,
 )
+from larecs.test_utils import MemTestStruct
+from std.memory import alloc, Layout
 from std.testing import *
 
 
@@ -202,6 +204,87 @@ def test_resource_remove() raises:
 
     resources.remove[Resource2]()
     assert_false(resources.has[Resource2]())
+
+
+def test_add_distinct_resource_pack() raises:
+    """Accepts empty, single, and distinct owning resource packs.
+
+    Raises:
+        Error: If insertion or a storage assertion fails.
+    """
+    var resources = ResourceStorage()
+    resources.add()
+    assert_equal(len(resources), 0)
+    resources.add(Resource3(7))
+    resources.add(Int(1), String("owned"), Resource1(2))
+    assert_equal(len(resources), 4)
+    assert_equal(resources.get[Int](), 1)
+    assert_equal(resources.get[String](), "owned")
+    assert_equal(resources.get[Resource1]().value, 2)
+    assert_equal(resources.get[Resource3]().value, 7)
+
+
+def test_add_existing_resource_rejects_entire_pack() raises:
+    """Rejects existing types before inserting any part of a mixed pack.
+
+    Raises:
+        Error: If setup or a storage assertion fails.
+    """
+    var resources = ResourceStorage()
+    resources.add(Int(10), String("unrelated"))
+    with assert_raises(contains="Duplicate resource:"):
+        resources.add(Resource1(1), Int(20), Resource2(2))
+    assert_equal(len(resources), 2)
+    assert_equal(resources.get[Int](), 10)
+    assert_equal(resources.get[String](), "unrelated")
+    assert_false(resources.has[Resource1]())
+    assert_false(resources.has[Resource2]())
+
+
+def test_add_existing_resource_preserves_lifecycles() raises:
+    """Destroys rejected owning values once and retains stored owning values.
+
+    Raises:
+        Error: If setup or a lifecycle assertion fails.
+    """
+    var copies = alloc(Layout[Int].single()).into_managed()
+    var moves = alloc(Layout[Int].single()).into_managed()
+    var deletes = alloc(Layout[Int].single()).into_managed()
+    copies.unsafe_ptr().unsafe_write(0)
+    moves.unsafe_ptr().unsafe_write(0)
+    deletes.unsafe_ptr().unsafe_write(0)
+    comptime Tracked = MemTestStruct[
+        MutUnsafeAnyOrigin, MutUnsafeAnyOrigin, MutUnsafeAnyOrigin
+    ]
+    var resources = ResourceStorage()
+    resources.add(
+        Tracked(
+            copies.unsafe_ptr().as_unsafe_any_origin(),
+            moves.unsafe_ptr().as_unsafe_any_origin(),
+            deletes.unsafe_ptr().as_unsafe_any_origin(),
+        ),
+        String("retained"),
+    )
+    assert_equal(deletes.unsafe_ptr()[], 0)
+    with assert_raises(contains="Duplicate resource:"):
+        resources.add(
+            Resource1(1),
+            Tracked(
+                copies.unsafe_ptr().as_unsafe_any_origin(),
+                moves.unsafe_ptr().as_unsafe_any_origin(),
+                deletes.unsafe_ptr().as_unsafe_any_origin(),
+            ),
+        )
+    assert_equal(deletes.unsafe_ptr()[], 1)
+    assert_equal(copies.unsafe_ptr()[], 0)
+    assert_equal(len(resources), 2)
+    assert_false(resources.has[Resource1]())
+    assert_equal(resources.get[String](), "retained")
+    assert_equal(resources.get[Tracked]().del_counter[], 1)
+    resources.remove[Tracked]()
+    assert_equal(deletes.unsafe_ptr()[], 2)
+    _ = resources^
+    assert_equal(deletes.unsafe_ptr()[], 2)
 
 
 comptime functions = __functions_in_module()

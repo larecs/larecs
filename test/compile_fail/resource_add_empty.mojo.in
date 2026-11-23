@@ -1,0 +1,11 @@
+from larecs.resource import ResourceStorage
+
+
+def main() raises:
+    """Rejects duplicate resource types in initially empty storage.
+
+    Raises:
+        Error: If resource insertion fails at runtime.
+    """
+    var resources = ResourceStorage()
+    resources.add(Int(1), Int(2))

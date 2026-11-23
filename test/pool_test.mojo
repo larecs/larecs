@@ -145,6 +145,143 @@ def test_entity_pool_stochastic() raises:
             )
 
 
+def test_entity_pool_reset_invalidates_handles() raises:
+    """Keeps every issued handle dead across resets, reuse, and growth.
+
+    Raises:
+        Error: If stale handles revive or pool accounting changes.
+    """
+    var pool = EntityPool()
+    var issued = List[Entity]()
+    var zero = pool._entities[0]
+    # Shrinking and then growing exercises history beyond the active prefix.
+    var sizes: List[Int] = [8, 2, 12, 5, 16]
+    for size in sizes:
+        var prior_count = len(issued)
+        for i in range(size):
+            var entity = pool.get()
+            assert_equal(entity.get_id(), i + 1)
+            assert_true(pool.is_alive(entity))
+            for j in range(prior_count):
+                assert_false(pool.is_alive(issued[j]))
+                assert_not_equal(issued[j], entity)
+            issued.append(entity)
+            # Recycle and reuse some IDs before resetting the mixed pool.
+            if i % 3 == 0:
+                pool.recycle(entity)
+                entity = pool.get()
+                assert_false(pool.is_alive(issued[len(issued) - 1]))
+                issued.append(entity)
+        pool.recycle(issued[len(issued) - 1])
+        assert_equal(len(pool), size - 1)
+        assert_equal(pool.available(), 1)
+        pool.reset()
+        assert_equal(len(pool), 0)
+        assert_equal(pool.capacity(), 0)
+        assert_equal(pool.available(), 0)
+        assert_equal(pool._entities[0], zero)
+        assert_true(pool.is_alive(zero))
+        assert_false(pool.is_alive(Entity()))
+        with assert_raises():
+            pool.recycle(zero)
+        for stale in issued:
+            assert_false(pool.is_alive(stale))
+        # An empty reset must not discard the history of inactive IDs.
+        pool.reset()
+
+
+def test_entity_pool_reset_reuses_memory_and_recycles() raises:
+    """Reuses reserved storage and preserves LIFO recycling after reset.
+
+    Raises:
+        Error: If storage is reallocated or recycled IDs/accounting differ.
+    """
+    var pool = EntityPool()
+    for _ in range(32):
+        _ = pool.get()
+    var address = Int(pool._entities.unsafe_ptr())
+    var reserved = pool._entities.capacity()
+    pool.reset()
+    for i in range(32):
+        var entity = pool.get()
+        assert_equal(entity.get_id(), i + 1)
+        assert_equal(entity.get_generation(), 1)
+        assert_equal(len(pool), i + 1)
+        assert_equal(pool.capacity(), i + 1)
+        assert_equal(pool.available(), 0)
+    assert_equal(Int(pool._entities.unsafe_ptr()), address)
+    assert_equal(pool._entities.capacity(), reserved)
+    var first = pool._entities[1]
+    var last = pool._entities[32]
+    pool.recycle(first)
+    pool.recycle(last)
+    assert_equal(pool.available(), 2)
+    assert_equal(len(pool), 30)
+    var reused_last = pool.get()
+    var reused_first = pool.get()
+    assert_equal(reused_last.get_id(), last.get_id())
+    assert_equal(reused_first.get_id(), first.get_id())
+    assert_false(pool.is_alive(first))
+    assert_false(pool.is_alive(last))
+    assert_true(pool.is_alive(reused_first))
+    assert_true(pool.is_alive(reused_last))
+    assert_equal(len(pool), 32)
+    assert_equal(pool.available(), 0)
+    var beyond = pool.get()
+    assert_equal(beyond.get_id(), 33)
+    assert_equal(beyond.get_generation(), 0)
+
+
+def test_entity_pool_reset_copy_history() raises:
+    """Copies active and retained generations without sharing mutations.
+
+    Raises:
+        Error: If copies lose history or resetting one pool mutates another.
+    """
+    var pool = EntityPool()
+    var first = pool.get()
+    var second = pool.get()
+    pool.recycle(first)
+    var mixed = pool.copy()
+    pool.reset()
+    assert_true(mixed.is_alive(second))
+    assert_false(mixed.is_alive(first))
+    assert_equal(mixed.available(), 1)
+    var reused = mixed.get()
+    assert_equal(reused.get_id(), first.get_id())
+    assert_equal(reused.get_generation(), 1)
+    var empty = pool.copy()
+    var fresh = empty.get()
+    assert_equal(fresh.get_generation(), 2)
+    assert_false(empty.is_alive(first))
+    assert_false(pool.is_alive(fresh))
+    empty.reset()
+    assert_equal(pool.get(), fresh)
+    assert_equal(pool.get().get_generation(), 1)
+    assert_equal(empty.get().get_generation(), 3)
+    assert_false(empty.is_alive(second))
+    assert_equal(empty.get().get_generation(), 1)
+
+
+def test_entity_pool_reset_generation_wrap() raises:
+    """Makes the finite UInt32 generation wrap limitation explicit.
+
+    Raises:
+        Error: If reset fails to wrap generations or corrupts reserved zero.
+    """
+    var pool = EntityPool()
+    _ = pool.get()
+    pool._entities[1]._generation = UInt32.MAX
+    var stale = pool._entities[1]
+    pool.reset()
+    assert_false(pool.is_alive(stale))
+    var fresh = pool.get()
+    assert_equal(fresh.get_generation(), 0)
+    assert_false(pool.is_alive(stale))
+    pool.recycle(fresh)
+    assert_equal(pool.get().get_generation(), 1)
+
+
 def test_bit_pool_constructor() raises:
     var p = BitPool()
 
