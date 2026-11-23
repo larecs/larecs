@@ -387,6 +387,7 @@ environments:
       - conda: https://repo.prefix.dev/max/osx-arm64/mojo-compiler-1.0.0-release.conda
   test-runner:
     channels:
+    - url: https://prefix.dev/tree-d/
     - url: https://conda.modular.com/max/
     - url: https://conda.anaconda.org/conda-forge/
     packages:
@@ -441,6 +442,7 @@ environments:
       - conda: https://conda.modular.com/max/linux-64/mojo-compiler-1.2.0-release.conda
       - conda: https://conda.modular.com/max/noarch/mblack-26.7.0-release.conda
       - conda: https://conda.modular.com/max/noarch/mojo-python-1.2.0-release.conda
+      - conda: https://prefix.dev/tree-d/linux-64/mogo-tester-3.1.1-hb0f4dca_0.conda
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.11.20-hbd8a1cb_0.conda
@@ -486,6 +488,7 @@ environments:
       - conda: https://conda.modular.com/max/noarch/mojo-python-1.2.0-release.conda
       - conda: https://conda.modular.com/max/osx-arm64/mojo-1.2.0-release.conda
       - conda: https://conda.modular.com/max/osx-arm64/mojo-compiler-1.2.0-release.conda
+      - conda: https://prefix.dev/tree-d/osx-arm64/mogo-tester-3.1.1-h60d57d3_0.conda
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
   build_number: 20
@@ -3412,6 +3415,17 @@ packages:
   run_exports: {}
   size: 1165611
   timestamp: 1781529734370
+- conda: https://prefix.dev/tree-d/linux-64/mogo-tester-3.1.1-hb0f4dca_0.conda
+  sha256: 90b908dab64ba586fa4a143393405e01fe3644c13ed06c66ec7fd4c2096a8e7d
+  md5: 8882160d5464d8b2c5f6402d2197bc2a
+  depends:
+  - mojo >=1.2.0,<1.3
+  - mojo-compiler >=1.2.0,<1.3
+  - libgcc >=16
+  license: MIT
+  run_exports: {}
+  size: 605647
+  timestamp: 1795453426771
 - conda: https://prefix.dev/tree-d/linux-64/mojo-tracy-1.1.0-hb0f4dca_0.conda
   sha256: 150ca7dc0cca3877d2cff3072a187d269aecb94adcaed168f7b11c9d3860d731
   md5: fb3b9077d2770298e3bc67af7a05ff5a
@@ -3436,6 +3450,16 @@ packages:
   run_exports: {}
   size: 1030360
   timestamp: 1781529736197
+- conda: https://prefix.dev/tree-d/osx-arm64/mogo-tester-3.1.1-h60d57d3_0.conda
+  sha256: e43ef5d97c90fed878a974f324847b57fe827237aac383e7763a4c577ef4213e
+  md5: 6266b41e2f82fe36bd9f3bad00b0f525
+  depends:
+  - mojo >=1.2.0,<1.3
+  - mojo-compiler >=1.2.0,<1.3
+  license: MIT
+  run_exports: {}
+  size: 613251
+  timestamp: 1795453421274
 - conda: https://prefix.dev/tree-d/osx-arm64/mojo-tracy-1.1.0-h60d57d3_0.conda
   sha256: 06f031f6764d8e5b5651d7d1603d375c870946496cf3896e04f0d7e35e9545d5
   md5: 9c98f531e7657a185543738b1ac70100

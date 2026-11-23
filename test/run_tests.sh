@@ -7,7 +7,8 @@
 #   ./test/run_tests.sh --no-precompile <test_file.mojo>
 #
 # Each test file is compiled with debug info, all assertions, and AddressSanitizer.
-# Pixi's test runner uses line tables for the world and spatial host tests.
+# Mogo Tester 3 runs from the Pixi test-runner environment and compiles with the
+# active Larecs Mojo. World and spatial host tests request line tables.
 # Test binaries run in a PTY to preserve ASAN's colored output while capturing
 # it to check for ASAN error messages.
 #
@@ -96,7 +97,8 @@ for backend_test_path in "${test_args[@]}"; do
     fi
 done
 
-"${MOGO_TESTER_BIN:-mogo-tester}" "${precompile_args[@]}" --asan --mojo-build-args="${mojo_build_args[*]}" "${test_args[@]}"
+"${PIXI_EXE:-pixi}" install --locked --manifest-path "$larecs_test_directory/../pixi.toml" -e test-runner
+"$larecs_test_directory/../.pixi/envs/test-runner/bin/mogo-tester" "${precompile_args[@]}" --asan --mojo-build-args="${mojo_build_args[*]}" "${test_args[@]}"
 
 # This bounded CPU benchmark runs on both existing PR test runners. Focused
 # file runs omit it; the full benchmark suite remains an optional manual task.
