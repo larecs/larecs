@@ -66,7 +66,6 @@ struct SamplesView(TrivialRegisterPassable):
 struct Samples(DevicePassableResource):
     """Instrumented source, with caller-only binding diagnostics."""
 
-    comptime KernelView = SamplesView
     comptime Adapter = SamplesAdapter
     var values: List[Int32]
     var binds: Pointer[Int, MutUntrackedOrigin]
@@ -77,7 +76,7 @@ struct SamplesAdapter(ResourceAdapter):
     """Binds once on the caller; workers only read immutable sample memory."""
 
     comptime Source = Samples
-    comptime View = SamplesView
+    comptime View[mut: Bool] = SamplesView
 
     @staticmethod
     def validate(source: Self.Source) raises:
@@ -93,7 +92,7 @@ struct SamplesAdapter(ResourceAdapter):
             raise Error("missing sample")
 
     @staticmethod
-    def bind_host(source: Self.Source) raises -> Self.View:
+    def bind_host(source: Self.Source) raises -> Self.View[False]:
         """Records caller preparation and borrows stable samples.
 
         Args:
@@ -117,7 +116,7 @@ struct SamplesAdapter(ResourceAdapter):
     @staticmethod
     def prepare_device(
         source: Self.Source, mut cache: ResourceDeviceCache
-    ) raises -> Self.View:
+    ) raises -> Self.View[False]:
         """Rejects device preparation in this host-only test adapter.
 
         Args:
