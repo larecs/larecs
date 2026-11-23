@@ -562,5 +562,26 @@ def test_world_copies_upload_again() raises:
         assert_equal(_run_sum(world), 0)
 
 
+def test_empty_device_runs_clear_upload_stats() raises:
+    """Checks that empty selected and ordinary runs report no uploads.
+
+    Raises:
+        Error: If an empty run retains counts from the previous invocation.
+    """
+    comptime if has_accelerator():
+        var world = _world()
+        assert_true(_run_sum(world) > 0)
+        var context = SystemContext(world)
+        var selection = context._empty_selection()
+        selection.run[sum_kernel, backend=ExecutionBackend.DEVICE]()
+        selection^.release()
+        assert_equal(world._last_device_upload, _TransferStats())
+
+        assert_true(_run_sum(world) > 0)
+        world.storage.remove_entities[Filter().include[Int32]()]()
+        assert_equal(_run_sum(world), 0)
+        assert_equal(world._last_device_upload, _TransferStats())
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

@@ -42,7 +42,7 @@ from .resource import (
     _ResourceInvocation,
     _validate_resource_spec,
 )
-from .resource_adapter import DevicePassableResource, _TransferFrame
+from .resource_adapter import DevicePassableResource, _TransferFrame, _TransferStats
 from .device_storage import _Segment
 from .gpu_launch import BLOCK_SIZE, gpu_grid_dim
 from .capture import (
@@ -923,6 +923,7 @@ struct EntitySelection[
             )
             if total_length == 0:
                 resource_binding.release()
+                self._world[]._last_device_upload = _TransferStats()
                 return
 
             ref device_storage = self._world[]._device_storage[]
@@ -1833,6 +1834,7 @@ struct SystemContext[
                 )
                 if length == 0:
                     resource_binding.release()
+                    self.world[]._last_device_upload = _TransferStats()
                     return
 
                 # Reuse the world's device storage across calls instead of
