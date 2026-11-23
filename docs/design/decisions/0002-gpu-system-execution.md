@@ -8,8 +8,8 @@ status: accepted
 
 ## Context
 
-`SystemContext.run(..., on_device=True)` runs the same filtered kernel source as
-the host path. Matching entities may occupy multiple archetypes, while a device
+`context.run[kernel, backend=ExecutionBackend.DEVICE]()` runs the same filtered
+kernel source as the host path. Matching entities may occupy multiple archetypes, while a device
 kernel needs a compact device-side row range. Host and device columns also have
 different ownership and lifetime rules.
 
