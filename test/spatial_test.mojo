@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """Spatial registration, deferred maintenance, and coordinate helpers."""
 
 from std.testing import (
