@@ -63,7 +63,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                 # it rather than attempting then immediately catching a
                 # doomed call: only `self.storage` (host storage) gets built,
                 # `self._device_storage` stays empty, and
-                # `SystemContext.run(..., on_gpu=True)` already compiles out
+                # `SystemContext.run(..., backend=ExecutionBackend.DEVICE)` already compiles out
                 # its entire device path under this same `has_accelerator()`
                 # check (see `system.mojo`), so no GPU method is reachable
                 # from a world built this way.
@@ -78,7 +78,7 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                     # routine, expected condition even on a build that
                     # supports GPU compilation (most hosts don't have one
                     # plugged in), so this constructor -- unlike
-                    # `SystemContext.run(..., on_gpu=True)`, which does
+                    # `SystemContext.run(..., backend=ExecutionBackend.DEVICE)`, which does
                     # raise a clear error when it actually needs a device --
                     # must not fail outright here just because a device
                     # context could not be created. But it must not stay
@@ -86,14 +86,14 @@ struct World[*component_types: ComponentType](Copyable, Sized):
                     # here on is `self._device_storage` being empty, and
                     # the first thing a caller who *did* expect a GPU sees
                     # is an unrelated-looking error much later, at the
-                    # first `on_gpu=True` run. Surface the real cause now,
+                    # first `backend=ExecutionBackend.DEVICE` run. Surface the real cause now,
                     # in debug builds, at the point it actually occurred.
                     self._device_storage = None
                     debug_warn(
-                        t"World.__init__: GPU device storage did not"
-                        t" initialize ({String(e)}); on_gpu=True system"
-                        t" runs will raise until a working accelerator is"
-                        t" available."
+                        t"World.__init__: GPU device storage did not initialize"
+                        t" ({String(e)}); backend=ExecutionBackend.DEVICE"
+                        t" system runs will raise until a working accelerator"
+                        t" is available."
                     )
 
             self.resources = ResourceStorage()

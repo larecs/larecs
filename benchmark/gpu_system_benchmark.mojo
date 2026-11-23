@@ -28,7 +28,14 @@ from std.sys import has_accelerator
 
 from custom_benchmark import DefaultBench
 
-from larecs import Entity, Filter, KernelContext, SystemContext, World
+from larecs import (
+    ExecutionBackend,
+    Entity,
+    Filter,
+    KernelContext,
+    SystemContext,
+    World,
+)
 
 
 @fieldwise_init
@@ -176,7 +183,10 @@ def _run_once[steps: Int, on_gpu: Bool](mut world: WorldType) raises:
     var context = ContextType(
         Pointer(to=world).unsafe_origin_cast[MutUntrackedOrigin]()[]
     )
-    context.run[integrate_orbit[steps], on_gpu=on_gpu]()
+    context.run[
+        integrate_orbit[steps],
+        backend=(ExecutionBackend.DEVICE if on_gpu else ExecutionBackend.HOST),
+    ]()
 
 
 def _benchmark[steps: Int, on_gpu: Bool](mut bencher: Bencher):

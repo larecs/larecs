@@ -8,12 +8,12 @@
 from std.sys import has_accelerator
 from std.testing import *
 
-from larecs import World, SystemContext, KernelContext, Filter
+from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter
 
 
 # `TrivialRegisterPassable` on every component below satisfies
 # `GPUComponentType` (see component.mojo): `SystemContext.run(...,
-# on_gpu=True)` moves component columns as raw bytes, which is only
+# backend=ExecutionBackend.DEVICE)` moves component columns as raw bytes, which is only
 # compile-time-permitted for a type with no non-trivial state.
 @fieldwise_init
 struct Position(Copyable, TrivialRegisterPassable):
@@ -66,7 +66,7 @@ def test_gpu_run_covers_every_matching_archetype() raises:
     var e = world.storage.add_entity(Position(1000.0), Tag(1))
 
     var context = SystemContext(world)
-    context.run[bump, on_gpu=True]()
+    context.run[bump, backend=ExecutionBackend.DEVICE]()
 
     assert_equal(world.storage.get[Position](a).x, 1.0)
     assert_equal(world.storage.get[Position](b).x, 11.0)
@@ -76,19 +76,19 @@ def test_gpu_run_covers_every_matching_archetype() raises:
 
 
 def test_gpu_run_raises_a_clear_error_without_device_storage() raises:
-    """`on_gpu=True` raises a legible error when the world has no working
+    """`backend=ExecutionBackend.DEVICE` raises a legible error when the world has no working
     device storage, instead of an opaque `EmptyOptionalError`.
 
     `World.__init__` already falls back to an empty `_device_storage` when
     `DeviceContext()` fails (e.g. no accelerator, or a driver-level
     failure despite `has_accelerator()` being true at compile time). Before
-    this fix, `SystemContext.run(..., on_gpu=True)` unwrapped that
+    this fix, `SystemContext.run(..., backend=ExecutionBackend.DEVICE)` unwrapped that
     `Optional` directly with `[]`, which raises `EmptyOptionalError`, an
     error type that names neither the world, the requested run, nor what
     to do about it. This test forces that fallback path directly (rather
     than relying on a specific `DeviceContext()` failure) by clearing an
     otherwise-working world's device storage, since this machine having an
-    accelerator is exactly what makes `on_gpu=True` reach this branch at
+    accelerator is exactly what makes `backend=ExecutionBackend.DEVICE` reach this branch at
     all -- see the `has_accelerator()` guard below.
     """
     comptime if not has_accelerator():
@@ -102,7 +102,7 @@ def test_gpu_run_raises_a_clear_error_without_device_storage() raises:
 
     var raised = False
     try:
-        context.run[bump, on_gpu=True]()
+        context.run[bump, backend=ExecutionBackend.DEVICE]()
     except e:
         raised = True
         assert_true("device" in String(e))

@@ -13,7 +13,7 @@ currently such an experimental API.
 - High performance due to archetypes and Mojo's compile-time programming
 - Compile-time checks thanks to usage of parameters
 - Native support for [resources](https://mlange-42.github.io/arche/guide/resources/) and scheduling
-- Systems can run their component-processing kernels on the CPU or (experimentally) on a GPU accelerator via `SystemContext.run(..., on_gpu=True)`
+- Systems can run their component-processing kernels on the CPU or (experimentally) on a GPU accelerator via `SystemContext.run(..., backend=ExecutionBackend.DEVICE)`
 - Tested and benchmarked
 - More features coming soon...
 
@@ -219,7 +219,7 @@ Any `Copyable & Deinitable` struct can be used as a component for CPU
 (host-only) execution -- this is no longer restricted to trivial/POD types.
 
 Components accessed by a system that runs its kernel on a GPU
-(`SystemContext.run(..., on_gpu=True)`) are subject to a stricter
+(`SystemContext.run(..., backend=ExecutionBackend.DEVICE)`) are subject to a stricter
 constraint: GPU transfer moves component columns between host and device
 buffers via a raw byte copy that never runs a type's copy constructor or
 destructor, so such components must additionally be
