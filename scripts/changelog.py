@@ -1,9 +1,8 @@
 """Manage changelog fragments in changelog.d/.
 
-Every feature branch keeps its changelog entries in one Markdown fragment,
-changelog.d/<feature>.md, so entries travel with the branch into `main` without conflicting with other features. A fragment groups bullet
-entries under `### <section>` headings, using the sections in SECTIONS. Each
-entry ends with links to the PRs that shaped the feature.
+Each feature records its changelog entries in changelog.d/<feature>.md.
+Fragments group bullet entries under `### <section>` headings from SECTIONS.
+Each entry ends with links to the PRs that shaped the feature.
 
 Commands:
     preview  Print the unreleased changes collected from all fragments.
@@ -29,23 +28,36 @@ IGNORED = {"README.md"}
 
 
 def fragment_paths() -> list[Path]:
-    """Return the fragment files in a stable order."""
+    """Find the changelog fragments.
+
+    Returns:
+        Markdown fragment paths sorted by name, excluding README.md.
+    """
     return sorted(
         p for p in FRAGMENTS.glob("*.md") if p.name not in IGNORED
     )
 
 
 def parse_fragment(path: Path) -> dict[str, list[str]]:
-    """Split a fragment into its entries per section.
+    """Parse the sections and bullet entries in one fragment.
 
-    Raises SystemExit when the fragment uses an unknown section or has text
-    outside a section.
+    Args:
+        path: Path to the Markdown fragment.
+
+    Raises:
+        SystemExit: If the fragment has an unknown section, misplaced text, or no entries.
+        OSError: If the fragment cannot be read.
+        UnicodeError: If the fragment cannot be decoded.
+
+    Returns:
+        A mapping from section headings to their entries in file order.
     """
     sections: dict[str, list[str]] = {}
     current = None
     entry: list[str] = []
 
     def flush() -> None:
+        """Save the buffered entry to the current section and clear the buffer."""
         if entry and current is not None:
             sections.setdefault(current, []).append("\n".join(entry).rstrip())
         entry.clear()
@@ -76,7 +88,16 @@ def parse_fragment(path: Path) -> dict[str, list[str]]:
 
 
 def collect() -> dict[str, list[str]]:
-    """Merge the entries of all fragments by section."""
+    """Merge the entries of all fragments by section.
+
+    Raises:
+        SystemExit: If a fragment is malformed or empty.
+        OSError: If a fragment cannot be read.
+        UnicodeError: If a fragment cannot be decoded.
+
+    Returns:
+        A mapping from section headings to entries in fragment and file order.
+    """
     merged: dict[str, list[str]] = {}
     for path in fragment_paths():
         for section, entries in parse_fragment(path).items():
@@ -85,7 +106,14 @@ def collect() -> dict[str, list[str]]:
 
 
 def render(merged: dict[str, list[str]]) -> str:
-    """Render merged entries as changelog sections."""
+    """Render entries in changelog section order.
+
+    Args:
+        merged: Entries grouped by section heading.
+
+    Returns:
+        Markdown for nonempty sections, or an empty string when there are no entries.
+    """
     blocks = []
     for section in SECTIONS:
         if merged.get(section):
@@ -94,10 +122,30 @@ def render(merged: dict[str, list[str]]) -> str:
 
 
 def preview() -> None:
+    """Print unreleased changes without modifying the changelog or fragments.
+
+    Raises:
+        SystemExit: If a fragment is malformed or empty.
+        OSError: If a fragment cannot be read or the preview cannot be printed.
+        UnicodeError: If a fragment cannot be decoded.
+    """
     print(render(collect()) or "No unreleased changes.")
 
 
 def release(version: str, previous: str, date: str) -> None:
+    """Insert a release section in the changelog and remove its fragments.
+
+    Args:
+        version: New release version without the leading `v`.
+        previous: Previous release version without the leading `v`.
+        date: Release date in YYYY-MM-DD format.
+
+    Raises:
+        SystemExit: If there are no entries, a fragment is malformed, or the
+            changelog lacks an Unreleased section above a release heading.
+        OSError: If reading, writing, or removing a file fails.
+        UnicodeError: If changelog or fragment text cannot be decoded or encoded.
+    """
     body = render(collect())
     if not body:
         sys.exit("error: no fragments to release")
@@ -127,6 +175,14 @@ def release(version: str, previous: str, date: str) -> None:
 
 
 def main() -> None:
+    """Parse command-line arguments and run the requested changelog command.
+
+    Raises:
+        SystemExit: If help is requested, arguments are invalid, or the
+            selected command rejects the changelog or its fragments.
+        OSError: If command input or output fails.
+        UnicodeError: If command input or output cannot be decoded or encoded.
+    """
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("preview")
