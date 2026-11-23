@@ -50,7 +50,7 @@ jobs:
         run: |
           echo 'matrix=[{"os":"ubuntu-latest","target-platform":"linux-64"},{"os":"macos-latest","target-platform":"osx-arm64"}]' >> "$GITHUB_OUTPUT"
           if [[ "$PR_ACTION" == closed ]]; then
-            bash scripts/resolve-release.sh "$RELEASE_PR"
+            python3 scripts/release_pr.py resolve "$RELEASE_PR"
           else
             version=1.0.0b1
             if [[ "$BASE_REF" == release/base-v* ]]; then
