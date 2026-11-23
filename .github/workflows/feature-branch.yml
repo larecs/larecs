@@ -1,0 +1,35 @@
+name: Feature branch
+
+# Keep old nightly integration commits out of main during migration.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  base:
+    name: Feature branch base
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Reject nightly-only commits
+        run: |
+          if ! git show-ref --verify --quiet refs/remotes/origin/nightly; then exit 0; fi
+          # Commits on nightly's first-parent line that main lacks: the
+          # integration merges and anything committed to nightly directly.
+          nightly_only="$(git rev-list --first-parent origin/nightly ^origin/main)"
+          branch="$(git rev-list HEAD ^origin/main)"
+          found="$(comm -12 <(sort <<<"${nightly_only}") <(sort <<<"${branch}") | sed '/^$/d')"
+          if [[ -n "${found}" ]]; then
+            echo "::error::This branch contains commits that exist only on nightly. Start feature branches from main and never merge nightly into them."
+            while read -r sha; do git log -1 --format='  %h %s' "${sha}"; done <<<"${found}"
+            exit 1
+          fi
+          echo "No nightly-only commits."

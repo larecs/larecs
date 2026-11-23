@@ -1,14 +1,26 @@
 name: Release
 
 on:
-  release:
-    types: [created]
+  workflow_dispatch:
+    inputs:
+      release_pr:
+        description: Merged release pull request number
+        required: true
+        type: string
+      publish:
+        description: Publish the reviewed candidate to Tree-D
+        default: false
+        type: boolean
   push:
     branches:
       - main
   pull_request:
 
 permissions: {}
+
+concurrency:
+  group: ${{ github.event_name == 'workflow_dispatch' && 'stable-release' || github.run_id }}
+  cancel-in-progress: false
 
 jobs:
   define-matrix:
@@ -19,39 +31,67 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          echo 'matrix=[{ "os": "ubuntu-latest", "target-platform": "linux-64" }, { "os": "macos-latest", "target-platform": "osx-arm64" }]' >> $GITHUB_OUTPUT
-  define-version:
-    name: Define version
+          echo 'matrix=[{ "os": "ubuntu-latest", "target-platform": "linux-64" }, { "os": "macos-latest", "target-platform": "osx-arm64" }]' >> "$GITHUB_OUTPUT"
+  candidate:
+    name: Resolve package source
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
-      version: ${{ steps.set-version.outputs.version }}
+      sha: ${{ steps.resolve.outputs.sha }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      version: ${{ steps.resolve.outputs.version }}
+      previous: ${{ steps.resolve.outputs.previous }}
     steps:
-      - id: set-version
-        shell: bash
+      - uses: actions/checkout@v6
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: resolve
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_PR: ${{ inputs.release_pr }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
-            echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=1.0.0b1" >> "$GITHUB_OUTPUT"
-          fi
+          case "$GITHUB_EVENT_NAME" in
+            workflow_dispatch)
+              bash scripts/resolve-release.sh "$RELEASE_PR"
+              ;;
+            pull_request)
+              version=1.0.0b1
+              if [[ "$BASE_REF" == release/base-v* ]]; then
+                version=${BASE_REF#release/base-v}
+              fi
+              echo "version=$version" >> "$GITHUB_OUTPUT"
+              echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "version=1.0.0b1" >> "$GITHUB_OUTPUT"
+              echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
   build:
     name: Build package
     needs:
       - define-matrix
-      - define-version
+      - candidate
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     env:
-      LARECS_VERSION: ${{ needs.define-version.outputs.version }}
+      LARECS_VERSION: ${{ needs.candidate.outputs.version }}
     strategy:
       matrix:
         include: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.candidate.outputs.sha }}
+          persist-credentials: false
       - name: Build conda package
         uses: prefix-dev/rattler-build-action@v0.2.39
         with:
@@ -63,7 +103,7 @@ jobs:
             --channel https://repo.prefix.dev/max
             --channel https://repo.prefix.dev/modular-community
             --channel https://prefix.dev/tree-d
-            ${{ github.event_name != 'release' && '--no-test' || '' }}
+            ${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/base-') && '--no-test' || '' }}
   build-gate:
     name: Build gate
     runs-on: ubuntu-latest
@@ -71,7 +111,7 @@ jobs:
     steps:
       - run: echo "All builds completed successfully."
   upload:
-    if: ${{ github.event_name == 'release' }}
+    if: github.event_name == 'workflow_dispatch' && inputs.publish
     name: Upload conda packages to Tree-D Prefix channel
     runs-on: ubuntu-latest
     permissions:
@@ -94,7 +134,36 @@ jobs:
       - name: Upload package to prefix.dev
         shell: bash
         run: |
-          for pkg in $(find dist -type f \( -name "*.conda" -o -name "*.tar.bz2" \) ); do
-            echo "Uploading ${pkg}"
-            rattler-build upload prefix --channel tree-d "${pkg}"
+          mapfile -d '' -t packages < <(find dist -type f \( -name '*.conda' -o -name '*.tar.bz2' \) -print0)
+          (( ${#packages[@]} > 0 ))
+          for package in "${packages[@]}"; do
+            rattler-build upload prefix --channel tree-d "$package"
+          done
+
+  release:
+    name: Publish GitHub release
+    needs: [candidate, upload]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ needs.candidate.outputs.tag }}
+      RELEASE_SHA: ${{ needs.candidate.outputs.sha }}
+      PREVIOUS_TAG: ${{ needs.candidate.outputs.previous }}
+    steps:
+      - name: Tag the reviewed commit
+        run: |
+          release_type=(--latest)
+          if [[ "$RELEASE_TAG" == *b* ]]; then
+            release_type=(--prerelease)
+          fi
+          gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --target "$RELEASE_SHA" --generate-notes --notes-start-tag "$PREVIOUS_TAG" "${release_type[@]}"
+      - name: Delete temporary release branches
+        run: |
+          for branch in "release/base-$RELEASE_TAG" "release/candidate-$RELEASE_TAG"; do
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" --silent; then
+              gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
+            fi
           done

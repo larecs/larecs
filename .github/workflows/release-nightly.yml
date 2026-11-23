@@ -1,13 +1,14 @@
 name: Release nightly
 
-# Builds, tests, and publishes larecs from the `nightly` branch to
+# The migration sets NIGHTLY_SOURCE to main after preserving nightly changes.
+# Builds, tests, and publishes the selected source to
 # https://prefix.dev/tree-d/nightly. Scheduled runs use this file from the
-# default branch. Every run publishes only when the `nightly` head differs
+# default branch. Every run publishes only when the `main` head differs
 # from the `nightly-published` tag, which marks the last published commit, so
 # a commit whose build failed is retried by the next run.
 #
-# Nightly versions append the UTC commit time of the `nightly` head to the
-# latest release tag reachable from it, e.g. `1.0.0b2.202611160230`. They
+# Nightly versions append the UTC commit time of the `main` head to the
+# latest release tag reachable from it, e.g. `1.0.0b2.202611160230.42`. They
 # sort after that release and before the next one.
 
 on:
@@ -22,7 +23,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  NIGHTLY_BRANCH: nightly
   NIGHTLY_CHANNEL: https://prefix.dev/tree-d/nightly
   PUBLISHED_TAG: nightly-published
 
@@ -40,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ env.NIGHTLY_BRANCH }}
+          ref: ${{ vars.NIGHTLY_SOURCE || 'nightly' }}
           # Full history and tags, so `git describe` finds the last release.
           fetch-depth: 0
       - id: define
@@ -56,7 +56,7 @@ jobs:
 
           last_tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || echo v0.0.0)"
           stamp="$(TZ=UTC git log -1 --date=format-local:%Y%m%d%H%M --format=%cd)"
-          version="${last_tag#v}.${stamp}"
+          version="${last_tag#v}.${stamp}.${GITHUB_RUN_NUMBER}"
           echo "Nightly ${version} from ${sha}"
 
           {
