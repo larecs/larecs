@@ -163,7 +163,17 @@ jobs:
         with:
           name: public
           path: public
+      # A PR can close during its build; removal then runs before this deployment.
+      - name: Check that the PR is still open
+        id: pull-request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          state="$(gh pr view "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --json state --jq .state)"
+          echo "state=${state}" >> "$GITHUB_OUTPUT"
       - name: Deploy preview
+        if: ${{ steps.pull-request.outputs.state == 'OPEN' }}
         uses: rossjrw/pr-preview-action@v1.8.1
         with:
           source-dir: public
