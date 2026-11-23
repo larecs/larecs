@@ -13,9 +13,7 @@ jobs:
     name: Publish API docs
     runs-on: ubuntu-latest
     permissions:
-      # Only the deploy step (push to a fresh, orphan-history gh-pages
-      # branch) needs write access; everything else here only reads.
-      contents: write
+      contents: read
 
     defaults:
       run:
@@ -65,11 +63,34 @@ jobs:
           name: public
           path: docs/site/public
 
-      - name: Deploy to GitHub Pages
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: crazy-max/ghaction-github-pages@v4
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: publish
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # No concurrency group: a newer pending job in a group cancels an older
+    # one, which would drop main deployments. Preview deployments write only
+    # under pr-preview/, so concurrent pushes rebase without conflicts.
+    steps:
+      - name: Download HTML artifacts
+        uses: actions/download-artifact@v4
         with:
-          target_branch: gh-pages
-          build_dir: docs/site/public
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: public
+          path: public
+      # Jekyll omits directories starting with "_", such as the _astro/ assets
+      # of Starlight PR previews.
+      - name: Disable Jekyll
+        run: touch public/.nojekyll
+      - name: Deploy, keeping PR previews
+        uses: JamesIves/github-pages-deploy-action@v4.9.0
+        with:
+          branch: gh-pages
+          folder: public
+          # Previews and the Starlight dev site are deployed by other jobs.
+          clean-exclude: |
+            pr-preview/
+            dev/
+          force: false
+          attempt-limit: 10
