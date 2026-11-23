@@ -37,8 +37,8 @@ def scale_entities(
         entity.get[Int32]() *= scale.value
 
 
-def test_kernel_context_required_resources_on_gpu() raises:
-    """A GPU kernel can declare and read a resource via `KernelContext.resources`.
+def test_kernel_context_required_resources_on_device() raises:
+    """A device kernel can declare and read a resource via `KernelContext.resources`.
     """
     comptime if not has_accelerator():
         return
@@ -74,7 +74,7 @@ def overwrite_scale(
 
 
 def test_kernel_context_resource_mutation_is_copied_back_to_host() raises:
-    """A resource mutated on the GPU is copied back to host after the kernel runs.
+    """A resource mutated on the device is copied back to host after the kernel runs.
     """
     comptime if not has_accelerator():
         return

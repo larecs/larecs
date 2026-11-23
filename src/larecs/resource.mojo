@@ -18,18 +18,18 @@ from .unsafe_box import UnsafeBox
 comptime ResourceType = Copyable & Deinitable
 """The trait that resources must conform to."""
 
-comptime GPUResourceType = TrivialRegisterPassable
-"""Legacy trait alias retained for compatibility.
+comptime DeviceResourceType = TrivialRegisterPassable
+"""Trait alias for trivially register-passable resources.
 
-GPU resource validation uses [.constrain_gpu_safe_resources] to check trivial
-movability instead of requiring conformance to this trait. Resources must also
+Device resource validation uses [.constrain_device_safe_resources] to check
+trivial movability instead of requiring conformance to this trait. Resources must also
 contain only data valid on the device; trivial movability alone does not make
 host pointers device-accessible.
 """
 
 
-def constrain_gpu_safe_resources[*Ts: ResourceType]() -> Bool:
-    """Checks whether all resource types are safe for GPU raw-byte transfer.
+def constrain_device_safe_resources[*Ts: ResourceType]() -> Bool:
+    """Checks whether all resource types are safe for device raw-byte transfer.
 
     Parameters:
         Ts: The resource types to check.
@@ -39,7 +39,7 @@ def constrain_gpu_safe_resources[*Ts: ResourceType]() -> Bool:
     """
     with Zone(
         function_name=(
-            "resource.constrain_gpu_safe_resources[*Ts: ResourceType]()"
+            "resource.constrain_device_safe_resources[*Ts: ResourceType]()"
         )
     ):
         comptime for i in range(len(Ts)):

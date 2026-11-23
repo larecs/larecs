@@ -12,7 +12,7 @@ from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter
 
 
 # `TrivialRegisterPassable` on every component below satisfies
-# `GPUComponentType` (see component.mojo): `SystemContext.run(...,
+# `DeviceComponentType` (see component.mojo): `SystemContext.run(...,
 # backend=ExecutionBackend.DEVICE)` moves component columns as raw bytes, which is only
 # compile-time-permitted for a type with no non-trivial state.
 @fieldwise_init
@@ -37,9 +37,9 @@ def bump(context: KernelContext[Filter().include[Position, Velocity]()]):
 
 
 def test_gpu_run_covers_every_matching_archetype() raises:
-    """A GPU-run filter matching multiple archetypes updates every row.
+    """A filter running on the device updates every matching archetype.
 
-    Before this test existed, `SystemContext.run`'s GPU upload path copied
+    Before this test existed, `SystemContext.run`'s device upload path copied
     every matching archetype's column to device offset zero (rather than the
     running offset the download path already used), so the second matching
     archetype silently overwrote the first and any archetype after the first
