@@ -214,32 +214,80 @@ class GitFixture(unittest.TestCase):
         self.rebuild("--add", "unmerged")
         self.git("merge-base", "--is-ancestor", tip, "HEAD")
 
+    def rewritten_pull_request(self, source, branch="group/feature"):
+        """Merge a branch through a pull request subject, then rewrite its tip.
+
+        Args:
+            source: Pull request source in `owner/branch` form.
+            branch: Repository branch to merge and rewrite.
+
+        Raises:
+            OSError: A fixture file cannot be written or Git cannot start.
+            subprocess.CalledProcessError: A fixture Git command fails.
+
+        Returns:
+            Full commit ID of the rewritten branch tip.
+        """
+        self.git("switch", "-c", branch, "main")
+        self.commit("integrated", "first")
+        self.git("push", "origin", branch)
+        self.git("switch", "nightly")
+        self.git("merge", "--no-ff", "-m", f"Merge pull request #42 from {source}", branch)
+        self.git("push", "origin", "nightly")
+        self.git("switch", branch)
+        self.git("reset", "--soft", "main")
+        self.git("commit", "-m", "rewritten feature")
+        tip = self.git("rev-parse", "HEAD")
+        self.git("push", "--force", "origin", branch)
+        return tip
+
     def test_github_merge_matches_full_branch_name(self):
-        """Verify GitHub merge subjects retain only the complete source branch name.
+        """Verify same-owner merge subjects retain only the complete branch name.
 
         Raises:
             AssertionError: A branch with a matching suffix is collected.
             OSError: Fixture files or processes cannot be accessed.
             subprocess.CalledProcessError: A fixture command or rebuild fails.
         """
-        self.git("switch", "-c", "group/feature", "main")
-        self.commit("integrated", "first")
-        self.git("push", "origin", "group/feature")
-        self.git("switch", "nightly")
-        self.git("merge", "--no-ff", "-m", "Merge pull request #42 from larecs/group/feature", "group/feature")
-        self.git("push", "origin", "nightly")
-        self.git("switch", "group/feature")
-        self.git("reset", "--soft", "main")
-        self.git("commit", "-m", "rewritten feature")
-        tip = self.git("rev-parse", "HEAD")
-        self.git("push", "--force", "origin", "group/feature")
+        tip = self.rewritten_pull_request("larecs/group/feature")
         self.git("switch", "-c", "feature", "main")
         unmerged = self.commit("unmerged", "not integrated")
         self.git("push", "origin", "feature")
-        self.rebuild()
+        with patch.dict(os.environ, NIGHTLY_REMOTE_OWNER="LaRecs"):
+            self.rebuild()
         self.git("merge-base", "--is-ancestor", tip, "HEAD")
         result = self.run_command("git", "merge-base", "--is-ancestor", unmerged, "HEAD", check=False)
         self.assertEqual(result.returncode, 1)
+
+    def test_fork_pull_request_does_not_select_branch(self):
+        """Verify a fork merge does not select a same-named repository branch.
+
+        Raises:
+            AssertionError: The fork merge selects the repository branch.
+            OSError: Fixture files or processes cannot be accessed.
+            subprocess.CalledProcessError: A fixture command or rebuild fails.
+        """
+        tip = self.rewritten_pull_request("contributor/group/feature")
+        with patch.dict(os.environ, NIGHTLY_REMOTE_OWNER="larecs"):
+            self.rebuild()
+        result = self.run_command("git", "merge-base", "--is-ancestor", tip, "HEAD", check=False)
+        self.assertEqual(result.returncode, 1)
+
+    def test_unknown_owner_stops_pull_request_rebuild(self):
+        """Verify a pull request merge is not dropped when the owner is unknown.
+
+        Raises:
+            AssertionError: The rebuild proceeds without an owner.
+            OSError: Fixture files or processes cannot be accessed.
+            subprocess.CalledProcessError: A fixture command fails.
+        """
+        self.rewritten_pull_request("larecs/group/feature")
+        with patch.dict(os.environ):
+            os.environ.pop("NIGHTLY_REMOTE_OWNER", None)
+            result = self.rebuild(check=False)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("NIGHTLY_REMOTE_OWNER", result.stdout)
+        self.assertNotEqual(self.git("branch", "--show-current"), "nightly-rebuild")
 
     def test_aborted_merge_is_retried_on_continue(self):
         """Verify --continue retries an aborted merge and accepts its later resolution.

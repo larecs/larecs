@@ -21,6 +21,9 @@
 #
 # The rebuild runs on the local branch `nightly-rebuild`. Conflicts are
 # recorded with git rerere, so a resolution is reused by later rebuilds.
+#
+# Pull request merges select a branch only when their source owner matches the
+# remote. Set NIGHTLY_REMOTE_OWNER when the remote is not a GitHub URL.
 set -euo pipefail
 
 remote="${NIGHTLY_REMOTE:-origin}"
@@ -62,10 +65,27 @@ lowercase() {
 }
 
 remote_owner() {
-    local url owner_pattern='[:/]([^/:]+)/[^/]+$'
+    local url owner_pattern='^(https://([^/@]+@)?|ssh://git@|git@)github\.com[:/]([^/:]+)/[^/]+/?$'
+    if [[ -n "${NIGHTLY_REMOTE_OWNER:-}" ]]; then
+        lowercase "$NIGHTLY_REMOTE_OWNER"
+        return 0
+    fi
     url="$(git remote get-url "$remote")"
-    if [[ "$url" =~ $owner_pattern ]]; then lowercase "${BASH_REMATCH[1]}"; fi
+    if [[ "$url" =~ $owner_pattern ]]; then lowercase "${BASH_REMATCH[3]}"; fi
     return 0
+}
+
+pull_request_selects() {
+    # A pull request subject names a repository branch only for the same owner.
+    local subject="$1" branch="$2" owner="$3" source
+    [[ "$subject" == "Merge pull request #"*" from "* ]] || return 1
+    source="${subject#* from }"
+    [[ "${source#*/}" == "$branch" ]] || return 1
+    if [[ -z "$owner" ]]; then
+        rm -f "$state_file"
+        die "cannot determine the owner of $remote for '$subject'; set NIGHTLY_REMOTE_OWNER"
+    fi
+    [[ "$(lowercase "${source%%/*}")" == "$owner" ]]
 }
 
 collect_branches() {
@@ -92,22 +112,19 @@ collect_branches() {
         candidates=("${sorted[@]}")
     fi
 
-    local commit branch subject source owner ordered=() assigned=" "
+    local commit branch subject owner ordered=() assigned=" "
     owner="$(remote_owner)"
     while read -r commit; do
         subject="$(git log -1 --format=%s "$commit")"
-        source="${subject#* from }"
         for branch in "${candidates[@]+"${candidates[@]}"}"; do
             [[ "$assigned" == *" $branch "* ]] && continue
             # Contained tips are already tested. Advanced or rewritten tips
             # require the branch's own merge subject: a shared ancestor alone
             # could also belong to a stacked branch never merged into nightly.
-            # A pull request subject names this branch only for the same owner.
             if git merge-base --is-ancestor "$remote/$branch" "$commit" \
                 || [[ "$subject" == "Merge branch '$branch' into nightly" ]] \
                 || [[ "$subject" == "Merge remote-tracking branch '$remote/$branch' into nightly" ]] \
-                || { [[ "$subject" == "Merge pull request #"*" from "* ]] && [[ "${source#*/}" == "$branch" ]] \
-                    && [[ "$(lowercase "${source%%/*}")" == "$owner" ]]; }; then
+                || pull_request_selects "$subject" "$branch" "$owner"; then
                 ordered+=("$branch")
                 assigned+="$branch "
             fi
