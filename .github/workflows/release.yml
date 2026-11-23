@@ -1,83 +1,67 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      release_pr:
-        description: Number of the merged PR that approved the release candidate
-        required: true
-        type: string
-      publish:
-        description: Publish to Tree-D and GitHub after testing
-        default: false
-        type: boolean
   push:
     branches:
       - main
   pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 permissions: {}
 
 concurrency:
-  group: ${{ github.event_name == 'workflow_dispatch' && 'stable-release' || github.run_id }}
+  group: >-
+    ${{ github.event.action == 'closed' && github.event.pull_request.merged
+    && startsWith(github.event.pull_request.base.ref, 'release/base-')
+    && 'stable-release' || github.run_id }}
   cancel-in-progress: false
 
 jobs:
-  define-matrix:
-    name: Define matrix
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - id: set-matrix
-        run: |
-          echo 'matrix=[{ "os": "ubuntu-latest", "target-platform": "linux-64" }, { "os": "macos-latest", "target-platform": "osx-arm64" }]' >> "$GITHUB_OUTPUT"
   candidate:
     name: Resolve package source
-    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    if: >-
+      github.event.action != 'closed' ||
+      (github.event.pull_request.merged
+      && startsWith(github.event.pull_request.base.ref, 'release/base-')
+      && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: read
     outputs:
+      matrix: ${{ steps.resolve.outputs.matrix }}
       sha: ${{ steps.resolve.outputs.sha }}
       tag: ${{ steps.resolve.outputs.tag }}
       version: ${{ steps.resolve.outputs.version }}
       previous: ${{ steps.resolve.outputs.previous }}
     steps:
       - uses: actions/checkout@v6
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event.action == 'closed'
         with:
+          ref: refs/heads/main
           fetch-depth: 0
           persist-credentials: false
       - id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_PR: ${{ inputs.release_pr }}
-          BASE_REF: ${{ github.base_ref }}
+          RELEASE_PR: ${{ github.event.pull_request.number }}
+          PR_ACTION: ${{ github.event.action }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
-          case "$GITHUB_EVENT_NAME" in
-            workflow_dispatch)
-              bash scripts/resolve-release.sh "$RELEASE_PR"
-              ;;
-            pull_request)
-              version=1.0.0b1
-              if [[ "$BASE_REF" == release/base-v* ]]; then
-                version=${BASE_REF#release/base-v}
-              fi
-              echo "version=$version" >> "$GITHUB_OUTPUT"
-              echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "version=1.0.0b1" >> "$GITHUB_OUTPUT"
-              echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
+          echo 'matrix=[{"os":"ubuntu-latest","target-platform":"linux-64"},{"os":"macos-latest","target-platform":"osx-arm64"}]' >> "$GITHUB_OUTPUT"
+          if [[ "$PR_ACTION" == closed ]]; then
+            bash scripts/resolve-release.sh "$RELEASE_PR"
+          else
+            version=1.0.0b1
+            if [[ "$BASE_REF" == release/base-v* ]]; then
+              version=${BASE_REF#release/base-v}
+            fi
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          fi
   build:
     name: Build package
-    needs:
-      - define-matrix
-      - candidate
+    needs: candidate
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -85,7 +69,7 @@ jobs:
       LARECS_VERSION: ${{ needs.candidate.outputs.version }}
     strategy:
       matrix:
-        include: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
+        include: ${{ fromJSON(needs.candidate.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v6
@@ -103,7 +87,7 @@ jobs:
             --channel https://repo.prefix.dev/max
             --channel https://repo.prefix.dev/modular-community
             --channel https://prefix.dev/tree-d
-            ${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/base-') && '--no-test' || '' }}
+            ${{ !startsWith(github.event.pull_request.base.ref, 'release/base-') && '--no-test' || '' }}
   build-gate:
     name: Build gate
     runs-on: ubuntu-latest
@@ -111,18 +95,16 @@ jobs:
     steps:
       - run: echo "All builds completed successfully."
   upload:
-    if: github.event_name == 'workflow_dispatch' && inputs.publish
+    if: needs.candidate.outputs.tag != ''
     name: Upload conda packages to Tree-D Prefix channel
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write # OIDC trusted publishing to prefix.dev
-    needs:
-      - build-gate
-      - define-matrix
+    needs: [candidate, build-gate]
     strategy:
       matrix:
-        include: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
+        include: ${{ fromJSON(needs.candidate.outputs.matrix) }}
     steps:
       - uses: actions/download-artifact@v4
         with:

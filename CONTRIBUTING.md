@@ -39,9 +39,8 @@ The workspace also needs the `conda-forge`, `https://repo.prefix.dev/max`, and
 3. After an approving review and passing checks, merge the release PR using
    **Create a merge commit**. If the release needs a fix, land it on `main`
    and update the candidate branch to the new commit for review.
-4. Run `gh workflow run release.yml -f release_pr=<number> -f publish=true`.
-   The workflow tests and publishes the reviewed commit and removes the
-   temporary release branches. Omit `publish=true` to test without publishing.
+4. Follow the **Release** workflow that starts when the PR merges. It tests
+   and publishes the reviewed commit, then removes the temporary branches.
 
 [AGENTS.md](AGENTS.md) lists build and test commands, code style, and guidance
 for issues and PR descriptions.
