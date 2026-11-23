@@ -7,6 +7,8 @@ on:
   pull_request:
     # `closed` removes the PR's preview; the build is skipped for it.
     types: [opened, reopened, synchronize, closed]
+  release:
+    types: [published]
 
 permissions: {}
 
@@ -77,6 +79,17 @@ jobs:
         run: |
           echo "DOCS_BASE_URL=https://larecs.github.io/larecs/${PREVIEW_UMBRELLA}/pr-${{ github.event.number }}/" >> "$GITHUB_ENV"
 
+      - name: Use the versioned base URL for releases
+        if: ${{ github.event_name == 'release' }}
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?$ ]]; then
+            echo "::error::Unsupported release tag: ${RELEASE_TAG}"
+            exit 1
+          fi
+          echo "DOCS_BASE_URL=https://larecs.github.io/larecs/${RELEASE_TAG}/" >> "$GITHUB_ENV"
+
       - name: Verify documentation publishing
         run: |
           pixi install --locked
@@ -113,6 +126,8 @@ jobs:
       contents: write
     # Main deployments rebase onto concurrent preview pushes without cancelling older jobs.
     steps:
+      - name: Checkout Larecs
+        uses: actions/checkout@v6
       - name: Download HTML artifacts
         uses: actions/download-artifact@v4
         with:
@@ -139,6 +154,31 @@ jobs:
           clean-exclude: ${{ env.PREVIEW_UMBRELLA }}/
           force: false
           attempt-limit: 10
+      - name: Update the version index and root redirect
+        run: python3 scripts/docs_versions.py --repository "${GITHUB_REPOSITORY}"
+
+  deploy-release:
+    name: Deploy release docs
+    needs: publish
+    if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Each push rebases onto concurrent deployments; existing releases are never replaced.
+    steps:
+      - name: Checkout Larecs
+        uses: actions/checkout@v6
+      - name: Download HTML artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: public
+          path: release-docs
+      - name: Publish the release once and update the version index
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python3 scripts/docs_versions.py --repository "${GITHUB_REPOSITORY}" \
+            --build release-docs --version "${RELEASE_TAG#v}"
 
   preview:
     name: Deploy PR preview

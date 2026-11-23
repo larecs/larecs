@@ -2,11 +2,25 @@
 
 import json
 import mimetypes
+import re
 from urllib.parse import unquote, urljoin, urlsplit
 
 from playwright.sync_api import sync_playwright
 
 from check_docs import ROOT, Site
+
+
+VERSION_FIXTURE = {"default": "v9.9.9/", "versions": [
+    {"id": "dev", "label": "Development", "path": "dev/"},
+    {"id": "v9.9.9", "label": "v9.9.9 (latest)", "path": "v9.9.9/"},
+    {"id": "v0.4.0", "label": "v0.4.0 (GitHub)", "url": "https://github.com/larecs/larecs/tree/v0.4.0"},
+]}
+
+
+def deployment_root(base):
+    """Return the Pages root path shared by every documentation version."""
+    path = urlsplit(base).path
+    return re.sub(r"(?:dev|v\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?|pr-preview/pr-\d+)/$", "", path)
 
 
 def check_browser(public=None, base=None):
@@ -16,10 +30,18 @@ def check_browser(public=None, base=None):
     output.mkdir(parents=True, exist_ok=True)
     errors = []
     checked = []
+    version_root = deployment_root(site.base)
 
     def local(route):
         url = urlsplit(route.request.url)
         origin = urlsplit(site.base)
+        if url.netloc == origin.netloc and url.path == version_root + "versions.json":
+            route.fulfill(json=VERSION_FIXTURE)
+            return
+        if url.netloc == origin.netloc and url.path.startswith(version_root + "v9.9.9/"):
+            found = url.path in (version_root + "v9.9.9/", version_root + "v9.9.9/guide/")
+            route.fulfill(status=200 if found else 404, content_type="text/html", body="<!doctype html><title>Release</title>")
+            return
         if url.netloc != origin.netloc or not url.path.startswith(origin.path):
             errors.append(f"Unexpected external request: {url.geturl()}")
             route.abort()
@@ -128,6 +150,18 @@ def check_browser(public=None, base=None):
             page.wait_for_url(urljoin(site.base, current) + "#" + fragment)
             if not page.evaluate("Boolean(document.getElementById(location.hash.slice(1)))"):
                 raise ValueError(f"Redirect loses an incoming anchor: {old}#{fragment}")
+
+        # The selector keeps the page in another version and falls back to its home.
+        for route, expected in (("guide/", "v9.9.9/guide/"), ("guide/data_model/", "v9.9.9/")):
+            page.goto(urljoin(site.base, route), wait_until="networkidle")
+            selector = page.get_by_label("Documentation version")
+            selector.wait_for()
+            if "v9.9.9 (latest)" not in selector.inner_text() or "v0.4.0 (GitHub)" not in selector.inner_text():
+                raise ValueError("Version selector omits manifest entries")
+            mark = len(errors)
+            selector.select_option(label="v9.9.9 (latest)")
+            page.wait_for_url(f"{urlsplit(site.base).scheme}://{urlsplit(site.base).netloc}{version_root}{expected}")
+            del errors[mark:]  # The missing-page probe logs an expected 404.
 
         # Inspect the same fixed-palette SVG on a light canvas in both themes.
         page.goto(urljoin(site.base, "guide/execution_backends/"), wait_until="networkidle")

@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, statSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { base, root, json, escapeHtml, version } from './project.mjs';
+import { base, root, json, escapeHtml, deployment } from './project.mjs';
 import { compileDocumentation } from './loader.mjs';
 
 export function writeRedirects(publicDir) {
@@ -33,7 +33,7 @@ export function larecsDocumentation() {
         updateConfig({ vite: { plugins: [{
           name: 'larecs-project-metadata',
           resolveId(id) { if (id === 'virtual:larecs/project') return '\0larecs-project'; },
-          load(id) { if (id === '\0larecs-project') return `export const version = ${JSON.stringify(version)};`; },
+          load(id) { if (id === '\0larecs-project') return `export const site = ${JSON.stringify({ ...deployment(), base: new URL(base).pathname })};`; },
         }] } });
       },
       'astro:build:setup': () => {

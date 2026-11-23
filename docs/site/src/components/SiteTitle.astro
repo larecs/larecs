@@ -1,6 +1,59 @@
 ---
-import { version } from 'virtual:larecs/project';
+import { site } from 'virtual:larecs/project';
 import Default from '@astrojs/starlight/components/SiteTitle.astro';
 ---
-<div><Default {...Astro.props} /><span class="version">Development · {version}</span></div>
-<style>.version { display: block; font-size: .75rem; color: var(--sl-color-gray-2); }</style>
+<div>
+  <Default {...Astro.props} />
+  <span class="version" data-version-picker data-root={site.root} data-base={site.base} data-label={site.label}>{site.label}</span>
+</div>
+<script>
+  // The manifest lives at the Pages root so published builds list later releases.
+  const picker = document.querySelector<HTMLElement>('[data-version-picker]');
+  type Version = { id: string; label: string; path?: string; url?: string };
+  async function openVersion(entry: Version, root: string, base: string) {
+    if (entry.url) {
+      if (new URL(entry.url).protocol === 'https:') location.assign(entry.url);
+      return;
+    }
+    const home = new URL(root + entry.path, location.origin);
+    const same = new URL(location.pathname.slice(base.length), home);
+    try {
+      const response = await fetch(same, { method: 'HEAD' });
+      location.assign(response.ok ? same.href + location.hash : home.href);
+    } catch {
+      location.assign(home.href);
+    }
+  }
+  async function loadVersions(element: HTMLElement) {
+    const { root = '/', base = '/', label = '' } = element.dataset;
+    const response = await fetch(root + 'versions.json', { cache: 'no-cache' });
+    if (!response.ok) return;
+    const { versions } = (await response.json()) as { versions: Version[] };
+    const current = versions.findIndex((entry) => entry.path && root + entry.path === base);
+    const select = document.createElement('select');
+    select.setAttribute('aria-label', 'Documentation version');
+    if (current < 0) select.add(new Option(label, '', true, true));
+    versions.forEach((entry, index) => select.add(new Option(entry.label, String(index), false, index === current)));
+    const selected = select.selectedIndex;
+    select.addEventListener('change', () => {
+      const entry = versions[Number(select.value)];
+      if (entry) openVersion(entry, root, base);
+    });
+    addEventListener('pageshow', () => { select.selectedIndex = selected; });
+    element.replaceChildren(select);
+  }
+  if (picker) loadVersions(picker).catch(() => {});
+</script>
+<style>
+  .version { display: block; font-size: .75rem; color: var(--sl-color-gray-2); }
+  .version :global(select) {
+    max-width: 10rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+  .version :global(option) { color: var(--sl-color-white); background: var(--sl-color-bg-nav); }
+</style>
