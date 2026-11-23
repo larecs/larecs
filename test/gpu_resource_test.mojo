@@ -138,14 +138,16 @@ def test_gpu_kernel_local_captures() raises:
 
 
 @fieldwise_init
-struct DeclaredScale(ResourceType, PlainValue):
+struct DeclaredScale(PlainValue, ResourceType):
     """Holds fixed numeric factors in an opaque scalar tuple."""
 
     var values: StaticTuple[Int32, 4]
 
 
 def apply_declared_scale(
-    context: KernelContext[Filter().include[Int32](), Resources().read[DeclaredScale]()]
+    context: KernelContext[
+        Filter().include[Int32](), Resources().read[DeclaredScale]()
+    ]
 ):
     """Adds the factors from a declared read resource to each row.
 
