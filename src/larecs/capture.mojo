@@ -3,6 +3,7 @@
 from std.memory import is_trivially_copyable, is_trivially_deletable
 from std.sys import size_of
 from max.gpu.host import DeviceContext, DeviceBuffer
+from .resource_adapter import _TransferFrame
 
 
 trait CaptureSpec:
@@ -209,14 +210,22 @@ struct DeviceCaptureStorage[captures: Captures]:
 
     var _buffers: Array[Optional[DeviceBuffer[DType.uint8]], len(Self.captures)]
 
-    def __init__(
-        out self, device: DeviceContext, host: CaptureAccessor[Self.captures]
+    def __init__(out self):
+        """Creates empty capture ownership without queueing work."""
+        self._buffers = {fill = None}
+
+    def prepare(
+        mut self,
+        device: DeviceContext,
+        host: CaptureAccessor[Self.captures],
+        frame: _TransferFrame,
     ) raises:
         """Uploads each bound host value into its own device allocation.
 
         Args:
             device: The device queue used for the kernel invocation.
             host: Addresses of the borrowed host-local values.
+            frame: Native staging owner for synchronous execution.
 
         Raises:
             Error: If allocating or uploading a capture fails.
@@ -225,7 +234,6 @@ struct DeviceCaptureStorage[captures: Captures]:
             Device captures must be trivially copyable and trivially deletable.
             Values must not contain pointers to host-only memory.
         """
-        self._buffers = {fill = None}
         comptime for i in range(len(Self.captures)):
             comptime T = Self.captures.Specs[i].Value
             comptime assert (
@@ -238,15 +246,19 @@ struct DeviceCaptureStorage[captures: Captures]:
                 max(1, size_of[T]())
             )
             comptime if size_of[T]() > 0:
-                self._buffers[i].unsafe_value().enqueue_copy_from(
-                    host._pointers[i].unsafe_mut_cast[False]()
+                frame.upload(
+                    self._buffers[i].unsafe_value(),
+                    host._pointers[i].unsafe_mut_cast[False](),
                 )
 
-    def copy_back(self, host: CaptureAccessor[Self.captures]) raises:
+    def copy_back(
+        self, host: CaptureAccessor[Self.captures], mut frame: _TransferFrame
+    ) raises:
         """Queues downloads of mutable captures to their original host locals.
 
         Args:
             host: Addresses retained by the invocation's host bindings.
+            frame: Stages downloads for publication after synchronization.
 
         Raises:
             Error: If enqueueing a download fails.
@@ -255,6 +267,6 @@ struct DeviceCaptureStorage[captures: Captures]:
             comptime if Self.captures.Specs[i].writable and size_of[
                 Self.captures.Specs[i].Value
             ]() > 0:
-                self._buffers[i].unsafe_value().enqueue_copy_to(
-                    host._pointers[i]
+                frame.download(
+                    self._buffers[i].unsafe_value(), host._pointers[i]
                 )
