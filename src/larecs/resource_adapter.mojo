@@ -7,6 +7,48 @@ from .resource_representation import _plain_device_value
 
 
 @fieldwise_init
+struct _TransferStats(Copyable, Defaultable, Equatable, Writable):
+    """Counts host-to-device uploads queued by one invocation or cache call."""
+
+    var bytes: Int
+    var segments: Int
+
+    def __init__(out self):
+        """Creates an empty count."""
+        self.bytes = 0
+        self.segments = 0
+
+    def record(mut self, bytes: Int):
+        """Counts one queued upload.
+
+        Args:
+            bytes: Uploaded byte count.
+        """
+        self.bytes += bytes
+        self.segments += 1
+
+    def add(mut self, other: Self):
+        """Accumulates another count.
+
+        Args:
+            other: Count to add.
+        """
+        self.bytes += other.bytes
+        self.segments += other.segments
+
+    def __eq__(self, other: Self) -> Bool:
+        """Compares byte and segment counts.
+
+        Args:
+            other: Count to compare with.
+
+        Returns:
+            Whether both counts are equal.
+        """
+        return self.bytes == other.bytes and self.segments == other.segments
+
+
+@fieldwise_init
 struct _Download(Movable):
     """Owns native staging bytes and their eventual publication address."""
 
@@ -23,6 +65,8 @@ struct _TransferFrame(Movable):
 
     var context: DeviceContext
     var downloads: List[_Download]
+    var uploaded: _TransferStats
+    """Uploads queued through this frame, including adapter cache uploads."""
 
     def __init__(out self, context: DeviceContext):
         """Creates an empty frame without queueing work.
@@ -32,11 +76,14 @@ struct _TransferFrame(Movable):
         """
         self.context = context
         self.downloads = List[_Download]()
+        self.uploaded = _TransferStats()
 
     def upload[
         origin: ImmOrigin
     ](
-        self, buffer: DeviceBuffer[DType.uint8], source: Pointer[UInt8, origin]
+        mut self,
+        buffer: DeviceBuffer[DType.uint8],
+        source: Pointer[UInt8, origin],
     ) raises:
         """Snapshots host bytes before queueing their upload.
 
@@ -59,6 +106,7 @@ struct _TransferFrame(Movable):
             dest=staging.unsafe_ptr(), src=source, count=len(buffer)
         )
         buffer.enqueue_copy_from(staging)
+        self.uploaded.record(len(buffer))
 
     def download(
         mut self,
@@ -100,11 +148,15 @@ struct ResourceDeviceCache(Movable):
 
     Adapter uploads must use this cache's snapshotting helper. A slot identifies
     one contiguous allocation; nonnegative slots belong to the adapter. Slot -1
-    is reserved by Larecs for the view descriptor. Contents are refreshed every run.
+    is reserved by Larecs for the view descriptor. Contents are refreshed on
+    every run unless the world reuses device copies (decision 0021) and the
+    source is unchanged; then Larecs skips preparation entirely.
     """
 
     var context: DeviceContext
     var _buffers: Dict[Int, DeviceBuffer[DType.uint8]]
+    var _uploaded: _TransferStats
+    """Uploads since Larecs last collected them into an invocation frame."""
 
     def __init__(out self, context: DeviceContext):
         """Creates an empty cache without allocating device buffers.
@@ -114,6 +166,7 @@ struct ResourceDeviceCache(Movable):
         """
         self.context = context
         self._buffers = Dict[Int, DeviceBuffer[DType.uint8]]()
+        self._uploaded = _TransferStats()
 
     def upload[
         mut: Bool, origin: Origin[mut=mut], //, T: TrivialRegisterPassable
@@ -156,6 +209,7 @@ struct ResourceDeviceCache(Movable):
                 .unsafe_bitcast[UInt8]()
                 .unsafe_mut_cast[False](),
             )
+            self._uploaded.add(frame.uploaded)
         return Pointer[T, ImmUntrackedOrigin](
             unsafe_from_address=Int(buffer.unsafe_ptr())
         )
@@ -205,6 +259,7 @@ struct ResourceDeviceCache(Movable):
                 buffer.create_sub_buffer[DType.uint8](0, size_of[T]()),
                 Pointer(to=view).unsafe_bitcast[UInt8](),
             )
+            self._uploaded.add(frame.uploaded)
         return buffer
 
 
