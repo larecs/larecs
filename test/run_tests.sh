@@ -6,8 +6,9 @@
 #   ./test/run_tests.sh <test_file.mojo>   # Run a single test file
 #   ./test/run_tests.sh --no-precompile <test_file.mojo>
 #
-# Each test file is compiled with debug info, all assertions, and AddressSanitizer,
-# then executed via `script` so it runs in a PTY. This preserves ASAN's colored
+# Each test file is compiled with debug info, all assertions, and AddressSanitizer.
+# Large host tests use line tables for file-and-line reports. The runner executes
+# the binaries in a PTY. This preserves ASAN's colored
 # output while also capturing it to check for ASAN error messages.
 #
 # Binaries are placed in .build/ and removed after each test run.
@@ -95,7 +96,10 @@ for backend_test_path in "${test_args[@]}"; do
     fi
 done
 
-mogo-tester "${precompile_args[@]}" --asan --mojo-build-args="${mojo_build_args[*]}" "${test_args[@]}"
+LARECS_TEST_MOJO="$(command -v mojo)" \
+LARECS_TEST_DIRECTORY="$larecs_test_directory" \
+PATH="$larecs_test_directory/bin:$PATH" \
+    mogo-tester "${precompile_args[@]}" --asan --mojo-build-args="${mojo_build_args[*]}" "${test_args[@]}"
 
 # This bounded CPU benchmark runs on both existing PR test runners. Focused
 # file runs omit it; the full benchmark suite remains an optional manual task.

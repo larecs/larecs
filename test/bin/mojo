@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# mogo-tester strips -g for SKIP_DEBUG files before calling the compiler.
+# Replace the runner's default -g only for the selected host test sources.
+if [[ "$1" == build && "$2" == -g ]]; then
+    source_file="${!#}"
+    case "${source_file##*/}" in
+        world_test.mojo|spatial_test.mojo)
+            if [[ "$source_file" -ef "$LARECS_TEST_DIRECTORY/${source_file##*/}" ]]; then
+                printf 'Using line-table debug info for %s\n' "$source_file"
+                shift 2
+                set -- build -g1 "$@"
+            fi
+            ;;
+    esac
+fi
+
+exec "$LARECS_TEST_MOJO" "$@"
