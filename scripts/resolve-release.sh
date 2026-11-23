@@ -8,10 +8,10 @@ if [[ ! "$pr" =~ ^[1-9][0-9]*$ ]]; then
 fi
 
 # A merge commit records the exact base and candidate that GitHub merged.
-details=$(gh pr view "$pr" --json baseRefName,headRefName,headRefOid,isCrossRepository,mergeCommit,state \
+details=$(gh pr view "$pr" --json author,baseRefName,headRefName,headRefOid,isCrossRepository,mergeCommit,mergedAt,state \
   --jq 'select(.state == "MERGED" and (.isCrossRepository | not)) |
-        [.baseRefName, .headRefName, .headRefOid, .mergeCommit.oid] | @tsv')
-read -r base_branch candidate_branch candidate merge_commit <<< "$details"
+        [.baseRefName, .headRefName, .headRefOid, .mergeCommit.oid, .author.login, .mergedAt] | @tsv')
+read -r base_branch candidate_branch candidate merge_commit author merged_at <<< "$details"
 tag=${base_branch#release/base-}
 if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(b[0-9]+)?$ ]] ||
    [[ "$base_branch" != "release/base-$tag" || "$candidate_branch" != "release/candidate-$tag" ]]; then
@@ -33,6 +33,30 @@ fi
 git merge-base --is-ancestor "$candidate" origin/main
 if git show-ref --verify --quiet "refs/tags/$tag"; then
   echo "Release tag $tag already exists." >&2
+  exit 1
+fi
+
+# Verify approval independently of the branch rules that allowed the merge.
+reviewers=$(gh api --paginate --slurp "repos/{owner}/{repo}/pulls/$pr/reviews" |
+  jq -r --arg candidate "$candidate" --arg author "$author" --arg merged_at "$merged_at" '
+    add
+    | map(select(.user.type == "User" and .user.login != $author
+        and .submitted_at != null and .submitted_at <= $merged_at
+        and (.state == "APPROVED" or .state == "CHANGES_REQUESTED" or .state == "DISMISSED")))
+    | group_by(.user.id)[]
+    | max_by(.submitted_at, .id)
+    | select(.state == "APPROVED" and .commit_id == $candidate)
+    | .user.login')
+approved_by=
+while IFS= read -r reviewer; do
+  [[ -n "$reviewer" ]] || continue
+  permission=$(gh api "repos/{owner}/{repo}/collaborators/$reviewer/permission" --jq .permission)
+  case "$permission" in
+    write|maintain|admin) approved_by=$reviewer; break ;;
+  esac
+done <<< "$reviewers"
+if [[ -z "$approved_by" ]]; then
+  echo "PR #$pr needs a pre-merge approval of $candidate by a reviewer with write access." >&2
   exit 1
 fi
 
