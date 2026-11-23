@@ -257,6 +257,8 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
         mut data: Self.Data, length: Int, remove_idx: Int
     ) thin
     """Callback that removes and destroys one value from a column."""
+    var _swap_rows: def(mut data: Self.Data, first: Int, second: Int) thin
+    """Callback that exchanges two initialized values using typed movement."""
     var _clear_values: def(mut data: Self.Data, length: Int) thin
     """Callback that destroys initialized values without freeing the allocation."""
 
@@ -312,6 +314,38 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             pass
 
     @staticmethod
+    def _empty_swap_rows(mut data: Self.Data, first: Int, second: Int):
+        """Leaves an untyped empty column unchanged.
+
+        Args:
+            data: The absent column allocation.
+            first: The first row index.
+            second: The second row index.
+        """
+        pass
+
+    @staticmethod
+    def _swap_rows_t[
+        T: ComponentType
+    ](mut data: Self.Data, first: Int, second: Int):
+        """Exchanges two initialized values without copying or destroying them.
+
+        Parameters:
+            T: The component type stored by this column.
+
+        Args:
+            data: The active column allocation.
+            first: The first row index.
+            second: The second row index.
+        """
+        var ptr = data.value().unsafe_ptr().unsafe_bitcast[T]()
+        var first_ptr = ptr.unsafe_offset(first)
+        var second_ptr = ptr.unsafe_offset(second)
+        var temporary = first_ptr.unsafe_take_pointee()
+        first_ptr.unsafe_write(second_ptr.unsafe_take_pointee())
+        second_ptr.unsafe_write(temporary^)
+
+    @staticmethod
     def _empty_clear_values(mut data: Self.Data, length: Int):
         """Does nothing because an untyped empty column has no values."""
         with Zone(
@@ -333,6 +367,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             self._resize = Self._empty_resize
             self._swap_remove = Self._empty_swap_remove
             self._clear_values = Self._empty_clear_values
+            self._swap_rows = Self._empty_swap_rows
 
     @staticmethod
     def _destroy_t[
@@ -521,8 +556,9 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             column._resize = Self._resize_t[T]
             column._swap_remove = Self._swap_remove_t[T]
             column._clear_values = Self._clear_values_t[T]
+            column._swap_rows = Self._swap_rows_t[T]
             var empty: Self.Data = None
-            if preallocate:
+            if preallocate and capacity > 0:
                 column._data^.deinit_assert_empty()
                 column._data = Self._resize_t[T](empty, 0, 0, capacity)
             empty^.deinit_assert_empty()
@@ -536,6 +572,7 @@ struct _ComponentColumn(Copyable, Deinitable, Movable):
             self._resize = copy._resize
             self._swap_remove = copy._swap_remove
             self._clear_values = copy._clear_values
+            self._swap_rows = copy._swap_rows
 
     def __deinit__(deinit self):
         """Asserts that the column allocation was explicitly destroyed."""
@@ -968,7 +1005,8 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             T: The type of the component.
 
         Returns:
-            The span over the component.
+            The span over the component, empty when the store has no rows.
+            Empty stores do not require a column allocation.
 
         Raises:
             LarecsError: If the component is not contained in the storage.
@@ -984,6 +1022,9 @@ struct _ComponentTable[*ComponentTypes: ComponentType](
             comptime id = Self.component_manager.get_id[T]()
 
             self.assert_has_components[T]()
+
+            if self._length == 0:
+                return Span[T, UntrackedOrigin[mut=origin_of(self).mut]]()
 
             return Span(
                 unsafe_ptr=self._columns[id].get_ptr[T](), length=len(self)
@@ -1323,6 +1364,9 @@ struct Archetype[
     var _entities: List[Entity]
     """The entities stored in this archetype."""
 
+    var _partition_key: Optional[UInt64]
+    """Cluster identity for a physical block; None denotes staging storage."""
+
     var _node_index: Int
     """Index of this archetype's node in the archetype graph."""
 
@@ -1382,6 +1426,7 @@ struct Archetype[
 
             self._entities = List[Entity](capacity=capacity)
             self._node_index = node_index
+            self._partition_key = None
 
     @always_inline
     def __init__(out self, *, copy: Self):
@@ -1395,6 +1440,7 @@ struct Archetype[
             # copied via a simple assignment
             self._entities = copy._entities.copy()
             self._node_index = copy._node_index
+            self._partition_key = copy._partition_key
             self._mask = copy._mask
 
             # Copy the data
@@ -1776,6 +1822,59 @@ struct Archetype[
             )
         ):
             self._storage.assert_has_components[*Ts]()
+
+    def _reorder_rows(mut self, source_rows: List[Int]) raises LarecsError:
+        """Applies a destination-to-source permutation to IDs and active columns.
+
+        The owner must enforce structural locks and repair entity locations.
+        Validation and swap-plan allocation finish before any values move.
+        Typed swaps allocate no storage and cannot raise recoverable errors.
+        An identity permutation performs no component movement.
+
+        Args:
+            source_rows: Old row index for each new row, a bijection over rows.
+
+        Raises:
+            LarecsError: If the length, bounds, or uniqueness are invalid;
+                the archetype is unchanged in that case.
+        """
+        var length = len(self)
+        if len(source_rows) != length:
+            raise Error("Row permutation length must match archetype length")
+        var positions = List[Int](capacity=length)
+        var current = List[Int](capacity=length)
+        var plan = List[Int](capacity=length)
+        for row in range(length):
+            positions.append(-1)
+            current.append(row)
+        for row in range(length):
+            var source = source_rows[row]
+            if source < 0 or source >= length:
+                raise Error("Row permutation index is out of bounds")
+            if positions[source] != -1:
+                raise Error("Row permutation contains duplicate indices")
+            positions[source] = row
+        for row in range(length):
+            positions[row] = row
+        for row in range(length):
+            var other = positions[source_rows[row]]
+            plan.append(other)
+            var displaced = current[row]
+            current[row], current[other] = current[other], current[row]
+            positions[displaced] = other
+            positions[source_rows[row]] = row
+        for row in range(length):
+            var other = plan[row]
+            if row == other:
+                continue
+            for column_id in range(len(Self.ComponentTypes)):
+                if self._mask.get(column_id):
+                    ref column = self._storage._columns[column_id]
+                    column._swap_rows(column._data, row, other)
+            self._entities[row], self._entities[other] = (
+                self._entities[other],
+                self._entities[row],
+            )
 
     @always_inline
     def remove(mut self, idx: Int) -> Bool:
