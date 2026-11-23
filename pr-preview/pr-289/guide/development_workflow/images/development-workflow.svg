@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" width="960" height="520" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="title desc">
+  <title id="title">Larecs development workflow</title>
+  <desc id="desc">A feature branch starts from main, is merged into nightly for testing without review, is refined on the same branch, and is promoted by merging the same branch into main after review. After a release, nightly is rebuilt from main plus the unpromoted feature branches.</desc>
+  <style>
+    .lane { font-size: 15px; font-weight: 700; fill: #1f2328; }
+    .note { font-size: 12.5px; fill: #3d444d; }
+    .step { font-size: 13px; font-weight: 700; fill: #ffffff; }
+    .stepText { font-size: 13px; fill: #1f2328; }
+    .stepTitle { font-size: 13px; font-weight: 700; fill: #1f2328; }
+    .warn { font-size: 13px; fill: #82071e; font-weight: 600; }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; fill: #1f2328; }
+    .main { stroke: #0969da; fill: #0969da; }
+    .nightly { stroke: #1a7f37; fill: #1a7f37; }
+    .feature { stroke: #bc4c00; fill: #bc4c00; }
+    .other { stroke: #8250df; fill: #8250df; }
+    path, line { fill: none !important; stroke-width: 3; stroke-linecap: round; }
+    .dash { stroke-dasharray: 7 6; }
+    .dot { stroke: #ffffff; stroke-width: 2.5; }
+  </style>
+
+  <rect x="0" y="0" width="960" height="520" rx="14" fill="#ffffff" stroke="#d0d7de"/>
+
+  <!-- Lane labels -->
+  <text class="lane" x="24" y="76">nightly</text>
+  <text class="note" x="24" y="94">test, no review</text>
+  <text class="lane" x="24" y="166">feature</text>
+  <text class="note" x="24" y="184">one per feature</text>
+  <text class="lane" x="24" y="226">other feature</text>
+  <text class="lane" x="24" y="296">main</text>
+  <text class="note" x="24" y="314">reviewed, released</text>
+
+  <!-- main -->
+  <line class="main" x1="150" y1="292" x2="936" y2="292"/>
+  <!-- old nightly -->
+  <path class="nightly" d="M150 292 C 170 292, 170 72, 190 72 L 700 72"/>
+  <!-- rebuilt nightly -->
+  <path class="nightly dash" d="M760 292 C 780 292, 780 72, 800 72 L 936 72"/>
+  <!-- feature branch -->
+  <path class="feature" d="M150 292 C 175 292, 175 162, 200 162 L 560 162"/>
+  <path class="feature" d="M290 162 C 310 162, 310 72, 330 72"/>
+  <path class="feature" d="M450 162 C 470 162, 470 72, 490 72"/>
+  <path class="feature" d="M560 162 C 585 162, 585 292, 610 292"/>
+  <!-- other feature (not promoted) -->
+  <path class="other" d="M150 292 C 175 292, 175 222, 200 222 L 880 222"/>
+  <path class="other" d="M380 222 C 395 222, 395 72, 410 72"/>
+  <path class="other dash" d="M880 222 C 892 222, 892 72, 905 72"/>
+
+  <!-- commits -->
+  <circle class="main dot" cx="150" cy="292" r="8"/>
+  <circle class="main dot" cx="610" cy="292" r="9"/>
+  <circle class="main dot" cx="760" cy="292" r="8"/>
+  <circle class="feature dot" cx="240" cy="162" r="7"/>
+  <circle class="feature dot" cx="290" cy="162" r="7"/>
+  <circle class="feature dot" cx="450" cy="162" r="7"/>
+  <circle class="feature dot" cx="560" cy="162" r="7"/>
+  <circle class="other dot" cx="340" cy="222" r="7"/>
+  <circle class="other dot" cx="380" cy="222" r="7"/>
+  <circle class="nightly dot" cx="330" cy="72" r="9"/>
+  <circle class="nightly dot" cx="410" cy="72" r="9"/>
+  <circle class="nightly dot" cx="490" cy="72" r="9"/>
+  <circle class="nightly dot" cx="800" cy="72" r="8"/>
+  <circle class="nightly dot" cx="905" cy="72" r="9"/>
+  <!-- old nightly discarded -->
+  <line x1="692" y1="64" x2="708" y2="80" stroke="#cf222e" stroke-width="3"/>
+  <line x1="708" y1="64" x2="692" y2="80" stroke="#cf222e" stroke-width="3"/>
+
+  <!-- step badges on the graph -->
+  <g><circle cx="200" cy="140" r="12" fill="#1f2328"/><text class="step" x="200" y="145" text-anchor="middle">1</text></g>
+  <g><circle cx="310" cy="112" r="12" fill="#1f2328"/><text class="step" x="310" y="117" text-anchor="middle">2</text></g>
+  <g><circle cx="490" cy="44" r="12" fill="#1f2328"/><text class="step" x="490" y="49" text-anchor="middle">3</text></g>
+  <g><circle cx="450" cy="190" r="12" fill="#1f2328"/><text class="step" x="450" y="195" text-anchor="middle">4</text></g>
+  <g><circle cx="585" cy="250" r="12" fill="#1f2328"/><text class="step" x="585" y="255" text-anchor="middle">5</text></g>
+  <g><circle cx="806" cy="160" r="12" fill="#1f2328"/><text class="step" x="806" y="165" text-anchor="middle">6</text></g>
+
+  <!-- graph labels -->
+  <rect x="728" y="304" width="66" height="22" rx="5" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text class="code" x="736" y="319">v1.0.0b3</text>
+  <text class="note" x="616" y="56">old nightly</text>
+  <text class="note" x="812" y="56">rebuilt nightly</text>
+
+  <!-- steps -->
+  <line x1="24" y1="348" x2="936" y2="348" stroke="#d0d7de" stroke-width="1"/>
+  <g transform="translate(24 374)">
+    <circle cx="10" cy="-4" r="10" fill="#1f2328"/><text class="step" x="10" y="1" text-anchor="middle">1</text>
+    <text class="stepTitle" x="28" y="0">Branch from main</text>
+    <text class="code" x="28" y="18">gh issue develop N --base main</text>
+    <text class="stepText" x="28" y="36">Add changelog.d/&lt;feature&gt;.md</text>
+
+    <circle cx="10" cy="62" r="10" fill="#1f2328"/><text class="step" x="10" y="67" text-anchor="middle">2</text>
+    <text class="stepTitle" x="28" y="66">PR into nightly</text>
+    <text class="stepText" x="28" y="84">Checks only, no approval.</text>
+    <text class="stepText" x="28" y="102">Merge with a merge commit.</text>
+  </g>
+  <g transform="translate(330 374)">
+    <circle cx="10" cy="-4" r="10" fill="#1f2328"/><text class="step" x="10" y="1" text-anchor="middle">3</text>
+    <text class="stepTitle" x="28" y="0">Try the nightly package</text>
+    <text class="code" x="28" y="18">prefix.dev/tree-d/nightly</text>
+    <text class="stepText" x="28" y="36">Published daily when nightly changes.</text>
+
+    <circle cx="10" cy="62" r="10" fill="#1f2328"/><text class="step" x="10" y="67" text-anchor="middle">4</text>
+    <text class="stepTitle" x="28" y="66">Refine on the same branch</text>
+    <text class="stepText" x="28" y="84">New PR into nightly; update the</text>
+    <text class="stepText" x="28" y="102">fragment and add the PR link.</text>
+  </g>
+  <g transform="translate(636 374)">
+    <circle cx="10" cy="-4" r="10" fill="#1f2328"/><text class="step" x="10" y="1" text-anchor="middle">5</text>
+    <text class="stepTitle" x="28" y="0">Promote: PR branch → main</text>
+    <text class="stepText" x="28" y="18">Reviewed; same commits as nightly.</text>
+    <text class="stepText" x="28" y="36">Merge with a merge commit.</text>
+
+    <circle cx="10" cy="62" r="10" fill="#1f2328"/><text class="step" x="10" y="67" text-anchor="middle">6</text>
+    <text class="stepTitle" x="28" y="66">Release, then rebuild nightly</text>
+    <text class="code" x="28" y="84">scripts/rebuild_nightly.sh</text>
+    <text class="stepText" x="28" y="102">Keeps unpromoted features only.</text>
+  </g>
+  <text class="warn" x="24" y="506">Never merge nightly into a feature branch (no "Update branch" on PRs into nightly).</text>
+</svg>
