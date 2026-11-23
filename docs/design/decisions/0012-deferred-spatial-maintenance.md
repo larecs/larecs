@@ -107,8 +107,8 @@ Performance claims below cover synthetic host workloads, not application speedup
   [actual GPU integration](../../../test/gpu_spatial_test.mojo), and unchanged
   [typed component lifetime coverage](../../../test/host_storage_lifecycle_test.mojo).
 - [Paired complete-frame comparison](../../../benchmark/dirty_spatial.mojo) and
-  [methods and measured limitations](../../src/guide/benchmarks.md#deferred-dirty-classification).
-- [Public marking and boundary guide](../../src/guide/spatial_clustering.md).
+  [methods and measured limitations](../../benchmarks/reports/dirty_spatial.md#deferred-dirty-classification).
+- [Public marking and boundary guide](../../src/guide/spatial_locality.md).
 
 The Apple M4/Mojo 1.0.0 paired complete-frame comparison found sparse dirty
 updates taking 19.5–67.9% of explicit full-rebuild time, with fully dirty frames

@@ -8,137 +8,60 @@ stable 1.0.0 release. After that release, public APIs follow semantic
 versioning unless they are explicitly marked experimental. Device execution is
 currently such an experimental API. Threaded host execution is also experimental.
 
-Example:
-
-```mojo {doctest="readme" global=true}
-# Import the package
-from larecs import (
-    World,
-    Scheduler,
-    System,
-    SystemContext,
-    KernelContext,
-    Filter,
-)
-
-
-# Define components
-@fieldwise_init
-struct Position(Copyable, Movable):
-    var x: Float64
-    var y: Float64
-
-
-@fieldwise_init
-struct IsStatic(Copyable, Movable):
-    pass
-
-
-@fieldwise_init
-struct Velocity(Copyable, Movable):
-    var x: Float64
-    var y: Float64
-
-
-# A kernel processes the components selected by its filter.
-comptime move_filter = Filter().include[Position].read[Velocity]()
-
-
-def move(context: KernelContext[move_filter]):
-    for entity in context:
-        ref pos = entity.get[Position]()
-        ref vel = entity.get[Velocity]()
-        pos.x += vel.x
-        pos.y += vel.y
-
-
-# Systems are the principal place for application logic that mutates ECS state.
-@fieldwise_init
-struct Move(System):
-    def update(mut self, mut context: SystemContext[...]) raises:
-        context.run[move]()
-
-
-# Run the ECS
-def main() raises:
-    # Create a world, list all components that will / may be used
-    var world = World[Position, Velocity, IsStatic]()
-
-    for _ in range(100):
-        # Add an entity. The returned value is the
-        # entity's ID, which can be used to access the entity later
-        var entity = world.storage.add_entity(Position(0, 0), IsStatic())
-
-        # For example, we may want to change the entity's position
-        world.storage.get[Position](entity).x = 2
-
-        # Or we may want to replace the IsStatic component
-        # of the entity by a Velocity component
-        world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity)
-
-    # We can query entities with specific components, read-only
-    for entity in world.storage.query[Filter().include[Position, Velocity]()]():
-        _ = entity.get[Position]()
-        _ = entity.get[Velocity]()
-
-    # Give the initialized world to a scheduler, then run application logic
-    # through a system. The system delegates filtered component work to `move`.
-    var scheduler = Scheduler(world^)
-    scheduler.add_system(Move())
-    scheduler.run(1)
-```
-
-```mojo {doctest="readme" hide=true}
-main()
-```
+Build the [particle simulation](../start/first_simulation/)
+for a complete program using systems and kernels. You can find its source in
+`examples/particles/movement.mojo`.
 
 Exports:
+ - world.World
+ - host_storage.HostStorage
+ - error.LarecsError
+ - error.WorldError
+ - error.ComponentError
+ - error.EntityError
+ - error.UnknownError
+ - component.ComponentType
+ - component.Components
+ - types.ComponentId
+ - archetype.MutArchetypeRowAccessor
+ - archetype.ArchetypeRowAccessor
+ - resource.Resources
+ - resource.ResourceStorage
+ - resource.ResourceType
+ - entity.Entity
+ - lock.LockGuard
+ - lock.LockManager
+ - filter.Filter
+ - filter.BitMaskFilter
+ - system.System
+ - system.SystemContext
+ - system.KernelContext
+ - system.EntitySelection
+ - entity.EntityRange
+ - scheduler.Scheduler
+ - capture.Captures
+ - capture.ReadCapture
+ - capture.MutCapture
+ - capture.read_capture
+ - capture.mut_capture
+ - spatial.SpatialClassifier
+ - spatial.grid_cell
+ - spatial.morton_key_3d
  - sync.AtomicValue
  - sync.AtomicView
  - sync.CompareExchangeResult
  - sync.Synchronized
  - sync.SyncView
  - sync.TryAccess
- - capture.Captures
- - capture.ReadCapture
- - capture.MutCapture
- - capture.read_capture
- - capture.mut_capture
- - archetype.ArchetypeRowAccessor
- - archetype.MutArchetypeRowAccessor
- - component.ComponentManager
- - component.ComponentType
- - device_storage.DeviceComponentStorage
- - device_storage.DeviceResourceStorage
- - entity.Entity
- - entity.EntityAccessor
- - error.ComponentError
- - error.EntityError
- - error.LarecsError
- - error.UnknownError
- - error.WorldError
- - filter.BitMaskFilter
- - filter.Filter
- - host_storage.HostStorage
- - host_storage.Replacer
- - lock.LockGuard
- - lock.LockManager
- - pool.BitPool
- - resource.Resources
- - resource.ResourceStorage
- - resource.ResourceType
- - scheduler.Scheduler
- - system.System
- - system.SystemContext
- - system.KernelContext
- - types.ComponentId
- - spatial.SpatialClassifier
- - spatial.grid_cell
- - spatial.morton_key_3d
+ - resource_adapter.DevicePassableResource
+ - resource_adapter.ResourceAccess
+ - resource_adapter.ResourceAdapter
+ - resource_adapter.ResourceDeviceCache
+ - resource_adapter.ReadBuffer
+ - resource_adapter.BufferResource
  - execution.ExecutionBackend
  - execution.ThreadedExecutionConfig
  - resource_representation.PlainValue
- - world.World
 """
 from .world import World
 from .host_storage import HostStorage

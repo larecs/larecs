@@ -107,16 +107,30 @@ accepted. Implement resources first, then component columns.
   implemented read-only contiguous-buffer model; reject unsupported
   representations clearly and document validated host/device limits.
 
+### Performance regression coverage
+
+[Decision 0011](design/decisions/0011-pr-performance-regression-checks.md)
+defines the bounded CPU gate and per-run evidence.
+
+- [ ] Add disjoint selections, more component widths, and additional structural
+  mutation patterns after measuring combined compilation and execution cost
+  on Linux and macOS; keep the normal PR check near one minute per runner.
+- [ ] Measure larger working sets and device execution on dedicated hardware.
+- [ ] Evaluate smaller thresholds using repeated shared-runner noise evidence.
+- [ ] Add long-term trend storage if cumulative small regressions justify the
+  operational cost; per-run artifacts initially retain evidence for 30 days.
+
 ### Close remaining host/device kernel portability gaps
 
 [ECS-10](design/requirements.md) requires one kernel implementation usable on
 both targets. The current host-only lexical closure form and device transfer limits
 leave gaps beyond the heap-backed resource work above.
 
-- [ ] Define how host-local closure values or an equivalent explicit binding
-  reach device kernels without requiring a second kernel body.
-- [ ] Compile and execute the same representative kernels on CPU and actual
-  GPU hardware; document type restrictions and remaining gaps.
+- [x] Provide explicit read-only and mutable capture bindings so one kernel
+  body runs on host and device; lexical closures remain sequential-host-only.
+- [x] Compile and execute the checked movement, capture, portable-resource, and
+  copy-reuse particle stages on host and Apple M4 with Mojo 1.0.0. The execution
+  guides and compatibility reference state the remaining type restrictions.
 
 ## Unscheduled — no release target
 
@@ -154,7 +168,7 @@ no safety guarantee.
 - [ ] Extend Apple GPU support to ordered add/subtract, strong CAS, and guards
   while preserving their contracts; the locked compiler lacks strong CAS and
   acquire-release read-modify-write ordering.
-- [ ] Publish user guides when the API compiles and validation passes; keep
+- [x] Publish guides for the validated standalone primitives; keep
   exchange, wider/floating/bitwise atomics, blocking waits, and collective APIs
   outside the initial scope until their semantics and backend support are designed.
 
@@ -241,7 +255,7 @@ complete application benefits remain unmeasured.
 - [ ] Improve system control APIs, including a way for systems to stop execution.
 - [ ] Revisit value unpacking in queries when Mojo supports the needed form.
 - [ ] Add a tabular overview of typical ECS operation costs to the
-  [benchmark guide](src/guide/benchmarks.md), using
+  [benchmark guide](benchmarks/README.md), using
   [Arche's benchmarks](https://mlange-42.github.io/arche/background/benchmarks/)
   as a reference.
 

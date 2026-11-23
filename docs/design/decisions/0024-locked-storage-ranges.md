@@ -63,7 +63,7 @@ No new entity ordering, lock bypass, or selection copying is introduced.
 - `test/world_test.mojo`, `test/entity_selection_test.mojo`, and
   `test/gpu_entity_selection_test.mojo`: low-level compatibility and selected
   execution and mutation chains.
-- `benchmark/entity_selection_benchmark.mojo` and
+- `benchmark/core_smoke.mojo`, `benchmark/entity_selection_benchmark.mojo`, and
   `benchmark/migration_benchmark.mojo`: query, ordinary execution, exact selection,
   and whole-archetype mutation workloads.
 - [Migration measurements](../research/entity-range-migration.md): paired PR212

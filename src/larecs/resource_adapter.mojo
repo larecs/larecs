@@ -213,6 +213,7 @@ struct ResourceDeviceCache(Movable):
     """
 
     var context: DeviceContext
+    """Device queue owning the cached allocations and staged transfers."""
     var _buffers: Dict[Int, DeviceBuffer[DType.uint8]]
     var _uploaded: _TransferStats
     """Uploads since Larecs last collected them into an invocation frame."""
@@ -482,6 +483,7 @@ trait ResourceAdapter:
     """
 
     comptime Source: Copyable & Deinitable
+    """Owning host resource type prepared by this adapter."""
     comptime View[mut: Bool]: TrivialRegisterPassable
     """Kernel descriptor selected by declared access.
 
@@ -642,6 +644,7 @@ trait DevicePassableResource(Copyable, Deinitable):
     """
 
     comptime Adapter: ResourceAdapter
+    """Adapter that validates and prepares this resource for each target."""
     comptime View[mut: Bool]: TrivialRegisterPassable = Self.Adapter.View[mut]
     """Kernel descriptor selected by declared access.
 
@@ -693,7 +696,9 @@ struct BufferResource[dtype: DType](DevicePassableResource):
     """
 
     comptime Adapter = BufferResourceAdapter[Self.dtype]
+    """Read-only contiguous-buffer adapter for this scalar datatype."""
     var samples: List[Scalar[Self.dtype]]
+    """Owned host samples; edit them between kernel invocations."""
 
 
 struct BufferResourceAdapter[dtype: DType](ResourceAdapter):
@@ -704,7 +709,13 @@ struct BufferResourceAdapter[dtype: DType](ResourceAdapter):
     """
 
     comptime Source = BufferResource[Self.dtype]
+    """Owning host buffer type."""
     comptime View[mut: Bool] = ReadBuffer[Self.dtype]
+    """Read-only sample view; mutable resource declarations are rejected.
+
+    Parameters:
+        mut: Requested access mode; this adapter supports only read access.
+    """
 
     @staticmethod
     def validate(source: Self.Source) raises:

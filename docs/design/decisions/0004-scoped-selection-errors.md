@@ -39,5 +39,5 @@ propagates its error and the context manager releases the structural lock.
 
 The implementation is in `src/larecs/error.mojo`. The scoped success and
 failure cases in `test/entity_selection_test.mojo` and the runnable
-[entity guide](../../src/guide/adding_and_removing_entities.md) exercise the
+[entity guide](../../src/guide/structural_changes.md) exercise the
 mutation-to-run path. This supports [ECS-07 and ECS-11](../requirements.md).

@@ -14,7 +14,7 @@ cluster into capacity-limited blocks. Clustering and chunking both control
 locality, but applications can choose cluster granularity through classifier
 configuration. Extra blocks add allocations, metadata, and range setup even
 when all their rows have the same key. The historical CPU measurements in the
-[benchmark guide](../../src/guide/benchmarks.md#partitioned-storage-comparison)
+[benchmark guide](../../benchmarks/reports/partitions.md#partitioned-storage-comparison)
 show workload-dependent scan and memory costs; they do not establish the
 performance of an unbounded layout.
 

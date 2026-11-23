@@ -448,12 +448,16 @@ struct LockedEntityRange[
         row_filter=Self.row_filter,
         has_ranges=Self.has_ranges,
     ]
+    """Cursor implementation whose traversal requires the owning lock."""
     comptime Archetype = _Archetype[*Self.ComponentTypes]
+    """Physical store type for the configured components."""
     comptime ArchetypeIterator = _ArchetypeIterator[
         Self.archetype_list_origin,
         *Self.ComponentTypes,
     ]
+    """Iterator over the physical stores selected by a filter."""
     comptime Ranges = List[EntityRange]
+    """Saved bounded row ranges, when range traversal is enabled."""
     comptime IteratorOwnedType = LockedEntityRange[
         Self.archetype_list_origin,
         Self.lock_origin,
@@ -461,6 +465,7 @@ struct LockedEntityRange[
         row_filter=Self.row_filter,
         has_ranges=Self.has_ranges,
     ]
+    """Owned iterator returned by iteration over this locked range."""
 
     var _iterator: Self.UnlockedIterator
     var _guard: LockGuard[Self.lock_origin]

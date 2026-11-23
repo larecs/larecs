@@ -184,5 +184,5 @@ or writable-view publication semantics.
   actual `add`, insert-on-`set`, copying, and execution tests.
 - [Ordinary resource benchmark](../../../benchmark/resource_execution_benchmark.mojo),
   [adapter benchmark](../../../benchmark/resource_adapter_benchmark.mojo), and
-  [measurement boundaries](../../src/guide/benchmarks.md#resource-execution)
+  [measurement boundaries](../../benchmarks/reports/resources.md#resource-execution)
   separate unchanged ordinary calls from complete adapter invocations.
