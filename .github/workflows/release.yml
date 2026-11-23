@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       release_pr:
-        description: Merged release pull request number
+        description: Number of the merged PR that approved the release candidate
         required: true
         type: string
       publish:
-        description: Publish the reviewed candidate to Tree-D
+        description: Publish to Tree-D and GitHub after testing
         default: false
         type: boolean
   push:
