@@ -160,3 +160,20 @@ jobs:
               gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
             fi
           done
+
+  close-milestone:
+    name: Close release milestone
+    needs: release
+    if: github.event.pull_request.milestone.number > 0
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Close the milestone assigned to the release PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MILESTONE_NUMBER: ${{ github.event.pull_request.milestone.number }}
+        run: |
+          gh api --method PATCH --silent \
+            "repos/$GITHUB_REPOSITORY/milestones/$MILESTONE_NUMBER" \
+            -f state=closed
