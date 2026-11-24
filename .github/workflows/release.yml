@@ -131,8 +131,8 @@ jobs:
             rattler-build upload prefix --channel tree-d "$package"
           done
 
-  # After both uploads succeed, tag the approved commit, publish its GitHub
-  # release notes, and remove the temporary release branches.
+  # After both uploads succeed, tag the approved commit and publish its GitHub
+  # release notes.
   release:
     name: Publish GitHub release
     needs: [candidate, upload]
@@ -159,6 +159,17 @@ jobs:
           gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
             --target "$RELEASE_SHA" --generate-notes --notes-start-tag "$PREVIOUS_TAG" "${release_type[@]}"
           echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
+
+  cleanup:
+    name: Clean up temporary release branches
+    needs: [candidate, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ needs.candidate.outputs.tag }}
+    steps:
       - name: Delete temporary release branches
         run: |
           for branch in "release/base-$RELEASE_TAG" "release/candidate-$RELEASE_TAG"; do
