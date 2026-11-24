@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """Cluster-local storage, identity repair, exact membership, and reclamation."""
 
 from std.testing import (
@@ -294,8 +296,7 @@ def test_partition_lifetimes_without_copy_or_early_destruction() raises:
     Raises:
         Error: If component lifecycle counts fail.
     """
-    from host_storage_lifecycle_test import LifecycleCounters
-    from host_storage_lifecycle_test import TrackedComponent
+    from fixtures.lifecycle import LifecycleCounters, TrackedComponent
 
     var counters = LifecycleCounters()
     var world = World[Int, TrackedComponent]()

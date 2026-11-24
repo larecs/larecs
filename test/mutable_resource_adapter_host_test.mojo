@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """Mutable adapted resources on sequential and threaded host execution."""
 
 from fixtures.finalization import (

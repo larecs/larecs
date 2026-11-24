@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 from std.testing import TestSuite, assert_equal
 
 from larecs._type_list import _TypeChecks

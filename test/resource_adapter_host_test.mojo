@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """Host-only adapter checks run with AddressSanitizer and debug information."""
 
 from std.testing import *

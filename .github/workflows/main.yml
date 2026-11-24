@@ -102,10 +102,14 @@ jobs:
           echo "without exercising any GPU code path. Compare against the"
           echo "has_accelerator() output above to tell skipped from executed."
 
-      - name: Run tests
+      - name: Test CI memory diagnostics
         if: needs.changes.outputs.tests == 'true'
+        run: pixi run -e test python -m unittest discover -s test -p ci_memory_test.py
+
+      # Release PRs run this suite in the Release workflow's package tests.
+      - name: Run tests
+        if: needs.changes.outputs.tests == 'true' && !startsWith(github.base_ref, 'release/base-')
         run: |
-          pixi run -e test python -m unittest discover -s test -p ci_memory_test.py
           # Large sanitizer builds ran concurrently when earlier runners shut
           # down. Bound concurrency and stream evidence even if artifact upload
           # cannot run after another host shutdown.
@@ -113,7 +117,18 @@ jobs:
           MOGO_TESTER_BIN="$PWD/.pixi/envs/test-runner/bin/mogo-tester" \
             pixi run -e test python scripts/monitor_ci_memory.py \
             --output output/memory/tests.jsonl -- \
-            bash test/run_tests.sh --parallel 2 test
+            bash test/run_tests.sh --parallel auto test
+
+      # Package tests pass --no-precompile, which skips the spatial checks.
+      - name: Check spatial performance for release PRs
+        if: needs.changes.outputs.tests == 'true' && startsWith(github.base_ref, 'release/base-')
+        run: |
+          pixi run -e test python -m unittest discover -s test -p spatial_performance_test.py
+          pixi run -e test python scripts/check_spatial_performance.py
+
+      - name: Check resource compile failures
+        if: needs.changes.outputs.tests == 'true'
+        run: |
           pixi run test-resource-compile-failures
 
       - name: Upload memory diagnostics

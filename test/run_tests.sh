@@ -5,10 +5,17 @@
 #   ./test/run_tests.sh <test_directory>   # Run all test_*.mojo files in a directory
 #   ./test/run_tests.sh <test_file.mojo>   # Run a single test file
 #   ./test/run_tests.sh --no-precompile <test_file.mojo>
+#   ./test/run_tests.sh --parallel auto <test_directory>
+#
+# `--parallel auto` compiles two files at a time on hosts with at least 12 GiB
+# of memory and one at a time otherwise, because a single sanitizer build of a
+# large host test can use about 4 GiB.
 #
 # Each test file is compiled with debug info, all assertions, and AddressSanitizer.
 # `pixi run tests` selects Mogo Tester 3 through MOGO_TESTER_BIN, and it compiles
-# with the active Larecs Mojo. World and spatial host tests request line tables.
+# with the active Larecs Mojo. Host tests request line tables through their
+# `# MOJO_BUILD_ARGS: -g1` header, which keeps sanitizer reports' file and line
+# numbers at a fraction of the compile time of full debug info.
 # Without MOGO_TESTER_BIN, such as in package tests, `mogo-tester` comes from PATH.
 # Test binaries run in a PTY to preserve ASAN's colored output while capturing
 # it to check for ASAN error messages.
@@ -38,10 +45,37 @@ test_args=()
 : "${CONDA_PREFIX:?must be set (or PREFIX must be set)}"
 mojo_build_args=(-g -DASSERT=all -Xlinker -L"${CONDA_PREFIX}/lib" -Xlinker -lmojotracy -DTRACY_ENABLED)
 
-for arg in "$@"; do
+# Prints how many test files to compile at once for this host's memory.
+memory_parallelism() {
+    local memory_bytes=0
+    if [ -r /proc/meminfo ]; then
+        memory_bytes=$(( $(awk '/^MemTotal:/ { print $2 }' /proc/meminfo) * 1024 ))
+    else
+        memory_bytes=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
+    fi
+    if (( memory_bytes >= 12 * 1024 * 1024 * 1024 )); then
+        echo 2
+    else
+        echo 1
+    fi
+}
+
+args=("$@")
+for (( i = 0; i < ${#args[@]}; i++ )); do
+    arg="${args[i]}"
     case "$arg" in
         --no-precompile)
             precompile_args=()
+            ;;
+        --parallel)
+            if [ "${args[i + 1]:-}" = auto ]; then
+                parallelism="$(memory_parallelism)"
+                echo "Compiling ${parallelism} test file(s) at a time for this host's memory."
+                test_args+=(--parallel "$parallelism")
+                i=$(( i + 1 ))
+            else
+                test_args+=("$arg")
+            fi
             ;;
         *)
             test_args+=("$arg")

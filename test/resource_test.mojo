@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 from larecs.resource import (
     ResourceStorage,
     ResourceType,

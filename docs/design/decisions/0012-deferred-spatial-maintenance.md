@@ -105,7 +105,7 @@ Performance claims below cover synthetic host workloads, not application speedup
   [candidate classification](../../../src/larecs/spatial.mojo).
 - [Dirty, structural, failure/retry, copy, filter, and lock tests](../../../test/spatial_test.mojo),
   [actual GPU integration](../../../test/gpu_spatial_test.mojo), and unchanged
-  [typed component lifetime coverage](../../../test/host_storage_lifecycle_test.mojo).
+  [typed component lifetime coverage](../../../test/host_storage_row_order_test.mojo).
 - [Paired complete-frame comparison](../../../benchmark/dirty_spatial.mojo) and
   [methods and measured limitations](../../src/guide/benchmarks.md#deferred-dirty-classification).
 - [Public marking and boundary guide](../../src/guide/spatial_clustering.md).

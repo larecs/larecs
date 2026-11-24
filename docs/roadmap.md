@@ -184,7 +184,7 @@ complete application benefits remain unmeasured.
 - [x] Implement the internal typed row-permutation primitive, structural-lock
   rejection, location repair, and pre-movement validation. Cover cycles, fixed
   rows, empty archetypes, heap-owned values, and nontrivial lifetimes in
-  `test/host_storage_lifecycle_test.mojo`; add a permutation-only benchmark.
+  `test/host_storage_row_order_test.mojo`; add a permutation-only benchmark.
 - [x] Implement explicit maintenance that skips nonmatching archetypes,
   scans and classifies every eligible row, and permutes all columns and entity
   IDs while preserving locations, component lifetimes, and structural locks.

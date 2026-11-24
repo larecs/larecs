@@ -111,6 +111,10 @@ the underlying bug lives in Apple's Metal compiler, not in Mojo or larecs,
 and there is nothing to change in this codebase to avoid it beyond not
 compiling GPU kernels with `-g`.
 
+Host tests start with `# MOJO_BUILD_ARGS: -g1` instead. Line tables keep file
+and line numbers in AddressSanitizer reports and compile in less than half the
+time of full debug info. Start new host test files with the same header.
+
 <a id="macos-sdk-linking"></a>
 
 ### macOS 27 SDK breaks linking (`libSystem.tbd ... unknown architecture`)

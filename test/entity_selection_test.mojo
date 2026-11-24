@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """Tests for locked, exact-range entity selections."""
 
 from std.testing import (
