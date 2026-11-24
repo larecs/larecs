@@ -1,8 +1,8 @@
 name: Release nightly
 
-# Publish the branch selected by NIGHTLY_SOURCE to
-# https://prefix.dev/tree-d/nightly. The nightly-published tag tracks the
-# last successful publication.
+# Publish main to https://prefix.dev/tree-d/nightly. NIGHTLY_SOURCE can
+# override the source branch. The nightly-published tag tracks the last
+# successful publication.
 
 on:
   schedule:
@@ -35,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ vars.NIGHTLY_SOURCE || 'nightly' }}
+          ref: ${{ vars.NIGHTLY_SOURCE || 'main' }}
           # Full history and tags, so `git describe` finds the last release.
           fetch-depth: 0
       - id: define
