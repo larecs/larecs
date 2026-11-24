@@ -134,14 +134,16 @@ jobs:
             rattler-build upload prefix --channel tree-d "$package"
           done
 
-  # After both uploads succeed, tag the approved commit, publish its GitHub
-  # release notes, and remove the temporary release branches.
+  # After both uploads succeed, tag the approved commit and publish its GitHub
+  # release notes.
   release:
     name: Publish GitHub release
     needs: [candidate, upload]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      is_prerelease: ${{ steps.publish.outputs.is_prerelease }}
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ needs.candidate.outputs.tag }}
@@ -149,13 +151,28 @@ jobs:
       PREVIOUS_TAG: ${{ needs.candidate.outputs.previous }}
     steps:
       - name: Tag the reviewed commit
+        id: publish
         run: |
           release_type=(--latest)
+          is_prerelease=false
           if [[ "$RELEASE_TAG" == *b* ]]; then
             release_type=(--prerelease)
+            is_prerelease=true
           fi
           gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
             --target "$RELEASE_SHA" --generate-notes --notes-start-tag "$PREVIOUS_TAG" "${release_type[@]}"
+          echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
+
+  cleanup:
+    name: Clean up temporary release branches
+    needs: [candidate, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ needs.candidate.outputs.tag }}
+    steps:
       - name: Delete temporary release branches
         run: |
           for branch in "release/base-$RELEASE_TAG" "release/candidate-$RELEASE_TAG"; do
@@ -163,3 +180,20 @@ jobs:
               gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
             fi
           done
+
+  close-milestone:
+    name: Close release milestone
+    needs: release
+    if: needs.release.outputs.is_prerelease == 'false' && github.event.pull_request.milestone.number > 0
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Close the milestone assigned to the release PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MILESTONE_NUMBER: ${{ github.event.pull_request.milestone.number }}
+        run: |
+          gh api --method PATCH --silent \
+            "repos/$GITHUB_REPOSITORY/milestones/$MILESTONE_NUMBER" \
+            -f state=closed
