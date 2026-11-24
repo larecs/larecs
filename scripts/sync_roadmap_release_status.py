@@ -32,11 +32,12 @@ query($id: ID!, $cursor: String) {
               ... on PullRequest { mergeCommit { oid } }
             }
           }
+          ... on ReopenedEvent { createdAt }
           ... on IssueComment { author { login } body }
           ... on CrossReferencedEvent {
             source {
               ... on PullRequest {
-                body repository { nameWithOwner } mergeCommit { oid }
+                body mergedAt repository { nameWithOwner } mergeCommit { oid }
               }
             }
           }
@@ -85,13 +86,14 @@ def closing_commits(repo: str, number: int, events: Iterable[dict]) -> set[str]:
     also name the issue with a closing keyword after squashing the original
     fix, so the original merge commit need not reach the release tag.
     """
-    commits = set()
+    integration_merges = {}
+    reopened_at = None
     closer = None
     stacked_pr = None
     for event in events:
         kind = event["__typename"]
         if kind == "ReopenedEvent":
-            commits.clear()
+            reopened_at = event["createdAt"]
             closer = None
             stacked_pr = None
         elif kind == "ClosedEvent":
@@ -108,10 +110,18 @@ def closing_commits(repo: str, number: int, events: Iterable[dict]) -> set[str]:
             source = event["source"] or {}
             if (
                 source.get("repository", {}).get("nameWithOwner") == repo
+                and source.get("mergedAt")
                 and source.get("mergeCommit")
                 and number in referenced_issues(source["body"])
             ):
-                commits.add(source["mergeCommit"]["oid"])
+                integration_merges[source["mergeCommit"]["oid"]] = source["mergedAt"]
+    # A PR can reference the issue before it reopens and ship the replacement
+    # fix afterward. Its merge time determines which closure it can support.
+    commits = {
+        commit
+        for commit, merged_at in integration_merges.items()
+        if reopened_at is None or merged_at >= reopened_at
+    }
     if closer:
         commits.add(closer)
     return commits
