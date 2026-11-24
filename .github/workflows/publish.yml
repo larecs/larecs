@@ -8,6 +8,13 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: >-
+    ${{ github.event_name == 'pull_request'
+    && format('{0}-pr-{1}', github.workflow, github.event.pull_request.number)
+    || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   publish:
     name: Publish API docs
@@ -74,6 +81,10 @@ jobs:
     # one, which would drop main deployments. Preview deployments write only
     # under pr-preview/, so concurrent pushes rebase without conflicts.
     steps:
+      - name: Checkout Larecs
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Download HTML artifacts
         uses: actions/download-artifact@v4
         with:

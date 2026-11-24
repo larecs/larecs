@@ -40,7 +40,7 @@ tests:
   - script:
       - if: unix
         then:
-          - test/run_tests.sh --no-precompile test
+          - test/run_tests.sh --no-precompile --parallel 2 test
     requirements:
       run:
         - clang >=22.1.7, <23
