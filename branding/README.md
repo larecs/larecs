@@ -9,9 +9,13 @@ exploration concepts that led to it.
 All SVGs are generated. Edit the geometry in `generate_logos.py` and regenerate:
 
 ```sh
-uv run branding/generate_logos.py            # SVGs + PNG previews (needs rsvg-convert)
+uv run branding/generate_logos.py            # SVGs, PNGs and favicon.ico
 uv run branding/generate_logos.py --no-png   # SVGs only
 ```
+
+PNGs need `rsvg-convert` (librsvg) and `favicon.ico` needs `magick`
+(ImageMagick); the generator warns when either is missing and skips those
+outputs, leaving any tracked copies stale.
 
 The wordmark is outlined from Inter (variable, `wght` 500). Pass `--font PATH` or
 set `LARECS_WORDMARK_FONT` if Inter is not installed in `~/Library/Fonts`.
