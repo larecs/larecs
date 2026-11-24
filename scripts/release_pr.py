@@ -49,6 +49,51 @@ def previous_tag() -> str:
     return releases[0]["tagName"]
 
 
+def preview_section(branch: str) -> str:
+    """Render the Pixi instructions for a release candidate.
+
+    Args:
+        branch: Release candidate branch name.
+
+    Returns:
+        The Markdown section for the release PR description.
+    """
+    return f'''## Try the release candidate
+
+Add the preview setting and these channels to your existing `[workspace]` table in `pixi.toml`.
+
+```toml
+[workspace]
+preview = ["pixi-build"]
+channels = [
+    "conda-forge",
+    "https://repo.prefix.dev/max",
+    "https://prefix.dev/tree-d",
+]
+```
+
+```sh
+pixi add --git https://github.com/larecs/larecs.git \\
+  --branch {branch} larecs
+```'''
+
+
+def require_preview_section(body: str, branch: str) -> None:
+    """Require the release candidate instructions in a PR description.
+
+    Args:
+        body: Release PR description in Markdown.
+        branch: Release candidate branch name.
+
+    Raises:
+        SystemExit: If the required section is missing or points to another branch.
+    """
+    expected = preview_section(branch)
+    description = "\n".join(body.splitlines()).strip()
+    if f"\n{expected}\n" not in f"\n{description}\n":
+        sys.exit(f"Add this section to the release PR description:\n\n{expected}")
+
+
 def open_release(tag: str, ref: str) -> None:
     """Open a release pull request for a commit on main.
 
@@ -88,9 +133,26 @@ def open_release(tag: str, ref: str) -> None:
     )
     subprocess.run(
         ["gh", "pr", "create", "--base", base_branch, "--head", candidate_branch,
-         "--title", f"Release Larecs {tag}", "--body", notes],
+         "--title", f"Release Larecs {tag}",
+         "--body", f"{notes}\n\n{preview_section(candidate_branch)}"],
         check=True,
     )
+
+
+def check_description(number: int) -> None:
+    """Verify the description on an open release PR.
+
+    Args:
+        number: Release pull request number.
+
+    Raises:
+        SystemExit: If the PR number or description is invalid.
+        subprocess.CalledProcessError: If GitHub cannot read the PR.
+    """
+    if number < 1:
+        sys.exit("Specify a release PR number.")
+    pr = json.loads(output("gh", "pr", "view", str(number), "--json", "body,headRefName"))
+    require_preview_section(pr["body"] or "", pr["headRefName"])
 
 
 def has_approval(number: int, author: str, candidate: str, merged_at: str) -> bool:
@@ -140,7 +202,7 @@ def resolve_release(number: int) -> None:
         number: Release pull request number.
 
     Raises:
-        SystemExit: If the PR, release range, or candidate approval is invalid.
+        SystemExit: If the PR, description, release range, or candidate approval is invalid.
         subprocess.CalledProcessError: If Git or GitHub cannot verify the candidate.
         OSError: If the GitHub Actions output file cannot be written.
     """
@@ -149,7 +211,7 @@ def resolve_release(number: int) -> None:
 
     pr = json.loads(output(
         "gh", "pr", "view", str(number), "--json",
-        "author,baseRefName,headRefName,headRefOid,isCrossRepository,mergeCommit,mergedAt,state",
+        "author,baseRefName,body,headRefName,headRefOid,isCrossRepository,mergeCommit,mergedAt,state",
     ))
     base_branch = pr["baseRefName"]
     tag = base_branch.removeprefix("release/base-")
@@ -158,6 +220,8 @@ def resolve_release(number: int) -> None:
         or base_branch != f"release/base-{tag}" or pr["headRefName"] != f"release/candidate-{tag}"
     ):
         sys.exit(f"PR #{number} must be a merged release PR from this repository.")
+
+    require_preview_section(pr["body"] or "", pr["headRefName"])
 
     previous = previous_tag()
     base = output("git", "rev-parse", f"refs/tags/{previous}^{{commit}}")
@@ -193,12 +257,18 @@ def main() -> None:
     open_command = commands.add_parser("open", help="open a release PR for a commit on main")
     open_command.add_argument("tag")
     open_command.add_argument("ref", nargs="?", default="origin/main")
+    description_command = commands.add_parser(
+        "check-description", help="verify the Pixi instructions in a release PR"
+    )
+    description_command.add_argument("number", type=int)
     resolve_command = commands.add_parser("resolve", help="verify a merged release PR for publishing")
     resolve_command.add_argument("number", type=int)
     args = parser.parse_args()
     try:
         if args.command == "open":
             open_release(args.tag, args.ref)
+        elif args.command == "check-description":
+            check_description(args.number)
         else:
             resolve_release(args.number)
     except (OSError, subprocess.CalledProcessError, json.JSONDecodeError) as error:

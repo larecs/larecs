@@ -1,0 +1,27 @@
+name: Release PR description
+
+on:
+  pull_request:
+    branches:
+      - release/base-*
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  check:
+    name: Release candidate instructions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: refs/heads/main
+          persist-credentials: false
+      - name: Check the Pixi instructions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_PR: ${{ github.event.pull_request.number }}
+        run: python3 scripts/release_pr.py check-description "$RELEASE_PR"
