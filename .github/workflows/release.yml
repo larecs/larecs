@@ -1,9 +1,6 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     types: [opened, synchronize, reopened, closed]
 
@@ -21,9 +18,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
 
 jobs:
-  # Choose the commit, package version, and platform matrix for the build.
-  # A merged release PR supplies a publishable tag only after the verifier on
-  # main confirms the PR's approval and the exact commit being released.
+  # Select a package source for release PRs and for ordinary PRs that change
+  # build inputs. For publishing, the verifier on main checks the PR approval
+  # and selects the reviewed commit.
   candidate:
     name: Resolve package source
     if: >-
@@ -42,6 +39,16 @@ jobs:
       version: ${{ steps.resolve.outputs.version }}
       previous: ${{ steps.resolve.outputs.previous }}
     steps:
+      - id: filter
+        if: ${{ !startsWith(github.base_ref, 'release/base-') }}
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            package:
+              - src/**
+              - conda.recipe/**
+              - LICENSE
+              - .github/workflows/release.yml
       - uses: actions/checkout@v6
         if: github.event.action == 'closed'
         with:
@@ -49,6 +56,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - id: resolve
+        if: steps.filter.outputs.package != 'false'
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_PR: ${{ github.event.pull_request.number }}
@@ -71,6 +79,7 @@ jobs:
   build:
     name: Build package
     needs: candidate
+    if: needs.candidate.outputs.sha != ''
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -100,7 +109,9 @@ jobs:
   # Branch rules require this single check, which passes once both builds pass.
   build-gate:
     name: Build gate
-    if: ${{ always() && needs.candidate.result != 'skipped' }}
+    if: >-
+      ${{ always() && needs.candidate.result != 'skipped'
+      && (needs.candidate.result != 'success' || needs.candidate.outputs.sha != '') }}
     runs-on: ubuntu-latest
     needs: [candidate, build]
     steps:
