@@ -1,0 +1,49 @@
+name: Sync Roadmap release status
+
+on:
+  issues:
+    types: [closed]
+  release:
+    types: [published]
+  schedule:
+    # Actions-token issue closures do not start another workflow.
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Report changes without updating the project
+        type: boolean
+        default: false
+  workflow_call:
+    secrets:
+      PROJECT_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: roadmap-release-status
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync closed Roadmap issues
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Sync status with published releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          args=()
+          if [[ "$DRY_RUN" == true ]]; then args+=(--dry-run); fi
+          python3 scripts/sync_roadmap_release_status.py "${args[@]}"

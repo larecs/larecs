@@ -216,3 +216,14 @@ jobs:
           gh api --method PATCH --silent \
             "repos/$GITHUB_REPOSITORY/milestones/$MILESTONE_NUMBER" \
             -f state=closed
+
+  sync-roadmap:
+    name: Sync the Roadmap after publishing
+    needs: release
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/roadmap-release-status.yml
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
