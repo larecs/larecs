@@ -947,7 +947,10 @@ def write_final(wm: Wordmark, png: bool):
                                    title="larecs")
     for name, text in files.items():
         write(out / name, text)
-    if not (png and shutil.which("rsvg-convert")):
+    if not png:
+        return
+    if not shutil.which("rsvg-convert"):
+        print("warning: rsvg-convert not found; final PNGs and favicon.ico were not regenerated")
         return
     pdir = out / "png"
     pdir.mkdir(parents=True, exist_ok=True)
@@ -964,6 +967,8 @@ def write_final(wm: Wordmark, png: bool):
     if shutil.which("magick"):
         subprocess.run(["magick", *(str(pdir / f"larecs-icon-{z}.png") for z in [16, 32, 48]), str(out / "favicon.ico")],
                        check=True)
+    else:
+        print("warning: magick (ImageMagick) not found; favicon.ico was not regenerated")
 
 
 def main():
@@ -1001,6 +1006,8 @@ def main():
     write(ROOT / "previews" / "size-test.svg", size_board(CONCEPTS))
     write(ROOT / "previews" / "index.html", gallery_html(CONCEPTS))
 
+    if not args.no_png and not shutil.which("rsvg-convert"):
+        print("warning: rsvg-convert not found; preview PNGs were not rendered (use --no-png to skip them)")
     if not args.no_png and shutil.which("rsvg-convert"):
         png = ROOT / "previews" / "png"
         png.mkdir(parents=True, exist_ok=True)
