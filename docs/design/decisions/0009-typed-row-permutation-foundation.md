@@ -64,7 +64,7 @@ permutation benchmark measures movement and metadata costs, not spatial benefit.
 
 - [Implementation](../../../src/larecs/archetype.mojo) and
   [lock/location integration](../../../src/larecs/host_storage.mojo).
-- [Correctness and lifecycle tests](../../../test/host_storage_lifecycle_test.mojo).
+- [Correctness and lifecycle tests](../../../test/host_storage_row_order_test.mojo).
 - [Permutation-only benchmark](../../../benchmark/row_reordering_benchmark.mojo).
 - [Remaining spatial work](../../roadmap.md#spatial-component-locality).
 

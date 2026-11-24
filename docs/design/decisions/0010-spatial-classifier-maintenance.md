@@ -109,7 +109,7 @@ tracking, multiple registrations, or evidence of net spatial workload speedup.
 - [Registration](../../../src/larecs/world.mojo),
   [classification and helpers](../../../src/larecs/spatial.mojo).
 - [Filter, coordinate, scan, failure, copy, and lock tests](../../../test/spatial_test.mojo).
-- [Nontrivial component lifetime tests](../../../test/host_storage_lifecycle_test.mojo).
+- [Nontrivial component lifetime tests](../../../test/host_storage_row_order_test.mojo).
 - [host/device execution and copy-back tests](../../../test/gpu_spatial_test.mojo).
 - [User guide](../../src/guide/spatial_clustering.md).
 - [Complete maintenance cost benchmark](../../../benchmark/spatial_benchmark.mojo),
