@@ -12,7 +12,7 @@ channels = [
 description = "Larecs🌲 is a performance-oriented archetype-based ECS for Mojo🔥."
 name = "larecs"
 platforms = ["linux-64", "osx-arm64"]
-version = "1.0.0b1"
+version = "1.0.0b2"
 preview = ["pixi-build"]
 
 [tasks]
@@ -20,6 +20,7 @@ spatial-benchmarks = "mojo run -I src benchmark/spatial_smoke.mojo"
 spatial-performance-check = "python scripts/check_spatial_performance.py"
 spatial-filter-checks = "bash test/check_spatial_filters.sh"
 tests = { cmd = "pixi install --locked -e test-runner && MOGO_TESTER_BIN=$PIXI_PROJECT_ROOT/.pixi/envs/test-runner/bin/mogo-tester test/run_tests.sh", default-environment = "test" }
+test-resource-compile-failures = { cmd = "python test/check_resource_compile_failures.py", default-environment = "test" }
 doctest = { cmd = "scripts/run_doctests.sh", default-environment = "test" }
 benchmarks = { cmd = "mojo run -I src benchmark/run_benchmarks.mojo", default-environment = "default" }
 update-mojo = { cmd = "python scripts/update_mojo.py", default-environment = "default" }
@@ -29,6 +30,7 @@ watch-docs = { cmd = "cd scripts && pixi run watch-docs", default-environment = 
 serve-docs = { cmd = "cd scripts && pixi run serve-docs", default-environment = "default" }
 
 satellites = { cmd = "cd examples/satellites && pixi run satellites" }
+scatter-example = "mojo run -I src examples/scatter_resource.mojo"
 plots = { cmd = "cd benchmark/plots && pixi run plots" }
 
 [dependencies]

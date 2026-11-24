@@ -49,6 +49,52 @@ def previous_tag() -> str:
     return releases[0]["tagName"]
 
 
+def preview_section(branch: str) -> str:
+    """Render the Pixi instructions for a release candidate.
+
+    Args:
+        branch: Release candidate branch name.
+
+    Returns:
+        The Markdown section for the release PR description.
+    """
+    return f'''## Try the release candidate
+
+Add the preview setting and these channels to your existing `[workspace]` table in `pixi.toml`.
+
+```toml
+[workspace]
+preview = ["pixi-build"]
+channels = [
+    "conda-forge",
+    "https://repo.prefix.dev/max",
+    "https://prefix.dev/tree-d",
+]
+```
+
+```sh
+pixi add --git https://github.com/larecs/larecs.git \\
+  --branch {branch} larecs
+```'''
+
+
+def require_preview_section(body: str, branch: str) -> None:
+    """Require the release candidate instructions as the first section.
+
+    Args:
+        body: Release PR description in Markdown.
+        branch: Release candidate branch name.
+
+    Raises:
+        SystemExit: If the section is missing, misplaced, or points to another branch.
+    """
+    expected = preview_section(branch)
+    description = "\n".join(body.splitlines()).strip()
+    intro, *sections = re.split(r"(?m)^(?=## )", description, maxsplit=2)
+    if not intro.strip() or not sections or sections[0].strip() != expected:
+        sys.exit(f"Place this section after the opening description:\n\n{expected}")
+
+
 def open_release(tag: str, ref: str) -> None:
     """Open a release pull request for a commit on main.
 
@@ -81,6 +127,10 @@ def open_release(tag: str, ref: str) -> None:
     )
     base_branch = f"release/base-{tag}"
     candidate_branch = f"release/candidate-{tag}"
+    description = (
+        f"Review the Larecs `{tag}` release candidate and the changes since `{previous}`.\n\n"
+        f"{preview_section(candidate_branch)}\n\n{notes}"
+    )
     subprocess.run(
         ["git", "push", "--atomic", "origin",
          f"{base}:refs/heads/{base_branch}", f"{candidate}:refs/heads/{candidate_branch}"],
@@ -88,7 +138,7 @@ def open_release(tag: str, ref: str) -> None:
     )
     subprocess.run(
         ["gh", "pr", "create", "--base", base_branch, "--head", candidate_branch,
-         "--title", f"Release Larecs {tag}", "--body", notes],
+         "--title", f"Release Larecs {tag}", "--body", description],
         check=True,
     )
 
@@ -140,7 +190,7 @@ def resolve_release(number: int) -> None:
         number: Release pull request number.
 
     Raises:
-        SystemExit: If the PR, release range, or candidate approval is invalid.
+        SystemExit: If the PR, description, release range, or candidate approval is invalid.
         subprocess.CalledProcessError: If Git or GitHub cannot verify the candidate.
         OSError: If the GitHub Actions output file cannot be written.
     """
@@ -149,7 +199,7 @@ def resolve_release(number: int) -> None:
 
     pr = json.loads(output(
         "gh", "pr", "view", str(number), "--json",
-        "author,baseRefName,headRefName,headRefOid,isCrossRepository,mergeCommit,mergedAt,state",
+        "author,baseRefName,body,headRefName,headRefOid,isCrossRepository,mergeCommit,mergedAt,state",
     ))
     base_branch = pr["baseRefName"]
     tag = base_branch.removeprefix("release/base-")
@@ -158,6 +208,8 @@ def resolve_release(number: int) -> None:
         or base_branch != f"release/base-{tag}" or pr["headRefName"] != f"release/candidate-{tag}"
     ):
         sys.exit(f"PR #{number} must be a merged release PR from this repository.")
+
+    require_preview_section(pr["body"] or "", pr["headRefName"])
 
     previous = previous_tag()
     base = output("git", "rev-parse", f"refs/tags/{previous}^{{commit}}")

@@ -23,6 +23,49 @@ Linux measurements are recorded there. It is a restricted feasibility benchmark;
 the current experimental engine adds eligibility and lifecycle checks absent
 from that prototype. Both drivers remain outside the normal PR performance gate.
 
+## Benchmark methodology
+
+Build a focused manual driver once with
+`pixi run mojo build -I src benchmark/<benchmark_filename>.mojo -o /tmp/larecs-benchmark`,
+then run `/tmp/larecs-benchmark` repeatedly. Run the complete manual suite with
+`pixi run mojo run -I src benchmark/run_benchmarks.mojo`.
+
+When changing storage, queries, classification, row movement, or execution costs,
+add or update representative benchmarks using these criteria:
+
+- Keep the combined PR performance checks near one minute per runner, including
+  compilation, warmup, and sampling. Measure cold compilation and execution
+  separately on Linux and macOS before expanding the suite. Keep large worlds,
+  GPU cases, and the complete benchmark registry in focused manual drivers.
+- Use deterministic inputs, bounded calibration or fixed iteration counts, and a
+  compact scenario matrix. Spatial cases should cover uniform, dense, sparse,
+  and moving entities with different maintenance cadences.
+- Compare identical entities and semantic work, with an unchanged-layout control.
+  Measure isolated operations and complete frames when useful. Include input
+  updates, classification, sorting, movement, location repair, and transfers
+  whenever they belong to the claimed workload. State excluded setup and
+  maintenance costs; validate results, locations, and payload preservation
+  outside the timer, and consume results to prevent dead-code elimination.
+- Build each timing binary once, then run it repeatedly. Compare the same current
+  driver against baseline and current libraries on the same runner with matching
+  compiler versions and optimization settings. Use optimized builds without
+  debug info, sanitizers, or tracing. Run builds and measurements sequentially,
+  with no competing benchmark jobs, and report compilation separately.
+- Warm both binaries, alternate baseline/current order, and use repeated paired
+  samples. Keep machine-specific timing baselines out of the repository. See
+  [PR performance checks](#pr-to-pr-performance-checks) and
+  [spatial checks](#small-spatial-benchmarks-on-every-pr) for baseline selection,
+  thresholds, confirmation, and support for revisions predating the spatial API.
+- Keep the small regression checks in `pixi run tests test` on Linux and macOS;
+  focused test-file runs omit performance checks. Investigate sustained failures
+  and document evidence before changing thresholds; use dedicated measurements
+  for smaller regressions.
+- Keep scenario matrices and expected-case manifests synchronized. Invalid or
+  incomplete reports, build failures, and correctness failures must fail checks.
+  Update this guide when changing cases, timing boundaries, sampling, or baseline
+  selection. Record hardware, compiler, method, and limitations with performance
+  claims; track unmeasured benefits and remaining work in the roadmap.
+
 ## Threaded host execution
 
 `benchmark/threaded_execution.mojo` measures the implemented public
@@ -471,8 +514,9 @@ Hosted Linux/macOS evidence is retained by the PR checks.
 
 ## Resource execution
 
-`resource_execution_benchmark.mojo` builds unchanged against the PR base and
-current library. It measures complete calls over 512 Int32 rows with either no
+`resource_execution_benchmark.mojo` uses the current execution API. Compare the
+same workload against the base library, adapting only backend call spelling
+when the base predates `ExecutionBackend`. It measures complete calls over 512 Int32 rows with either no
 resources or one legacy scalar resource. `resource_adapter_benchmark.mojo`
 measures current read-only adapters over the same rows and 4,096 initial Int32
 samples. Only the first sample is read; the entire source is uploaded. Each timed
@@ -483,10 +527,43 @@ component transfers, resource uploads/downloads, allocation growth, and
 synchronization are included when applicable. Exact outputs, row counts, source
 values, and final sample lengths are checked outside timing.
 
+Copy the current driver for the baseline build:
+
+```sh
+cp benchmark/resource_execution_benchmark.mojo /tmp/resource_base.mojo
+```
+
+If the base accepts `on_device: Bool` rather than `backend: ExecutionBackend`,
+adapt only that copy before compiling it:
+
+```sh
+python - <<'PYCODE'
+from pathlib import Path
+import re
+
+path = Path("/tmp/resource_base.mojo")
+source = path.read_text().replace("    ExecutionBackend,\n", "")
+source, count = re.subn(
+    r"backend=\(\s*ExecutionBackend\.DEVICE if device else ExecutionBackend\.HOST\s*\)",
+    "on_device=device",
+    source,
+)
+assert count == 4, "Review the driver before adapting a changed call matrix"
+assert "ExecutionBackend" not in source.split('from std.time', 1)[1]
+path.write_text(source)
+PYCODE
+```
+
+This maps the same compile-time `device` boolean to the older keyword; kernels,
+row counts, iterations, warmup, validation, and timing boundaries stay identical.
+Do not substitute a historical driver with different workloads. Device comparisons
+require a working accelerator on both sides; an older host fallback is not a
+device measurement. For a base using `on_gpu`, use that keyword instead.
+
 Build optimized binaries once without debug information, sanitizers, or tracing:
 
 ```sh
-pixi run mojo build -I /path/to/base/src benchmark/resource_execution_benchmark.mojo -o /tmp/resource-base
+pixi run mojo build -I /path/to/base/src /tmp/resource_base.mojo -o /tmp/resource-base
 pixi run mojo build -I src benchmark/resource_execution_benchmark.mojo -o /tmp/resource-current
 pixi run mojo build -I src benchmark/resource_adapter_benchmark.mojo -o /tmp/resource-adapters
 ```
@@ -520,3 +597,12 @@ existing compiler caches and no competing builds. These are recorded build costs
 not comparable cold-compilation measurements.
 Linux resource timings and cold compilation remain unmeasured. These focused
 manual cases do not enlarge the normal PR performance matrix.
+
+## Storage range migration
+
+The [#170 comparison](../../design/research/entity-range-migration.md) uses the
+current selection and migration drivers against PR212, including the 100k-row
+ordinary host path and 65,536-row whole-archetype batches. Concurrent sibling
+builds overlapped every sample, so these results support no controlled
+regression or speedup claim. Query/range metadata sharing is checked directly
+in the cursor regression tests.

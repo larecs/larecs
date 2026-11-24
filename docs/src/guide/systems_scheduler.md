@@ -33,6 +33,7 @@ system and is not registered with the scheduler.
 
 ```mojo {doctest="guide_systems_scheduler" global=true}
 from larecs import (
+    ExecutionBackend,
     World,
     System,
     SystemContext,
@@ -235,8 +236,13 @@ def threaded_example() raises:
     context.run[increment_threaded]()
 ```
 
-```mojo {doctest="guide_threaded_execution" global=true hide=true}
+```mojo {doctest="guide_threaded_execution" hide=true global=true}
 def main() raises:
+    """Runs the threaded execution example.
+
+    Raises:
+        Error: If execution fails.
+    """
     threaded_example()
 ```
 
@@ -271,11 +277,14 @@ accessed components, and explicit `Resources().read[T]()` resources.
 Reflection cannot inspect `StaticTuple` or `InlineArray` storage, so a type
 holding such a field of scalars must conform to `PlainValue` to declare that it
 holds no pointers; Larecs trusts the declaration. Ordinary
-read resources must also be plain values; heap-backed resources use read-only
-`KernelView` adapters, bound once on the caller and shared until join. Unaccessed
-owning components do not prevent threading. Mutable resources (including the
-legacy `Resources[T]()` default), explicit captures, and lexical closures are
-rejected even on whole-range fallback.
+read resources must also be plain values; heap-backed resources use adapter
+views, bound once on the caller and shared until join. Adapted resources may be
+declared `write` or `read_write` when their adapter declares
+`supports_concurrent_mutation`; see
+[mutable adapted resources](../resources#mutable-adapted-resources-experimental).
+Unaccessed owning components do not prevent threading. Other mutable resources
+(including the legacy `Resources[T]()` default), explicit captures,
+and lexical closures are rejected even on whole-range fallback.
 
 Every explicitly threaded call acquires an additional structural lock, including
 whole-range fallback and calls on an already locked selection. Exhausting the
@@ -358,8 +367,8 @@ The slot index is compile-time; two slots may have the same value type.
 ```
 
 ```mojo {doctest="guide_gpu_captures" global=true}
-from larecs import ExecutionBackend
 from larecs import (
+    ExecutionBackend,
     World, SystemContext, KernelContext, Filter,
     Captures, ReadCapture, MutCapture, read_capture, mut_capture,
 )
@@ -437,22 +446,43 @@ or once for the device launch gives the same total.
 
 The **host** is the CPU running the system and managing ECS storage; the
 **device** is the GPU accelerator running the launched kernel. Host/device
-describes their execution and memory roles. The target option is named
-`on_device` in the current API.
+describes their execution and memory roles. Import the target enum with
+`from larecs import ExecutionBackend` and select `backend=ExecutionBackend.HOST`
+or `backend=ExecutionBackend.DEVICE`.
 
 The `SystemContext.run` call used by `Move` executes its kernel on the host by
-default. Pass `backend=ExecutionBackend.DEVICE` to run a compatible kernel on an accelerator. The
-same kernel function works on both targets unchanged; see the
+default. Pass `backend=ExecutionBackend.DEVICE` to run a compatible kernel on an
+accelerator. The same kernel function works on both targets unchanged; see the
 {{< api SystemContext.run >}} and {{< api KernelContext >}} API docs for
 details. Device execution requires an available accelerator and the corresponding
-Mojo GPU toolchain. Selecting `ExecutionBackend.DEVICE` raises if accelerator
-compilation support or a working device context is unavailable, including for
-empty matches. It never falls back to host execution.
+Mojo GPU toolchain. Selecting `DEVICE` raises an error when accelerator compilation
+support or a working world device context is unavailable, including for empty
+matches. There is no automatic backend selection or host fallback.
+
+`backend` is a compile-time parameter on both `SystemContext.run` and
+`EntitySelection.run`. This specializes kernel compilation and transfer checks
+for the chosen target. Runtime choices require an explicit branch calling each
+specialization. Thin compile-time kernels support both targets; value-taking
+callables (including lexical closures) require `HOST`, checked at compile time.
+`HOST_THREADED` selects synchronous host workers and requires a thin kernel.
+
+Migrate `on_device=True` (formerly `on_gpu=True`) to
+`backend=ExecutionBackend.DEVICE`, and `on_device=False` / `on_gpu=False` to
+`backend=ExecutionBackend.HOST` or omit the parameter for the host default.
+Boolean parameters are removed without compatibility aliases. Applications
+that previously relied on the no-accelerator fallback must choose `HOST`
+explicitly when device support is unavailable.
 
 Required resources use the same `context.resources.get[T]()` API on the device.
 Resource transfer constraints, shared-write safety, and the non-capturing
 kernel requirement are covered in
 [Resources](../resources#using-resources-in-kernels).
+
+Each device run uploads the components and resources it reads. Worlds that opt
+into `world.reuse_device_copies(True)` (experimental) skip uploading unchanged
+resources and component column ranges; this requires re-obtaining references
+after runs or invalidating device copies explicitly. See
+[Reusing unchanged device copies](../resources#reusing-unchanged-device-copies-experimental).
 
 Use explicit bindings above to pass host-local values to device entry points;
 lexical host borrows are not transferred automatically. Nested closures **inside**

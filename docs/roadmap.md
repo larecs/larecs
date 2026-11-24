@@ -25,15 +25,16 @@ behavioral contract.
 - [ ] Share batch mutation internals while preserving the whole-archetype bulk
   fast path and exact partial-row behavior. Avoid routing large batches through
   per-entity movement.
-- [ ] Migrate callers that use mutation-result iterators for selected execution.
+- [x] Migrate callers that use mutation-result iterators for selected execution.
   Keep low-level storage operations usable through a documented adapter or
   return type; `HostStorage` cannot itself return a selection borrowing `World`.
-- [ ] Replace `_WorldEntityIterator` query duties before removing that type and
+- [x] Replace `_WorldEntityIterator` query duties before removing that type and
   mutation-only `has_start_indices`. Preserve query lock lifetime, iteration,
   and supported copy/move behavior.
-- [ ] Update `test/world_entity_iterator_test.mojo`, `test/world_test.mojo`, and
+- [x] Update `test/world_entity_iterator_test.mojo`, `test/world_test.mojo`, and
   affected callers. Cover ordinary queries, low-level compatibility, batch
-  results, lock release, and selected mutation chains.
+  results, lock release, and selected mutation chains. See
+  [decision 0022](design/decisions/0024-locked-storage-ranges.md).
 
 ### Measure selection and ordinary-path performance
 
@@ -57,13 +58,47 @@ selected mutation chains, and a selected device case.
   semantics against [decision 0018](design/decisions/0018-portable-resource-adapters.md).
   The read-only contiguous-buffer API is implemented; application compatibility
   and shading performance need application source and measurements.
+- [ ] Migrate Tree-D's leaf-distribution writer from `MutCapture` to a mutable
+  adapted resource under [decision 0022](design/decisions/0022-mutable-adapted-resources.md),
+  and compare its host and device results and timings.
+- [x] Run `test/mutable_resource_adapter_test.mojo` and the scatter example on
+  supported GPUs (Linux and Apple). Both pass on NVIDIA A100 (Linux) and
+  Apple M4.
+- [ ] Run the mutable adapter device tests on an AMD GPU (gfx942).
+
+### Skip unchanged device uploads
+
+[Decision 0021](design/decisions/0021-skip-unchanged-device-uploads.md) is
+accepted. Implement resources first, then component columns.
+
+- [x] Add resource revisions, the `reuse_device_copies` switch,
+  `resources.read`, and explicit invalidation; skip unchanged resource
+  preparation.
+- [x] Add the transfer counter and the resource stale-copy, escape-hatch,
+  failure, world-copy, and disabled-transfer tests.
+- [ ] Run the device resource and column tests on a supported GPU (Linux and
+  macOS).
+- [x] Add per-store column revisions and `world.storage.read[T](entity)`;
+  record component column segments and skip matching segment uploads.
+- [x] Add the component stale-copy, store-identity, and alternating-filter tests.
+- [x] Add 13 repeated unchanged runs to the adapter benchmark.
+- [ ] Measure the adapter benchmark on a GPU and Tree-D's `light_benchmark`
+  before and after.
+- [x] Document the re-obtain-or-invalidate rule in the resource and device guides.
 
 ## Later — lower priority
 
 ### Broader resource adaptation
 
-- [ ] Design writable adapted resources and complete-initialization semantics for
-  write-only shared device values before exposing either access path.
+- [ ] Probe guard handles for `get` (destructor-released borrow counts under
+  ASAP destruction, inner-reference lifetimes) as the path to automatic device
+  copy reuse under decision 0021.
+
+- [ ] Design complete-initialization semantics for write-only ordinary shared
+  device values. Writable adapted resources are implemented under
+  [decision 0022](design/decisions/0022-mutable-adapted-resources.md).
+- [ ] Provide a portable atomic maximum for mutable views; compare-exchange
+  reductions are unavailable on Apple GPUs in Mojo 1.0.
 
 - [ ] Evaluate shared immutable preprocessing/configuration, construction-input
   caching, and explicit adapter overrides only when measured application costs
