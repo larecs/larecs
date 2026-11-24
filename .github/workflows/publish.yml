@@ -74,6 +74,10 @@ jobs:
     # one, which would drop main deployments. Preview deployments write only
     # under pr-preview/, so concurrent pushes rebase without conflicts.
     steps:
+      - name: Checkout Larecs
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Download HTML artifacts
         uses: actions/download-artifact@v4
         with:

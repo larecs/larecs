@@ -16,9 +16,10 @@
 ## Try a nightly build
 
 [Release nightly](.github/workflows/release-nightly.yml) publishes from `main`
-daily at 02:17 UTC when the commit changes. Maintainers can also run it manually.
+daily at 02:17 UTC when the commit changes. Maintainers can also run it manually
+or set the `NIGHTLY_SOURCE` repository variable to select a different branch.
 Nightly packages append the commit's UTC time and workflow run number to the
-latest release tag reachable from `main`.
+latest release tag reachable from the source branch.
 
 ```sh
 pixi workspace channel add --prepend https://prefix.dev/tree-d/nightly
