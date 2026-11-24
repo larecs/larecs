@@ -139,6 +139,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      is_prerelease: ${{ steps.publish.outputs.is_prerelease }}
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ needs.candidate.outputs.tag }}
@@ -146,13 +148,17 @@ jobs:
       PREVIOUS_TAG: ${{ needs.candidate.outputs.previous }}
     steps:
       - name: Tag the reviewed commit
+        id: publish
         run: |
           release_type=(--latest)
+          is_prerelease=false
           if [[ "$RELEASE_TAG" == *b* ]]; then
             release_type=(--prerelease)
+            is_prerelease=true
           fi
           gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
             --target "$RELEASE_SHA" --generate-notes --notes-start-tag "$PREVIOUS_TAG" "${release_type[@]}"
+          echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
       - name: Delete temporary release branches
         run: |
           for branch in "release/base-$RELEASE_TAG" "release/candidate-$RELEASE_TAG"; do
@@ -164,7 +170,7 @@ jobs:
   close-milestone:
     name: Close release milestone
     needs: release
-    if: github.event.pull_request.milestone.number > 0
+    if: needs.release.outputs.is_prerelease == 'false' && github.event.pull_request.milestone.number > 0
     runs-on: ubuntu-latest
     permissions:
       issues: write
