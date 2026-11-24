@@ -14,7 +14,7 @@
 }
 * { box-sizing: border-box }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 Inter, system-ui, sans-serif }
-header { display: flex; align-items: baseline; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap }
+header { display: flex; align-items: center; gap: 16px; padding: 10px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap }
 header h1 { font-size: 17px; font-weight: 600; margin: 0 }
 header a { color: var(--mut); font-size: 13px }
 .layout { display: grid; grid-template-columns: 360px 1fr; min-height: calc(100vh - 52px) }
@@ -51,7 +51,16 @@ button:hover { border-color: var(--acc) }
 .lock span { font-weight: 500; font-size: 56px; letter-spacing: -.01em; line-height: 1 }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px }
 .check { display: flex; gap: 8px; align-items: center; margin: 8px 0; font-size: 13px }
-.toast { position: fixed; bottom: 16px; right: 16px; background: var(--acc); color: #0B1712; padding: 8px 12px; border-radius: 8px; opacity: 0; transition: opacity .2s; font-weight: 500 }
+.cta { margin-left: auto; background: var(--acc); color: #0B1712; border-color: var(--acc); font-size: 14px; font-weight: 600; padding: 8px 16px }
+.cta:hover { background: #A9DA88; border-color: #A9DA88 }
+dialog { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 20px; width: min(560px, calc(100vw - 32px)) }
+dialog::backdrop { background: #000a }
+dialog h2 { margin: 0 0 8px; font-size: 17px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--ink) }
+dialog ol { margin: 0 0 12px; padding-left: 20px; color: var(--mut) }
+dialog textarea { width: 100%; height: 110px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: 12px/1.4 ui-monospace, monospace; resize: vertical }
+dialog .row-btns { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 12px }
+a.cta-link { background: var(--acc); color: #0B1712; border-radius: 7px; padding: 6px 12px; font-size: 12px; font-weight: 600; text-decoration: none }
+.toast { position: fixed; z-index: 10; bottom: 16px; right: 16px; background: var(--acc); color: #0B1712; padding: 8px 12px; border-radius: 8px; opacity: 0; transition: opacity .2s; font-weight: 500 }
 .toast.on { opacity: 1 }
 @media (max-width: 860px) {
   .layout { grid-template-columns: 1fr }
@@ -61,7 +70,21 @@ button:hover { border-color: var(--acc) }
 </style>
 </head>
 <body>
-<header><h1>larecs logo playground</h1><a href="?all">show archived concepts</a><a href="index.html">gallery</a></header>
+<header><h1>larecs logo playground</h1><a href="?all">show archived concepts</a><a href="index.html">gallery</a><button id="propose" class="cta">Propose on the logo PR</button></header>
+<dialog id="proposeDlg">
+  <h2>Propose this variation</h2>
+  <ol>
+    <li>Copy the comment below.</li>
+    <li>Open the logo pull request, paste it into a new comment and submit.</li>
+    <li>A bot replies with a rendering of your variation.</li>
+  </ol>
+  <textarea id="proposeText" readonly aria-label="Comment text"></textarea>
+  <div class="row-btns">
+    <button id="proposeClose">Close</button>
+    <button id="proposeCopy" autofocus>Copy comment</button>
+    <a class="cta-link" id="proposeOpen" target="_blank" rel="noopener">Open the logo PR</a>
+  </div>
+</dialog>
 <div class="layout">
   <aside>
     <h2>Concept</h2>
@@ -88,7 +111,6 @@ button:hover { border-color: var(--acc) }
       <button id="dlAvatar">Download avatar SVG</button>
       <button id="copyParams">Copy settings JSON</button>
       <button id="copyLink">Copy share link</button>
-      <button id="propose">Propose on the logo PR</button>
     </div>
   </main>
 </div>
@@ -582,13 +604,23 @@ $("copyLink").onclick = async () => {
 // deployed playground; a workflow replies with a rendering of the preset.
 const DEPLOYED = "https://larecs.github.io/larecs/branding/";
 const LOGO_PR = "https://github.com/larecs/larecs/pull/309";
-$("propose").onclick = async () => {
-  const body = "### Logo variation\n\n[Open this variation in the playground](" + DEPLOYED + presetFragment() + ")\n";
-  let copied = true;
-  try { await navigator.clipboard.writeText(body); } catch (e) { copied = false; prompt("Copy this comment", body); }
-  window.open(LOGO_PR + "#new_comment_field", "_blank", "noopener");
-  if (copied) toast("Comment copied: paste it on the PR");
+// A dialog with a plain link instead of window.open(): popup blockers and
+// embedded browsers cannot swallow it, and the text stays selectable when the
+// clipboard API is unavailable.
+$("proposeOpen").href = LOGO_PR + "#new_comment_field";
+$("propose").onclick = () => {
+  $("proposeCopy").textContent = "Copy comment";
+  $("proposeText").value = "### Logo variation\n\n[Open this variation in the playground](" + DEPLOYED + presetFragment() + ")\n";
+  $("proposeDlg").showModal();
 };
+$("proposeCopy").onclick = async () => {
+  const ta = $("proposeText");
+  const btn = $("proposeCopy");
+  try { await navigator.clipboard.writeText(ta.value); btn.textContent = "Copied ✓"; }
+  catch (e) { ta.focus(); ta.select(); btn.textContent = "Press Ctrl/Cmd+C"; }
+  setTimeout(() => { btn.textContent = "Copy comment"; }, 2500);
+};
+$("proposeClose").onclick = () => $("proposeDlg").close();
 
 buildAll();
 </script>
