@@ -482,11 +482,11 @@ function applyPreset(preset) {
   state = { ...state, concept: c.id, params: { ...state.params, [c.id]: params }, colors, mono: !!preset.mono };
   return true;
 }
+const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
 try {
   const m = location.hash.match(/preset=([A-Za-z0-9_-]+)/);
   if (m && applyPreset(JSON.parse(unb64url(m[1])))) save();
 } catch (e) {}
-const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
 const concept = () => ACTIVE.find(c => c.id === state.concept) || ACTIVE[0];
 const paramsOf = c => { const p = {}; c.params.forEach(x => p[x.k] = (state.params[c.id] || {})[x.k] ?? x.v); return p; };
 const roleColors = () => state.colors;
