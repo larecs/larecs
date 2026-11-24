@@ -32,7 +32,7 @@ in a defined order with access to the appropriate context." />
   <meta itemprop="name" content="Systems and the scheduler">
   <meta itemprop="description" content="A key feature of entity-component systems is that operations on the entities are organized in systems, which operate independently from one another and can be added or removed as required.
 Systems Systems are the principal way to mutate the state of the ECS. Application logic that creates or removes entities, changes components, or updates resources should generally live in a system, where the scheduler can run it in a defined order with access to the appropriate context.">
-  <meta itemprop="wordCount" content="1500">
+  <meta itemprop="wordCount" content="2352">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Systems and the scheduler">
   <meta name="twitter:description" content="A key feature of entity-component systems is that operations on the entities are organized in systems, which operate independently from one another and can be added or removed as required.
@@ -215,6 +215,14 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
   >Resources
     </a>
               
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/synchronization/"
+    
+  >Synchronization
+    </a>
+              
             </li><li class="hx-flex hx-flex-col open"><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
@@ -243,24 +251,38 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
             </li>
           <li>
               <a
-                href="#capturing-cpu-kernels"
+                href="#threaded-host-execution-experimental"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Capturing CPU kernels</a>
+              >Threaded host execution (experimental)</a>
             </li>
           <li>
               <a
-                href="#passing-cpu-local-values-to-a-gpu-kernel"
+                href="#capturing-host-kernels"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >Passing CPU-local values to a GPU kernel</a>
+              >Capturing host kernels</a>
             </li>
           <li>
               <a
-                href="#gpu-execution"
+                href="#passing-host-local-values-to-a-device-kernel"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
-              >GPU execution</a>
+              >Passing host-local values to a device kernel</a>
+            </li>
+          <li>
+              <a
+                href="#device-execution"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Device execution</a>
             </li>
           </ul>
   
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/spatial_clustering/"
+    
+  >Spatial clustering
+    </a>
               
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
@@ -291,6 +313,22 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicValue/"
+    
+  >AtomicValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicView/"
+    
+  >AtomicView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/BitMaskFilter/"
     
   >BitMaskFilter
@@ -310,6 +348,14 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
     href="/larecs/larecs/Captures/"
     
   >Captures
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/CompareExchangeResult/"
+    
+  >CompareExchangeResult
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -371,9 +417,25 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ExecutionBackend/"
+    
+  >ExecutionBackend
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/Filter/"
     
   >Filter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/grid_cell/"
+    
+  >grid_cell
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -411,6 +473,14 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/morton_key_3d/"
+    
+  >morton_key_3d
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/mut_capture/"
     
   >mut_capture
@@ -422,6 +492,14 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
     href="/larecs/larecs/MutCapture/"
     
   >MutCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/PlainValue/"
+    
+  >PlainValue
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -475,6 +553,30 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SpatialClassifier/"
+    
+  >SpatialClassifier
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/Synchronized/"
+    
+  >Synchronized
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SyncView/"
+    
+  >SyncView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/System/"
     
   >System
@@ -486,6 +588,22 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
     href="/larecs/larecs/SystemContext/"
     
   >SystemContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ThreadedExecutionConfig/"
+    
+  >ThreadedExecutionConfig
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/TryAccess/"
+    
+  >TryAccess
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -574,12 +692,28 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
   >Resources
     </a>
               
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/synchronization/"
+    
+  >Synchronization
+    </a>
+              
             </li><li class="hx-flex hx-flex-col open"><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
     href="/larecs/guide/systems_scheduler/"
     
   >Systems and the scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/spatial_clustering/"
+    
+  >Spatial clustering
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -611,6 +745,22 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicValue/"
+    
+  >AtomicValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicView/"
+    
+  >AtomicView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/BitMaskFilter/"
     
   >BitMaskFilter
@@ -630,6 +780,14 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
     href="/larecs/larecs/Captures/"
     
   >Captures
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/CompareExchangeResult/"
+    
+  >CompareExchangeResult
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -691,9 +849,25 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ExecutionBackend/"
+    
+  >ExecutionBackend
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/Filter/"
     
   >Filter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/grid_cell/"
+    
+  >grid_cell
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -731,6 +905,14 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/morton_key_3d/"
+    
+  >morton_key_3d
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/mut_capture/"
     
   >mut_capture
@@ -742,6 +924,14 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
     href="/larecs/larecs/MutCapture/"
     
   >MutCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/PlainValue/"
+    
+  >PlainValue
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -795,6 +985,30 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SpatialClassifier/"
+    
+  >SpatialClassifier
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/Synchronized/"
+    
+  >Synchronized
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SyncView/"
+    
+  >SyncView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/System/"
     
   >System
@@ -806,6 +1020,22 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
     href="/larecs/larecs/SystemContext/"
     
   >SystemContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ThreadedExecutionConfig/"
+    
+  >ThreadedExecutionConfig
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/TryAccess/"
+    
+  >TryAccess
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -865,15 +1095,19 @@ Systems Systems are the principal way to mutate the state of the ECS. Applicatio
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#capturing-cpu-kernels">Capturing CPU kernels
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#threaded-host-execution-experimental">Threaded host execution (experimental)
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#passing-cpu-local-values-to-a-gpu-kernel">Passing CPU-local values to a GPU kernel
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#capturing-host-kernels">Capturing host kernels
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
-        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#gpu-execution">GPU execution
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#passing-host-local-values-to-a-device-kernel">Passing host-local values to a device kernel
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#device-execution">Device execution
         </a>
       </li></ul>
       <div class="hx-mt-8 hx-border-t hx-bg-white hx-pt-8 hx-shadow-[0_-12px_16px_white] dark:hx-bg-dark dark:hx-shadow-[0_-12px_16px_#111] hx-sticky hx-bottom-0 hx-flex hx-flex-col hx-items-start hx-gap-2 hx-pb-8 dark:hx-border-neutral-800 contrast-more:hx-border-t contrast-more:hx-border-neutral-400 contrast-more:hx-shadow-none contrast-more:dark:hx-border-neutral-400">
@@ -924,6 +1158,7 @@ system and is not registered with the scheduler.</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="kn">from</span><span class="w"> </span><span class="nn">larecs</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">ExecutionBackend</span><span class="p">,</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">World</span><span class="p">,</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">System</span><span class="p">,</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SystemContext</span><span class="p">,</span><span class="w">
@@ -1108,9 +1343,103 @@ Import the scheduler struct:</p>
 in the kernel&rsquo;s <code>Resources[Time]()</code> list. See
 <a href="../resources#using-resources-in-kernels" >Resources</a> for the complete kernel
 API, missing-resource behavior, mutation semantics, and runnable examples.</p>
-<h2>Capturing CPU kernels<span class="hx-absolute -hx-mt-20" id="capturing-cpu-kernels"></span>
-    <a href="#capturing-cpu-kernels" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Pass a closure as an argument to <code>context.run(kernel)</code> to borrow surrounding
-values on the CPU. Use <code>imm</code> for read-only captures and <code>mut</code> for values the
+<h2>Threaded host execution (experimental)<span class="hx-absolute -hx-mt-20" id="threaded-host-execution-experimental"></span>
+    <a href="#threaded-host-execution-experimental" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Configure a fixed worker-task budget on the world and explicitly opt in per run:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="kn">from</span><span class="w"> </span><span class="nn">larecs</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="n">ExecutionBackend</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">from</span><span class="w"> </span><span class="nn">larecs</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="n">World</span><span class="p">,</span><span class="w"> </span><span class="n">SystemContext</span><span class="p">,</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">,</span><span class="w"> </span><span class="n">Filter</span><span class="p">,</span><span class="w"> </span><span class="n">ThreadedExecutionConfig</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">def</span><span class="w"> </span><span class="nf">increment_threaded</span><span class="p">(</span><span class="n">rows</span><span class="p">:</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">include</span><span class="p">[</span><span class="nb">Int32</span><span class="p">]()]):</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Increments each row in one prepared range.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">    Args:
+</span></span></span><span class="line"><span class="cl"><span class="s2">        rows: Disjoint host range with chunk-local indices.
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">rows</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">row.get</span><span class="p">[</span><span class="nb">Int32</span><span class="p">]()</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">def</span><span class="w"> </span><span class="nf">threaded_example</span><span class="p">()</span><span class="w"> </span><span class="n">raises</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Runs the same kernel sequentially and on the shared CPU runtime.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">    Raises:
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Error: If configuration or execution preparation fails.
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">world</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">World</span><span class="p">[</span><span class="nb">Int32</span><span class="p">](</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">execution_config</span><span class="o">=</span><span class="n">ThreadedExecutionConfig</span><span class="p">(</span><span class="n">workers</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entities</span><span class="p">(</span><span class="nb">Int32</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">count</span><span class="o">=</span><span class="mi">65_536</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SystemContext</span><span class="p">(</span><span class="n">world</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">context.run</span><span class="p">[</span><span class="n">increment_threaded</span><span class="p">,</span><span class="w"> </span><span class="n">backend</span><span class="o">=</span><span class="n">ExecutionBackend.HOST_THREADED</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">context.run</span><span class="p">[</span><span class="n">increment_threaded</span><span class="p">]()</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p><code>ThreadedExecutionConfig()</code> defaults to one worker, four target chunks per
+worker, and a 65,536 matched-row cutoff. Custom construction requires <code>workers</code>;
+<code>chunks_per_worker</code> and <code>min_parallel_rows</code> are optional. Worker and chunk counts
+must be positive, the cutoff nonnegative, and their product representable.
+<code>min_parallel_rows=0</code> disables the row cutoff. Invalid settings raise an error.
+<code>World.execution_config()</code> returns a copy; idle world copies/moves retain the
+policy. MAX owns the shared runtime: the budget bounds submitted tasks, without
+reserving cores or promising that many simultaneous OS threads.</p>
+<p>Both <code>SystemContext.run[kernel, backend=ExecutionBackend.HOST_THREADED]()</code> and
+<code>EntitySelection.run[kernel, backend=ExecutionBackend.HOST_THREADED]()</code> support the same engine. Each
+physical store or exact selected range is split independently, including
+partition/staging stores; selected gaps remain untouched. Workers claim jobs
+dynamically. Each row executes once, and the call joins all workers before
+returning. Systems and successive kernel calls retain their sequential order.</p>
+<p>Ordinary calls keep existing whole-range sequential behavior. Explicit threaded
+calls also use whole ranges when there is one worker or fewer matched rows than
+the cutoff, after validating threaded eligibility. Empty matches invoke no
+kernel. Only parallel dispatch introduces chunking: invocation order is
+unspecified, local indices restart in each chunk, and code outside the entity
+loop runs once per chunk. Kernels must tolerate these changes when the cutoff
+or worker settings change; cross-chunk dependencies require a later run.
+<code>KernelContext.thread_count</code> remains one within each host chunk; it does not
+report the configured worker-task budget.</p>
+<p>The initial engine accepts nonraising thin kernels, pointer-free plain-value
+accessed components, and explicit <code>Resources().read[T]()</code> resources.
+Reflection cannot inspect <code>StaticTuple</code> or <code>InlineArray</code> storage, so a type
+holding such a field of scalars must conform to <code>PlainValue</code> to declare that it
+holds no pointers; Larecs trusts the declaration. Ordinary
+read resources must also be plain values; heap-backed resources use adapter
+views, bound once on the caller and shared until join. Adapted resources may be
+declared <code>write</code> or <code>read_write</code> when their adapter declares
+<code>supports_concurrent_mutation</code>; see
+<a href="../resources#mutable-adapted-resources-experimental" >mutable adapted resources</a>.
+Unaccessed owning components do not prevent threading. Other mutable resources
+(including the legacy <code>Resources[T]()</code> default), explicit captures,
+and lexical closures are rejected even on whole-range fallback.</p>
+<p>Every explicitly threaded call acquires an additional structural lock, including
+whole-range fallback and calls on an already locked selection. Exhausting the
+world&rsquo;s lock slots raises before execution; the selection&rsquo;s own lock remains
+held. Ordinary sequential calls retain their existing lock behavior.</p>
+<p>Keep the world confined to one coordinating caller. Reentrant execution and
+structural mutation during a threaded call are rejected; copying, moving,
+replacing, or destroying an active world aborts. Escaped aliases must not mutate
+resource backing data or invalidate component storage. Avoid mutable globals
+and non-thread-safe callees: signature and representation checks cannot prove
+an arbitrary kernel safe. Overlapping selected ranges are rejected before dispatch.
+All fallible preparation completes before spatial invalidation and row writes;
+fatal worker/runtime failures have no recovery or rollback guarantee.</p>
+<p>Linux correctness tests exercise actual worker overlap. The overlap check
+uses a Python test probe to skip hosts with fewer than two available CPUs,
+accounting for process affinity and inherited Linux cgroup v1/v2 CPU quotas.
+Fractional quotas round down; a skip does not establish concurrency coverage.
+macOS arm64 validation and performance measurements remain pending, so this
+engine is experimental.</p>
+<h2>Capturing host kernels<span class="hx-absolute -hx-mt-20" id="capturing-host-kernels"></span>
+    <a href="#capturing-host-kernels" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Pass a closure as an argument to <code>context.run(kernel)</code> to borrow surrounding
+values on the host. Use <code>imm</code> for read-only captures and <code>mut</code> for values the
 kernel updates. Capturing kernels may also declare required resources.</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
@@ -1154,23 +1483,26 @@ kernel updates. Capturing kernels may also declare required resources.</p>
 </div>
 </div>
 <p>Execution is synchronous: changes to mutable captures are visible after
-<code>run</code> returns. The kernel runs once per matching archetype and visits only
-that archetype&rsquo;s rows. Do not structurally modify the world from a captured
+<code>run</code> returns. The kernel runs once per matching dense physical store and visits only
+that store&rsquo;s rows. With partitioned spatial storage, each block contributes
+a separate host invocation. Do not structurally modify the world from a captured
 alias while those rows are being processed.</p>
-<h2>Passing CPU-local values to a GPU kernel<span class="hx-absolute -hx-mt-20" id="passing-cpu-local-values-to-a-gpu-kernel"></span>
-    <a href="#passing-cpu-local-values-to-a-gpu-kernel" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Declare explicit capture slots with <a href="/larecs/larecs/Captures" target="_blank"><code>Captures</code></a>, using
+<h2>Passing host-local values to a device kernel<span class="hx-absolute -hx-mt-20" id="passing-host-local-values-to-a-device-kernel"></span>
+    <a href="#passing-host-local-values-to-a-device-kernel" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Declare explicit capture slots with <a href="/larecs/larecs/Captures" target="_blank"><code>Captures</code></a>, using
 <a href="/larecs/larecs/ReadCapture" target="_blank"><code>ReadCapture</code></a> for inputs and <a href="/larecs/larecs/MutCapture" target="_blank"><code>MutCapture</code></a> for values that
-must be copied back. Bind CPU locals with <a href="/larecs/larecs/read_capture" target="_blank"><code>read_capture</code></a> and
+must be copied back. Bind host locals with <a href="/larecs/larecs/read_capture" target="_blank"><code>read_capture</code></a> and
 <a href="/larecs/larecs/mut_capture" target="_blank"><code>mut_capture</code></a> when calling <code>run</code>. Inside the kernel,
 <code>context.captures.get[index]()</code> returns a reference with the declared access.
 The slot index is compile-time; two slots may have the same value type.</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="kn">from</span><span class="w"> </span><span class="nn">larecs</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">ExecutionBackend</span><span class="p">,</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">World</span><span class="p">,</span><span class="w"> </span><span class="n">SystemContext</span><span class="p">,</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">,</span><span class="w"> </span><span class="n">Filter</span><span class="p">,</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Captures</span><span class="p">,</span><span class="w"> </span><span class="n">ReadCapture</span><span class="p">,</span><span class="w"> </span><span class="n">MutCapture</span><span class="p">,</span><span class="w"> </span><span class="n">read_capture</span><span class="p">,</span><span class="w"> </span><span class="n">mut_capture</span><span class="p">,</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">)</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">from</span><span class="w"> </span><span class="nn">std.gpu</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="n">global_idx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">from</span><span class="w"> </span><span class="nn">std.sys</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="n">has_accelerator</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">from</span><span class="w"> </span><span class="nn">std.sys.info</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="n">is_gpu</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">from</span><span class="w"> </span><span class="nn">std.testing</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="n">assert_equal</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">
@@ -1182,7 +1514,7 @@ The slot index is compile-time; two slots may have the same value type.</p>
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Scales components and reports the number of processed entities.
 </span></span></span><span class="line"><span class="cl"><span class="s2">
 </span></span></span><span class="line"><span class="cl"><span class="s2">    Args:
-</span></span></span><span class="line"><span class="cl"><span class="s2">        context: Matching rows and the explicitly bound CPU-local values.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        context: Matching rows and the explicitly bound host-local values.
 </span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">entity</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">context</span><span class="p">:</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">entity.get</span><span class="p">[</span><span class="nb">Int32</span><span class="p">]()</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">context.captures.get</span><span class="p">[</span><span class="mi">0</span><span class="p">]()</span><span class="w">
@@ -1199,16 +1531,17 @@ The slot index is compile-time; two slots may have the same value type.</p>
 </span></span></span><span class="line"><span class="cl"><span class="s2">    Raises:
 </span></span></span><span class="line"><span class="cl"><span class="s2">        Error: If setup, execution, or a result check fails.
 </span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">world</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">World</span><span class="p">[</span><span class="nb">Int32</span><span class="p">]()</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">entity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entity</span><span class="p">(</span><span class="nb">Int32</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">factor</span><span class="p">:</span><span class="w"> </span><span class="nb">Int32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">processed</span><span class="p">:</span><span class="w"> </span><span class="nb">Int32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SystemContext</span><span class="p">(</span><span class="n">world</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">context.run</span><span class="p">[</span><span class="n">scale</span><span class="p">,</span><span class="w"> </span><span class="n">on_gpu</span><span class="o">=</span><span class="kc">True</span><span class="p">](</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">read_capture</span><span class="p">(</span><span class="n">factor</span><span class="p">),</span><span class="w"> </span><span class="n">mut_capture</span><span class="p">(</span><span class="n">processed</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">assert_equal</span><span class="p">(</span><span class="n">world.storage.get</span><span class="p">[</span><span class="nb">Int32</span><span class="p">](</span><span class="n">entity</span><span class="p">),</span><span class="w"> </span><span class="mi">12</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">assert_equal</span><span class="p">(</span><span class="n">processed</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">comptime</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">has_accelerator</span><span class="p">():</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">var</span><span class="w"> </span><span class="nv">world</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">World</span><span class="p">[</span><span class="nb">Int32</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">var</span><span class="w"> </span><span class="nv">entity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entity</span><span class="p">(</span><span class="nb">Int32</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">var</span><span class="w"> </span><span class="nv">factor</span><span class="p">:</span><span class="w"> </span><span class="nb">Int32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">var</span><span class="w"> </span><span class="nv">processed</span><span class="p">:</span><span class="w"> </span><span class="nb">Int32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">var</span><span class="w"> </span><span class="nv">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SystemContext</span><span class="p">(</span><span class="n">world</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">context.run</span><span class="p">[</span><span class="n">scale</span><span class="p">,</span><span class="w"> </span><span class="n">backend</span><span class="o">=</span><span class="n">ExecutionBackend.DEVICE</span><span class="p">](</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">read_capture</span><span class="p">(</span><span class="n">factor</span><span class="p">),</span><span class="w"> </span><span class="n">mut_capture</span><span class="p">(</span><span class="n">processed</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">assert_equal</span><span class="p">(</span><span class="n">world.storage.get</span><span class="p">[</span><span class="nb">Int32</span><span class="p">](</span><span class="n">entity</span><span class="p">),</span><span class="w"> </span><span class="mi">12</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">assert_equal</span><span class="p">(</span><span class="n">processed</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
   <button
     class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
     title="Copy code"
@@ -1218,9 +1551,10 @@ The slot index is compile-time; two slots may have the same value type.</p>
   </button>
 </div>
 </div>
-<p>Each invocation uploads the current bound values. Mutable slots are shared
-device allocations, and their final values are copied back to the original
-CPU locals before <code>run</code> returns. Read-only slots are not downloaded and cannot
+<p>The example runs on machines with an accelerator. Each invocation uploads
+the current bound values. Mutable slots are shared device allocations, and
+their final values are copied back to the original host locals before <code>run</code>
+returns. Read-only slots are not downloaded and cannot
 be written through <code>get</code>. Empty matches leave captures unchanged. Captures
 need no entry in the world&rsquo;s resource storage and can coexist with required
 resources.</p>
@@ -1228,46 +1562,70 @@ resources.</p>
 Bindings borrow their locals, so the borrow checker rejects conflicting
 read-only and mutable bindings to the same value. Neither a capture reference
 nor its pointer may escape the kernel invocation.</p>
-<p>GPU captures currently support trivially copyable, trivially deletable values,
+<p>Device captures currently support trivially copyable, trivially deletable values,
 such as numbers and plain structs. They copy bytes, not object graphs:
 <code>List</code>, <code>Dict</code>, host-backed tensors, and pointers to host-only memory cannot
 be transferred this way. <code>DevicePassable</code> conversion is not performed for
 capture values. Writes to a mutable capture must use a single writer or
 appropriate synchronization/atomics, just like writes to shared resources.</p>
-<p>The same explicit bindings work with CPU kernels, including the closure
-overload. CPU execution borrows the original values directly and calls the
-kernel once per matching archetype; GPU execution processes the matching rows
-in one launch. In the example, adding <code>context.length</code> once per CPU archetype
-or once for the GPU launch gives the same total.</p>
-<h2>GPU execution<span class="hx-absolute -hx-mt-20" id="gpu-execution"></span>
-    <a href="#gpu-execution" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>The <code>SystemContext.run</code> call used by <code>Move</code> executes its kernel on the CPU by
-default. Pass <code>on_gpu=True</code> to run a compatible kernel on an accelerator. The
-same kernel function works on both targets unchanged; see the
+<p>The same explicit bindings work with host kernels, including the closure
+overload. Host execution borrows the original values directly and calls the
+kernel once per matching physical store (each spatial partition block when
+enabled); device execution processes the matching rows
+in one launch. In the example, adding <code>context.length</code> once per host store
+or once for the device launch gives the same total.</p>
+<h2>Device execution<span class="hx-absolute -hx-mt-20" id="device-execution"></span>
+    <a href="#device-execution" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>The <strong>host</strong> is the CPU running the system and managing ECS storage; the
+<strong>device</strong> is the GPU accelerator running the launched kernel. Host/device
+describes their execution and memory roles. Import the target enum with
+<code>from larecs import ExecutionBackend</code> and select <code>backend=ExecutionBackend.HOST</code>
+or <code>backend=ExecutionBackend.DEVICE</code>.</p>
+<p>The <code>SystemContext.run</code> call used by <code>Move</code> executes its kernel on the host by
+default. Pass <code>backend=ExecutionBackend.DEVICE</code> to run a compatible kernel on an
+accelerator. The same kernel function works on both targets unchanged; see the
 <a href="/larecs/larecs/SystemContext#run" target="_blank"><code>SystemContext.run</code></a> and <a href="/larecs/larecs/KernelContext" target="_blank"><code>KernelContext</code></a> API docs for
-details. GPU execution requires an available accelerator and the corresponding
-Mojo GPU toolchain. On systems without one, <code>on_gpu=True</code> kernels fall back to
-CPU execution.</p>
-<p>Required resources use the same <code>context.resources.get[T]()</code> API on the GPU.
+details. Device execution requires an available accelerator and the corresponding
+Mojo GPU toolchain. Selecting <code>DEVICE</code> raises an error when accelerator compilation
+support or a working world device context is unavailable, including for empty
+matches. There is no automatic backend selection or host fallback.</p>
+<p><code>backend</code> is a compile-time parameter on both <code>SystemContext.run</code> and
+<code>EntitySelection.run</code>. This specializes kernel compilation and transfer checks
+for the chosen target. Runtime choices require an explicit branch calling each
+specialization. Thin compile-time kernels support both targets; value-taking
+callables (including lexical closures) require <code>HOST</code>, checked at compile time.
+<code>HOST_THREADED</code> selects synchronous host workers and requires a thin kernel.</p>
+<p>Migrate <code>on_device=True</code> (formerly <code>on_gpu=True</code>) to
+<code>backend=ExecutionBackend.DEVICE</code>, and <code>on_device=False</code> / <code>on_gpu=False</code> to
+<code>backend=ExecutionBackend.HOST</code> or omit the parameter for the host default.
+Boolean parameters are removed without compatibility aliases. Applications
+that previously relied on the no-accelerator fallback must choose <code>HOST</code>
+explicitly when device support is unavailable.</p>
+<p>Required resources use the same <code>context.resources.get[T]()</code> API on the device.
 Resource transfer constraints, shared-write safety, and the non-capturing
 kernel requirement are covered in
 <a href="../resources#using-resources-in-kernels" >Resources</a>.</p>
-<p>Use explicit bindings above to pass CPU-local values to GPU entry points;
-lexical CPU borrows are not transferred automatically. Nested closures <strong>inside</strong>
-a GPU kernel can capture that thread&rsquo;s kernel-local variables with <code>imm</code> and
+<p>Each device run uploads the components and resources it reads. Worlds that opt
+into <code>world.reuse_device_copies(True)</code> (experimental) skip uploading unchanged
+resources and component column ranges; this requires re-obtaining references
+after runs or invalidating device copies explicitly. See
+<a href="../resources#reusing-unchanged-device-copies-experimental" >Reusing unchanged device copies</a>.</p>
+<p>Use explicit bindings above to pass host-local values to device entry points;
+lexical host borrows are not transferred automatically. Nested closures <strong>inside</strong>
+a device kernel can capture that thread&rsquo;s kernel-local variables with <code>imm</code> and
 <code>mut</code>. Each thread owns its local values; updating a local capture does not
 update a variable on the host or communicate with other GPU threads.</p>
 
         </div>
         <div class="hx-mt-16"></div>
         <div class="hx-mb-8 hx-flex hx-items-center hx-border-t hx-pt-8 dark:hx-border-neutral-800 contrast-more:hx-border-neutral-400 dark:contrast-more:hx-border-neutral-400 print:hx-hidden"><a
-        href="/larecs/guide/resources/"
-        title="Resources"
+        href="/larecs/guide/synchronization/"
+        title="Synchronization"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-pr-4 rtl:hx-pl-4"
-      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Resources</a><a
-        href="/larecs/guide/benchmarks/"
-        title="Benchmarks"
+      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Synchronization</a><a
+        href="/larecs/guide/spatial_clustering/"
+        title="Spatial clustering"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-ml-auto ltr:hx-pl-4 ltr:hx-text-right rtl:hx-mr-auto rtl:hx-pr-4 rtl:hx-text-left"
-      >Benchmarks<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
+      >Spatial clustering<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
         
       </main>
     </article>

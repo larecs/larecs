@@ -52,7 +52,7 @@ Implemented traits
   <meta itemprop="description" content="Mojo struct 🡭
 SystemContext @memory_only struct SystemContext[world_origin: MutOrigin, *WorldTs: ComponentType] Gives a system access to the world’s entities, components, and resources.
 Aliases World = World[WorldTs]: The concrete world type this context wraps. Parameters world_origin (MutOrigin): The origin of the world borrowed by this context. *WorldTs (ComponentType): A variadic list with all possible component types for the world. Fields world (Pointer[World[WorldTs], world_origin]): Pointer to the world borrowed by the scheduler. Implemented traits AnyType, Copyable, Deinitable, Movable">
-  <meta itemprop="wordCount" content="825">
+  <meta itemprop="wordCount" content="1044">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="SystemContext">
   <meta name="twitter:description" content="Mojo struct 🡭
@@ -239,9 +239,25 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/synchronization/"
+    
+  >Synchronization
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/guide/systems_scheduler/"
     
   >Systems and the scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/spatial_clustering/"
+    
+  >Spatial clustering
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -273,6 +289,22 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicValue/"
+    
+  >AtomicValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicView/"
+    
+  >AtomicView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/BitMaskFilter/"
     
   >BitMaskFilter
@@ -292,6 +324,14 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
     href="/larecs/larecs/Captures/"
     
   >Captures
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/CompareExchangeResult/"
+    
+  >CompareExchangeResult
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -353,9 +393,25 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ExecutionBackend/"
+    
+  >ExecutionBackend
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/Filter/"
     
   >Filter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/grid_cell/"
+    
+  >grid_cell
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -393,6 +449,14 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/morton_key_3d/"
+    
+  >morton_key_3d
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/mut_capture/"
     
   >mut_capture
@@ -404,6 +468,14 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
     href="/larecs/larecs/MutCapture/"
     
   >MutCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/PlainValue/"
+    
+  >PlainValue
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -457,6 +529,30 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SpatialClassifier/"
+    
+  >SpatialClassifier
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/Synchronized/"
+    
+  >Synchronized
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SyncView/"
+    
+  >SyncView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/System/"
     
   >System
@@ -502,6 +598,22 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
             </li>
           </ul>
   
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ThreadedExecutionConfig/"
+    
+  >ThreadedExecutionConfig
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/TryAccess/"
+    
+  >TryAccess
+    </a>
               
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
@@ -592,9 +704,25 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/synchronization/"
+    
+  >Synchronization
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/guide/systems_scheduler/"
     
   >Systems and the scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/spatial_clustering/"
+    
+  >Spatial clustering
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -626,6 +754,22 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicValue/"
+    
+  >AtomicValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicView/"
+    
+  >AtomicView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/BitMaskFilter/"
     
   >BitMaskFilter
@@ -645,6 +789,14 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
     href="/larecs/larecs/Captures/"
     
   >Captures
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/CompareExchangeResult/"
+    
+  >CompareExchangeResult
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -706,9 +858,25 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ExecutionBackend/"
+    
+  >ExecutionBackend
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/Filter/"
     
   >Filter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/grid_cell/"
+    
+  >grid_cell
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -746,6 +914,14 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/morton_key_3d/"
+    
+  >morton_key_3d
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/mut_capture/"
     
   >mut_capture
@@ -757,6 +933,14 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
     href="/larecs/larecs/MutCapture/"
     
   >MutCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/PlainValue/"
+    
+  >PlainValue
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -810,6 +994,30 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SpatialClassifier/"
+    
+  >SpatialClassifier
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/Synchronized/"
+    
+  >Synchronized
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SyncView/"
+    
+  >SyncView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/System/"
     
   >System
@@ -821,6 +1029,22 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
     href="/larecs/larecs/SystemContext/"
     
   >SystemContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ThreadedExecutionConfig/"
+    
+  >ThreadedExecutionConfig
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/TryAccess/"
+    
+  >TryAccess
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -889,6 +1113,10 @@ Aliases World = World[WorldTs]: The concrete world type this context wraps. Para
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
         <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#__init__">__init__
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#select_cluster">select_cluster
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
@@ -1008,6 +1236,43 @@ function collapseAll() {
 </ul>
 <p><strong>Returns:</strong></p>
 <p><code>Self</code></p>
+
+</details>
+<h3><code>select_cluster</code><span class="hx-absolute -hx-mt-20" id="select_cluster"></span>
+    <a href="#select_cluster" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">fn</span><span class="w"> </span><span class="nf">def</span><span class="w"> </span><span class="n">select_cluster</span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="w"> </span><span class="n">Filter</span><span class="p">[</span><span class="nb">filter</span><span class="o">.</span><span class="n">_include</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_exclude</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_is_exclusive</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_read</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_written</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Filter</span><span class="p">()](</span><span class="n">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">:</span><span class="w"> </span><span class="nb">UInt64</span><span class="p">,</span><span class="w"> </span><span class="n">out</span><span class="w"> </span><span class="n">selection</span><span class="p">:</span><span class="w"> </span><span class="n">EntitySelection</span><span class="p">[</span><span class="n">world_origin</span><span class="p">,</span><span class="w"> </span><span class="n">WorldTs</span><span class="p">])</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>
+<details>
+<summary>Lock exactly the maintained cluster rows matching a component filter.
+</summary>
+Maintenance must be clean when membership is captured. Later writes
+do not change this selection&rsquo;s membership; release it before maintenance.
+Multiple logical archetypes and dense-cluster blocks may contribute.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>filter</strong> (<code>Filter[filter._include, filter._exclude, filter._is_exclusive, filter._read, filter._written]</code>): Component filter intersected with the cluster membership.</li>
+</ul>
+<p><strong>Args:</strong></p>
+<ul>
+<li><strong>self</strong> (<code>Self</code>)</li>
+<li><strong>key</strong> (<code>UInt64</code>): Exact registered classifier key.</li>
+<li><strong>selection</strong> (<code>EntitySelection[world_origin, WorldTs]</code>)</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<p><code>EntitySelection[world_origin, WorldTs]</code>: A locked selection, empty when the maintained cluster has no matches.</p>
+<p><strong>Raises:</strong></p>
+<p>LarecsError: If partition storage is disabled, maintenance is pending,
+storage is locked, or no structural lock is available.</p>
 
 </details>
 <h3><code>add_entities</code><span class="hx-absolute -hx-mt-20" id="add_entities"></span>
@@ -1150,7 +1415,7 @@ structural lock is available.</p>
 <h3><code>run</code><span class="hx-absolute -hx-mt-20" id="run"></span>
     <a href="#run" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">fn</span><span class="w"> </span><span class="nf">def</span><span class="w"> </span><span class="n">run</span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="w"> </span><span class="n">Filter</span><span class="p">[</span><span class="nb">filter</span><span class="o">.</span><span class="n">_include</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_exclude</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_is_exclusive</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_read</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_written</span><span class="p">],</span><span class="w"> </span><span class="n">required_resources</span><span class="p">:</span><span class="w"> </span><span class="n">Resources</span><span class="p">[</span><span class="n">required_resources.ResourceTypes</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Resources</span><span class="p">(),</span><span class="w"> </span><span class="n">capture_spec</span><span class="p">:</span><span class="w"> </span><span class="n">Captures</span><span class="p">[</span><span class="n">capture_spec.Specs</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Captures</span><span class="p">(),</span><span class="w"> </span><span class="o">//</span><span class="p">,</span><span class="w"> </span><span class="n">KernelFunc</span><span class="p">:</span><span class="w"> </span><span class="n">def</span><span class="p">(</span><span class="n">KernelContext</span><span class="p">[</span><span class="nb">filter</span><span class="p">,</span><span class="w"> </span><span class="n">required_resources</span><span class="p">,</span><span class="w"> </span><span class="n">capture_spec</span><span class="p">])</span><span class="w"> </span><span class="n">thin</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kc">None</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">Bindings</span><span class="p">:</span><span class="w"> </span><span class="n">CaptureBindingType</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">on_gpu</span><span class="p">:</span><span class="w"> </span><span class="n">Bool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">False</span><span class="p">](</span><span class="n">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">bindings</span><span class="p">:</span><span class="w"> </span><span class="o">*</span><span class="n">Bindings.values</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">fn</span><span class="w"> </span><span class="nf">def</span><span class="w"> </span><span class="n">run</span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="w"> </span><span class="n">Filter</span><span class="p">[</span><span class="nb">filter</span><span class="o">.</span><span class="n">_include</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_exclude</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_is_exclusive</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_read</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_written</span><span class="p">],</span><span class="w"> </span><span class="n">required_resources</span><span class="p">:</span><span class="w"> </span><span class="n">Resources</span><span class="p">[</span><span class="n">required_resources.ResourceTypes</span><span class="p">,</span><span class="w"> </span><span class="n">_readonly</span><span class="o">=</span><span class="n">required_resources._readonly</span><span class="p">,</span><span class="w"> </span><span class="n">_writeonly</span><span class="o">=</span><span class="n">required_resources._writeonly</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Resources</span><span class="p">(),</span><span class="w"> </span><span class="n">capture_spec</span><span class="p">:</span><span class="w"> </span><span class="n">Captures</span><span class="p">[</span><span class="n">capture_spec.Specs</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Captures</span><span class="p">(),</span><span class="w"> </span><span class="o">//</span><span class="p">,</span><span class="w"> </span><span class="n">KernelFunc</span><span class="p">:</span><span class="w"> </span><span class="n">def</span><span class="p">(</span><span class="n">KernelContext</span><span class="p">[</span><span class="nb">filter</span><span class="p">,</span><span class="w"> </span><span class="n">required_resources</span><span class="p">,</span><span class="w"> </span><span class="n">capture_spec</span><span class="p">])</span><span class="w"> </span><span class="n">thin</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kc">None</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">Bindings</span><span class="p">:</span><span class="w"> </span><span class="n">CaptureBindingType</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">backend</span><span class="p">:</span><span class="w"> </span><span class="n">ExecutionBackend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ExecutionBackend.HOST</span><span class="p">](</span><span class="n">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">bindings</span><span class="p">:</span><span class="w"> </span><span class="o">*</span><span class="n">Bindings.values</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
   <button
     class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
     title="Copy code"
@@ -1164,15 +1429,20 @@ structural lock is available.</p>
 <details>
 <summary>Runs a kernel over component rows matching <code>filter</code>.
 </summary>
-<strong>Parameters:</strong></p>
+On the GPU, zero matching rows are a no-op: no columns or resource
+buffers are prepared, no transfers are queued, and no kernel is
+launched. The world&rsquo;s device storage and all required resources are
+still validated, in that order. Selecting DEVICE without accelerator
+support raises an error, including for empty matches.</p>
+<p><strong>Parameters:</strong></p>
 <ul>
 <li><strong>filter</strong> (<code>Filter[filter._include, filter._exclude, filter._is_exclusive, filter._read, filter._written]</code>): Compile-time component inclusion and exclusion constraints.</li>
-<li><strong>required_resources</strong> (<code>Resources[required_resources.ResourceTypes]</code>): Compile-time resources the kernel may access.</li>
-<li><strong>capture_spec</strong> (<code>Captures[capture_spec.Specs]</code>): Ordered read-only and mutable CPU-local capture slots.</li>
+<li><strong>required_resources</strong> (<code>Resources[required_resources.ResourceTypes, _readonly=required_resources._readonly, _writeonly=required_resources._writeonly]</code>): Compile-time resources the kernel may access.</li>
+<li><strong>capture_spec</strong> (<code>Captures[capture_spec.Specs]</code>): Ordered read-only and mutable host-local capture slots.</li>
 <li><strong>KernelFunc</strong> (<code>def(KernelContext[filter, required_resources, capture_spec]) thin -&gt; None</code>): The kernel specialized for <code>filter</code> and
 <code>required_resources</code>.</li>
 <li>*<strong>Bindings</strong> (<code>CaptureBindingType</code>): The inferred types of the supplied capture bindings.</li>
-<li><strong>on_gpu</strong> (<code>Bool</code>): Whether to execute the kernel against device storage.</li>
+<li><strong>backend</strong> (<code>ExecutionBackend</code>): HOST (default), HOST_THREADED, or DEVICE; no device fallback.</li>
 </ul>
 <p><strong>Args:</strong></p>
 <ul>
@@ -1180,13 +1450,16 @@ structural lock is available.</p>
 <li>*<strong>bindings</strong> (<code>*Bindings.values</code>): Explicit read-only and mutable bindings in declared slot order.</li>
 </ul>
 <p><strong>Raises:</strong></p>
-<p>Error: If a required resource is missing, or if the device
-execution path fails to allocate or synchronize.</p>
+<p>Error: If the world is unusable or already executing; bindings or
+required resources are invalid; structural lock slots are
+exhausted; threaded row totals, job counts, or context sizes
+overflow; context preparation fails; or the device execution
+path fails to allocate or synchronize.</p>
 
 </details>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">fn</span><span class="w"> </span><span class="nf">def</span><span class="w"> </span><span class="n">run</span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="w"> </span><span class="n">Filter</span><span class="p">[</span><span class="nb">filter</span><span class="o">.</span><span class="n">_include</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_exclude</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_is_exclusive</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_read</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_written</span><span class="p">],</span><span class="w"> </span><span class="n">required_resources</span><span class="p">:</span><span class="w"> </span><span class="n">Resources</span><span class="p">[</span><span class="n">required_resources.ResourceTypes</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Resources</span><span class="p">(),</span><span class="w"> </span><span class="n">capture_spec</span><span class="p">:</span><span class="w"> </span><span class="n">Captures</span><span class="p">[</span><span class="n">capture_spec.Specs</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Captures</span><span class="p">(),</span><span class="w"> </span><span class="o">//</span><span class="p">,</span><span class="w"> </span><span class="n">KernelFunc</span><span class="p">:</span><span class="w"> </span><span class="n">def</span><span class="p">(</span><span class="n">KernelContext</span><span class="p">[</span><span class="nb">filter</span><span class="p">,</span><span class="w"> </span><span class="n">required_resources</span><span class="p">,</span><span class="w"> </span><span class="n">capture_spec</span><span class="p">])</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kc">None</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">Bindings</span><span class="p">:</span><span class="w"> </span><span class="n">CaptureBindingType</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">on_gpu</span><span class="p">:</span><span class="w"> </span><span class="n">Bool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">False</span><span class="p">](</span><span class="n">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">kernel_func</span><span class="p">:</span><span class="w"> </span><span class="n">KernelFunc</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">bindings</span><span class="p">:</span><span class="w"> </span><span class="o">*</span><span class="n">Bindings.values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">on_gpu</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._include.ComponentTypes.values</span><span class="err">```</span><span class="mi">2</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._include.ComponentTypes</span><span class="err">`</span><span class="mi">1</span><span class="err">`</span><span class="mi">2</span><span class="n">x1</span><span class="p">,</span><span class="w"> </span><span class="n">ComponentTypes</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._exclude.ComponentTypes.values</span><span class="err">``</span><span class="mi">2</span><span class="err">`</span><span class="mi">2</span><span class="n">x2</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._exclude.ComponentTypes</span><span class="err">`</span><span class="mi">3</span><span class="err">`</span><span class="mi">2</span><span class="n">x3</span><span class="p">,</span><span class="w"> </span><span class="n">ComponentTypes</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._read.ComponentTypes.values</span><span class="err">``</span><span class="mi">4</span><span class="err">`</span><span class="mi">2</span><span class="n">x4</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._read.ComponentTypes</span><span class="err">`</span><span class="mi">5</span><span class="err">`</span><span class="mi">2</span><span class="n">x5</span><span class="p">,</span><span class="w"> </span><span class="n">ComponentTypes</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._written.ComponentTypes.values</span><span class="err">``</span><span class="mi">6</span><span class="err">`</span><span class="mi">2</span><span class="n">x6</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._written.ComponentTypes</span><span class="err">`</span><span class="mi">7</span><span class="err">`</span><span class="mi">2</span><span class="n">x7</span><span class="p">,</span><span class="w"> </span><span class="n">ComponentTypes</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._include</span><span class="err">`</span><span class="mi">2</span><span class="n">x8</span><span class="p">,</span><span class="w"> </span><span class="n">_include</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._exclude</span><span class="err">`</span><span class="mi">2</span><span class="n">x9</span><span class="p">,</span><span class="w"> </span><span class="n">_exclude</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._is_exclusive</span><span class="err">`</span><span class="mi">2</span><span class="n">x10</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_is_exclusive</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._read</span><span class="err">`</span><span class="mi">2</span><span class="n">x11</span><span class="p">,</span><span class="w"> </span><span class="n">_read</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._written</span><span class="err">`</span><span class="mi">2</span><span class="n">x12</span><span class="p">,</span><span class="w"> </span><span class="n">_written</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.required_resources.ResourceTypes.values</span><span class="err">``</span><span class="mi">2</span><span class="n">x13</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.required_resources.ResourceTypes</span><span class="err">`</span><span class="mi">2</span><span class="n">x14</span><span class="p">,</span><span class="w"> </span><span class="n">ResourceTypes</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.capture_spec.Specs.values</span><span class="err">``</span><span class="mi">2</span><span class="n">x15</span><span class="p">,</span><span class="w"> </span><span class="n">capture_spec.Specs.values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.capture_spec.Specs</span><span class="err">`</span><span class="mi">2</span><span class="n">x16</span><span class="p">,</span><span class="w"> </span><span class="n">capture_spec.Specs</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.required_resources</span><span class="p">,</span><span class="w"> </span><span class="n">required_resources</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.capture_spec</span><span class="p">,</span><span class="w"> </span><span class="n">capture_spec</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">fn</span><span class="w"> </span><span class="nf">def</span><span class="w"> </span><span class="n">run</span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="w"> </span><span class="n">Filter</span><span class="p">[</span><span class="nb">filter</span><span class="o">.</span><span class="n">_include</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_exclude</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_is_exclusive</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_read</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_written</span><span class="p">],</span><span class="w"> </span><span class="n">required_resources</span><span class="p">:</span><span class="w"> </span><span class="n">Resources</span><span class="p">[</span><span class="n">required_resources.ResourceTypes</span><span class="p">,</span><span class="w"> </span><span class="n">_readonly</span><span class="o">=</span><span class="n">required_resources._readonly</span><span class="p">,</span><span class="w"> </span><span class="n">_writeonly</span><span class="o">=</span><span class="n">required_resources._writeonly</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Resources</span><span class="p">(),</span><span class="w"> </span><span class="n">capture_spec</span><span class="p">:</span><span class="w"> </span><span class="n">Captures</span><span class="p">[</span><span class="n">capture_spec.Specs</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Captures</span><span class="p">(),</span><span class="w"> </span><span class="o">//</span><span class="p">,</span><span class="w"> </span><span class="n">KernelFunc</span><span class="p">:</span><span class="w"> </span><span class="n">def</span><span class="p">(</span><span class="n">KernelContext</span><span class="p">[</span><span class="nb">filter</span><span class="p">,</span><span class="w"> </span><span class="n">required_resources</span><span class="p">,</span><span class="w"> </span><span class="n">capture_spec</span><span class="p">])</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kc">None</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">Bindings</span><span class="p">:</span><span class="w"> </span><span class="n">CaptureBindingType</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">backend</span><span class="p">:</span><span class="w"> </span><span class="n">ExecutionBackend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ExecutionBackend.HOST</span><span class="p">](</span><span class="n">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">kernel_func</span><span class="p">:</span><span class="w"> </span><span class="n">KernelFunc</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">bindings</span><span class="p">:</span><span class="w"> </span><span class="o">*</span><span class="n">Bindings.values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._include.ComponentTypes.values</span><span class="err">```</span><span class="mi">2</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._include.ComponentTypes</span><span class="err">`</span><span class="mi">1</span><span class="err">`</span><span class="mi">2</span><span class="n">x1</span><span class="p">,</span><span class="w"> </span><span class="n">ComponentTypes</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._exclude.ComponentTypes.values</span><span class="err">``</span><span class="mi">2</span><span class="err">`</span><span class="mi">2</span><span class="n">x2</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._exclude.ComponentTypes</span><span class="err">`</span><span class="mi">3</span><span class="err">`</span><span class="mi">2</span><span class="n">x3</span><span class="p">,</span><span class="w"> </span><span class="n">ComponentTypes</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._read.ComponentTypes.values</span><span class="err">``</span><span class="mi">4</span><span class="err">`</span><span class="mi">2</span><span class="n">x4</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._read.ComponentTypes</span><span class="err">`</span><span class="mi">5</span><span class="err">`</span><span class="mi">2</span><span class="n">x5</span><span class="p">,</span><span class="w"> </span><span class="n">ComponentTypes</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._written.ComponentTypes.values</span><span class="err">``</span><span class="mi">6</span><span class="err">`</span><span class="mi">2</span><span class="n">x6</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._written.ComponentTypes</span><span class="err">`</span><span class="mi">7</span><span class="err">`</span><span class="mi">2</span><span class="n">x7</span><span class="p">,</span><span class="w"> </span><span class="n">ComponentTypes</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._include</span><span class="err">`</span><span class="mi">2</span><span class="n">x8</span><span class="p">,</span><span class="w"> </span><span class="n">_include</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._exclude</span><span class="err">`</span><span class="mi">2</span><span class="n">x9</span><span class="p">,</span><span class="w"> </span><span class="n">_exclude</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._is_exclusive</span><span class="err">`</span><span class="mi">2</span><span class="n">x10</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">.</span><span class="n">_is_exclusive</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._read</span><span class="err">`</span><span class="mi">2</span><span class="n">x11</span><span class="p">,</span><span class="w"> </span><span class="n">_read</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter._written</span><span class="err">`</span><span class="mi">2</span><span class="n">x12</span><span class="p">,</span><span class="w"> </span><span class="n">_written</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.required_resources.ResourceTypes.values</span><span class="err">``</span><span class="mi">2</span><span class="n">x13</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.required_resources._readonly.Types.values</span><span class="err">``</span><span class="mi">1</span><span class="err">`</span><span class="mi">2</span><span class="n">x14</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.required_resources._readonly.Types</span><span class="err">`</span><span class="mi">2</span><span class="err">`</span><span class="mi">2</span><span class="n">x15</span><span class="p">,</span><span class="w"> </span><span class="n">Types</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.required_resources._writeonly.Types.values</span><span class="err">``</span><span class="mi">3</span><span class="err">`</span><span class="mi">2</span><span class="n">x16</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.required_resources._writeonly.Types</span><span class="err">`</span><span class="mi">4</span><span class="err">`</span><span class="mi">2</span><span class="n">x17</span><span class="p">,</span><span class="w"> </span><span class="n">Types</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.required_resources.ResourceTypes</span><span class="err">`</span><span class="mi">2</span><span class="n">x18</span><span class="p">,</span><span class="w"> </span><span class="n">ResourceTypes</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.required_resources._readonly</span><span class="err">`</span><span class="mi">2</span><span class="n">x19</span><span class="p">,</span><span class="w"> </span><span class="n">_readonly</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.required_resources._writeonly</span><span class="err">`</span><span class="mi">2</span><span class="n">x20</span><span class="p">,</span><span class="w"> </span><span class="n">_writeonly</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.capture_spec.Specs.values</span><span class="err">``</span><span class="mi">2</span><span class="n">x21</span><span class="p">,</span><span class="w"> </span><span class="n">capture_spec.Specs.values</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.capture_spec.Specs</span><span class="err">`</span><span class="mi">2</span><span class="n">x22</span><span class="p">,</span><span class="w"> </span><span class="n">capture_spec.Specs</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.filter</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.required_resources</span><span class="p">,</span><span class="w"> </span><span class="n">required_resources</span><span class="p">)</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">eq</span><span class="w"> </span><span class="n">KernelFunc.capture_spec</span><span class="p">,</span><span class="w"> </span><span class="n">capture_spec</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
   <button
     class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
     title="Copy code"
@@ -1201,18 +1474,18 @@ execution path fails to allocate or synchronize.</p>
 <summary>Runs a kernel closure over component rows matching <code>filter</code>.
 </summary>
 Note:
-Captures may borrow CPU-local values with <code>imm</code> or <code>mut</code>.
+Captures may borrow host-local values with <code>imm</code> or <code>mut</code>.
 Resource access uses the same API as the non-capturing overload.
-This overload executes synchronously on the CPU only.</p>
+This overload executes synchronously on the host only.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><strong>filter</strong> (<code>Filter[filter._include, filter._exclude, filter._is_exclusive, filter._read, filter._written]</code>): Compile-time component inclusion and exclusion constraints.</li>
-<li><strong>required_resources</strong> (<code>Resources[required_resources.ResourceTypes]</code>): Compile-time resources the kernel may access.</li>
-<li><strong>capture_spec</strong> (<code>Captures[capture_spec.Specs]</code>): Ordered read-only and mutable CPU-local capture slots.</li>
+<li><strong>required_resources</strong> (<code>Resources[required_resources.ResourceTypes, _readonly=required_resources._readonly, _writeonly=required_resources._writeonly]</code>): Compile-time resources the kernel may access.</li>
+<li><strong>capture_spec</strong> (<code>Captures[capture_spec.Specs]</code>): Ordered read-only and mutable host-local capture slots.</li>
 <li><strong>KernelFunc</strong> (<code>def(KernelContext[filter, required_resources, capture_spec]) -&gt; None</code>): The kernel specialized for <code>filter</code> and
 <code>required_resources</code>.</li>
 <li>*<strong>Bindings</strong> (<code>CaptureBindingType</code>): The inferred types of the supplied capture bindings.</li>
-<li><strong>on_gpu</strong> (<code>Bool</code>): Whether to execute the kernel against device storage.</li>
+<li><strong>backend</strong> (<code>ExecutionBackend</code>): Must be HOST; value-taking device callables are unsupported.</li>
 </ul>
 <p><strong>Args:</strong></p>
 <ul>
@@ -1234,10 +1507,10 @@ rows.</li>
         title="System"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-pr-4 rtl:hx-pl-4"
       ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>System</a><a
-        href="/larecs/larecs/UnknownError/"
-        title="UnknownError"
+        href="/larecs/larecs/ThreadedExecutionConfig/"
+        title="ThreadedExecutionConfig"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-ml-auto ltr:hx-pl-4 ltr:hx-text-right rtl:hx-mr-auto rtl:hx-pr-4 rtl:hx-text-left"
-      >UnknownError<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
+      >ThreadedExecutionConfig<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
         
       </main>
     </article>

@@ -13,7 +13,7 @@
 <title>ResourceStorage – Larecs🌲</title>
   <meta name="description" content="Mojo struct 🡭
 ResourceStorage @memory_only struct ResourceStorage Manages resources.
-Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs. Implemented traits AnyType, Copyable, Deinitable, Movable, Sized" /><link rel="canonical" href="https://larecs.github.io/larecs/larecs/ResourceStorage/" itemprop="url" />
+Every resource carries a revision that conservatively advances on each Larecs access that may mutate it (decision 0021). Worlds that opt into device copy reuse skip uploading resources whose device copy was transferred at the current revision. Mutations through references obtained before a later Larecs call, or through raw pointers, are not detected: re-obtain references after a run, or call invalidate_device[T]()." /><link rel="canonical" href="https://larecs.github.io/larecs/larecs/ResourceStorage/" itemprop="url" />
 
 <meta property="og:title" content="ResourceStorage" />
 <meta property="og:description" content="Mojo struct 🡭
@@ -28,12 +28,13 @@ struct ResourceStorage
 
 
 Manages resources.
-Aliases
-    
-IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
-
-Implemented traits
-    AnyType, Copyable, Deinitable, Movable, Sized" />
+Every resource carries a revision that conservatively advances on each
+Larecs access that may mutate it (decision 0021). Worlds that opt into
+device copy reuse skip uploading resources whose device copy was
+transferred at the current revision. Mutations through references
+obtained before a later Larecs call, or through raw pointers, are not
+detected: re-obtain references after a run, or call
+invalidate_device[T]()." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://larecs.github.io/larecs/larecs/ResourceStorage/" /><meta property="article:section" content="larecs" />
 
@@ -42,13 +43,13 @@ Implemented traits
   <meta itemprop="name" content="ResourceStorage">
   <meta itemprop="description" content="Mojo struct 🡭
 ResourceStorage @memory_only struct ResourceStorage Manages resources.
-Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs. Implemented traits AnyType, Copyable, Deinitable, Movable, Sized">
-  <meta itemprop="wordCount" content="312">
+Every resource carries a revision that conservatively advances on each Larecs access that may mutate it (decision 0021). Worlds that opt into device copy reuse skip uploading resources whose device copy was transferred at the current revision. Mutations through references obtained before a later Larecs call, or through raw pointers, are not detected: re-obtain references after a run, or call invalidate_device[T]().">
+  <meta itemprop="wordCount" content="641">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="ResourceStorage">
   <meta name="twitter:description" content="Mojo struct 🡭
 ResourceStorage @memory_only struct ResourceStorage Manages resources.
-Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs. Implemented traits AnyType, Copyable, Deinitable, Movable, Sized">
+Every resource carries a revision that conservatively advances on each Larecs access that may mutate it (decision 0021). Worlds that opt into device copy reuse skip uploading resources whose device copy was transferred at the current revision. Mutations through references obtained before a later Larecs call, or through raw pointers, are not detected: re-obtain references after a run, or call invalidate_device[T]().">
 
     <link rel="preload" href="/larecs/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
     <link href="/larecs/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -230,9 +231,25 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/synchronization/"
+    
+  >Synchronization
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/guide/systems_scheduler/"
     
   >Systems and the scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/spatial_clustering/"
+    
+  >Spatial clustering
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -264,6 +281,22 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicValue/"
+    
+  >AtomicValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicView/"
+    
+  >AtomicView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/BitMaskFilter/"
     
   >BitMaskFilter
@@ -283,6 +316,14 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
     href="/larecs/larecs/Captures/"
     
   >Captures
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/CompareExchangeResult/"
+    
+  >CompareExchangeResult
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -344,9 +385,25 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ExecutionBackend/"
+    
+  >ExecutionBackend
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/Filter/"
     
   >Filter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/grid_cell/"
+    
+  >grid_cell
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -384,6 +441,14 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/morton_key_3d/"
+    
+  >morton_key_3d
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/mut_capture/"
     
   >mut_capture
@@ -395,6 +460,14 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
     href="/larecs/larecs/MutCapture/"
     
   >MutCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/PlainValue/"
+    
+  >PlainValue
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -469,6 +542,30 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SpatialClassifier/"
+    
+  >SpatialClassifier
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/Synchronized/"
+    
+  >Synchronized
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SyncView/"
+    
+  >SyncView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/System/"
     
   >System
@@ -480,6 +577,22 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
     href="/larecs/larecs/SystemContext/"
     
   >SystemContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ThreadedExecutionConfig/"
+    
+  >ThreadedExecutionConfig
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/TryAccess/"
+    
+  >TryAccess
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -571,9 +684,25 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/synchronization/"
+    
+  >Synchronization
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/guide/systems_scheduler/"
     
   >Systems and the scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/spatial_clustering/"
+    
+  >Spatial clustering
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -605,6 +734,22 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicValue/"
+    
+  >AtomicValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicView/"
+    
+  >AtomicView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/BitMaskFilter/"
     
   >BitMaskFilter
@@ -624,6 +769,14 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
     href="/larecs/larecs/Captures/"
     
   >Captures
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/CompareExchangeResult/"
+    
+  >CompareExchangeResult
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -685,9 +838,25 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ExecutionBackend/"
+    
+  >ExecutionBackend
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/Filter/"
     
   >Filter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/grid_cell/"
+    
+  >grid_cell
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -725,6 +894,14 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/morton_key_3d/"
+    
+  >morton_key_3d
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/mut_capture/"
     
   >mut_capture
@@ -736,6 +913,14 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
     href="/larecs/larecs/MutCapture/"
     
   >MutCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/PlainValue/"
+    
+  >PlainValue
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -789,6 +974,30 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SpatialClassifier/"
+    
+  >SpatialClassifier
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/Synchronized/"
+    
+  >Synchronized
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SyncView/"
+    
+  >SyncView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/System/"
     
   >System
@@ -800,6 +1009,22 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
     href="/larecs/larecs/SystemContext/"
     
   >SystemContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ThreadedExecutionConfig/"
+    
+  >ThreadedExecutionConfig
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/TryAccess/"
+    
+  >TryAccess
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -863,6 +1088,10 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#__deinit__">__deinit__
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
         <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#__len__">__len__
         </a>
       </li>
@@ -880,6 +1109,14 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
         <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#get">get
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#read">read
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#invalidate_device">invalidate_device
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
@@ -924,6 +1161,13 @@ Aliases IdType = StringSpan[ImmStaticOrigin]: The type of the internal type IDs.
 </div>
 </div>
 <p>Manages resources.</p>
+<p>Every resource carries a revision that conservatively advances on each
+Larecs access that may mutate it (decision 0021). Worlds that opt into
+device copy reuse skip uploading resources whose device copy was
+transferred at the current revision. Mutations through references
+obtained before a later Larecs call, or through raw pointers, are not
+detected: re-obtain references after a run, or call
+<code>invalidate_device[T]()</code>.</p>
 <h2>Aliases<span class="hx-absolute -hx-mt-20" id="aliases"></span>
     <a href="#aliases" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><ul>
 <li><code>IdType = StringSpan[ImmStaticOrigin]</code>: The type of the internal type IDs.</li>
@@ -953,6 +1197,56 @@ function collapseAll() {
 <h3><code>__init__</code><span class="hx-absolute -hx-mt-20" id="__init__"></span>
     <a href="#__init__" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">fn</span><span class="w"> </span><span class="nf">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="n">out</span><span class="w"> </span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">copy</span><span class="p">:</span><span class="w"> </span><span class="n">Self</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>
+<details>
+<summary>Copies host sources and type metadata, resetting device allocations.
+</summary>
+<strong>Args:</strong></p>
+<ul>
+<li><strong>copy</strong> (<code>Self</code>): Idle, healthy resource storage.</li>
+<li><strong>self</strong> (<code>Self</code>)</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<p><code>Self</code></p>
+
+</details>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">fn</span><span class="w"> </span><span class="nf">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="n">out</span><span class="w"> </span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">deinit</span><span class="w"> </span><span class="n">move</span><span class="p">:</span><span class="w"> </span><span class="n">Self</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>
+<details>
+<summary>Moves idle sources and their context-local caches together.
+</summary>
+<strong>Args:</strong></p>
+<ul>
+<li><strong>move</strong> (<code>Self</code>): Idle storage to transfer; moving a live lease aborts.</li>
+<li><strong>self</strong> (<code>Self</code>)</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<p><code>Self</code></p>
+
+</details>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">fn</span><span class="w"> </span><span class="nf">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="n">out</span><span class="w"> </span><span class="bp">self</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
   <button
     class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
@@ -973,6 +1267,29 @@ function collapseAll() {
 </ul>
 <p><strong>Returns:</strong></p>
 <p><code>Self</code></p>
+
+</details>
+<h3><code>__deinit__</code><span class="hx-absolute -hx-mt-20" id="__deinit__"></span>
+    <a href="#__deinit__" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">fn</span><span class="w"> </span><span class="nf">def</span><span class="w"> </span><span class="n">__deinit__</span><span class="p">(</span><span class="n">deinit</span><span class="w"> </span><span class="bp">self</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>
+<details>
+<summary>Rejects destruction or table replacement while sources are leased.
+</summary>
+<strong>Args:</strong></p>
+<ul>
+<li><strong>self</strong> (<code>Self</code>)</li>
+</ul>
 
 </details>
 <h3><code>__len__</code><span class="hx-absolute -hx-mt-20" id="__len__"></span>
@@ -1027,7 +1344,7 @@ function collapseAll() {
 <li>*<strong>resources</strong> (<code>*Ts.values</code>): The resources to add.</li>
 </ul>
 <p><strong>Raises:</strong></p>
-<p>Error: If some resource already exists.</p>
+<p>Error: If a resource already exists, is leased, or storage is unusable.</p>
 
 </details>
 <h3><code>set</code><span class="hx-absolute -hx-mt-20" id="set"></span>
@@ -1058,7 +1375,7 @@ function collapseAll() {
 <li>*<strong>resources</strong> (<code>*Ts.values</code>): The resources to set.</li>
 </ul>
 <p><strong>Raises:</strong></p>
-<p>Error: If one of the resources does not exist.</p>
+<p>Error: If a resource is missing, leased, or storage is unusable.</p>
 
 </details>
 <h3><code>remove</code><span class="hx-absolute -hx-mt-20" id="remove"></span>
@@ -1087,7 +1404,7 @@ function collapseAll() {
 <li><strong>self</strong> (<code>Self</code>)</li>
 </ul>
 <p><strong>Raises:</strong></p>
-<p>Error: If one of the resources does not exist.</p>
+<p>Error: If a resource is missing, leased, or storage is unusable.</p>
 
 </details>
 <h3><code>get</code><span class="hx-absolute -hx-mt-20" id="get"></span>
@@ -1112,6 +1429,11 @@ Keep <code>UnsafeAnyOrigin</code> until Mojo&rsquo;s origin system can model
 the ownership relation between the resource container and its
 separately allocated resource values. Tying this reference to
 the storage origin is not a suitable interim replacement.</p>
+<p>Through mutable storage, every call counts as a mutation and
+invalidates the resource&rsquo;s device copy, even if the reference is
+only read. Use <code>read</code> for reads between device runs. Writes
+through a reference kept across a later run are not detected;
+re-obtain it or call <code>invalidate_device[T]()</code>.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><strong>T</strong> (<code>ResourceType</code>): The type of the resource to get.</li>
@@ -1124,7 +1446,71 @@ the storage origin is not a suitable interim replacement.</p>
 <p><code>ref[SomeUnsafeAnyOrigin] T</code>: A reference with <code>UnsafeAnyOrigin</code>, preserving the mutability
 of the storage access.</p>
 <p><strong>Raises:</strong></p>
-<p>Error: If the resource does not exist.</p>
+<p>Error: If the resource is missing, leased, or storage is unusable.</p>
+
+</details>
+<h3><code>read</code><span class="hx-absolute -hx-mt-20" id="read"></span>
+    <a href="#read" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">fn</span><span class="w"> </span><span class="nf">def</span><span class="w"> </span><span class="n">read</span><span class="p">[</span><span class="n">T</span><span class="p">:</span><span class="w"> </span><span class="n">ResourceType</span><span class="p">](</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ref</span><span class="p">[</span><span class="n">ImmUnsafeAnyOrigin</span><span class="p">]</span><span class="w"> </span><span class="n">T</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>
+<details>
+<summary>Gets an immutable resource reference without counting a mutation.
+</summary>
+Unlike <code>get</code> through mutable storage, this keeps an unchanged
+resource&rsquo;s device copy reusable in worlds that opted into
+<code>reuse_device_copies</code>.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>T</strong> (<code>ResourceType</code>): The type of the resource to read.</li>
+</ul>
+<p><strong>Args:</strong></p>
+<ul>
+<li><strong>self</strong> (<code>Self</code>)</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<p><code>ref[ImmUnsafeAnyOrigin] T</code>: An immutable reference with <code>UnsafeAnyOrigin</code>; see <code>get</code>.</p>
+<p><strong>Raises:</strong></p>
+<p>Error: If the resource is missing, leased, or storage is unusable.</p>
+
+</details>
+<h3><code>invalidate_device</code><span class="hx-absolute -hx-mt-20" id="invalidate_device"></span>
+    <a href="#invalidate_device" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">fn</span><span class="w"> </span><span class="nf">def</span><span class="w"> </span><span class="n">invalidate_device</span><span class="p">[</span><span class="n">T</span><span class="p">:</span><span class="w"> </span><span class="n">ResourceType</span><span class="p">](</span><span class="n">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>
+<details>
+<summary>Marks one resource&rsquo;s device copy stale.
+</summary>
+Call this after mutating a resource through a reference obtained
+before a later Larecs call, or through a raw pointer, in a world that
+reuses device copies. The next device run uploads the resource again.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>T</strong> (<code>ResourceType</code>): The resource type whose device copy is invalidated.</li>
+</ul>
+<p><strong>Args:</strong></p>
+<ul>
+<li><strong>self</strong> (<code>Self</code>)</li>
+</ul>
 
 </details>
 <h3><code>has</code><span class="hx-absolute -hx-mt-20" id="has"></span>

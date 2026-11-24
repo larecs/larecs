@@ -16,13 +16,21 @@
   </url><url>
     <loc>https://larecs.github.io/larecs/guide/resources/</loc>
   </url><url>
+    <loc>https://larecs.github.io/larecs/guide/synchronization/</loc>
+  </url><url>
     <loc>https://larecs.github.io/larecs/guide/systems_scheduler/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/guide/spatial_clustering/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/guide/benchmarks/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/larecs/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/larecs/ArchetypeRowAccessor/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/larecs/AtomicValue/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/larecs/AtomicView/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/larecs/BitMaskFilter/</loc>
   </url><url>
@@ -31,6 +39,8 @@
     <loc>https://larecs.github.io/larecs/larecs/Captures/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/categories/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/larecs/CompareExchangeResult/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/larecs/ComponentError/</loc>
   </url><url>
@@ -46,7 +56,11 @@
   </url><url>
     <loc>https://larecs.github.io/larecs/larecs/EntityError/</loc>
   </url><url>
+    <loc>https://larecs.github.io/larecs/larecs/ExecutionBackend/</loc>
+  </url><url>
     <loc>https://larecs.github.io/larecs/larecs/Filter/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/larecs/grid_cell/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/larecs/HostStorage/</loc>
   </url><url>
@@ -58,9 +72,13 @@
   </url><url>
     <loc>https://larecs.github.io/larecs/larecs/LockManager/</loc>
   </url><url>
+    <loc>https://larecs.github.io/larecs/larecs/morton_key_3d/</loc>
+  </url><url>
     <loc>https://larecs.github.io/larecs/larecs/mut_capture/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/larecs/MutCapture/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/larecs/PlainValue/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/larecs/read_capture/</loc>
   </url><url>
@@ -74,11 +92,21 @@
   </url><url>
     <loc>https://larecs.github.io/larecs/larecs/Scheduler/</loc>
   </url><url>
+    <loc>https://larecs.github.io/larecs/larecs/SpatialClassifier/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/larecs/Synchronized/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/larecs/SyncView/</loc>
+  </url><url>
     <loc>https://larecs.github.io/larecs/larecs/System/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/larecs/SystemContext/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/tags/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/larecs/ThreadedExecutionConfig/</loc>
+  </url><url>
+    <loc>https://larecs.github.io/larecs/larecs/TryAccess/</loc>
   </url><url>
     <loc>https://larecs.github.io/larecs/larecs/UnknownError/</loc>
   </url><url>

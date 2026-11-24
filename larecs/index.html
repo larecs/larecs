@@ -14,9 +14,9 @@
   <meta name="description" content="Mojo package 🡭
 larecsLarecs🌲 is a performance-oriented archetype-based ECS for Mojo.
 It is based on the ECS Arche, implemented in the Go programming language.
-Larecs 1.0 is currently in beta, so public APIs may still change before the stable 1.0.0 release. After that release, public APIs follow semantic versioning unless they are explicitly marked experimental. GPU execution is currently such an experimental API.
+Larecs 1.0 is currently in beta, so public APIs may still change before the stable 1.0.0 release. After that release, public APIs follow semantic versioning unless they are explicitly marked experimental. Device execution is currently such an experimental API. Threaded host execution is also experimental.
 Example:
-# Import the package from larecs import ( World, Scheduler, System, SystemContext, KernelContext, Filter, ) # Define components @fieldwise_init struct Position(Copyable, Movable): var x: Float64 var y: Float64 @fieldwise_init struct IsStatic(Copyable, Movable): pass @fieldwise_init struct Velocity(Copyable, Movable): var x: Float64 var y: Float64 # A kernel processes the components selected by its filter. comptime move_filter = Filter().include[Position].read[Velocity]() def move(context: KernelContext[move_filter]): for entity in context: ref pos = entity.get[Position]() ref vel = entity.get[Velocity]() pos.x &#43;= vel.x pos.y &#43;= vel.y # Systems are the principal place for application logic that mutates ECS state. @fieldwise_init struct Move(System): def update(mut self, mut context: SystemContext[...]) raises: context.run[move]() # Run the ECS def main() raises: # Create a world, list all components that will / may be used var world = World[Position, Velocity, IsStatic]() for _ in range(100): # Add an entity. The returned value is the # entity&#39;s ID, which can be used to access the entity later var entity = world.storage.add_entity(Position(0, 0), IsStatic()) # For example, we may want to change the entity&#39;s position world.storage.get[Position](entity).x = 2 # Or we may want to replace the IsStatic component # of the entity by a Velocity component world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity) # We can query entities with specific components, read-only for entity in world.storage.query[Filter().include[Position, Velocity]()](): _ = entity.get[Position]() _ = entity.get[Velocity]() # Give the initialized world to a scheduler, then run application logic # through a system. The system delegates filtered component work to `move`. var scheduler = Scheduler(world^) scheduler.add_system(Move()) scheduler.run(1) Aliases MutArchetypeRowAccessor = ArchetypeRowAccessor[_, _, filter=_]: An accessor with mutable references to an archetype row and its components. ComponentType = Copyable &amp; Deinitable: The trait that components must conform to. LarecsError = Variant[UnknownError, WorldError, EntityError, ComponentError, Error]: Typed ECS errors and general kernel errors raised by public operations. The specific arms describe ECS usage errors; the Error arm carries general kernel or resource failures through selection scopes. ResourceType = Copyable &amp; Deinitable: The trait that resources must conform to. ComponentId = Int: The integer type used for compact component identifiers. Structs ArchetypeRowAccessor: Accessor for an Entity. ReadCapture: Declares a read-only capture slot. MutCapture: Declares a mutable capture slot copied back after GPU execution. Captures: Ordered capture declarations; repeated value types are allowed. ComponentManager: ComponentManager is a manager for ECS components. DeviceComponentStorage: Owns one byte-addressed device column per configured component type. DeviceResourceStorage: Owns one byte-addressed device buffer per resource type required by a kernel. Entity: Entity identifier. Holds an entity ID and it’s generation for recycling. EntityAccessor: Non-owning mutable accessor for a single entity. UnknownError: Represents an unknown error. WorldError: Errors that have some information about the world. EntityError: Errors that have some information about an entity. ComponentError: Errors that have some information about one or more components. Filter: Compile-time component inclusion and exclusion spec used to build queries. BitMaskFilter: A filter that stores which components are included and excluded with BitMask. HostStorage: Holds all the component and entity data for a world. Replacer: Replacer is a helper struct for removing and adding components to an Entity. LockManager: Manages locks by mask bits. LockGuard: Owns one structural-change lock until destruction. BitPool: Pool of reusable bit indices. Resources: A compile-time list of resource types. ResourceStorage: Manages resources. Scheduler: Manages the execution of systems in a world. KernelContext: Component columns, resources, and row/thread counts available to a kernel body. SystemContext: Gives a system access to the world’s entities, components, and resources. World: World is the central type holding entity and component data, as well as resources. Traits System: Trait for systems in the scheduler. Functions read_capture mut_capture " /><link rel="canonical" href="https://larecs.github.io/larecs/larecs/" itemprop="url" />
+# Import the package from larecs import ( World, Scheduler, System, SystemContext, KernelContext, Filter, ) # Define components @fieldwise_init struct Position(Copyable, Movable): var x: Float64 var y: Float64 @fieldwise_init struct IsStatic(Copyable, Movable): pass @fieldwise_init struct Velocity(Copyable, Movable): var x: Float64 var y: Float64 # A kernel processes the components selected by its filter. comptime move_filter = Filter().include[Position].read[Velocity]() def move(context: KernelContext[move_filter]): for entity in context: ref pos = entity.get[Position]() ref vel = entity.get[Velocity]() pos.x &#43;= vel.x pos.y &#43;= vel.y # Systems are the principal place for application logic that mutates ECS state. @fieldwise_init struct Move(System): def update(mut self, mut context: SystemContext[...]) raises: context.run[move]() # Run the ECS def main() raises: # Create a world, list all components that will / may be used var world = World[Position, Velocity, IsStatic]() for _ in range(100): # Add an entity. The returned value is the # entity&#39;s ID, which can be used to access the entity later var entity = world.storage.add_entity(Position(0, 0), IsStatic()) # For example, we may want to change the entity&#39;s position world.storage.get[Position](entity).x = 2 # Or we may want to replace the IsStatic component # of the entity by a Velocity component world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity) # We can query entities with specific components, read-only for entity in world.storage.query[Filter().include[Position, Velocity]()](): _ = entity.get[Position]() _ = entity.get[Velocity]() # Give the initialized world to a scheduler, then run application logic # through a system. The system delegates filtered component work to `move`. var scheduler = Scheduler(world^) scheduler.add_system(Move()) scheduler.run(1) Aliases MutArchetypeRowAccessor = ArchetypeRowAccessor[_, _, filter=_]: An accessor with mutable references to an archetype row and its components. ComponentType = Copyable &amp; Deinitable: The trait that components must conform to. LarecsError = Variant[UnknownError, WorldError, EntityError, ComponentError, Error]: Typed ECS errors and general kernel errors raised by public operations. The specific arms describe ECS usage errors; the Error arm carries general kernel or resource failures through selection scopes. ResourceType = Copyable &amp; Deinitable: The trait that resources must conform to. ComponentId = Int: The integer type used for compact component identifiers. Structs ArchetypeRowAccessor: Accessor for an Entity. ReadCapture: Declares a read-only capture slot. MutCapture: Declares a mutable capture slot copied back after device execution. Captures: Ordered capture declarations; repeated value types are allowed. ComponentManager: ComponentManager is a manager for ECS components. DeviceComponentStorage: Owns one byte-addressed device column per configured component type. DeviceResourceStorage: Owns one byte-addressed device buffer per resource type required by a kernel. Entity: Entity identifier. Holds an entity ID and it’s generation for recycling. EntityAccessor: Non-owning mutable accessor for a single entity. UnknownError: Represents an unknown error. WorldError: Errors that have some information about the world. EntityError: Errors that have some information about an entity. ComponentError: Errors that have some information about one or more components. ExecutionBackend: Explicit kernel target, selected at compile time with backend=. ThreadedExecutionConfig: Immutable scheduling settings; configuration alone does not enable threading. Filter: Compile-time component inclusion and exclusion spec used to build queries. BitMaskFilter: A filter that stores which components are included and excluded with BitMask. HostStorage: Holds all the component and entity data for a world. Replacer: Replacer is a helper struct for removing and adding components to an Entity. LockManager: Manages locks by mask bits. LockGuard: Owns one structural-change lock until destruction. BitPool: Pool of reusable bit indices. Resources: Ordered source declarations with read, write, or read_write access. ResourceStorage: Manages resources. Scheduler: Manages the execution of systems in a world. CompareExchangeResult: Outcome of one strong compare-exchange. AtomicView: Atomic-only access to borrowed target-local scalar storage. AtomicValue: Owns a noncopyable atomic scalar without exposing ordinary references. TryAccess: Owns an acquired guard or represents contention without payload access. SyncView: Borrowed access capability sharing one reader/writer protection identity. Synchronized: Owns a stable payload and its noncopyable reader/writer domain. KernelContext: Component columns, resources, and row/thread counts available to a kernel body. SystemContext: Gives a system access to the world’s entities, components, and resources. World: World is the central type holding entity and component data, as well as resources. Traits PlainValue: Declares that a trivial type stores only plain numeric values. SpatialClassifier: Read-only spatial policy with owned, copyable configuration. System: Trait for systems in the scheduler. Functions read_capture mut_capture grid_cell morton_key_3d " /><link rel="canonical" href="https://larecs.github.io/larecs/larecs/" itemprop="url" />
 
 <meta property="og:title" content="API docs" />
 <meta property="og:description" content="" />
@@ -27,18 +27,18 @@ Example:
   <meta itemprop="description" content="Mojo package 🡭
 larecsLarecs🌲 is a performance-oriented archetype-based ECS for Mojo.
 It is based on the ECS Arche, implemented in the Go programming language.
-Larecs 1.0 is currently in beta, so public APIs may still change before the stable 1.0.0 release. After that release, public APIs follow semantic versioning unless they are explicitly marked experimental. GPU execution is currently such an experimental API.
+Larecs 1.0 is currently in beta, so public APIs may still change before the stable 1.0.0 release. After that release, public APIs follow semantic versioning unless they are explicitly marked experimental. Device execution is currently such an experimental API. Threaded host execution is also experimental.
 Example:
-# Import the package from larecs import ( World, Scheduler, System, SystemContext, KernelContext, Filter, ) # Define components @fieldwise_init struct Position(Copyable, Movable): var x: Float64 var y: Float64 @fieldwise_init struct IsStatic(Copyable, Movable): pass @fieldwise_init struct Velocity(Copyable, Movable): var x: Float64 var y: Float64 # A kernel processes the components selected by its filter. comptime move_filter = Filter().include[Position].read[Velocity]() def move(context: KernelContext[move_filter]): for entity in context: ref pos = entity.get[Position]() ref vel = entity.get[Velocity]() pos.x &#43;= vel.x pos.y &#43;= vel.y # Systems are the principal place for application logic that mutates ECS state. @fieldwise_init struct Move(System): def update(mut self, mut context: SystemContext[...]) raises: context.run[move]() # Run the ECS def main() raises: # Create a world, list all components that will / may be used var world = World[Position, Velocity, IsStatic]() for _ in range(100): # Add an entity. The returned value is the # entity&#39;s ID, which can be used to access the entity later var entity = world.storage.add_entity(Position(0, 0), IsStatic()) # For example, we may want to change the entity&#39;s position world.storage.get[Position](entity).x = 2 # Or we may want to replace the IsStatic component # of the entity by a Velocity component world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity) # We can query entities with specific components, read-only for entity in world.storage.query[Filter().include[Position, Velocity]()](): _ = entity.get[Position]() _ = entity.get[Velocity]() # Give the initialized world to a scheduler, then run application logic # through a system. The system delegates filtered component work to `move`. var scheduler = Scheduler(world^) scheduler.add_system(Move()) scheduler.run(1) Aliases MutArchetypeRowAccessor = ArchetypeRowAccessor[_, _, filter=_]: An accessor with mutable references to an archetype row and its components. ComponentType = Copyable &amp; Deinitable: The trait that components must conform to. LarecsError = Variant[UnknownError, WorldError, EntityError, ComponentError, Error]: Typed ECS errors and general kernel errors raised by public operations. The specific arms describe ECS usage errors; the Error arm carries general kernel or resource failures through selection scopes. ResourceType = Copyable &amp; Deinitable: The trait that resources must conform to. ComponentId = Int: The integer type used for compact component identifiers. Structs ArchetypeRowAccessor: Accessor for an Entity. ReadCapture: Declares a read-only capture slot. MutCapture: Declares a mutable capture slot copied back after GPU execution. Captures: Ordered capture declarations; repeated value types are allowed. ComponentManager: ComponentManager is a manager for ECS components. DeviceComponentStorage: Owns one byte-addressed device column per configured component type. DeviceResourceStorage: Owns one byte-addressed device buffer per resource type required by a kernel. Entity: Entity identifier. Holds an entity ID and it’s generation for recycling. EntityAccessor: Non-owning mutable accessor for a single entity. UnknownError: Represents an unknown error. WorldError: Errors that have some information about the world. EntityError: Errors that have some information about an entity. ComponentError: Errors that have some information about one or more components. Filter: Compile-time component inclusion and exclusion spec used to build queries. BitMaskFilter: A filter that stores which components are included and excluded with BitMask. HostStorage: Holds all the component and entity data for a world. Replacer: Replacer is a helper struct for removing and adding components to an Entity. LockManager: Manages locks by mask bits. LockGuard: Owns one structural-change lock until destruction. BitPool: Pool of reusable bit indices. Resources: A compile-time list of resource types. ResourceStorage: Manages resources. Scheduler: Manages the execution of systems in a world. KernelContext: Component columns, resources, and row/thread counts available to a kernel body. SystemContext: Gives a system access to the world’s entities, components, and resources. World: World is the central type holding entity and component data, as well as resources. Traits System: Trait for systems in the scheduler. Functions read_capture mut_capture">
-  <meta itemprop="wordCount" content="652">
+# Import the package from larecs import ( World, Scheduler, System, SystemContext, KernelContext, Filter, ) # Define components @fieldwise_init struct Position(Copyable, Movable): var x: Float64 var y: Float64 @fieldwise_init struct IsStatic(Copyable, Movable): pass @fieldwise_init struct Velocity(Copyable, Movable): var x: Float64 var y: Float64 # A kernel processes the components selected by its filter. comptime move_filter = Filter().include[Position].read[Velocity]() def move(context: KernelContext[move_filter]): for entity in context: ref pos = entity.get[Position]() ref vel = entity.get[Velocity]() pos.x &#43;= vel.x pos.y &#43;= vel.y # Systems are the principal place for application logic that mutates ECS state. @fieldwise_init struct Move(System): def update(mut self, mut context: SystemContext[...]) raises: context.run[move]() # Run the ECS def main() raises: # Create a world, list all components that will / may be used var world = World[Position, Velocity, IsStatic]() for _ in range(100): # Add an entity. The returned value is the # entity&#39;s ID, which can be used to access the entity later var entity = world.storage.add_entity(Position(0, 0), IsStatic()) # For example, we may want to change the entity&#39;s position world.storage.get[Position](entity).x = 2 # Or we may want to replace the IsStatic component # of the entity by a Velocity component world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity) # We can query entities with specific components, read-only for entity in world.storage.query[Filter().include[Position, Velocity]()](): _ = entity.get[Position]() _ = entity.get[Velocity]() # Give the initialized world to a scheduler, then run application logic # through a system. The system delegates filtered component work to `move`. var scheduler = Scheduler(world^) scheduler.add_system(Move()) scheduler.run(1) Aliases MutArchetypeRowAccessor = ArchetypeRowAccessor[_, _, filter=_]: An accessor with mutable references to an archetype row and its components. ComponentType = Copyable &amp; Deinitable: The trait that components must conform to. LarecsError = Variant[UnknownError, WorldError, EntityError, ComponentError, Error]: Typed ECS errors and general kernel errors raised by public operations. The specific arms describe ECS usage errors; the Error arm carries general kernel or resource failures through selection scopes. ResourceType = Copyable &amp; Deinitable: The trait that resources must conform to. ComponentId = Int: The integer type used for compact component identifiers. Structs ArchetypeRowAccessor: Accessor for an Entity. ReadCapture: Declares a read-only capture slot. MutCapture: Declares a mutable capture slot copied back after device execution. Captures: Ordered capture declarations; repeated value types are allowed. ComponentManager: ComponentManager is a manager for ECS components. DeviceComponentStorage: Owns one byte-addressed device column per configured component type. DeviceResourceStorage: Owns one byte-addressed device buffer per resource type required by a kernel. Entity: Entity identifier. Holds an entity ID and it’s generation for recycling. EntityAccessor: Non-owning mutable accessor for a single entity. UnknownError: Represents an unknown error. WorldError: Errors that have some information about the world. EntityError: Errors that have some information about an entity. ComponentError: Errors that have some information about one or more components. ExecutionBackend: Explicit kernel target, selected at compile time with backend=. ThreadedExecutionConfig: Immutable scheduling settings; configuration alone does not enable threading. Filter: Compile-time component inclusion and exclusion spec used to build queries. BitMaskFilter: A filter that stores which components are included and excluded with BitMask. HostStorage: Holds all the component and entity data for a world. Replacer: Replacer is a helper struct for removing and adding components to an Entity. LockManager: Manages locks by mask bits. LockGuard: Owns one structural-change lock until destruction. BitPool: Pool of reusable bit indices. Resources: Ordered source declarations with read, write, or read_write access. ResourceStorage: Manages resources. Scheduler: Manages the execution of systems in a world. CompareExchangeResult: Outcome of one strong compare-exchange. AtomicView: Atomic-only access to borrowed target-local scalar storage. AtomicValue: Owns a noncopyable atomic scalar without exposing ordinary references. TryAccess: Owns an acquired guard or represents contention without payload access. SyncView: Borrowed access capability sharing one reader/writer protection identity. Synchronized: Owns a stable payload and its noncopyable reader/writer domain. KernelContext: Component columns, resources, and row/thread counts available to a kernel body. SystemContext: Gives a system access to the world’s entities, components, and resources. World: World is the central type holding entity and component data, as well as resources. Traits PlainValue: Declares that a trivial type stores only plain numeric values. SpatialClassifier: Read-only spatial policy with owned, copyable configuration. System: Trait for systems in the scheduler. Functions read_capture mut_capture grid_cell morton_key_3d">
+  <meta itemprop="wordCount" content="756">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="API docs">
   <meta name="twitter:description" content="Mojo package 🡭
 larecsLarecs🌲 is a performance-oriented archetype-based ECS for Mojo.
 It is based on the ECS Arche, implemented in the Go programming language.
-Larecs 1.0 is currently in beta, so public APIs may still change before the stable 1.0.0 release. After that release, public APIs follow semantic versioning unless they are explicitly marked experimental. GPU execution is currently such an experimental API.
+Larecs 1.0 is currently in beta, so public APIs may still change before the stable 1.0.0 release. After that release, public APIs follow semantic versioning unless they are explicitly marked experimental. Device execution is currently such an experimental API. Threaded host execution is also experimental.
 Example:
-# Import the package from larecs import ( World, Scheduler, System, SystemContext, KernelContext, Filter, ) # Define components @fieldwise_init struct Position(Copyable, Movable): var x: Float64 var y: Float64 @fieldwise_init struct IsStatic(Copyable, Movable): pass @fieldwise_init struct Velocity(Copyable, Movable): var x: Float64 var y: Float64 # A kernel processes the components selected by its filter. comptime move_filter = Filter().include[Position].read[Velocity]() def move(context: KernelContext[move_filter]): for entity in context: ref pos = entity.get[Position]() ref vel = entity.get[Velocity]() pos.x &#43;= vel.x pos.y &#43;= vel.y # Systems are the principal place for application logic that mutates ECS state. @fieldwise_init struct Move(System): def update(mut self, mut context: SystemContext[...]) raises: context.run[move]() # Run the ECS def main() raises: # Create a world, list all components that will / may be used var world = World[Position, Velocity, IsStatic]() for _ in range(100): # Add an entity. The returned value is the # entity&#39;s ID, which can be used to access the entity later var entity = world.storage.add_entity(Position(0, 0), IsStatic()) # For example, we may want to change the entity&#39;s position world.storage.get[Position](entity).x = 2 # Or we may want to replace the IsStatic component # of the entity by a Velocity component world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity) # We can query entities with specific components, read-only for entity in world.storage.query[Filter().include[Position, Velocity]()](): _ = entity.get[Position]() _ = entity.get[Velocity]() # Give the initialized world to a scheduler, then run application logic # through a system. The system delegates filtered component work to `move`. var scheduler = Scheduler(world^) scheduler.add_system(Move()) scheduler.run(1) Aliases MutArchetypeRowAccessor = ArchetypeRowAccessor[_, _, filter=_]: An accessor with mutable references to an archetype row and its components. ComponentType = Copyable &amp; Deinitable: The trait that components must conform to. LarecsError = Variant[UnknownError, WorldError, EntityError, ComponentError, Error]: Typed ECS errors and general kernel errors raised by public operations. The specific arms describe ECS usage errors; the Error arm carries general kernel or resource failures through selection scopes. ResourceType = Copyable &amp; Deinitable: The trait that resources must conform to. ComponentId = Int: The integer type used for compact component identifiers. Structs ArchetypeRowAccessor: Accessor for an Entity. ReadCapture: Declares a read-only capture slot. MutCapture: Declares a mutable capture slot copied back after GPU execution. Captures: Ordered capture declarations; repeated value types are allowed. ComponentManager: ComponentManager is a manager for ECS components. DeviceComponentStorage: Owns one byte-addressed device column per configured component type. DeviceResourceStorage: Owns one byte-addressed device buffer per resource type required by a kernel. Entity: Entity identifier. Holds an entity ID and it’s generation for recycling. EntityAccessor: Non-owning mutable accessor for a single entity. UnknownError: Represents an unknown error. WorldError: Errors that have some information about the world. EntityError: Errors that have some information about an entity. ComponentError: Errors that have some information about one or more components. Filter: Compile-time component inclusion and exclusion spec used to build queries. BitMaskFilter: A filter that stores which components are included and excluded with BitMask. HostStorage: Holds all the component and entity data for a world. Replacer: Replacer is a helper struct for removing and adding components to an Entity. LockManager: Manages locks by mask bits. LockGuard: Owns one structural-change lock until destruction. BitPool: Pool of reusable bit indices. Resources: A compile-time list of resource types. ResourceStorage: Manages resources. Scheduler: Manages the execution of systems in a world. KernelContext: Component columns, resources, and row/thread counts available to a kernel body. SystemContext: Gives a system access to the world’s entities, components, and resources. World: World is the central type holding entity and component data, as well as resources. Traits System: Trait for systems in the scheduler. Functions read_capture mut_capture">
+# Import the package from larecs import ( World, Scheduler, System, SystemContext, KernelContext, Filter, ) # Define components @fieldwise_init struct Position(Copyable, Movable): var x: Float64 var y: Float64 @fieldwise_init struct IsStatic(Copyable, Movable): pass @fieldwise_init struct Velocity(Copyable, Movable): var x: Float64 var y: Float64 # A kernel processes the components selected by its filter. comptime move_filter = Filter().include[Position].read[Velocity]() def move(context: KernelContext[move_filter]): for entity in context: ref pos = entity.get[Position]() ref vel = entity.get[Velocity]() pos.x &#43;= vel.x pos.y &#43;= vel.y # Systems are the principal place for application logic that mutates ECS state. @fieldwise_init struct Move(System): def update(mut self, mut context: SystemContext[...]) raises: context.run[move]() # Run the ECS def main() raises: # Create a world, list all components that will / may be used var world = World[Position, Velocity, IsStatic]() for _ in range(100): # Add an entity. The returned value is the # entity&#39;s ID, which can be used to access the entity later var entity = world.storage.add_entity(Position(0, 0), IsStatic()) # For example, we may want to change the entity&#39;s position world.storage.get[Position](entity).x = 2 # Or we may want to replace the IsStatic component # of the entity by a Velocity component world.storage.replace[IsStatic]().by(Velocity(2, 2), entity=entity) # We can query entities with specific components, read-only for entity in world.storage.query[Filter().include[Position, Velocity]()](): _ = entity.get[Position]() _ = entity.get[Velocity]() # Give the initialized world to a scheduler, then run application logic # through a system. The system delegates filtered component work to `move`. var scheduler = Scheduler(world^) scheduler.add_system(Move()) scheduler.run(1) Aliases MutArchetypeRowAccessor = ArchetypeRowAccessor[_, _, filter=_]: An accessor with mutable references to an archetype row and its components. ComponentType = Copyable &amp; Deinitable: The trait that components must conform to. LarecsError = Variant[UnknownError, WorldError, EntityError, ComponentError, Error]: Typed ECS errors and general kernel errors raised by public operations. The specific arms describe ECS usage errors; the Error arm carries general kernel or resource failures through selection scopes. ResourceType = Copyable &amp; Deinitable: The trait that resources must conform to. ComponentId = Int: The integer type used for compact component identifiers. Structs ArchetypeRowAccessor: Accessor for an Entity. ReadCapture: Declares a read-only capture slot. MutCapture: Declares a mutable capture slot copied back after device execution. Captures: Ordered capture declarations; repeated value types are allowed. ComponentManager: ComponentManager is a manager for ECS components. DeviceComponentStorage: Owns one byte-addressed device column per configured component type. DeviceResourceStorage: Owns one byte-addressed device buffer per resource type required by a kernel. Entity: Entity identifier. Holds an entity ID and it’s generation for recycling. EntityAccessor: Non-owning mutable accessor for a single entity. UnknownError: Represents an unknown error. WorldError: Errors that have some information about the world. EntityError: Errors that have some information about an entity. ComponentError: Errors that have some information about one or more components. ExecutionBackend: Explicit kernel target, selected at compile time with backend=. ThreadedExecutionConfig: Immutable scheduling settings; configuration alone does not enable threading. Filter: Compile-time component inclusion and exclusion spec used to build queries. BitMaskFilter: A filter that stores which components are included and excluded with BitMask. HostStorage: Holds all the component and entity data for a world. Replacer: Replacer is a helper struct for removing and adding components to an Entity. LockManager: Manages locks by mask bits. LockGuard: Owns one structural-change lock until destruction. BitPool: Pool of reusable bit indices. Resources: Ordered source declarations with read, write, or read_write access. ResourceStorage: Manages resources. Scheduler: Manages the execution of systems in a world. CompareExchangeResult: Outcome of one strong compare-exchange. AtomicView: Atomic-only access to borrowed target-local scalar storage. AtomicValue: Owns a noncopyable atomic scalar without exposing ordinary references. TryAccess: Owns an acquired guard or represents contention without payload access. SyncView: Borrowed access capability sharing one reader/writer protection identity. Synchronized: Owns a stable payload and its noncopyable reader/writer domain. KernelContext: Component columns, resources, and row/thread counts available to a kernel body. SystemContext: Gives a system access to the world’s entities, components, and resources. World: World is the central type holding entity and component data, as well as resources. Traits PlainValue: Declares that a trivial type stores only plain numeric values. SpatialClassifier: Read-only spatial policy with owned, copyable configuration. System: Trait for systems in the scheduler. Functions read_capture mut_capture grid_cell morton_key_3d">
 
     <link rel="preload" href="/larecs/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" as="style" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
     <link href="/larecs/css/compiled/main.min.d13c9c12854b01b728255f63737aeb45ada9ad287eb5422a5bb2b71ec073a4b8.css" rel="stylesheet" integrity="sha256-0TycEoVLAbcoJV9jc3rrRa2prSh&#43;tUIqW7K3HsBzpLg=" />
@@ -220,9 +220,25 @@ Example:
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/synchronization/"
+    
+  >Synchronization
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/guide/systems_scheduler/"
     
   >Systems and the scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/spatial_clustering/"
+    
+  >Spatial clustering
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -281,6 +297,22 @@ Example:
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicValue/"
+    
+  >AtomicValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicView/"
+    
+  >AtomicView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/BitMaskFilter/"
     
   >BitMaskFilter
@@ -300,6 +332,14 @@ Example:
     href="/larecs/larecs/Captures/"
     
   >Captures
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/CompareExchangeResult/"
+    
+  >CompareExchangeResult
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -361,9 +401,25 @@ Example:
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ExecutionBackend/"
+    
+  >ExecutionBackend
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/Filter/"
     
   >Filter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/grid_cell/"
+    
+  >grid_cell
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -401,6 +457,14 @@ Example:
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/morton_key_3d/"
+    
+  >morton_key_3d
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/mut_capture/"
     
   >mut_capture
@@ -412,6 +476,14 @@ Example:
     href="/larecs/larecs/MutCapture/"
     
   >MutCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/PlainValue/"
+    
+  >PlainValue
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -465,6 +537,30 @@ Example:
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SpatialClassifier/"
+    
+  >SpatialClassifier
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/Synchronized/"
+    
+  >Synchronized
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SyncView/"
+    
+  >SyncView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/System/"
     
   >System
@@ -476,6 +572,22 @@ Example:
     href="/larecs/larecs/SystemContext/"
     
   >SystemContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ThreadedExecutionConfig/"
+    
+  >ThreadedExecutionConfig
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/TryAccess/"
+    
+  >TryAccess
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -567,9 +679,25 @@ Example:
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/synchronization/"
+    
+  >Synchronization
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/guide/systems_scheduler/"
     
   >Systems and the scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/spatial_clustering/"
+    
+  >Spatial clustering
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -601,6 +729,22 @@ Example:
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicValue/"
+    
+  >AtomicValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicView/"
+    
+  >AtomicView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/BitMaskFilter/"
     
   >BitMaskFilter
@@ -620,6 +764,14 @@ Example:
     href="/larecs/larecs/Captures/"
     
   >Captures
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/CompareExchangeResult/"
+    
+  >CompareExchangeResult
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -681,9 +833,25 @@ Example:
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ExecutionBackend/"
+    
+  >ExecutionBackend
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/Filter/"
     
   >Filter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/grid_cell/"
+    
+  >grid_cell
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -721,6 +889,14 @@ Example:
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/morton_key_3d/"
+    
+  >morton_key_3d
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/mut_capture/"
     
   >mut_capture
@@ -732,6 +908,14 @@ Example:
     href="/larecs/larecs/MutCapture/"
     
   >MutCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/PlainValue/"
+    
+  >PlainValue
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -785,6 +969,30 @@ Example:
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SpatialClassifier/"
+    
+  >SpatialClassifier
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/Synchronized/"
+    
+  >Synchronized
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SyncView/"
+    
+  >SyncView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/System/"
     
   >System
@@ -796,6 +1004,22 @@ Example:
     href="/larecs/larecs/SystemContext/"
     
   >SystemContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ThreadedExecutionConfig/"
+    
+  >ThreadedExecutionConfig
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/TryAccess/"
+    
+  >TryAccess
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -883,8 +1107,8 @@ Example:
 <p>It is based on the ECS <a href="https://github.com/mlange-42/arche" target="_blank" rel="noopener">Arche</a>, implemented in the Go programming language.</p>
 <p>Larecs 1.0 is currently in beta, so public APIs may still change before the
 stable 1.0.0 release. After that release, public APIs follow semantic
-versioning unless they are explicitly marked experimental. GPU execution is
-currently such an experimental API.</p>
+versioning unless they are explicitly marked experimental. Device execution is
+currently such an experimental API. Threaded host execution is also experimental.</p>
 <p>Example:</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
@@ -985,7 +1209,7 @@ kernel or resource failures through selection scopes.</li>
     <a href="#structs" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><ul>
 <li><a href="https://larecs.github.io/larecs/larecs/ArchetypeRowAccessor/" ><code>ArchetypeRowAccessor</code></a>: Accessor for an Entity.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/ReadCapture/" ><code>ReadCapture</code></a>: Declares a read-only capture slot.</li>
-<li><a href="https://larecs.github.io/larecs/larecs/MutCapture/" ><code>MutCapture</code></a>: Declares a mutable capture slot copied back after GPU execution.</li>
+<li><a href="https://larecs.github.io/larecs/larecs/MutCapture/" ><code>MutCapture</code></a>: Declares a mutable capture slot copied back after device execution.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/Captures/" ><code>Captures</code></a>: Ordered capture declarations; repeated value types are allowed.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/ComponentManager/" ><code>ComponentManager</code></a>: ComponentManager is a manager for ECS components.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/DeviceComponentStorage/" ><code>DeviceComponentStorage</code></a>: Owns one byte-addressed device column per configured component type.</li>
@@ -996,6 +1220,8 @@ kernel or resource failures through selection scopes.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/WorldError/" ><code>WorldError</code></a>: Errors that have some information about the world.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/EntityError/" ><code>EntityError</code></a>: Errors that have some information about an entity.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/ComponentError/" ><code>ComponentError</code></a>: Errors that have some information about one or more components.</li>
+<li><a href="https://larecs.github.io/larecs/larecs/ExecutionBackend/" ><code>ExecutionBackend</code></a>: Explicit kernel target, selected at compile time with <code>backend=</code>.</li>
+<li><a href="https://larecs.github.io/larecs/larecs/ThreadedExecutionConfig/" ><code>ThreadedExecutionConfig</code></a>: Immutable scheduling settings; configuration alone does not enable threading.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/Filter/" ><code>Filter</code></a>: Compile-time component inclusion and exclusion spec used to build queries.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/BitMaskFilter/" ><code>BitMaskFilter</code></a>: A filter that stores which components are included and excluded with BitMask.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/HostStorage/" ><code>HostStorage</code></a>: Holds all the component and entity data for a world.</li>
@@ -1003,21 +1229,31 @@ kernel or resource failures through selection scopes.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/LockManager/" ><code>LockManager</code></a>: Manages locks by mask bits.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/LockGuard/" ><code>LockGuard</code></a>: Owns one structural-change lock until destruction.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/BitPool/" ><code>BitPool</code></a>: Pool of reusable bit indices.</li>
-<li><a href="https://larecs.github.io/larecs/larecs/Resources/" ><code>Resources</code></a>: A compile-time list of resource types.</li>
+<li><a href="https://larecs.github.io/larecs/larecs/Resources/" ><code>Resources</code></a>: Ordered source declarations with read, write, or read_write access.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/ResourceStorage/" ><code>ResourceStorage</code></a>: Manages resources.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/Scheduler/" ><code>Scheduler</code></a>: Manages the execution of systems in a world.</li>
+<li><a href="https://larecs.github.io/larecs/larecs/CompareExchangeResult/" ><code>CompareExchangeResult</code></a>: Outcome of one strong compare-exchange.</li>
+<li><a href="https://larecs.github.io/larecs/larecs/AtomicView/" ><code>AtomicView</code></a>: Atomic-only access to borrowed target-local scalar storage.</li>
+<li><a href="https://larecs.github.io/larecs/larecs/AtomicValue/" ><code>AtomicValue</code></a>: Owns a noncopyable atomic scalar without exposing ordinary references.</li>
+<li><a href="https://larecs.github.io/larecs/larecs/TryAccess/" ><code>TryAccess</code></a>: Owns an acquired guard or represents contention without payload access.</li>
+<li><a href="https://larecs.github.io/larecs/larecs/SyncView/" ><code>SyncView</code></a>: Borrowed access capability sharing one reader/writer protection identity.</li>
+<li><a href="https://larecs.github.io/larecs/larecs/Synchronized/" ><code>Synchronized</code></a>: Owns a stable payload and its noncopyable reader/writer domain.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/KernelContext/" ><code>KernelContext</code></a>: Component columns, resources, and row/thread counts available to a kernel body.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/SystemContext/" ><code>SystemContext</code></a>: Gives a system access to the world&rsquo;s entities, components, and resources.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/World/" ><code>World</code></a>: World is the central type holding entity and component data, as well as resources.</li>
 </ul>
 <h2>Traits<span class="hx-absolute -hx-mt-20" id="traits"></span>
     <a href="#traits" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><ul>
+<li><a href="https://larecs.github.io/larecs/larecs/PlainValue/" ><code>PlainValue</code></a>: Declares that a trivial type stores only plain numeric values.</li>
+<li><a href="https://larecs.github.io/larecs/larecs/SpatialClassifier/" ><code>SpatialClassifier</code></a>: Read-only spatial policy with owned, copyable configuration.</li>
 <li><a href="https://larecs.github.io/larecs/larecs/System/" ><code>System</code></a>: Trait for systems in the scheduler.</li>
 </ul>
 <h2>Functions<span class="hx-absolute -hx-mt-20" id="functions"></span>
     <a href="#functions" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><ul>
 <li><a href="https://larecs.github.io/larecs/larecs/read_capture/" ><code>read_capture</code></a></li>
 <li><a href="https://larecs.github.io/larecs/larecs/mut_capture/" ><code>mut_capture</code></a></li>
+<li><a href="https://larecs.github.io/larecs/larecs/grid_cell/" ><code>grid_cell</code></a></li>
+<li><a href="https://larecs.github.io/larecs/larecs/morton_key_3d/" ><code>morton_key_3d</code></a></li>
 </ul>
 
         </div>

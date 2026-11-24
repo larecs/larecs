@@ -34,7 +34,7 @@ possible." />
   <meta itemprop="name" content="Resources">
   <meta itemprop="description" content="Not all data in a world is associated with specific entities. This often applies to parameters (such as a time step), global state variables (such as the current time), or spatial data structures (such as a grid displaying entity positions). These data are called resources.
 Defining resources Similar to components, resources are defined via structs. That is, each resource has a specific type, and having two resources of the same type is not possible.">
-  <meta itemprop="wordCount" content="1050">
+  <meta itemprop="wordCount" content="3387">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Resources">
   <meta name="twitter:description" content="Not all data in a world is associated with specific entities. This often applies to parameters (such as a time step), global state variables (such as the current time), or spatial data structures (such as a grid displaying entity positions). These data are called resources.
@@ -237,6 +237,36 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li>
           <li>
               <a
+                href="#resource-permissions"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Resource permissions</a>
+            </li>
+          <li>
+              <a
+                href="#portable-owning-resources"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Portable owning resources</a>
+            </li>
+          <li>
+              <a
+                href="#mutable-adapted-resources-experimental"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Mutable adapted resources (experimental)</a>
+            </li>
+          <li>
+              <a
+                href="#invocation-lifetime-and-failures"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Invocation lifetime and failures</a>
+            </li>
+          <li>
+              <a
+                href="#reusing-unchanged-device-copies-experimental"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >Reusing unchanged device copies (experimental)</a>
+            </li>
+          <li>
+              <a
                 href="#removing-resources"
                 class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
               >Removing resources</a>
@@ -247,9 +277,25 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/synchronization/"
+    
+  >Synchronization
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/guide/systems_scheduler/"
     
   >Systems and the scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/spatial_clustering/"
+    
+  >Spatial clustering
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -281,6 +327,22 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicValue/"
+    
+  >AtomicValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicView/"
+    
+  >AtomicView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/BitMaskFilter/"
     
   >BitMaskFilter
@@ -300,6 +362,14 @@ Defining resources Similar to components, resources are defined via structs. Tha
     href="/larecs/larecs/Captures/"
     
   >Captures
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/CompareExchangeResult/"
+    
+  >CompareExchangeResult
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -361,9 +431,25 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ExecutionBackend/"
+    
+  >ExecutionBackend
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/Filter/"
     
   >Filter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/grid_cell/"
+    
+  >grid_cell
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -401,6 +487,14 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/morton_key_3d/"
+    
+  >morton_key_3d
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/mut_capture/"
     
   >mut_capture
@@ -412,6 +506,14 @@ Defining resources Similar to components, resources are defined via structs. Tha
     href="/larecs/larecs/MutCapture/"
     
   >MutCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/PlainValue/"
+    
+  >PlainValue
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -465,6 +567,30 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SpatialClassifier/"
+    
+  >SpatialClassifier
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/Synchronized/"
+    
+  >Synchronized
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SyncView/"
+    
+  >SyncView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/System/"
     
   >System
@@ -476,6 +602,22 @@ Defining resources Similar to components, resources are defined via structs. Tha
     href="/larecs/larecs/SystemContext/"
     
   >SystemContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ThreadedExecutionConfig/"
+    
+  >ThreadedExecutionConfig
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/TryAccess/"
+    
+  >TryAccess
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -567,9 +709,25 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/synchronization/"
+    
+  >Synchronization
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/guide/systems_scheduler/"
     
   >Systems and the scheduler
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/guide/spatial_clustering/"
+    
+  >Spatial clustering
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -601,6 +759,22 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicValue/"
+    
+  >AtomicValue
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/AtomicView/"
+    
+  >AtomicView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/BitMaskFilter/"
     
   >BitMaskFilter
@@ -620,6 +794,14 @@ Defining resources Similar to components, resources are defined via structs. Tha
     href="/larecs/larecs/Captures/"
     
   >Captures
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/CompareExchangeResult/"
+    
+  >CompareExchangeResult
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -681,9 +863,25 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ExecutionBackend/"
+    
+  >ExecutionBackend
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/Filter/"
     
   >Filter
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/grid_cell/"
+    
+  >grid_cell
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -721,6 +919,14 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/morton_key_3d/"
+    
+  >morton_key_3d
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/mut_capture/"
     
   >mut_capture
@@ -732,6 +938,14 @@ Defining resources Similar to components, resources are defined via structs. Tha
     href="/larecs/larecs/MutCapture/"
     
   >MutCapture
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/PlainValue/"
+    
+  >PlainValue
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -785,6 +999,30 @@ Defining resources Similar to components, resources are defined via structs. Tha
             </li><li class="hx-flex hx-flex-col "><a
     class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
       hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SpatialClassifier/"
+    
+  >SpatialClassifier
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/Synchronized/"
+    
+  >Synchronized
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/SyncView/"
+    
+  >SyncView
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
     href="/larecs/larecs/System/"
     
   >System
@@ -796,6 +1034,22 @@ Defining resources Similar to components, resources are defined via structs. Tha
     href="/larecs/larecs/SystemContext/"
     
   >SystemContext
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/ThreadedExecutionConfig/"
+    
+  >ThreadedExecutionConfig
+    </a>
+              
+            </li><li class="hx-flex hx-flex-col "><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/larecs/larecs/TryAccess/"
+    
+  >TryAccess
     </a>
               
             </li><li class="hx-flex hx-flex-col "><a
@@ -855,6 +1109,42 @@ Defining resources Similar to components, resources are defined via structs. Tha
         </a>
       </li>
       <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#resource-permissions">Resource permissions
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#portable-owning-resources">Portable owning resources
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#defining-a-custom-portable-resource">Defining a custom portable resource
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#registering-and-using-the-custom-resource">Registering and using the custom resource
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#adapter-allocation-and-access-rules">Adapter allocation and access rules
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#mutable-adapted-resources-experimental">Mutable adapted resources (experimental)
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#migrating-existing-adapters">Migrating existing adapters
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#invocation-lifetime-and-failures">Invocation lifetime and failures
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#reusing-unchanged-device-copies-experimental">Reusing unchanged device copies (experimental)
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
         <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#removing-resources">Removing resources
         </a>
       </li></ul>
@@ -899,6 +1189,7 @@ keyed by their runtime type name.</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="kn">from</span><span class="w"> </span><span class="nn">larecs</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">ExecutionBackend</span><span class="p">,</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">World</span><span class="p">,</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Entity</span><span class="p">,</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SystemContext</span><span class="p">,</span><span class="w">
@@ -931,7 +1222,7 @@ keyed by their runtime type name.</p>
 </div>
 <p>A resource must conform to <code>ResourceType</code> (<code>Copyable &amp; Deinitable</code>). The
 example also conforms to <code>TrivialRegisterPassable</code> so it can be used by the
-GPU kernel path described below; host-only resources do not need that trait.</p>
+device kernel path described below; host-only resources do not need that trait.</p>
 <h2>Adding and accessing resources<span class="hx-absolute -hx-mt-20" id="adding-and-accessing-resources"></span>
     <a href="#adding-and-accessing-resources" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>The examples below access a <code>World</code> directly to introduce the resource API.
 During application execution, resource changes should generally be owned by a
@@ -1110,15 +1401,15 @@ be synchronized or otherwise made race-free; in particular, do not update a
 shared resource once per entity without an atomic or reduction strategy.
 Writing per-entity results to components and reducing them in a separate step
 is often simpler. Also avoid target-dependent side effects outside the entity
-loop: the CPU calls the kernel once per matching archetype, while the GPU
+loop: the host calls the kernel once per matching archetype, while the device
 processes all matching rows in one launch.</p>
-<p>CPU kernels may also capture surrounding values and access resources through
-<code>context.run(kernel)</code>. See <a href="../systems_scheduler#capturing-cpu-kernels" >Capturing CPU kernels</a>
-for an example. GPU entry points use the non-capturing <code>context.run[kernel]()</code> form.</p>
-<p>To run this same kernel on a GPU, replace its CPU <code>run</code> call with:</p>
+<p>Host kernels may also capture surrounding values and access resources through
+<code>context.run(kernel)</code>. See <a href="../systems_scheduler#capturing-host-kernels" >Capturing host kernels</a>
+for an example. Device entry points use the non-capturing <code>context.run[kernel]()</code> form.</p>
+<p>Import <code>ExecutionBackend</code> from <code>larecs</code> and replace the host <code>run</code> call with:</p>
 <div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
 
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="w">    </span><span class="n">context.run</span><span class="p">[</span><span class="n">move_with_time</span><span class="p">,</span><span class="w"> </span><span class="n">on_gpu</span><span class="o">=</span><span class="kc">True</span><span class="p">]()</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="w">    </span><span class="n">context.run</span><span class="p">[</span><span class="n">move_with_time</span><span class="p">,</span><span class="w"> </span><span class="n">backend</span><span class="o">=</span><span class="n">ExecutionBackend.DEVICE</span><span class="p">]()</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
   <button
     class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
     title="Copy code"
@@ -1128,17 +1419,524 @@ for an example. GPU entry points use the non-capturing <code>context.run[kernel]
   </button>
 </div>
 </div>
-<p>For GPU execution, accessed components must conform to
-<code>TrivialRegisterPassable</code>; required resources must satisfy
-<code>is_trivially_movable</code>. Resources do not need to declare
-<code>TrivialRegisterPassable</code> themselves. Larecs copies each resource&rsquo;s bytes to
-the device before execution and back afterward, including kernel changes.</p>
-<p>Trivial movability does <strong>not</strong> make host heap allocations accessible to the
-GPU. The transfer does not follow pointers, copy <code>List</code> or <code>Dict</code> contents,
-or invoke <code>DevicePassable</code> encoding. Do not pass host-backed collections or
-host-side <code>TileTensor</code> descriptors as resources through this path. They need
-an explicit device representation and transfer support, which this API does
-not yet provide. Heap-backed resources remain supported in CPU kernels.</p>
+<p>Host execution is the default. DEVICE requires a working accelerator and raises
+when unavailable, including for empty matches; it never falls back to HOST.</p>
+<p>For device execution, components must conform to <code>TrivialRegisterPassable</code>.
+Ordinary resources need a supported pointer-free representation with trivial
+copy, move, and destruction. Numeric values, <code>Bool</code>, and aggregates of those
+values are accepted without declaring <code>TrivialRegisterPassable</code>. Owning
+collections, host pointers, and opaque representations (including fixed <code>Array</code>
+fields in this increment) are rejected. Host kernels still support owning resources.</p>
+<h2>Resource permissions<span class="hx-absolute -hx-mt-20" id="resource-permissions"></span>
+    <a href="#resource-permissions" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><code>Resources[T]()</code> preserves <code>read_write</code> access. Prefer explicit declarations:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="n">comptime</span><span class="w"> </span><span class="n">required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Resources</span><span class="p">()</span><span class="o">.</span><span class="n">read</span><span class="p">[</span><span class="n">Time</span><span class="p">]()</span><span class="o">.</span><span class="n">read_write</span><span class="p">[</span><span class="n">Statistics</span><span class="p">]()</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>A <code>read</code> getter is immutable and its device buffer is never downloaded.
+<code>read_write</code> permits mutable <code>get[T]()</code> and copies device changes back after
+successful completion. Host <code>write[T]()</code> offers <code>set[T](value)</code> only; it rejects
+<code>get[T]()</code>. Device write-only resources are unsupported because conditional
+shared writes could publish uninitialized data. Applications must synchronize
+concurrent writes to ordinary shared resources themselves.</p>
+<h2>Portable owning resources<span class="hx-absolute -hx-mt-20" id="portable-owning-resources"></span>
+    <a href="#portable-owning-resources" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Use <code>BufferResource</code> for a contiguous scalar collection. The same kernel requests
+the original source type and receives its read-only <code>ReadBuffer</code> view on both
+backends:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="kn">from</span><span class="w"> </span><span class="nn">larecs</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="n">ExecutionBackend</span><span class="p">,</span><span class="w"> </span><span class="n">BufferResource</span><span class="p">,</span><span class="w"> </span><span class="n">Filter</span><span class="p">,</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">,</span><span class="w"> </span><span class="n">Resources</span><span class="p">,</span><span class="w"> </span><span class="n">SystemContext</span><span class="p">,</span><span class="w"> </span><span class="n">World</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">comptime</span><span class="w"> </span><span class="n">Samples</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BufferResource</span><span class="p">[</span><span class="nb">DType</span><span class="o">.</span><span class="n">int32</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">comptime</span><span class="w"> </span><span class="n">required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Resources</span><span class="p">()</span><span class="o">.</span><span class="n">read</span><span class="p">[</span><span class="n">Samples</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">def</span><span class="w"> </span><span class="nf">add_sample</span><span class="p">(</span><span class="n">context</span><span class="p">:</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">include</span><span class="p">[</span><span class="nb">Int32</span><span class="p">](),</span><span class="w"> </span><span class="n">required</span><span class="p">]):</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">ref</span><span class="w"> </span><span class="n">samples</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context.resources.get</span><span class="p">[</span><span class="n">Samples</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">entity</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">context</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">entity.get</span><span class="p">[</span><span class="nb">Int32</span><span class="p">]()</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">samples</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="n">raises</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">world</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">World</span><span class="p">[</span><span class="nb">Int32</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">world.resources.add</span><span class="p">(</span><span class="n">Samples</span><span class="p">([</span><span class="nb">Int32</span><span class="p">(</span><span class="mi">7</span><span class="p">),</span><span class="w"> </span><span class="nb">Int32</span><span class="p">(</span><span class="mi">8</span><span class="p">)]))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entities</span><span class="p">(</span><span class="nb">Int32</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">count</span><span class="o">=</span><span class="mi">37</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SystemContext</span><span class="p">(</span><span class="n">world</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">context.run</span><span class="p">[</span><span class="n">add_sample</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">context.run</span><span class="p">[</span><span class="n">add_sample</span><span class="p">,</span><span class="w"> </span><span class="n">backend</span><span class="o">=</span><span class="n">ExecutionBackend.DEVICE</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">world.resources.get</span><span class="p">[</span><span class="n">Samples</span><span class="p">]()</span><span class="o">.</span><span class="n">samples</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">9</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">context.run</span><span class="p">[</span><span class="n">add_sample</span><span class="p">]()</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>Device execution requires a working accelerator. Samples are uploaded every
+invocation; device allocation capacity is reused. The host source remains
+unchanged by device view access. <code>ReadBuffer</code> has <code>len</code> and bounds-checked
+indexing; empty buffers have length zero and must not be indexed.</p>
+<h3>Defining a custom portable resource<span class="hx-absolute -hx-mt-20" id="defining-a-custom-portable-resource"></span>
+    <a href="#defining-a-custom-portable-resource" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>Implement <code>DevicePassableResource</code> when your resource owns data that cannot be
+copied directly to a device, or needs a domain-specific kernel API. Keep the
+owning host type, its kernel view, and transfer logic separate:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Type</th>
+          <th>Contains</th>
+          <th>Used by</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>Grid</code></td>
+          <td>Owning <code>List</code> and current dimensions</td>
+          <td>Application code between runs</td>
+      </tr>
+      <tr>
+          <td><code>GridView</code></td>
+          <td>Immutable sample pointer, dimensions, and sampling methods</td>
+          <td>The same kernel on either backend</td>
+      </tr>
+      <tr>
+          <td><code>GridAdapter</code></td>
+          <td>Static validation and view preparation methods</td>
+          <td>Larecs during <code>run</code></td>
+      </tr>
+  </tbody>
+</table>
+<p>The source declares its <code>Adapter</code> as a compile-time member. The adapter declares
+the matching <code>Source</code> and a <code>View[mut: Bool]</code> mapping; it needs no constructor
+or instance fields. A read-only adapter maps both access kinds to one view type.
+The source&rsquo;s <code>View</code> and <code>KernelView</code> (an alias for <code>View[False]</code>) default to the
+adapter&rsquo;s mapping. Every method reads the current source, including
+configuration such as dimensions.</p>
+<p>This complete example uses a rectangular grid. Its view exposes <code>last()</code> to
+keep pointer arithmetic inside the resource API. A scientific view can instead
+provide interpolation, coordinate lookup, or other read-only operations.</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="kn">from</span><span class="w"> </span><span class="nn">std.sys</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="n">has_accelerator</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">from</span><span class="w"> </span><span class="nn">std.testing</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="n">assert_equal</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">from</span><span class="w"> </span><span class="nn">larecs</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">ExecutionBackend</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">DevicePassableResource</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">ResourceAdapter</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">ResourceDeviceCache</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Filter</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">KernelContext</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Resources</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SystemContext</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">World</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nd">@fieldwise_init</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span><span class="w"> </span><span class="nc">Grid</span><span class="p">(</span><span class="n">DevicePassableResource</span><span class="p">):</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Owns current host samples and grid metadata.&#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">comptime</span><span class="w"> </span><span class="n">Adapter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GridAdapter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">values</span><span class="p">:</span><span class="w"> </span><span class="nb">List</span><span class="p">[</span><span class="nb">Int32</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">width</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">height</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nd">@fieldwise_init</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span><span class="w"> </span><span class="nc">GridView</span><span class="p">(</span><span class="n">TrivialRegisterPassable</span><span class="p">):</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Portable read-only descriptor over current target-local samples.&#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">values</span><span class="p">:</span><span class="w"> </span><span class="n">Pointer</span><span class="p">[</span><span class="nb">Int32</span><span class="p">,</span><span class="w"> </span><span class="n">ImmUntrackedOrigin</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">width</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">height</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="nf">last</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb">Int32</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="s2">&#34;&#34;&#34;Reads the last sample of this validated nonempty grid.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Returns:
+</span></span></span><span class="line"><span class="cl"><span class="s2">            Last grid sample.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">unsafe_offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span><span class="w"> </span><span class="nc">GridAdapter</span><span class="p">(</span><span class="n">ResourceAdapter</span><span class="p">):</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Stateless adapter using current dimensions and cached sample capacity.&#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">comptime</span><span class="w"> </span><span class="n">Source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Grid</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">comptime</span><span class="w"> </span><span class="n">View</span><span class="p">[</span><span class="n">mut</span><span class="p">:</span><span class="w"> </span><span class="n">Bool</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GridView</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@staticmethod</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="n">source</span><span class="p">:</span><span class="w"> </span><span class="n">Self.Source</span><span class="p">)</span><span class="w"> </span><span class="n">raises</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="s2">&#34;&#34;&#34;Checks a nonempty rectangular grid before preparing either target.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Args:
+</span></span></span><span class="line"><span class="cl"><span class="s2">            source: Current host owner.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Raises:
+</span></span></span><span class="line"><span class="cl"><span class="s2">            Error: If dimensions overflow or do not match sample storage.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">source.width</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">source.height</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">raise</span><span class="w"> </span><span class="nb">Error</span><span class="p">(</span><span class="s2">&#34;This grid requires positive dimensions&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">source.width</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">9223372036854775807</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">source.height</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">raise</span><span class="w"> </span><span class="nb">Error</span><span class="p">(</span><span class="s2">&#34;Grid dimensions overflow&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">source.width</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">source.height</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">source.values</span><span class="p">):</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">raise</span><span class="w"> </span><span class="nb">Error</span><span class="p">(</span><span class="s2">&#34;Grid dimensions must match sample count&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@staticmethod</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="nf">bind_host</span><span class="p">(</span><span class="n">source</span><span class="p">:</span><span class="w"> </span><span class="n">Self.Source</span><span class="p">)</span><span class="w"> </span><span class="n">raises</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Self.View</span><span class="p">[</span><span class="kc">False</span><span class="p">]:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="s2">&#34;&#34;&#34;Borrows immutable samples from the validated host owner.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Args:
+</span></span></span><span class="line"><span class="cl"><span class="s2">            source: Current validated source.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Raises:
+</span></span></span><span class="line"><span class="cl"><span class="s2">            Error: If descriptor preparation fails.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Returns:
+</span></span></span><span class="line"><span class="cl"><span class="s2">            Descriptor over host samples.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Pointer</span><span class="p">[</span><span class="nb">Int32</span><span class="p">,</span><span class="w"> </span><span class="n">ImmUntrackedOrigin</span><span class="p">](</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">unsafe_from_address</span><span class="o">=</span><span class="nb">Int</span><span class="p">(</span><span class="n">source.values.unsafe_ptr</span><span class="p">())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">source.width</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">source.height</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@staticmethod</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="nf">prepare_device</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">source</span><span class="p">:</span><span class="w"> </span><span class="n">Self.Source</span><span class="p">,</span><span class="w"> </span><span class="n">mut</span><span class="w"> </span><span class="n">cache</span><span class="p">:</span><span class="w"> </span><span class="n">ResourceDeviceCache</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="n">raises</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Self.View</span><span class="p">[</span><span class="kc">False</span><span class="p">]:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="s2">&#34;&#34;&#34;Uploads current samples and returns the same descriptor type.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Args:
+</span></span></span><span class="line"><span class="cl"><span class="s2">            source: Current validated source.
+</span></span></span><span class="line"><span class="cl"><span class="s2">            cache: Source-type, context-local allocation cache.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Raises:
+</span></span></span><span class="line"><span class="cl"><span class="s2">            Error: If sample allocation or upload fails.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Returns:
+</span></span></span><span class="line"><span class="cl"><span class="s2">            Descriptor over device samples.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">cache.upload</span><span class="p">[</span><span class="nb">Int32</span><span class="p">](</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">Span</span><span class="p">(</span><span class="n">source.values</span><span class="p">)),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">source.width</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">source.height</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p><code>validate</code> runs before preparation on either backend, even when no entities
+match. Check sample counts and arithmetic here; a trivial view descriptor does
+not prove that its pointer indexing is valid. This grid rejects empty storage,
+so <code>last()</code> is always defined after successful validation.</p>
+<p><code>bind_host</code> borrows the owner&rsquo;s samples without copying. Its untracked immutable
+pointer relies on Larecs retaining the source throughout the invocation; it must
+never point into a temporary local collection. <code>prepare_device</code> uploads the
+samples through the supplied cache and returns the same descriptor with a device
+pointer. Larecs uploads the descriptor itself; the adapter does not need to.</p>
+<h3>Registering and using the custom resource<span class="hx-absolute -hx-mt-20" id="registering-and-using-the-custom-resource"></span>
+    <a href="#registering-and-using-the-custom-resource" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>Declare read access using the <strong>source type</strong>, and keep that same type in
+<code>get[Grid]()</code>. Inside the kernel the result is an immutable <code>GridView</code>, on both
+host and device. Outside the kernel, <code>world.resources.get[Grid]()</code> returns the
+owning <code>Grid</code> for edits. The following continues the example above:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="n">comptime</span><span class="w"> </span><span class="n">required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Resources</span><span class="p">()</span><span class="o">.</span><span class="n">read</span><span class="p">[</span><span class="n">Grid</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">def</span><span class="w"> </span><span class="nf">add_grid_sample</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">context</span><span class="p">:</span><span class="w"> </span><span class="n">KernelContext</span><span class="p">[</span><span class="n">Filter</span><span class="p">()</span><span class="o">.</span><span class="n">include</span><span class="p">[</span><span class="nb">Int32</span><span class="p">](),</span><span class="w"> </span><span class="n">required</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">):</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Adds the grid&#39;s last sample to each matching component.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">    Args:
+</span></span></span><span class="line"><span class="cl"><span class="s2">        context: Component rows and the read-only GridView binding.
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">ref</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context.resources.get</span><span class="p">[</span><span class="n">Grid</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">entity</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">context</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">entity.get</span><span class="p">[</span><span class="nb">Int32</span><span class="p">]()</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">grid.last</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="n">raises</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s2">&#34;&#34;&#34;Uses one custom resource and kernel on the host and, if available, device.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">    Raises:
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Error: If resource validation, execution, or a result check fails.
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">world</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">World</span><span class="p">[</span><span class="nb">Int32</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">world.resources.add</span><span class="p">(</span><span class="n">Grid</span><span class="p">([</span><span class="nb">Int32</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="nb">Int32</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="nb">Int32</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="nb">Int32</span><span class="p">(</span><span class="mi">9</span><span class="p">)],</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">entity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.storage.add_entity</span><span class="p">(</span><span class="nb">Int32</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SystemContext</span><span class="p">(</span><span class="n">world</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">context.run</span><span class="p">[</span><span class="n">add_grid_sample</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">assert_equal</span><span class="p">(</span><span class="n">world.storage.get</span><span class="p">[</span><span class="nb">Int32</span><span class="p">](</span><span class="n">entity</span><span class="p">),</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1"># World-side access returns the owning Grid, so samples can be edited.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">world.resources.get</span><span class="p">[</span><span class="n">Grid</span><span class="p">]()</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">context.run</span><span class="p">[</span><span class="n">add_grid_sample</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">assert_equal</span><span class="p">(</span><span class="n">world.storage.get</span><span class="p">[</span><span class="nb">Int32</span><span class="p">](</span><span class="n">entity</span><span class="p">),</span><span class="w"> </span><span class="mi">15</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">comptime</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">has_accelerator</span><span class="p">():</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">context.run</span><span class="p">[</span><span class="n">add_grid_sample</span><span class="p">,</span><span class="w"> </span><span class="n">backend</span><span class="o">=</span><span class="n">ExecutionBackend.DEVICE</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">assert_equal</span><span class="p">(</span><span class="n">world.storage.get</span><span class="p">[</span><span class="nb">Int32</span><span class="p">](</span><span class="n">entity</span><span class="p">),</span><span class="w"> </span><span class="mi">20</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">assert_equal</span><span class="p">(</span><span class="n">world.resources.get</span><span class="p">[</span><span class="n">Grid</span><span class="p">]()</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>The host calls always run; the device call runs when an accelerator is available.
+No explicit binding registration or manual transfer is required. Editing the
+owner between runs changes what the next invocation sees. Kernel results go to
+components; the read-only resource is never downloaded or changed by the kernel.
+Host-only resources can continue implementing <code>ResourceType</code> without an adapter.</p>
+<h3>Adapter allocation and access rules<span class="hx-absolute -hx-mt-20" id="adapter-allocation-and-access-rules"></span>
+    <a href="#adapter-allocation-and-access-rules" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>Every adapter must support concurrent reads of its read view, <code>View[False]</code>, on
+the view&rsquo;s execution target. View methods and all reachable memory must permit concurrent
+reads without hidden unsafe mutation. No escaped alias may mutate, resize,
+relocate, or free backing data before invocation completion; immutable pointer
+fields alone do not establish this guarantee. This is a universal adapter
+contract, with no capability marker.</p>
+<p>Threaded host calls accept adapted sources only through explicit <code>read</code>
+declarations. The caller validates and binds each source once, then shares the
+same descriptor and sample storage across jobs. Resource leases and descriptor
+owners remain alive until all workers join, including whole-range fallback.
+Ordinary pointer-free read resources also work without an adapter. Ordinary
+mutable resources remain unsupported by this engine; mutable adapted resources
+require <a href="#mutable-adapted-resources-experimental" >concurrent mutation support</a>.</p>
+<p>Use nonnegative cache slots for sample allocations. Slot <code>-1</code> is reserved for
+Larecs&rsquo;s view descriptor. For multiple arrays, give each array its own stable
+slot, such as <code>0</code> for samples and <code>1</code> for coordinates. Each world keeps a separate
+cache per source type, tied to its device context. Capacity is reused, and every
+preparation uploads current contents. Adapters need no revision tracking of
+their own: in worlds that <a href="#reusing-unchanged-device-copies-experimental" >reuse device copies</a>,
+Larecs skips <code>prepare_device</code> entirely while the source is unchanged.</p>
+<p>The cache accepts supported pointer-free trivial sample
+values, snapshots them in native owned staging, and returns an immutable device
+pointer. Adapters must use cache-owned allocations and this upload helper;
+queued copies from external host pointers or pointers to temporary allocations
+violate the lifetime contract. Views may contain immutable pointers and trivial
+metadata; mutable pointer fields are rejected. Adapters remain responsible for
+valid device addresses and pointee interpretation.</p>
+<p>There is no adapter factory or instance. Registration happens automatically on
+<code>add</code> and insert-on-<code>set</code>; source types identify bindings, so two resources may
+share the same view type. A wrapper can adapt a third-party owner. See the
+<a href="../../design/research/resource-view-probe.mojo" >compiled grid example</a>.</p>
+<p>Adapters without mutation support accept only <code>read</code>, including on the host;
+<code>Resources[AdaptedSource]()</code> and mutable declarations fail compilation.
+<code>get[Source]()</code> always returns the associated view; kernels cannot access the
+owner. Edit the world-side owner between runs, including whole-instance
+assignment through <code>world.resources.get[T]() = T(...)</code>; the next run validates
+and uploads the new source without rebinding. Copied worlds have independent host
+owners and empty resource caches.</p>
+<h2>Mutable adapted resources (experimental)<span class="hx-absolute -hx-mt-20" id="mutable-adapted-resources-experimental"></span>
+    <a href="#mutable-adapted-resources-experimental" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>An adapter can also give kernels a <strong>writer view</strong>, so shared output such as a
+per-cell grid is filled without a <code>MutCapture</code> and with the same kernel on
+every target. The access declaration selects the view:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Declaration</th>
+          <th><code>get[T]()</code> returns</th>
+          <th>Output before the kernel runs</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>Resources().read[T]()</code></td>
+          <td><code>T.View[False]</code></td>
+          <td>Not applicable</td>
+      </tr>
+      <tr>
+          <td><code>Resources().write[T]()</code></td>
+          <td><code>T.View[True]</code></td>
+          <td>Fresh, initialized by the adapter</td>
+      </tr>
+      <tr>
+          <td><code>Resources().read_write[T]()</code></td>
+          <td><code>T.View[True]</code></td>
+          <td>Existing contents preserved</td>
+      </tr>
+  </tbody>
+</table>
+<p>Read and writer views can be different types:</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="k">struct</span><span class="w"> </span><span class="nc">GridAdapter</span><span class="p">(</span><span class="n">ResourceAdapter</span><span class="p">):</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">comptime</span><span class="w"> </span><span class="n">Source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Grid</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">comptime</span><span class="w"> </span><span class="n">View</span><span class="p">[</span><span class="n">mutable</span><span class="p">:</span><span class="w"> </span><span class="n">Bool</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GridFill</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">mutable</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">GridRead</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">comptime</span><span class="w"> </span><span class="n">supports_mutation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">True</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">comptime</span><span class="w"> </span><span class="n">supports_concurrent_mutation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">True</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>Both capabilities default to <code>False</code>. <code>supports_mutation</code> admits <code>write</code> and
+<code>read_write</code> declarations for sequential host runs. Device and <code>backend=ExecutionBackend.HOST_THREADED</code>
+runs also require <code>supports_concurrent_mutation</code>. Declare it only if every
+writer-view operation is safe under concurrent use, for example because slots
+are reserved with <a href="../synchronization" >atomics</a> and then written disjointly.
+Larecs leases the source exclusively for the invocation. This does not prevent
+races between the GPU threads or host workers of one kernel: <strong>you are
+responsible for safe resource access.</strong> Unsupported combinations fail
+compilation.</p>
+<p>The descriptor a kernel receives is immutable. A writer view holds pointers to
+adapter-managed backing buffers, such as slots, per-cell counters, reductions,
+and error flags, and mutates them through its own methods. Mutable adapters
+implement four hooks that receive the full <code>ResourceAccess</code> mode, so <code>write</code>
+can initialize fresh output while <code>read_write</code> preserves it:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Hook</th>
+          <th>When Larecs calls it</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>bind_host_mutable[access](mut source)</code></td>
+          <td>Once before host kernels run. On the host, kernels write the source&rsquo;s buffers directly. Also called for device runs without matching rows.</td>
+      </tr>
+      <tr>
+          <td><code>prepare_device_mutable[access](mut source, mut cache)</code></td>
+          <td>Once before a device launch. Use <code>cache.fill</code> for fresh output and <code>cache.upload_mutable</code> to preserve contents.</td>
+      </tr>
+      <tr>
+          <td><code>stage_device_results[access](mut source, mut cache)</code></td>
+          <td>After the launch is queued. Stage every output with <code>cache.download</code>.</td>
+      </tr>
+      <tr>
+          <td><code>finalize[access](mut source)</code></td>
+          <td>Once after all kernel work completed and device outputs were published. Use it to clamp counters or report overflow.</td>
+      </tr>
+  </tbody>
+</table>
+<p>Preparation and finalization run once per invocation, across every matching
+archetype, selected range, threaded chunk, and device launch, including runs
+with no matching rows. Output is never reset per archetype or worker. Device
+runs use the world&rsquo;s device queue and cache; buffers and staging stay alive
+until completion. Mutable adapted sources are prepared on every run, even in
+worlds that <a href="#reusing-unchanged-device-copies-experimental" >reuse device copies</a>.
+Size host targets before staging downloads; they are written only after the
+queue completes.</p>
+<p>Failures follow the <a href="#invocation-lifetime-and-failures" >invocation rules</a>:</p>
+<ul>
+<li>Host writes are not rolled back. If preparation fails after <code>write</code>
+initialization, the source stays initialized, and <code>finalize</code> does not run.</li>
+<li>Device outputs are published only after synchronization succeeds. A failed
+run discards them.</li>
+<li>If <code>finalize</code> raises, the run raises, but published outputs remain and the
+world stays usable.</li>
+</ul>
+<p><a href="../../../examples/scatter_resource.mojo" ><code>examples/scatter_resource.mojo</code></a>
+is a complete example. Writers reserve per-cell slots with atomic counters
+and count dropped writes; <code>finalize</code> clamps the counters. The same thin kernel
+runs sequentially, threaded, and on a device. Run it with
+<code>pixi run scatter-example</code>. Slot order within a cell depends on scheduling.</p>
+<h3>Migrating existing adapters<span class="hx-absolute -hx-mt-20" id="migrating-existing-adapters"></span>
+    <a href="#migrating-existing-adapters" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>Adapters written for the read-only API need three changes:</p>
+<ol>
+<li>Replace <code>comptime View = MyView</code> with <code>comptime View[mut: Bool] = MyView</code>.</li>
+<li>Change <code>bind_host</code> and <code>prepare_device</code> to return <code>Self.View[False]</code>.</li>
+<li>Remove <code>comptime KernelView = MyView</code> from the source. <code>KernelView</code> still
+exists as an alias for <code>View[False]</code>.</li>
+</ol>
+<p>Adapters that do not opt into mutation keep their behavior. Mutable
+declarations of them now fail with &ldquo;mutable access requires
+Adapter.supports_mutation&rdquo;.</p>
+<h2>Invocation lifetime and failures<span class="hx-absolute -hx-mt-20" id="invocation-lifetime-and-failures"></span>
+    <a href="#invocation-lifetime-and-failures" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p><code>run</code> completes synchronously. Larecs retains sources and descriptors throughout
+execution, rejects reentrant lookup/replacement/removal of bound sources, and
+rejects duplicate source declarations. Previously escaped <code>UnsafeAnyOrigin</code>
+references must not mutate or resize the source while a kernel uses its view;
+views and references must not escape the invocation. Copying or destroying leased
+storage through an escaped alias aborts because lifecycle operations cannot raise.</p>
+<p>Device component, capture, and resource downloads use owned staging and publish
+only after synchronization succeeds. On failure Larecs drains the queue and
+propagates the error; if completion remains unknown, further execution on the
+world raises. Failed calls discard staged outputs, without promising rollback of
+other host effects. Empty device matches still validate resources and adapters
+but perform no device allocation, upload, or launch.</p>
+<h2>Reusing unchanged device copies (experimental)<span class="hx-absolute -hx-mt-20" id="reusing-unchanged-device-copies-experimental"></span>
+    <a href="#reusing-unchanged-device-copies-experimental" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>By default every <code>backend=ExecutionBackend.DEVICE</code> run uploads all resources and readable
+component columns it declares, even if they did not change. Worlds that call
+<code>world.reuse_device_copies(True)</code> skip uploads of data that is unchanged since
+its device copy was made. For adapted resources this skips the whole
+<code>prepare_device</code> call; validation and leases still run on every call. Written
+data is still downloaded after every run.</p>
+<p>Larecs cannot see what you do with a reference after it returns it. It tracks
+revisions that advance on every Larecs access that <em>may</em> mutate data:</p>
+<ul>
+<li>Resources: <code>add</code>, <code>set</code>, <code>get</code> through a mutable world, host runs declaring
+<code>write</code> or <code>read_write</code>, and device runs writing the resource.</li>
+<li>Component columns, per type and physical store: <code>world.storage.get</code> and
+<code>set</code>, kernel runs writing the type, and every structural change, spatial
+reordering, or partition move of the store.</li>
+</ul>
+<p>Use <code>world.resources.read[T]()</code> and <code>world.storage.read[T](entity)</code> for reads
+between device runs: they return immutable references and keep device copies
+reusable, whereas <code>get</code> on a mutable world always counts as a mutation. Read
+queries never count as mutations.</p>
+<p>Component columns are reused per contiguous store range. Kernels with
+different filters on the same component type pack stores at different
+offsets, so alternating them uploads that column again each time.</p>
+<blockquote>
+  <p><strong>Re-obtain or invalidate.</strong> In a world that reuses device copies, never
+mutate a resource through a reference obtained before a later Larecs call or
+through a raw pointer without telling Larecs. Re-obtain the reference with
+<code>get</code> after each run, or call <code>world.resources.invalidate_device[T]()</code> (or
+<code>world.invalidate_device_copies()</code> for everything) after the mutation.
+Otherwise the next device run silently reads the stale device copy.</p>
+</blockquote>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-mojo" data-lang="mojo"><span class="line"><span class="cl"><span class="w">    </span><span class="n">world.reuse_device_copies</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1"># Reading through `read` keeps an unchanged device copy reusable.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world.resources.read</span><span class="p">[</span><span class="n">Time</span><span class="p">]()</span><span class="o">.</span><span class="n">time</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1"># A pointer kept across runs bypasses revision tracking...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">time_ptr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Pointer</span><span class="p">(</span><span class="n">to</span><span class="o">=</span><span class="n">world.resources.get</span><span class="p">[</span><span class="n">Time</span><span class="p">]())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">time_ptr</span><span class="p">[]</span><span class="o">.</span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">4.0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1"># ...so invalidate after mutating through it.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">world.resources.invalidate_device</span><span class="p">[</span><span class="n">Time</span><span class="p">]()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">world.reuse_device_copies</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>A failed device run marks the copies it touched as unknown, so the next run
+uploads them again. Disabling reuse, removing a resource, and copying the world
+discard device copy records.</p>
 <h2>Removing resources<span class="hx-absolute -hx-mt-20" id="removing-resources"></span>
     <a href="#removing-resources" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>One or multiple resources can be removed via the
 <a href="/larecs/larecs/ResourceStorage#remove" target="_blank"><code>remove</code></a> method. The existence
@@ -1175,10 +1973,10 @@ all-or-nothing.</p>
         title="Queries and iteration"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-pr-4 rtl:hx-pl-4"
       ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Queries and iteration</a><a
-        href="/larecs/guide/systems_scheduler/"
-        title="Systems and the scheduler"
+        href="/larecs/guide/synchronization/"
+        title="Synchronization"
         class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-ml-auto ltr:hx-pl-4 ltr:hx-text-right rtl:hx-mr-auto rtl:hx-pr-4 rtl:hx-text-left"
-      >Systems and the scheduler<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
+      >Synchronization<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
         
       </main>
     </article>
