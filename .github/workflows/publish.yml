@@ -8,6 +8,13 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: >-
+    ${{ github.event_name == 'pull_request'
+    && format('{0}-pr-{1}', github.workflow, github.event.pull_request.number)
+    || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # Build docs and run doctests only when their inputs change: the guides, the
   # API docstrings, the benchmark plots embedded in the guides, or the tooling.
