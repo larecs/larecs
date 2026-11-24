@@ -193,19 +193,26 @@ class Project:
                 project=self.id,
                 content=issue_id,
             )["addProjectV2ItemById"]["item"]["id"]
-        graphql(
-            """mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
-              updateProjectV2ItemFieldValue(input: {
-                projectId: $project, itemId: $item, fieldId: $field,
-                value: {singleSelectOptionId: $option}
-              }) { projectV2Item { id } }
-            }""",
-            token=self.token,
-            project=self.id,
-            item=item_id,
-            field=self.field_id,
-            option=self.option_id,
-        )
+        set_project_status(self.id, item_id, self.field_id, self.option_id, self.token)
+
+
+def set_project_status(
+    project: str, item: str, field: str, option: str, token: str | None,
+) -> None:
+    """Set the status option for an existing project item."""
+    graphql(
+        """mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
+          updateProjectV2ItemFieldValue(input: {
+            projectId: $project, itemId: $item, fieldId: $field,
+            value: {singleSelectOptionId: $option}
+          }) { projectV2Item { id } }
+        }""",
+        token=token,
+        project=project,
+        item=item,
+        field=field,
+        option=option,
+    )
 
 
 def issue(repo: str, number: int) -> dict | None:
