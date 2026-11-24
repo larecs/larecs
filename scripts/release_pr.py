@@ -143,22 +143,6 @@ def open_release(tag: str, ref: str) -> None:
     )
 
 
-def check_description(number: int) -> None:
-    """Verify the description on an open release PR.
-
-    Args:
-        number: Release pull request number.
-
-    Raises:
-        SystemExit: If the PR number or description is invalid.
-        subprocess.CalledProcessError: If GitHub cannot read the PR.
-    """
-    if number < 1:
-        sys.exit("Specify a release PR number.")
-    pr = json.loads(output("gh", "pr", "view", str(number), "--json", "body,headRefName"))
-    require_preview_section(pr["body"] or "", pr["headRefName"])
-
-
 def has_approval(number: int, author: str, candidate: str, merged_at: str) -> bool:
     """Check for approval of the exact candidate by an eligible reviewer.
 
@@ -261,18 +245,12 @@ def main() -> None:
     open_command = commands.add_parser("open", help="open a release PR for a commit on main")
     open_command.add_argument("tag")
     open_command.add_argument("ref", nargs="?", default="origin/main")
-    description_command = commands.add_parser(
-        "check-description", help="verify the Pixi instructions in a release PR"
-    )
-    description_command.add_argument("number", type=int)
     resolve_command = commands.add_parser("resolve", help="verify a merged release PR for publishing")
     resolve_command.add_argument("number", type=int)
     args = parser.parse_args()
     try:
         if args.command == "open":
             open_release(args.tag, args.ref)
-        elif args.command == "check-description":
-            check_description(args.number)
         else:
             resolve_release(args.number)
     except (OSError, subprocess.CalledProcessError, json.JSONDecodeError) as error:
