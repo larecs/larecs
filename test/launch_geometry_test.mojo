@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """Host tests for GPU kernel launch geometry."""
 
 

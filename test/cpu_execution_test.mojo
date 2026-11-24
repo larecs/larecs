@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """Shared host execution preserves exact ranges and invocation-wide bindings."""
 
 from std.testing import (

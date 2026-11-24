@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """Regression tests for separate traversal and structural-lock ownership."""
 
 from std.testing import (

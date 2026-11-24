@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """Exact threaded membership, fallback, resources, preparation, and concurrency."""
 
 from std.testing import (

@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """HostStorage overlap validation and archetype migration tests."""
 
 from std.testing import *

@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """HostStorage-level tests for lifecycle safety, bounds safety, and typed errors.
 
 These exercise `HostStorage` directly (rather than through `World`) so they

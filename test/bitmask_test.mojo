@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 import std.random
 from std.testing import *
 from std.benchmark import keep

@@ -8,7 +8,9 @@
 #
 # Each test file is compiled with debug info, all assertions, and AddressSanitizer.
 # `pixi run tests` selects Mogo Tester 3 through MOGO_TESTER_BIN, and it compiles
-# with the active Larecs Mojo. World and spatial host tests request line tables.
+# with the active Larecs Mojo. Host tests request line tables through their
+# `# MOJO_BUILD_ARGS: -g1` header, which keeps sanitizer reports' file and line
+# numbers at a fraction of the compile time of full debug info.
 # Without MOGO_TESTER_BIN, such as in package tests, `mogo-tester` comes from PATH.
 # Test binaries run in a PTY to preserve ASAN's colored output while capturing
 # it to check for ASAN error messages.

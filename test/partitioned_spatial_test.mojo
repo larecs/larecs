@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """Cluster-local storage, identity repair, exact membership, and reclamation."""
 
 from std.testing import (

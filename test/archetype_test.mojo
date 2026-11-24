@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 from std.testing import *
 from std.sys.info import size_of
 from std.memory import alloc, Layout, Allocation

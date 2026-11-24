@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 from std.testing import *
 from std.sys import size_of
 

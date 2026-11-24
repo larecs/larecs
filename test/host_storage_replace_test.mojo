@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """HostStorage replacement lifecycle tests for non-trivial components."""
 
 from std.testing import *

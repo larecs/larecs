@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """Ownership, publication, and actual host-worker synchronization checks."""
 
 from max.algorithm import parallelize

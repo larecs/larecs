@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 from std.testing import *
 from larecs.bitmask import BitMask
 from larecs.graph import Node, BitMaskGraph
