@@ -6,7 +6,6 @@
 <title>larecs logo playground</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link id="wordmarkFont" rel="stylesheet">
 <script src="vendor/polygon-clipping.umd.min.js"></script>
 <style>
 :root {
@@ -49,10 +48,7 @@ button:hover { border-color: var(--acc) }
 .minis { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; align-items: center }
 .minis > div { border-radius: var(--radius); padding: 8px; border: 1px solid var(--line) }
 .lock { border-radius: var(--radius); padding: 18px 22px; margin-top: 12px; display: flex; align-items: center; gap: 18px; border: 1px solid var(--line) }
-.lock span { font-size: 56px; line-height: 1; white-space: nowrap }
-select, input[type=text] { font: inherit; font-size: 13px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; width: 100% }
-.field { display: grid; grid-template-columns: 1fr 164px; gap: 8px; align-items: center; margin: 6px 0 }
-.field label { font-size: 13px }
+.lock span { font-weight: 500; font-size: 56px; letter-spacing: -.01em; line-height: 1 }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px }
 .check { display: flex; gap: 8px; align-items: center; margin: 8px 0; font-size: 13px }
 .cta { margin-left: auto; background: var(--acc); color: #0B1712; border-color: var(--acc); font-size: 14px; font-weight: 600; padding: 8px 16px }
@@ -96,8 +92,6 @@ a.cta-link { background: var(--acc); color: #0B1712; border-radius: 7px; padding
     <h2>Shape</h2>
     <div id="params"></div>
     <div class="actions"><button id="resetShape">Reset shape</button></div>
-    <h2>Wordmark</h2>
-    <div id="font"></div>
     <h2>Colours</h2>
     <div class="presets" id="presets"></div>
     <div id="colors"></div>
@@ -114,7 +108,6 @@ a.cta-link { background: var(--acc); color: #0B1712; border-radius: 7px; padding
     <div class="lock" id="lock"></div>
     <div class="actions">
       <button id="dlIcon">Download SVG (transparent)</button>
-      <button id="dlLockup">Download lockup SVG</button>
       <button id="dlAvatar">Download avatar SVG</button>
       <button id="copyParams">Copy settings JSON</button>
       <button id="copyLink">Copy share link</button>
@@ -490,33 +483,9 @@ if (SHOW_ALL) { const l = document.querySelector('header a[href="?all"]'); l.hre
 
 const STORE = "larecs-playground-v11";
 const ACTIVE = SHOW_ALL ? [...VARIANTS, ...CONCEPTS] : VARIANTS.filter(v => v.id === "V12");
-// Wordmark fonts: Google Fonts families, or the name of a font installed locally.
-const FONTS = ["Inter", "Manrope", "Geist", "IBM Plex Sans", "DM Sans", "Space Grotesk", "Plus Jakarta Sans",
-  "Work Sans", "Sora", "Outfit"];
-const FONT_DEFAULT = { family: "Inter", custom: "", weight: 500, tracking: -0.01, size: 1 };
-const FONT_PARAMS = [
-  { k: "weight", label: "Weight", min: 300, max: 700, step: 100 },
-  { k: "tracking", label: "Letter spacing (em)", min: -0.08, max: 0.12, step: 0.005 },
-  { k: "size", label: "Size relative to icon", min: 0.5, max: 1.6, step: 0.02 },
-];
-const CUSTOM_FONT = /^[A-Za-z0-9 _-]{1,60}$/;
-const defaults = () => ({ concept: "V12", params: {}, colors: { ...PRESETS["Colour dark"] }, mono: false, font: { ...FONT_DEFAULT } });
+const defaults = () => ({ concept: "V12", params: {}, colors: { ...PRESETS["Colour dark"] }, mono: false });
 let state = defaults();
 try { const s = JSON.parse(localStorage.getItem(STORE) || "null"); if (s && s.colors) state = { ...state, ...s }; } catch (e) {}
-state.font = sanitizeFont(state.font);
-
-function sanitizeFont(f) {
-  const out = { ...FONT_DEFAULT };
-  if (!f || typeof f !== "object") return out;
-  if (FONTS.includes(f.family)) out.family = f.family;
-  if (typeof f.custom === "string" && CUSTOM_FONT.test(f.custom.trim())) out.custom = f.custom.trim();
-  for (const x of FONT_PARAMS) {
-    const v = Number(f[x.k]);
-    if (Number.isFinite(v)) out[x.k] = Math.min(x.max, Math.max(x.min, v));
-  }
-  return out;
-}
-const fontFamily = () => state.font.custom || state.font.family;
 
 // Share links carry a preset in the URL fragment: #preset=<base64url JSON>.
 const b64url = str => btoa(unescape(encodeURIComponent(str))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -532,8 +501,7 @@ function applyPreset(preset) {
   }
   const colors = { ...state.colors };
   for (const r of Object.keys(ROLE_LABEL)) if (HEX.test(preset.colors?.[r] ?? "")) colors[r] = preset.colors[r];
-  state = { ...state, concept: c.id, params: { ...state.params, [c.id]: params }, colors, mono: !!preset.mono,
-    font: preset.font ? sanitizeFont(preset.font) : state.font };
+  state = { ...state, concept: c.id, params: { ...state.params, [c.id]: params }, colors, mono: !!preset.mono };
   return true;
 }
 const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
@@ -605,53 +573,10 @@ function renderMain() {
     `<div style="background:${FI.ivory}">${svg(render(mark, monoColors(FI.green)), 96)}</div>` +
     `<div style="background:${bg}">${svg(render(mark, cols), 32)} ${svg(render(mark, cols), 20)}</div>`;
   $("lock").style.background = bg;
-  const f = state.font;
-  $("lock").innerHTML = svg(render(mark, cols, 220), 84) + "<span>larecs</span>";
-  Object.assign($("lock").querySelector("span").style, {
-    color: cols.a, fontFamily: `"${fontFamily()}", sans-serif`, fontWeight: f.weight,
-    letterSpacing: f.tracking + "em", fontSize: Math.round(56 * f.size) + "px" });
+  $("lock").innerHTML = svg(render(mark, cols, 220), 84) + `<span style="color:${state.mono ? cols.a : state.colors.a}">larecs</span>`;
 }
 
-function loadFont() {
-  const link = $("wordmarkFont");
-  if (state.font.custom) { link.removeAttribute("href"); return; }
-  link.href = "https://fonts.googleapis.com/css2?family=" + state.font.family.replace(/ /g, "+") +
-    ":wght@300;400;500;600;700&display=swap";
-}
-
-function buildFont() {
-  const f = state.font;
-  $("font").innerHTML =
-    `<div class="field"><label for="f-family">Font</label><select id="f-family">` +
-    FONTS.map(n => `<option${n === f.family ? " selected" : ""}>${n}</option>`).join("") + `</select></div>` +
-    `<div class="field"><label for="f-custom">Installed font (overrides)</label><input type="text" id="f-custom" placeholder="e.g. Helvetica Neue" maxlength="60"></div>` +
-    FONT_PARAMS.map(x => `<div class="row"><label for="f-${x.k}">${x.label}</label><input type="range" id="f-${x.k}" min="${x.min}" max="${x.max}" step="${x.step}" value="${f[x.k]}"><output id="fo-${x.k}">${f[x.k]}</output></div>`).join("");
-  $("f-custom").value = f.custom;
-  $("f-family").onchange = e => { state.font.family = e.target.value; save(); loadFont(); renderMain(); };
-  $("f-custom").oninput = e => {
-    const v = e.target.value.trim();
-    state.font.custom = CUSTOM_FONT.test(v) ? v : "";
-    save(); loadFont(); renderMain();
-  };
-  FONT_PARAMS.forEach(x => $("f-" + x.k).oninput = e => {
-    state.font[x.k] = parseFloat(e.target.value); $("fo-" + x.k).textContent = e.target.value; save(); renderMain();
-  });
-}
-
-// Lockup with live text: the font must be installed where the SVG is used.
-function lockupSvg() {
-  const { mark, cols } = current, f = state.font, ih = 120, th = 56 * f.size * 120 / 84;
-  const icon = svg(render(mark, cols, 220), ih).replace("<svg ", '<svg x="0" y="0" ');
-  // Width from the rendered preview text, scaled from its 84 px icon to 120 px.
-  const textW = $("lock").querySelector("span").getBoundingClientRect().width * ih / 84;
-  const tx = ih * 0.92, w = Math.round(tx + textW + 16);
-  const esc = s => s.replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`);
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${ih}" width="${w}" height="${ih}">${icon}` +
-    `<text x="${tx}" y="${ih / 2}" dominant-baseline="central" font-family="${esc(fontFamily())}, sans-serif" font-weight="${f.weight}" ` +
-    `letter-spacing="${f.tracking}em" font-size="${th.toFixed(1)}" fill="${cols.a}">larecs</text></svg>`;
-}
-
-function buildAll() { buildThumbs(); buildParams(); buildFont(); buildColors(); loadFont(); renderMain(); }
+function buildAll() { buildThumbs(); buildParams(); buildColors(); renderMain(); }
 
 function download(name, text) {
   const a = document.createElement("a");
@@ -662,15 +587,14 @@ function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add
 
 $("resetShape").onclick = () => { delete state.params[state.concept]; save(); buildParams(); renderMain(); updateThumb(concept()); };
 $("dlIcon").onclick = () => download(`larecs-${current.c.id}.svg`, svg(render(current.mark, current.cols), 256));
-$("dlLockup").onclick = () => download(`larecs-${current.c.id}-lockup.svg`, lockupSvg());
 $("dlAvatar").onclick = () => download(`larecs-${current.c.id}-avatar.svg`, svg(render(current.mark, current.cols, 148), 256, state.colors.bg));
 $("copyParams").onclick = async () => {
-  const json = JSON.stringify({ concept: current.c.id, params: paramsOf(current.c), colors: state.colors, mono: state.mono, font: state.font }, null, 2);
+  const json = JSON.stringify({ concept: current.c.id, params: paramsOf(current.c), colors: state.colors, mono: state.mono }, null, 2);
   try { await navigator.clipboard.writeText(json); toast("Settings copied"); } catch (e) { prompt("Copy settings", json); }
 };
 
 const presetFragment = () => "#preset=" + b64url(JSON.stringify(
-  { concept: current.c.id, params: paramsOf(current.c), colors: state.colors, mono: state.mono, font: state.font }));
+  { concept: current.c.id, params: paramsOf(current.c), colors: state.colors, mono: state.mono }));
 $("copyLink").onclick = async () => {
   const url = location.href.split("#")[0] + presetFragment();
   try { await navigator.clipboard.writeText(url); toast("Share link copied"); } catch (e) { prompt("Copy share link", url); }

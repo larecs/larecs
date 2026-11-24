@@ -73,9 +73,6 @@ Colours live in `palette.json`.
 current logo: a T03R variation built from one generalised shape whose corners,
 cuts, slant angle and branch layout are all adjustable. Open it with `?all` to
 also show the other variations (V01–V13) and the archived exploration concepts.
-The Wordmark section picks the lockup font (a Google Fonts family or a font
-installed locally), its weight, letter spacing and size; "Download lockup SVG"
-exports the lockup with live text in that font.
 "Copy share link" puts the current settings into the URL fragment
 (`#preset=…`); opening that link restores them.
 
