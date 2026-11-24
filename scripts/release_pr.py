@@ -79,19 +79,20 @@ pixi add --git https://github.com/larecs/larecs.git \\
 
 
 def require_preview_section(body: str, branch: str) -> None:
-    """Require the release candidate instructions in a PR description.
+    """Require the release candidate instructions as the first section.
 
     Args:
         body: Release PR description in Markdown.
         branch: Release candidate branch name.
 
     Raises:
-        SystemExit: If the required section is missing or points to another branch.
+        SystemExit: If the section is missing, misplaced, or points to another branch.
     """
     expected = preview_section(branch)
     description = "\n".join(body.splitlines()).strip()
-    if f"\n{expected}\n" not in f"\n{description}\n":
-        sys.exit(f"Add this section to the release PR description:\n\n{expected}")
+    intro, *sections = re.split(r"(?m)^(?=## )", description, maxsplit=2)
+    if not intro.strip() or not sections or sections[0].strip() != expected:
+        sys.exit(f"Place this section after the opening description:\n\n{expected}")
 
 
 def open_release(tag: str, ref: str) -> None:
@@ -126,6 +127,10 @@ def open_release(tag: str, ref: str) -> None:
     )
     base_branch = f"release/base-{tag}"
     candidate_branch = f"release/candidate-{tag}"
+    description = (
+        f"Review the Larecs `{tag}` release candidate and the changes since `{previous}`.\n\n"
+        f"{preview_section(candidate_branch)}\n\n{notes}"
+    )
     subprocess.run(
         ["git", "push", "--atomic", "origin",
          f"{base}:refs/heads/{base_branch}", f"{candidate}:refs/heads/{candidate_branch}"],
@@ -133,8 +138,7 @@ def open_release(tag: str, ref: str) -> None:
     )
     subprocess.run(
         ["gh", "pr", "create", "--base", base_branch, "--head", candidate_branch,
-         "--title", f"Release Larecs {tag}",
-         "--body", f"{notes}\n\n{preview_section(candidate_branch)}"],
+         "--title", f"Release Larecs {tag}", "--body", description],
         check=True,
     )
 

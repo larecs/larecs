@@ -36,9 +36,9 @@ The workspace also needs the `conda-forge`, `https://repo.prefix.dev/max`, and
    Merge the changelog update into `main`.
 2. Run `python3 scripts/release_pr.py open <tag> [main-commit]`. The command
    opens a PR from the selected commit against the most recent release. Keep
-   the generated **Try the release candidate** section so readers can build
-   the candidate with Pixi. Use **Files changed** for the full diff and the
-   linked PRs for context.
+   the generated **Try the release candidate** section directly after the
+   opening description so readers can build the candidate with Pixi. Use
+   **Files changed** for the full diff and the linked PRs for context.
 3. After an approving review and passing checks, merge the release PR using
    **Create a merge commit**. If the release needs a fix, land it on `main`
    and update the candidate branch to the new commit for review.
