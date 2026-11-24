@@ -71,7 +71,7 @@ jobs:
           MOGO_TESTER_BIN="$PWD/.pixi/envs/test-runner/bin/mogo-tester" \
             pixi run -e test python scripts/monitor_ci_memory.py \
             --output output/memory/tests.jsonl -- \
-            bash test/run_tests.sh --parallel 2 test
+            bash test/run_tests.sh --parallel auto test
           pixi run test-resource-compile-failures
 
       - name: Upload memory diagnostics
