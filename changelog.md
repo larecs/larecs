@@ -1,9 +1,147 @@
 # Changelog
 
-## [Unreleased](https://github.com/larecs/larecs/compare/v1.0.0b1...main)
+## [Unreleased](https://github.com/larecs/larecs/compare/v1.0.0b2...main)
 
 Unreleased changes are collected as fragments in [changelog.d](changelog.d/)
 until the next release.
+
+## [1.0.0b2 (2026-11-24)](https://github.com/larecs/larecs/compare/v1.0.0b1...v1.0.0b2)
+
+### Breaking changes
+
+- Select kernel execution with `backend=ExecutionBackend.HOST` (default) or
+  `backend=ExecutionBackend.DEVICE` instead of a boolean target flag. Device
+  execution raises when the requested backend is unavailable.
+
+- Rename `GPUComponentType`/`GPUResourceType` to
+  `DeviceComponentType`/`DeviceResourceType` and
+  `constrain_gpu_safe_components`/`constrain_gpu_safe_resources` to
+  `constrain_device_safe_components`/`constrain_device_safe_resources`.
+  ([#181](https://github.com/larecs/larecs/pull/181))
+
+- Replace `LockedWorldEntityIterator` with bounded `LockedEntityRange`
+  storage ranges; `HostStorage.Iterator` specializations use
+  `has_ranges=True` instead of `has_start_indices=True`. Inferred low-level
+  loops keep working, and batch initialization runs through
+  `SystemContext` selections. ([#217](https://github.com/larecs/larecs/pull/217))
+
+- Reject owning, pointer-bearing, nontrivial, and opaque ordinary device
+  resources; pass heap-backed sources through read-only adapters instead.
+  Opaque fixed arrays need an explicit supported representation. Legacy
+  `Resources[T]()` declarations remain `read_write` for ordinary resources.
+  ([#184](https://github.com/larecs/larecs/pull/184))
+
+- Reject invalid bitmask storage sizes, atomic scalar types other than
+  `UInt32` and `Int32`, and writable atomic or synchronized views over
+  immutable origins when the type is declared. ([#215](https://github.com/larecs/larecs/pull/215))
+
+### Added
+
+- Add opt-in device copy reuse with `World.reuse_device_copies(enabled)`:
+  device runs skip uploading resources and component columns unchanged since
+  their last transfer. `world.resources.read[T]()` and
+  `world.storage.read[T](entity)` read without forcing re-uploads, and
+  `invalidate_device[T]()` and `invalidate_device_copies()` force them after
+  writes through escaped references or raw pointers. ([#192](https://github.com/larecs/larecs/pull/192))
+
+- Support `with` blocks for `EntitySelection`, including in-place mutation
+  chains and automatic lock release on normal, early, and exceptional exits.
+  ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Add movable, noncopyable `EntitySelection` results for system batch creation
+  and filtered component changes, with in-place add/remove/replace chains and
+  reusable CPU/GPU kernel execution over exact selected rows. ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Add typed kernel capture bindings (`Captures`, `ReadCapture`, `MutCapture`,
+  `read_capture`, `mut_capture`) that pass host values to CPU and GPU kernels,
+  read-only or copied back after the run. ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Publish nightly packages built from `main` to
+  https://prefix.dev/tree-d/nightly. ([#251](https://github.com/larecs/larecs/pull/251))
+
+- Add experimental source-declared `DevicePassableResource` adapters with
+  portable read-only views, `BufferResource`, source-keyed allocation reuse,
+  and `Resources().read/write/read_write` declarations. Kernels use
+  `get[Source]()` on host and device, and source edits or replacements need
+  no rebinding. `read` binds an adapter's `View[False]`; `write` (fresh
+  output) and `read_write` (preserved contents) bind `View[True]` for
+  adapters that opt in with `supports_mutation` or, for device and threaded
+  runs, `supports_concurrent_mutation`. `ResourceAccess` and the cache
+  helpers `upload_mutable`, `fill`, and `download` support writable
+  adapters. ([#184](https://github.com/larecs/larecs/pull/184), [#191](https://github.com/larecs/larecs/pull/191))
+
+- Add experimental opt-in spatial clustering. Owned read-only classifiers and
+  checked grid/Morton-key helpers assign entities to cluster-local partitions,
+  each a contiguous growable store beneath its logical archetype. Explicit
+  maintenance reclassifies only dirty entities, tracked across mutable
+  references, setters, CPU kernels, selected execution, and GPU copy-back;
+  structural changes request a full rebuild, and raw writes can mark entities
+  or invalidate everything. `SystemContext.select_cluster` returns exact
+  locked cluster membership, and ordinary queries, bulk changes, and
+  execution traverse cluster stores while preserving entity locations and
+  component lifetimes. ([#175](https://github.com/larecs/larecs/pull/175), [#179](https://github.com/larecs/larecs/pull/179), [#180](https://github.com/larecs/larecs/pull/180))
+
+- Add experimental target-local `AtomicValue` and `Synchronized` owners with
+  shared views, 32-bit atomic operations, and nonblocking read/write guards
+  whose borrows the compiler enforces. On Apple GPUs, only relaxed scalar
+  operations, acquire loads, and release stores are supported.
+  ([#183](https://github.com/larecs/larecs/pull/183), [#215](https://github.com/larecs/larecs/pull/215))
+
+- Add experimental opt-in `backend=ExecutionBackend.HOST_THREADED` host execution for ordinary and
+  selected kernels, with `World(execution_config=...)` worker budgets and
+  dynamically claimed contiguous chunks. Threaded runs admit pointer-free
+  components and read-only or concurrently mutable resources and reject
+  unsafe bindings and world lifecycle changes. Types with `StaticTuple` or `InlineArray` fields of
+  scalars can conform to `PlainValue` to declare a pointer-free
+  representation. ([#187](https://github.com/larecs/larecs/pull/187), [#189](https://github.com/larecs/larecs/pull/189), [#191](https://github.com/larecs/larecs/pull/191))
+
+### Changed
+
+- Launch device kernels with 256-thread blocks instead of 16 and cap the grid
+  at one resident wave where the device reports it; the grid-stride loop
+  covers larger row counts. ([#264](https://github.com/larecs/larecs/pull/264))
+
+- Prefer selection kernels over iterating low-level host-storage batch
+  mutation results; selections keep structural changes locked until explicit
+  release or destruction. ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Add a general `Error` arm to `LarecsError` that carries kernel and resource
+  failures out of entity selection scopes. ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Constrain Mojo to the 1.0 release series, with matching MAX and
+  `mojo-tracy` ranges for the conda package. ([#174](https://github.com/larecs/larecs/pull/174), [#251](https://github.com/larecs/larecs/pull/251))
+
+- Stage device transfers in owned buffers and publish downloads only after
+  successful completion. Failed runs are drained, and execution stops when
+  completion cannot be confirmed. Resource changes during active leases are
+  rejected. ([#184](https://github.com/larecs/larecs/pull/184), [#191](https://github.com/larecs/larecs/pull/191))
+
+- Share CPU resource binding and kernel context setup between ordinary and
+  selected execution, with lazy matching-range discovery. ([#177](https://github.com/larecs/larecs/pull/177))
+
+### Fixed
+
+- Release the selection lock when a batch mutation fails. ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Allow CPU kernels written as capturing closures to use required resources.
+  ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Include the kernel identity in system profiling zones. ([#174](https://github.com/larecs/larecs/pull/174))
+
+- Reject component additions that partially overlap existing components
+  before mutating storage, and destroy replaced component values during
+  archetype-changing migration, for single and batch operations alike.
+  ([#212](https://github.com/larecs/larecs/pull/212))
+
+- Preserve stale-handle invalidation across `EntityPool.reset`. ([#212](https://github.com/larecs/larecs/pull/212))
+
+- Reject duplicate resource types within a single `add` call. ([#212](https://github.com/larecs/larecs/pull/212))
+
+- Track valid device column rows independently from allocation capacity, and
+  complete device kernel runs that match no entities successfully. ([#212](https://github.com/larecs/larecs/pull/212))
+
+- Select a compatible macOS SDK during Pixi activation when the default
+  macOS 27 SDK breaks linking. ([#174](https://github.com/larecs/larecs/pull/174))
 
 ## [1.0.0b1 (2026-09-14)](https://github.com/larecs/larecs/compare/v0.5.0b4...v1.0.0b1)
 
