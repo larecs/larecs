@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>larecs logo playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="vendor/polygon-clipping.umd.min.js"></script>
+<style>
+:root {
+  --bg: #08110D; --panel: #0E1A14; --line: #1F2E26; --ink: #F1E9D2; --mut: #93A196; --acc: #91C96B;
+  --radius: 10px;
+}
+* { box-sizing: border-box }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 Inter, system-ui, sans-serif }
+header { display: flex; align-items: baseline; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap }
+header h1 { font-size: 17px; font-weight: 600; margin: 0 }
+header a { color: var(--mut); font-size: 13px }
+.layout { display: grid; grid-template-columns: 360px 1fr; min-height: calc(100vh - 52px) }
+aside { border-right: 1px solid var(--line); padding: 16px; overflow-y: auto; max-height: calc(100vh - 52px); position: sticky; top: 0 }
+main { padding: 20px; min-width: 0 }
+h2 { font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--mut); margin: 20px 0 10px }
+h2:first-child { margin-top: 0 }
+.thumbs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px }
+.thumb { border: 1px solid var(--line); border-radius: 8px; padding: 2px; cursor: pointer; background: var(--panel); text-align: center; font-size: 10px; color: var(--mut) }
+.thumb svg { display: block; width: 100%; height: auto }
+.thumb.on { border-color: var(--acc); color: var(--ink) }
+.row { display: grid; grid-template-columns: 1fr 120px 44px; gap: 8px; align-items: center; margin: 6px 0 }
+.row label { color: var(--ink); font-size: 13px }
+.row output { font-variant-numeric: tabular-nums; color: var(--mut); font-size: 12px; text-align: right }
+input[type=range] { width: 100%; accent-color: var(--acc) }
+.color { display: grid; grid-template-columns: 1fr 36px; gap: 8px; align-items: center; margin: 8px 0 2px }
+.color input[type=color] { width: 36px; height: 26px; border: 1px solid var(--line); border-radius: 6px; background: none; padding: 0; cursor: pointer }
+.chips { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px }
+.chip { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #fff3; cursor: pointer; padding: 0 }
+.presets { display: flex; flex-wrap: wrap; gap: 6px }
+button { font: inherit; font-size: 12px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px; cursor: pointer }
+button:hover { border-color: var(--acc) }
+.desc { color: var(--mut); margin: 4px 0 0; max-width: 70ch }
+.title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap }
+.title h3 { margin: 0; font-size: 22px; font-weight: 600 } .title span { color: var(--acc); font-weight: 600; font-size: 22px }
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 16px }
+.stage > div { border-radius: var(--radius); display: flex; align-items: center; justify-content: center; padding: 8px; border: 1px solid var(--line) }
+.stage svg { width: 100%; max-width: 380px; height: auto }
+.strip { display: flex; align-items: center; gap: 20px; padding: 14px 18px; border-radius: var(--radius); margin-top: 12px; overflow-x: auto; border: 1px solid var(--line) }
+.strip svg { flex: none }
+.minis { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; align-items: center }
+.minis > div { border-radius: var(--radius); padding: 8px; border: 1px solid var(--line) }
+.lock { border-radius: var(--radius); padding: 18px 22px; margin-top: 12px; display: flex; align-items: center; gap: 18px; border: 1px solid var(--line) }
+.lock span { font-weight: 500; font-size: 56px; letter-spacing: -.01em; line-height: 1 }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px }
+.check { display: flex; gap: 8px; align-items: center; margin: 8px 0; font-size: 13px }
+.toast { position: fixed; bottom: 16px; right: 16px; background: var(--acc); color: #0B1712; padding: 8px 12px; border-radius: 8px; opacity: 0; transition: opacity .2s; font-weight: 500 }
+.toast.on { opacity: 1 }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr }
+  aside { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line) }
+  .stage { grid-template-columns: 1fr }
+}
+</style>
+</head>
+<body>
+<header><h1>larecs logo playground</h1><a href="?all">show archived concepts</a><a href="index.html">gallery</a></header>
+<div class="layout">
+  <aside>
+    <h2>Concept</h2>
+    <div class="thumbs" id="thumbs"></div>
+    <h2>Shape</h2>
+    <div id="params"></div>
+    <div class="actions"><button id="resetShape">Reset shape</button></div>
+    <h2>Colours</h2>
+    <div class="presets" id="presets"></div>
+    <div id="colors"></div>
+  </aside>
+  <main>
+    <div class="title"><span id="cid"></span><h3 id="cname"></h3></div>
+    <p class="desc" id="cdesc"></p>
+    <div class="stage">
+      <div id="bigBg"></div>
+      <div id="bigAlt"></div>
+    </div>
+    <div class="strip" id="sizes"></div>
+    <div class="minis" id="minis"></div>
+    <div class="lock" id="lock"></div>
+    <div class="actions">
+      <button id="dlIcon">Download SVG (transparent)</button>
+      <button id="dlAvatar">Download avatar SVG</button>
+      <button id="copyParams">Copy settings JSON</button>
+      <button id="copyLink">Copy share link</button>
+      <button id="propose">Propose on the logo PR</button>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const PC = window.polygonClipping;
+const C30 = Math.cos(Math.PI / 6), T30 = Math.tan(Math.PI / 6), T60 = Math.sqrt(3);
+
+// ---------------------------------------------------------------- palette
+const FI = { "deep-forest": "#0B1712", "forest": "#1F5138", "green": "#4E8B58", "light-green": "#91C96B",
+  "ivory": "#F1E9D2", "ivory-shade": "#CBC1A4", "forest-shade": "#14392A" };
+const CHIPS = [...Object.values(FI), "#000000", "#FFFFFF", "#38A169", "#8BE28B", "#527D96", "#77644B"];
+const PRESETS = {
+  "Colour dark": { a: FI.ivory, b: FI["ivory-shade"], c: FI["light-green"], d: FI.green, bg: FI["deep-forest"], alt: FI.forest },
+  "Colour light": { a: FI.forest, b: FI["forest-shade"], c: FI.green, d: FI["light-green"], bg: FI.ivory, alt: "#FFFFFF" },
+  "Ivory mono": { a: FI.ivory, b: FI.ivory, c: FI.ivory, d: FI.ivory, bg: FI["deep-forest"], alt: FI.forest },
+  "Forest mono": { a: FI["deep-forest"], b: FI["deep-forest"], c: FI["deep-forest"], d: FI["deep-forest"], bg: FI.ivory, alt: "#FFFFFF" },
+  "Electric": { a: "#E8ECE7", b: "#C3CBC1", c: "#8BE28B", d: "#38A169", bg: "#101316", alt: "#173D2A" },
+  "Earth + blue": { a: "#E8E5DA", b: "#C4C0B2", c: "#527D96", d: "#77644B", bg: "#161A1D", alt: "#315443" },
+};
+const ROLE_LABEL = { a: "Primary form", b: "Secondary face", c: "Accent (tree / entity)", d: "Secondary accent",
+  bg: "Background", alt: "Second background" };
+
+// ---------------------------------------------------------------- geometry
+const iso = (u, v, w) => [(u + v) * C30, (v - u) * 0.5 - w];
+const poly = pts => [[pts]];
+const box = (x0, y0, x1, y1) => poly([[x0, y0], [x1, y0], [x1, y1], [x0, y1]]);
+const union = (...g) => PC.union(...g);
+const diff = (a, ...b) => PC.difference(a, ...b);
+const inter = (a, b) => PC.intersection(a, b);
+const add = (...ps) => [ps.reduce((s, p) => s + p[0], 0), ps.reduce((s, p) => s + p[1], 0)];
+const neg = p => [-p[0], -p[1]];
+
+class Mark {
+  constructor() { this.shapes = []; }
+  area(geom, role = "a", gap = 0) { this.shapes.push({ k: "area", geom, role, gap, knocks: [] }); return geom; }
+  circle(c, r, role = "c") { this.shapes.push({ k: "circle", c, r, role }); }
+  line(pts, w, role = "a") { this.shapes.push({ k: "line", pts, w, role }); }
+  knock(geom, gap) { for (const s of this.shapes) if (s.k === "area") s.knocks.push({ geom, gap }); }
+  bounds() {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    const take = (x, y, h = 0) => { x0 = Math.min(x0, x - h); y0 = Math.min(y0, y - h); x1 = Math.max(x1, x + h); y1 = Math.max(y1, y + h); };
+    for (const s of this.shapes) {
+      if (s.k === "area") s.geom.forEach(pg => pg[0].forEach(([x, y]) => take(x, y)));
+      else if (s.k === "circle") take(s.c[0], s.c[1], s.r);
+      else s.pts.forEach(([x, y]) => take(x, y, s.w / 2));
+    }
+    return [x0, y0, x1, y1];
+  }
+}
+
+function conifer(bx, by, h, w, tiers = 2, trunk = 0.14, taper = 0.24) {
+  const th = h * trunk, parts = [];
+  if (trunk > 0) parts.push(box(bx - w * 0.07, by - th - 0.01, bx + w * 0.07, by));
+  const hh = (h - th) * (tiers > 1 ? 0.62 : 1);
+  const step = tiers > 1 ? (h - th - hh) / (tiers - 1) : 0;
+  for (let k = 0; k < tiers; k++) {
+    const yb = by - th - k * step, hw = w / 2 * (1 - taper * k);
+    parts.push(poly([[bx - hw, yb], [bx + hw, yb], [bx, yb - hh]]));
+  }
+  return union(...parts);
+}
+
+function cornerPlanes(m, D, H, Lf, g) {
+  m.area(poly([iso(0, 0, 0), iso(D, 0, 0), iso(D, 0, H), iso(0, 0, H)]), "a", g);
+  m.area(poly([iso(0, 0, 0), iso(0, Lf, 0), iso(D, Lf, 0), iso(D, 0, 0)]), "b", g);
+}
+
+function quadL(m, levels, gapR, roles) {
+  let x0 = 0, y0 = 0, s = 2;
+  for (let i = 0; i < levels; i++) {
+    const h = s / 2;
+    m.area(poly([[x0, y0], [x0 + h, y0], [x0 + h, y0 + h], [x0 + s, y0 + h], [x0 + s, y0 + s], [x0, y0 + s]]),
+      roles[i % roles.length], gapR * s);
+    x0 += h; s = h;
+  }
+  return [x0, y0, s];
+}
+
+function filletRing(pts, radii, steps = 16) {
+  const out = [], n = pts.length;
+  pts.forEach((v, k) => {
+    let r = radii[k];
+    if (!r) { out.push(v); return; }
+    const a = pts[(k - 1 + n) % n], b = pts[(k + 1) % n];
+    const la = Math.hypot(v[0] - a[0], v[1] - a[1]), lb = Math.hypot(b[0] - v[0], b[1] - v[1]);
+    if (la < 1e-9 || lb < 1e-9) { out.push(v); return; }
+    const u1 = [(v[0] - a[0]) / la, (v[1] - a[1]) / la], u2 = [(b[0] - v[0]) / lb, (b[1] - v[1]) / lb];
+    const th = Math.acos(Math.max(-1, Math.min(1, u1[0] * u2[0] + u1[1] * u2[1])));
+    if (th < 1e-6) { out.push(v); return; }
+    r = Math.min(r, 0.95 * Math.min(la, lb) / Math.tan(th / 2));
+    const d = r * Math.tan(th / 2), t1 = [v[0] - u1[0] * d, v[1] - u1[1] * d], t2 = [v[0] + u2[0] * d, v[1] + u2[1] * d];
+    const bx = u2[0] - u1[0], by = u2[1] - u1[1], bl = Math.hypot(bx, by), h = r / Math.cos(th / 2);
+    const c = [v[0] + bx / bl * h, v[1] + by / bl * h];
+    const a1 = Math.atan2(t1[1] - c[1], t1[0] - c[0]), a2 = Math.atan2(t2[1] - c[1], t2[0] - c[0]);
+    let da = a2 - a1; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+    for (let i = 0; i <= steps; i++) out.push([c[0] + r * Math.cos(a1 + da * i / steps), c[1] + r * Math.sin(a1 + da * i / steps)]);
+  });
+  return out;
+}
+
+function halfSpruce(id, name, desc, rounded) {
+  const params = [P("tw", "Stem thickness", 0.15, 0.9, 0.01, 0.36), P("t", "Branch thickness", 0.1, 0.7, 0.01, 0.38),
+    P("ft", "Foot thickness", 0.1, 0.9, 0.01, 0.62), P("f", "Foot length", 0.6, 3, 0.05, 1), P("gap", "Branch gap", 0, 0.4, 0.01, 0.18), P("n", "Upper branches", 1, 5, 1, 3),
+    P("bmax", "Longest branch (bottom)", 0.2, 2.5, 0.01, 0.87), P("bmin", "Shortest branch (top)", 0.2, 2.5, 0.01, 0.55)];
+  if (rounded) params.push(P("ro", "Outer corner radius", 0, 2, 0.01, 0.2), P("ri", "Inner corner radius", 0, 1.5, 0.01, 0.2));
+  return { id, name, desc, params,
+    build(p) { const m = new Mark(), H = 3, { tw, t, ft, f } = p, yf = H - ft;
+      const br = (x0, x1, y) => poly([[x0, y + x0 * T30], [x1, y + x1 * T30], [x1, y + x1 * T30 + t], [x0, y + x0 * T30 + t]]);
+      let ring = [[-tw, 0], [-tw, yf - tw * T30 + ft], [f, yf + f * T30 + ft], [f, yf + f * T30], [0, yf], [0, 0]];
+      if (rounded) ring = filletRing(ring, [0, p.ro, 0, 0, p.ri, 0]);
+      m.area(poly(ring), "a");
+      for (let i = 1; i <= p.n; i++) {
+        const fr = i / (p.n + 1), x1 = p.bmax + (p.bmin - p.bmax) * (p.n > 1 ? (i - 1) / (p.n - 1) : 0);
+        if (x1 > p.gap) m.area(br(p.gap, x1, yf * (1 - fr) - t * 0.2), "c");
+      }
+      return m; } };
+}
+
+// Parameter helper: [key, label, min, max, step, default]
+const P = (k, label, min, max, step, v) => ({ k, label, min, max, step, v });
+const CORNER = [P("D", "Wall / floor depth", 0.6, 2, 0.05, 1.25), P("H", "Wall height", 1.5, 4, 0.05, 2.7),
+  P("Lf", "Floor length", 0.8, 3, 0.05, 1.7), P("gap", "Fold gap", 0, 0.4, 0.01, 0.12)];
+
+const CONCEPTS = [
+  { id: "L01", name: "Corner", desc: "Reconstruction of 6.1: isometric wall folded into a floor; one entity on its own cell.",
+    params: [...CORNER, P("tile", "Entity tile size", 0.4, 1.4, 0.05, 0.85), P("stem", "Stem thickness", 0.05, 0.4, 0.01, 0.17),
+      P("node", "Node radius", 0.15, 0.7, 0.01, 0.36), P("th", "Tree height", 0.4, 2, 0.05, 1.05)],
+    build(p) { const m = new Mark(); cornerPlanes(m, p.D, p.H, p.Lf, p.gap);
+      const t0 = p.D + 0.22, t1 = t0 + p.tile, v0 = 0.35, v1 = v0 + p.tile * 1.1;
+      m.area(poly([iso(t0, v0, 0), iso(t0, v1, 0), iso(t1, v1, 0), iso(t1, v0, 0)]), "d");
+      const cu = (t0 + t1) / 2, cv = (v0 + v1) / 2;
+      m.line([iso(cu, cv, 0), iso(cu, cv, p.th)], p.stem, "c"); m.circle(iso(cu, cv, p.th + p.node * 0.55), p.node, "c"); return m; } },
+  { id: "L02", name: "Slit hexagon", desc: "Solid isometric emblem; the L is the slit between the occupied corner and a free cell.",
+    params: [P("gap", "Slit width", 0, 0.4, 0.01, 0.13)],
+    build(p) { const m = new Mark(), o = [0, 0], W = iso(0, 0, 1), U = iso(1, 0, 0), V = iso(0, 1, 0);
+      const rest = poly([o, W, add(W, neg(U)), neg(U), add(V, neg(U)), V]);
+      m.area(rest, "a", p.gap); m.area(inter(poly([o, neg(U), add(V, neg(U)), V]), rest), "b", p.gap);
+      m.area(poly([o, V, add(V, W), W]), "c", p.gap); return m; } },
+  { id: "L03", name: "Cells", desc: "Five cells form an L on an implied 3 × 3 grid; an entity sits in the crook.",
+    params: [P("gap", "Cell gap", 0, 0.6, 0.01, 0.2), P("node", "Node radius", 0.1, 0.5, 0.01, 0.36)],
+    build(p) { const m = new Mark();
+      for (const [c, r] of [[0, 0], [0, 1], [0, 2], [1, 2], [2, 2]]) m.area(box(c, r, c + 1, r + 1), "a", p.gap);
+      m.circle([1.5, 1.5], p.node, "c"); return m; } },
+  { id: "L04", name: "Extruded", desc: "Shallow isometric extrusion of a flat L, three tones.",
+    params: [P("a", "Stroke thickness", 0.2, 1.2, 0.02, 0.62), P("H", "Height", 1.5, 4, 0.05, 2.6), P("Lf", "Foot length", 1, 3, 0.05, 1.9),
+      P("d", "Extrusion depth", 0.2, 2, 0.05, 0.85), P("gap", "Edge gap", 0, 0.3, 0.01, 0.08)],
+    build(p) { const m = new Mark(), q = (v, w, u) => iso(u, v, w), { a, H, Lf, d, gap: g } = p;
+      m.area(poly([q(0, H, 0), q(a, H, 0), q(a, H, d), q(0, H, d)]), "b", g);
+      m.area(poly([q(a, a, 0), q(Lf, a, 0), q(Lf, a, d), q(a, a, d)]), "b", g);
+      m.area(poly([q(a, a, 0), q(a, H, 0), q(a, H, d), q(a, a, d)]), "c", g);
+      m.area(poly([q(Lf, 0, 0), q(Lf, a, 0), q(Lf, a, d), q(Lf, 0, d)]), "c", g);
+      m.area(poly([q(0, 0, 0), q(Lf, 0, 0), q(Lf, a, 0), q(a, a, 0), q(a, H, 0), q(0, H, 0)]), "a", g); return m; } },
+  { id: "L05", name: "Axes", desc: "Three isometric axes from one origin; up + forward form the L, depth ends in a node.",
+    params: [P("sw", "Stroke thickness", 0.1, 0.8, 0.01, 0.42), P("H", "Up axis", 1.2, 3.5, 0.05, 2.5), P("Lf", "Forward axis", 0.8, 2.5, 0.05, 1.6),
+      P("bl", "Depth axis", 0.6, 2, 0.05, 1.32), P("node", "Node radius", 0.1, 0.7, 0.01, 0.4)],
+    build(p) { const m = new Mark();
+      m.line([iso(0, 0, p.H), iso(0, 0, 0), iso(0, p.Lf, 0)], p.sw, "a");
+      m.line([iso(p.sw * 1.2, 0, 0), iso(p.bl - p.node * 0.8, 0, 0)], p.sw, "d"); m.circle(iso(p.bl, 0, 0), p.node, "c"); return m; } },
+  { id: "L06", name: "Segmented corner", desc: "L01 rebuilt from five identical isometric cells.",
+    params: [P("D", "Cell depth", 0.5, 2, 0.05, 1.3), P("gap", "Cell gap", 0, 0.5, 0.01, 0.16), P("n", "Wall cells", 1, 5, 1, 3)],
+    build(p) { const m = new Mark(), D = p.D;
+      for (let k = 0; k < p.n; k++) m.area(poly([iso(0, 0, k), iso(D, 0, k), iso(D, 0, k + 1), iso(0, 0, k + 1)]), "a", p.gap);
+      [[0, "b"], [1, "c"]].forEach(([j, r]) => m.area(poly([iso(0, j, 0), iso(0, j + 1, 0), iso(D, j + 1, 0), iso(D, j, 0)]), r, p.gap)); return m; } },
+  { id: "L07", name: "Cut L + spire", desc: "Flat L with 30°/60° cuts and an equilateral spire in the crook.",
+    params: [P("t", "Stroke thickness", 0.2, 1.2, 0.02, 0.6), P("ch", "Heel chamfer", 0, 0.5, 0.01, 0.22),
+      P("gap", "Spire gap", 0, 0.5, 0.01, 0.17), P("sp", "Spire size", 0.4, 1.3, 0.02, 1)],
+    build(p) { const m = new Mark(), { t, ch } = p, H = 2.6, Lf = 1.95;
+      m.area(poly([[0, t * T30], [t, 0], [t, H - t], [Lf, H - t], [Lf - t * T30, H], [ch, H], [0, H - ch]]), "a");
+      const x0 = t + p.gap, x1full = Lf - t * T30 * 0.2, w = (x1full - x0) * p.sp, x1 = x0 + w, by = H - t - p.gap;
+      m.area(poly([[x0, by], [x1, by], [(x0 + x1) / 2, by - w * C30]]), "c"); return m; } },
+  { id: "L08", name: "Quadtree", desc: "Recursive subdivision: each square keeps an L and subdivides its fourth quadrant.",
+    params: [P("lv", "Levels", 1, 4, 1, 2), P("gap", "Gap (relative)", 0, 0.2, 0.005, 0.075), P("node", "Leaf node size", 0.1, 0.5, 0.01, 0.36)],
+    build(p) { const m = new Mark(); const [x, y, s] = quadL(m, p.lv, p.gap, ["a", "d", "b"]);
+      m.circle([x + s / 2, y + s / 2], s * p.node, "c"); return m; } },
+  { id: "L09", name: "Corner + node", desc: "L01 reduced to wall, floor and one floating entity.",
+    params: [...CORNER, P("node", "Node radius", 0.15, 0.8, 0.01, 0.42), P("nh", "Node height", 0.4, 2.5, 0.05, 1.15)],
+    build(p) { const m = new Mark(); cornerPlanes(m, p.D, p.H, p.Lf, p.gap);
+      m.circle(iso(p.D * 0.56, p.Lf * 0.62, p.nh), p.node, "c"); return m; } },
+  { id: "L10", name: "Folded ribbon", desc: "One strip folded up the wall, across the floor and into a step.",
+    params: [...CORNER.map(x => x.k === "Lf" ? { ...x, v: 1.55 } : x), P("h2", "Step height", 0.2, 2, 0.05, 0.95)],
+    build(p) { const m = new Mark(); cornerPlanes(m, p.D, p.H, p.Lf, p.gap);
+      m.area(poly([iso(0, p.Lf, 0), iso(p.D, p.Lf, 0), iso(p.D, p.Lf, p.h2), iso(0, p.Lf, p.h2)]), "c", p.gap); return m; } },
+  { id: "T01", name: "Corner + conifer", desc: "The 6.1 corner with a single conifer on the floor, knocked out of the planes.",
+    params: [P("D", "Wall / floor depth", 0.6, 2, 0.05, 1.5), P("H", "Wall height", 1.5, 4, 0.05, 3.15),
+      P("Lf", "Floor length", 0.8, 3, 0.05, 2.05), P("gap", "Fold gap", 0, 0.4, 0.01, 0.12),
+      P("tH", "Tree height", 0.8, 3, 0.05, 2.4), P("tW", "Tree width", 0.4, 2, 0.05, 1.1),
+      P("tiers", "Tiers", 1, 4, 1, 1), P("trunk", "Trunk height", 0, 0.35, 0.01, 0.22), P("kn", "Tree knockout", 0, 0.3, 0.01, 0.11),
+      P("tu", "Tree position (depth)", 0.1, 0.9, 0.01, 0.5), P("tv", "Tree position (along floor)", 0.1, 0.95, 0.01, 0.68)],
+    build(p) { const m = new Mark(); cornerPlanes(m, p.D, p.H, p.Lf, p.gap);
+      const t = conifer(...iso(p.D * p.tu, p.Lf * p.tv, 0), p.tH, p.tW, p.tiers, p.trunk); m.knock(t, p.kn); m.area(t, "c"); return m; } },
+  { id: "T02", name: "Spruce stem", desc: "The L is the tree: one stem from tip to ground line, tiers either side.",
+    params: [P("t", "Stem thickness", 0.15, 1, 0.01, 0.42), P("H", "Height", 2, 4, 0.05, 3), P("Lf", "Ground line", 0.8, 3, 0.05, 1.8),
+      P("cw", "Crown width", 0.8, 3, 0.05, 1.75), P("ch", "Crown height", 0.8, 3, 0.05, 1.95), P("tiers", "Tiers", 1, 4, 1, 2),
+      P("gap", "Stem gap", 0, 0.4, 0.01, 0.12)],
+    build(p) { const m = new Mark(), { t, H, Lf } = p;
+      const crown = conifer(t / 2, p.ch, p.ch, p.cw, p.tiers, 0);
+      m.area(diff(crown, box(-p.gap, -1, t + p.gap, H + 1)), "c");
+      m.area(poly([[0, t / 2 * T60], [t / 2, 0], [t, t / 2 * T60], [t, H - t], [Lf, H - t], [Lf - t * T30, H], [0, H]]), "a"); return m; } },
+  halfSpruce("T03", "Half spruce", "Stem and isometric branches form one side of a spruce; stem and foot meet in one mitred bend.", false),
+  halfSpruce("T03R", "Half spruce, rounded", "T03 with the bend between stem and foot rounded on the outer and inner edge.", true),
+  { id: "T04", name: "Canopy L", desc: "Flat L whose stem ends in a round crown.",
+    params: [P("t", "Stroke thickness", 0.2, 1.2, 0.02, 0.5), P("Lf", "Foot length", 0.8, 3, 0.05, 1.75),
+      P("r", "Crown radius", 0.3, 1.2, 0.01, 0.62), P("gap", "Crown gap", 0, 0.4, 0.01, 0.12)],
+    build(p) { const m = new Mark(), { t, Lf, r } = p, H = 3, cy = 0.75;
+      m.area(poly([[0, cy], [t, cy], [t, H - t], [Lf, H - t], [Lf - t * T30, H], [0, H]]), "a");
+      const n = 64, ring = Array.from({ length: n }, (_, i) => [t / 2 + r * Math.cos(2 * Math.PI * i / n), cy + r * Math.sin(2 * Math.PI * i / n)]);
+      m.knock(poly(ring), p.gap); m.circle([t / 2, cy], r, "c"); return m; } },
+  { id: "T05", name: "Quadtree forest", desc: "L08 whose final leaf is a conifer.",
+    params: [P("lv", "Levels", 1, 4, 1, 2), P("gap", "Gap (relative)", 0, 0.2, 0.005, 0.075), P("ts", "Tree size", 0.4, 1, 0.02, 0.86),
+      P("tiers", "Tiers", 1, 3, 1, 2)],
+    build(p) { const m = new Mark(); const [x, y, s] = quadL(m, p.lv, p.gap, ["a", "d", "b"]);
+      m.area(conifer(x + s / 2, y + s * (0.5 + p.ts / 2), s * p.ts, s * p.ts * 0.84, p.tiers, 0), "c"); return m; } },
+  { id: "T06", name: "Seam spruce", desc: "Two triangles on a stem: a white spruce triangle cut along an L-shaped seam, and a green triangle that fills the gap down to the seam.",
+    params: [P("H", "Height", 2, 4, 0.05, 3), P("tw", "White taper (half-width / height)", 0.2, 0.9, 0.01, 0.45),
+      P("tg", "Green taper (width / height)", 0.1, 1.5, 0.01, 0.61), P("seam", "Seam width", 0.02, 0.6, 0.01, 0.34),
+      P("sy", "Seam height (sets green height)", 0.3, 2.6, 0.02, 1.2), P("trunk", "Stem height", 0, 0.4, 0.01, 0.18), P("stw", "Stem width", 0.04, 0.4, 0.01, 0.14)],
+    build(p) { const m = new Mark(), s = p.seam / 2, th = p.H * p.trunk, yb = -th - p.sy, hw = (p.H - th) * p.tw;
+      let white = diff(poly([[0, -p.H], [hw, -th], [-hw, -th]]), box(-s, -p.H - 1, hw + 1, yb + s));
+      if (th > 0) white = union(white, box(-hw * p.stw, -th - 0.01, hw * p.stw, 0));
+      const gy1 = yb - s; m.area(white, "a");
+      if (gy1 > -p.H) m.area(poly([[s, -p.H], [s, gy1], [s + (gy1 + p.H) * p.tg, gy1]]), "c");
+      return m; } },
+  { id: "T07", name: "Grove corner", desc: "L01 corner holding two conifers of different heights.",
+    params: [...CORNER.map(x => x.k === "Lf" ? { ...x, v: 2 } : x), P("t1", "Tall tree", 0.8, 3, 0.05, 1.8), P("t2", "Short tree", 0.5, 2.5, 0.05, 1.15),
+      P("kn", "Tree knockout", 0, 0.3, 0.01, 0.09)],
+    build(p) { const m = new Mark(); cornerPlanes(m, p.D, p.H, p.Lf, p.gap);
+      const a = conifer(...iso(p.D * 0.8, p.Lf * 0.28, 0), p.t1, p.t1 * 0.5), b = conifer(...iso(p.D * 0.24, p.Lf * 0.85, 0), p.t2, p.t2 * 0.61);
+      m.knock(union(a, b), p.kn); m.area(a, "c"); m.knock(b, p.kn); m.area(b, "c"); return m; } },
+  { id: "B01", name: "Iso branch", desc: "Minimal Branch (5.1) on isometric angles, asymmetric.",
+    params: [P("sw", "Branch thickness", 0.08, 0.6, 0.01, 0.24), P("node", "Node radius", 0.1, 0.6, 0.01, 0.3)],
+    build(p) { const m = new Mark(), n = p.node;
+      m.line([iso(0, 0, 0), iso(0, 0, 2.3)], p.sw, "a"); m.line([iso(0, 0, 0.85), iso(0, -1, 0.85)], p.sw, "a");
+      m.line([iso(0, 0, 1.5), iso(0.85, 0, 1.5)], p.sw, "a");
+      m.circle(iso(0, 0, 2.3 + n * 0.8), n * 1.07, "c"); m.circle(iso(0, -1 - n * 0.8, 0.85), n * 0.93, "c"); m.circle(iso(0.85 + n * 0.8, 0, 1.5), n * 0.83, "d"); return m; } },
+  { id: "G01", name: "Sparse grid", desc: "Grid Forest (4.4) as a 2 × 2 isometric grid with two entities.",
+    params: [P("gap", "Cell gap", 0, 0.5, 0.01, 0.14), P("stem", "Stem thickness", 0.04, 0.4, 0.01, 0.14), P("node", "Node radius", 0.1, 0.6, 0.01, 0.3)],
+    build(p) { const m = new Mark();
+      for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++)
+        m.area(poly([iso(i, j, 0), iso(i, j + 1, 0), iso(i + 1, j + 1, 0), iso(i + 1, j, 0)]), (i === j) ? "d" : "b", p.gap);
+      for (const [i, j, h] of [[1, 1, 1.35], [0, 0, 0.95]]) {
+        m.line([iso(i + .5, j + .5, 0), iso(i + .5, j + .5, h)], p.stem, "a"); m.circle(iso(i + .5, j + .5, h + 0.2), p.node, "c"); }
+      return m; } },
+];
+
+// ---------------------------------------------------------------- rendering
+let uid = 0;
+const f = x => (Math.round(x * 100) / 100).toString();
+
+function render(mark, colors, boxSize = 192, view = 256) {
+  const [x0, y0, x1, y1] = mark.bounds(), w = x1 - x0, h = y1 - y0;
+  const k = Math.min(1.08 * boxSize / Math.max(w, h), boxSize / Math.sqrt(w * h));
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, o = view / 2;
+  const tf = ([x, y]) => [o + (x - cx) * k, o + (y - cy) * k];
+  const d = geom => geom.map(pg => pg.map(ring => "M" + ring.map(p => tf(p).map(f).join(" ")).join(" L") + " Z").join(" ")).join(" ");
+  const out = [], defs = [];
+  for (const s of mark.shapes) {
+    const col = colors[s.role];
+    if (s.k === "area") {
+      if (!s.geom.length) continue;
+      const pd = d(s.geom);
+      let mask = "";
+      if (s.gap > 0 || s.knocks.length) {
+        const id = "m" + (++uid);
+        let inner = `<path d="${pd}" fill="#fff" fill-rule="evenodd"/>`;
+        if (s.gap > 0) inner += `<path d="${pd}" fill="none" stroke="#000" stroke-width="${f(s.gap * k)}" stroke-linejoin="miter" stroke-miterlimit="8"/>`;
+        for (const kn of s.knocks) inner += `<path d="${d(kn.geom)}" fill="#000" stroke="#000" stroke-width="${f(2 * kn.gap * k)}" stroke-linejoin="miter" stroke-miterlimit="8"/>`;
+        defs.push(`<mask id="${id}" maskUnits="userSpaceOnUse" x="-${view}" y="-${view}" width="${3 * view}" height="${3 * view}">${inner}</mask>`);
+        mask = ` mask="url(#${id})"`;
+      }
+      out.push(`<path class="r-${s.role}" fill="${col}" fill-rule="evenodd" d="${pd}"${mask}/>`);
+    } else if (s.k === "circle") {
+      const [x, y] = tf(s.c);
+      out.push(`<circle class="r-${s.role}" fill="${col}" cx="${f(x)}" cy="${f(y)}" r="${f(s.r * k)}"/>`);
+    } else {
+      out.push(`<polyline class="r-${s.role}" fill="none" stroke="${col}" stroke-width="${f(s.w * k)}" stroke-linejoin="miter" points="${s.pts.map(p => tf(p).map(f).join(",")).join(" ")}"/>`);
+    }
+  }
+  return (defs.length ? `<defs>${defs.join("")}</defs>` : "") + out.join("");
+}
+
+function svg(inner, size, bg, shape) {
+  let back = "";
+  if (bg && shape === "circle") back = `<circle cx="128" cy="128" r="128" fill="${bg}"/>`;
+  else if (bg && shape === "rounded") back = `<rect width="256" height="256" rx="56" fill="${bg}"/>`;
+  else if (bg) back = `<rect width="256" height="256" fill="${bg}"/>`;
+  const sz = size ? ` width="${size}" height="${size}"` : "";
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"${sz}>${back}${inner}</svg>`;
+}
+
+// ---------------------------------------------------------------- state
+// ---------------------------------------------------------------- T03R variations
+// Generalised T03R: every corner can be rounded, every cut sheared, and the
+// slant angle changed. Defaults reproduce T03R exactly.
+const SPRUCE_PARAMS = [
+  P("tw", "Stem thickness", 0.15, 0.9, 0.01, 0.36), P("taper", "Stem top width (fraction)", 0.1, 1, 0.01, 1),
+  P("ft", "Foot thickness", 0.1, 0.9, 0.01, 0.62), P("f", "Foot length", 0.6, 3, 0.05, 1),
+  P("t", "Branch thickness", 0.1, 0.7, 0.01, 0.38), P("gap", "Branch gap", 0, 0.4, 0.01, 0.18),
+  P("n", "Branches", 1, 5, 1, 3), P("bmax", "Longest branch (bottom)", 0.2, 2.5, 0.01, 0.87),
+  P("bmin", "Shortest branch (top)", 0.2, 2.5, 0.01, 0.55), P("dy", "Branch block shift (+ = down)", -0.8, 0.8, 0.01, 0),
+  P("ang", "Slant angle (°)", 10, 45, 1, 30),
+  P("ro", "Bend radius, outer", 0, 2, 0.01, 0.2), P("ri", "Bend radius, inner", 0, 1.5, 0.01, 0.2),
+  P("rto", "Stem top radius, outer corner", 0, 0.5, 0.01, 0), P("rti", "Stem top radius, inner corner", 0, 0.5, 0.01, 0),
+  P("rft", "Foot tip radius, upper corner", 0, 0.5, 0.01, 0), P("rfb", "Foot tip radius, lower corner", 0, 0.5, 0.01, 0),
+  P("rb", "Branch tip radius", 0, 0.4, 0.01, 0), P("rbi", "Branch inner radius", 0, 0.4, 0.01, 0),
+  P("ts", "Stem top shear", -0.6, 0.6, 0.01, 0), P("fs", "Foot tip shear", -0.6, 0.6, 0.01, 0),
+  P("bs", "Branch tip shear", -0.6, 0.6, 0.01, 0),
+];
+
+function spruceL(p) {
+  const m = new Mark(), H = 3, S = Math.tan(p.ang * Math.PI / 180), { tw, t, ft, f } = p, yf = H - ft;
+  const ring = [[-tw * p.taper, p.ts], [-tw, yf - tw * S + ft], [f + p.fs, yf + (f + p.fs) * S + ft], [f, yf + f * S], [0, yf], [0, 0]];
+  m.area(poly(filletRing(ring, [p.rto, p.ro, p.rfb, p.rft, p.ri, p.rti])), "a");
+  for (let i = 1; i <= p.n; i++) {
+    const fr = i / (p.n + 1), x1 = p.bmax + (p.bmin - p.bmax) * (p.n > 1 ? (i - 1) / (p.n - 1) : 0);
+    const y = yf * (1 - fr) - t * 0.2 + p.dy, g = p.gap;
+    if (x1 <= g) continue;
+    const br = [[g, y + g * S], [x1, y + x1 * S], [x1 + p.bs, y + (x1 + p.bs) * S + t], [g, y + g * S + t]];
+    m.area(poly(filletRing(br, [p.rbi, p.rb, p.rb, p.rbi])), "c");
+  }
+  return m;
+}
+
+// Presets may give rt / rf to set both corners of the stem top / foot tip.
+const spruceVariant = (id, name, desc, over = {}) => {
+  const o = { ...over };
+  if ("rt" in o) { o.rto ??= o.rt; o.rti ??= o.rt; }
+  if ("rf" in o) { o.rft ??= o.rf; o.rfb ??= o.rf; }
+  return { id, name, desc, params: SPRUCE_PARAMS.map(x => x.k in o ? { ...x, v: o[x.k] } : x), build: spruceL };
+};
+
+const VARIANTS = [
+  spruceVariant("V01", "Base", "T03R as chosen."),
+  spruceVariant("V02", "Two branches", "Fewer, thicker branches that stay apart at favicon sizes.",
+    { n: 2, t: 0.48, gap: 0.2, bmax: 0.95, bmin: 0.62, dy: 0.1 }),
+  spruceVariant("V03", "Rounded tips", "Branch, foot and stem ends rounded to match the bend.",
+    { rb: 0.19, rf: 0.3, rt: 0.18 }),
+  spruceVariant("V04", "Square cuts", "All ends cut at right angles to their stroke; the stem top runs parallel to the branches.",
+    { ts: -0.21, fs: -0.36, bs: -0.22 }),
+  spruceVariant("V05", "Spire", "The stem narrows to a point, so the L itself ends like a treetop.",
+    { taper: 0.15, ts: 0.05, tw: 0.42 }),
+  spruceVariant("V06", "Steep", "A 40° slant: more downward pull, more spruce than ground line.",
+    { ang: 40, f: 0.95, bmax: 0.8, bmin: 0.5 }),
+  spruceVariant("V07", "Soft", "Large bend radii and fully rounded tips for a friendlier, monoline feel.",
+    { ro: 0.7, ri: 0.4, rb: 0.19, rf: 0.31, rt: 0.18, ft: 0.5, tw: 0.4 }),
+  spruceVariant("V08", "Square L", "V04's square-cut stem top and foot on V01's vertical branch ends: the L is cut square, the branches stay upright.",
+    { ts: -0.21, fs: -0.36 }),
+  spruceVariant("V09", "Square branches", "V01's flat stem top and vertical foot end with V04's square-cut branch tips.",
+    { bs: -0.22 }),
+  spruceVariant("V10", "Half shear", "Every cut halfway between V01 (vertical) and V04 (square).",
+    { ts: -0.1, fs: -0.18, bs: -0.11 }),
+  spruceVariant("V11", "Square L, all rounded", "V08 with rounded corners on the stem top, foot tip and both ends of every branch.",
+    { ts: -0.21, fs: -0.36, rt: 0.12, rf: 0.16, rb: 0.12, rbi: 0.08 }),
+  spruceVariant("V12", "Square L, rounded L", "The current logo: a 36° half spruce with four branches, square-cut foot and individually rounded stem and foot corners.",
+    { tw: 0.29, taper: 1, ft: 0.37, f: 1.1, t: 0.28, gap: 0.17, n: 4, bmax: 1, bmin: 0.44, dy: -0.08, ang: 36,
+      ro: 0.2, ri: 0.2, rto: 0.17, rti: 0.07, rft: 0.04, rfb: 0.25, rb: 0, rbi: 0, ts: 0.03, fs: -0.34, bs: 0.06 }),
+  spruceVariant("V13", "Square L, rounded branches", "V08 with rounded corners only on the branches; stem top and foot stay sharp.",
+    { ts: -0.21, fs: -0.36, rb: 0.12, rbi: 0.08 }),
+];
+
+// The exploration concepts stay available with ?all in the URL.
+// Locally (file://) the archive and the generated gallery are available;
+// the deployed page shows only the logo.
+const LOCAL = location.protocol === "file:";
+const SHOW_ALL = LOCAL && new URLSearchParams(location.search).has("all");
+if (!LOCAL) document.querySelectorAll('header a').forEach(a => a.remove());
+if (SHOW_ALL) { const l = document.querySelector('header a[href="?all"]'); l.href = "?"; l.textContent = "show the logo only"; }
+
+const STORE = "larecs-playground-v11";
+const ACTIVE = SHOW_ALL ? [...VARIANTS, ...CONCEPTS] : VARIANTS.filter(v => v.id === "V12");
+const defaults = () => ({ concept: "V12", params: {}, colors: { ...PRESETS["Colour dark"] }, mono: false });
+let state = defaults();
+try { const s = JSON.parse(localStorage.getItem(STORE) || "null"); if (s && s.colors) state = { ...state, ...s }; } catch (e) {}
+
+// Share links carry a preset in the URL fragment: #preset=<base64url JSON>.
+const b64url = str => btoa(unescape(encodeURIComponent(str))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64url = str => decodeURIComponent(escape(atob(str.replace(/-/g, "+").replace(/_/g, "/"))));
+const HEX = /^#[0-9a-fA-F]{6}$/;
+function applyPreset(preset) {
+  const c = ACTIVE.find(x => x.id === preset.concept);
+  if (!c) return false;
+  const params = {};
+  for (const x of c.params) {
+    const v = Number(preset.params?.[x.k]);
+    if (Number.isFinite(v)) params[x.k] = Math.min(x.max, Math.max(x.min, v));
+  }
+  const colors = { ...state.colors };
+  for (const r of Object.keys(ROLE_LABEL)) if (HEX.test(preset.colors?.[r] ?? "")) colors[r] = preset.colors[r];
+  state = { ...state, concept: c.id, params: { ...state.params, [c.id]: params }, colors, mono: !!preset.mono };
+  return true;
+}
+try {
+  const m = location.hash.match(/preset=([A-Za-z0-9_-]+)/);
+  if (m && applyPreset(JSON.parse(unb64url(m[1])))) save();
+} catch (e) {}
+const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
+const concept = () => ACTIVE.find(c => c.id === state.concept) || ACTIVE[0];
+const paramsOf = c => { const p = {}; c.params.forEach(x => p[x.k] = (state.params[c.id] || {})[x.k] ?? x.v); return p; };
+const roleColors = () => state.colors;
+const monoColors = c => ({ a: c, b: c, c: c, d: c });
+
+// ---------------------------------------------------------------- UI
+const $ = id => document.getElementById(id);
+
+function buildThumbs() {
+  $("thumbs").innerHTML = ACTIVE.map(c =>
+    `<div class="thumb${c.id === state.concept ? " on" : ""}" data-id="${c.id}" style="background:${state.colors.bg}">` +
+    svg(render(c.build(paramsOf(c)), roleColors(), 200)) + `<div>${c.id}</div></div>`).join("");
+  $("thumbs").querySelectorAll(".thumb").forEach(el => el.onclick = () => { state.concept = el.dataset.id; save(); buildAll(); });
+}
+
+function buildParams() {
+  const c = concept(), p = paramsOf(c);
+  $("params").innerHTML = c.params.map(x =>
+    `<div class="row"><label for="p-${x.k}">${x.label}</label><input type="range" id="p-${x.k}" min="${x.min}" max="${x.max}" step="${x.step}" value="${p[x.k]}"><output id="o-${x.k}">${p[x.k]}</output></div>`).join("");
+  c.params.forEach(x => {
+    $("p-" + x.k).oninput = e => {
+      (state.params[c.id] ||= {})[x.k] = parseFloat(e.target.value);
+      $("o-" + x.k).textContent = e.target.value; save(); renderMain(); updateThumb(c);
+    };
+  });
+}
+
+function buildColors() {
+  $("presets").innerHTML = Object.keys(PRESETS).map(n => `<button data-p="${n}">${n}</button>`).join("");
+  $("presets").querySelectorAll("button").forEach(b => b.onclick = () => { state.colors = { ...PRESETS[b.dataset.p] }; save(); buildAll(); });
+  $("colors").innerHTML = Object.keys(ROLE_LABEL).map(r =>
+    `<div class="color"><label for="c-${r}">${ROLE_LABEL[r]}</label><input type="color" id="c-${r}" value="${state.colors[r]}"></div>` +
+    `<div class="chips">${CHIPS.map(h => `<button class="chip" title="${h}" style="background:${h}" data-r="${r}" data-h="${h}"></button>`).join("")}</div>`).join("") +
+    `<label class="check"><input type="checkbox" id="mono"${state.mono ? " checked" : ""}> Single ink (primary colour everywhere)</label>`;
+  Object.keys(ROLE_LABEL).forEach(r => $("c-" + r).oninput = e => { state.colors[r] = e.target.value; save(); renderMain(); buildThumbs(); });
+  $("colors").querySelectorAll(".chip").forEach(b => b.onclick = () => { state.colors[b.dataset.r] = b.dataset.h; $("c-" + b.dataset.r).value = b.dataset.h; save(); renderMain(); buildThumbs(); });
+  $("mono").onchange = e => { state.mono = e.target.checked; save(); renderMain(); };
+}
+
+function updateThumb(c) {
+  const el = $("thumbs").querySelector(`[data-id="${c.id}"]`);
+  if (el) el.firstElementChild.outerHTML = svg(render(c.build(paramsOf(c)), roleColors(), 200));
+}
+
+let current = null;
+function renderMain() {
+  const c = concept(), mark = c.build(paramsOf(c));
+  const cols = state.mono ? monoColors(state.colors.a) : roleColors();
+  const { bg, alt } = state.colors;
+  current = { c, mark, cols };
+  $("cid").textContent = c.id; $("cname").textContent = c.name; $("cdesc").textContent = c.desc;
+  $("bigBg").style.background = bg; $("bigBg").innerHTML = svg(render(mark, cols));
+  $("bigAlt").style.background = alt; $("bigAlt").innerHTML = svg(render(mark, cols));
+  $("sizes").style.background = bg;
+  $("sizes").innerHTML = [16, 24, 32, 48, 64, 128].map(z => svg(render(mark, cols), z)).join("");
+  $("minis").innerHTML =
+    `<div style="border:0;padding:0">${svg(render(mark, cols, 148), 112, alt, "circle")}</div>` +
+    `<div style="border:0;padding:0">${svg(render(mark, cols, 148), 112, bg, "circle")}</div>` +
+    `<div style="border:0;padding:0">${svg(render(mark, cols, 160), 112, bg, "rounded")}</div>` +
+    `<div style="background:#fff">${svg(render(mark, monoColors("#000")), 96)}</div>` +
+    `<div style="background:#000">${svg(render(mark, monoColors("#fff")), 96)}</div>` +
+    `<div style="background:${FI.ivory}">${svg(render(mark, monoColors(FI.green)), 96)}</div>` +
+    `<div style="background:${bg}">${svg(render(mark, cols), 32)} ${svg(render(mark, cols), 20)}</div>`;
+  $("lock").style.background = bg;
+  $("lock").innerHTML = svg(render(mark, cols, 220), 84) + `<span style="color:${state.mono ? cols.a : state.colors.a}">larecs</span>`;
+}
+
+function buildAll() { buildThumbs(); buildParams(); buildColors(); renderMain(); }
+
+function download(name, text) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "image/svg+xml" }));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("on"); setTimeout(() => t.classList.remove("on"), 3000); }
+
+$("resetShape").onclick = () => { delete state.params[state.concept]; save(); buildParams(); renderMain(); updateThumb(concept()); };
+$("dlIcon").onclick = () => download(`larecs-${current.c.id}.svg`, svg(render(current.mark, current.cols), 256));
+$("dlAvatar").onclick = () => download(`larecs-${current.c.id}-avatar.svg`, svg(render(current.mark, current.cols, 148), 256, state.colors.bg));
+$("copyParams").onclick = async () => {
+  const json = JSON.stringify({ concept: current.c.id, params: paramsOf(current.c), colors: state.colors, mono: state.mono }, null, 2);
+  try { await navigator.clipboard.writeText(json); toast("Settings copied"); } catch (e) { prompt("Copy settings", json); }
+};
+
+const presetFragment = () => "#preset=" + b64url(JSON.stringify(
+  { concept: current.c.id, params: paramsOf(current.c), colors: state.colors, mono: state.mono }));
+$("copyLink").onclick = async () => {
+  const url = location.href.split("#")[0] + presetFragment();
+  try { await navigator.clipboard.writeText(url); toast("Share link copied"); } catch (e) { prompt("Copy share link", url); }
+};
+
+// Proposals go to the logo pull request as a comment holding a link to the
+// deployed playground; a workflow replies with a rendering of the preset.
+const DEPLOYED = "https://larecs.github.io/larecs/branding/";
+const LOGO_PR = "https://github.com/larecs/larecs/pull/309";
+$("propose").onclick = async () => {
+  const body = "### Logo variation\n\n[Open this variation in the playground](" + DEPLOYED + presetFragment() + ")\n";
+  let copied = true;
+  try { await navigator.clipboard.writeText(body); } catch (e) { copied = false; prompt("Copy this comment", body); }
+  window.open(LOGO_PR + "#new_comment_field", "_blank", "noopener");
+  if (copied) toast("Comment copied: paste it on the PR");
+};
+
+buildAll();
+</script>
+</body>
+</html>
