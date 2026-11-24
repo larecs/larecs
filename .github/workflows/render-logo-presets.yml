@@ -1,0 +1,85 @@
+name: Render logo presets
+
+# Replies to logo playground share links posted on pull requests labelled
+# `logo` with a rendering of the linked variation. Renders are committed to
+# the orphan `branding-renders` branch and embedded from there.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+concurrency:
+  group: branding-renders
+  cancel-in-progress: false
+
+jobs:
+  render:
+    name: Render logo preset
+    if: >-
+      github.event.issue.pull_request &&
+      contains(github.event.issue.labels.*.name, 'logo') &&
+      contains(github.event.comment.body, '#preset=') &&
+      github.event.comment.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the render to branding-renders
+      pull-requests: write # reply on the pull request
+
+    steps:
+      # Runs the default branch's code; the comment is only read as data.
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install uv and rsvg-convert
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          sudo apt-get update -q
+          sudo apt-get install -y -q librsvg2-bin
+
+      - name: Render preset
+        id: render
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          out="$RUNNER_TEMP/render.png"
+          uv run branding/render_preset.py "$out"
+          if [ -f "$out" ]; then echo "file=$out" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Commit render to branding-renders
+        if: steps.render.outputs.file
+        env:
+          FILE: ${{ steps.render.outputs.file }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          PR: ${{ github.event.issue.number }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin branding-renders >/dev/null; then
+            git fetch origin branding-renders
+            git switch branding-renders
+          else
+            git switch --orphan branding-renders
+          fi
+          mkdir -p renders
+          cp "$FILE" "renders/$COMMENT_ID.png"
+          git add "renders/$COMMENT_ID.png"
+          git commit -m "Render logo preset from comment $COMMENT_ID on #$PR"
+          git push origin branding-renders
+
+      - name: Reply with the render
+        if: steps.render.outputs.file
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+        run: |
+          body="Rendering of the variation in [this comment]($COMMENT_URL):
+
+          ![Logo variation](https://raw.githubusercontent.com/$REPO/branding-renders/renders/$COMMENT_ID.png)"
+          gh api "repos/$REPO/issues/$PR/comments" -f body="$body" >/dev/null

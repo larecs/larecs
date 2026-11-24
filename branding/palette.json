@@ -1,0 +1,25 @@
+{
+  "forest-ivory": {
+    "deep-forest": "#0B1712",
+    "forest": "#1F5138",
+    "green": "#4E8B58",
+    "light-green": "#91C96B",
+    "ivory": "#F1E9D2",
+    "ivory-shade": "#CBC1A4",
+    "forest-shade": "#14392A"
+  },
+  "dark-electric": {
+    "near-black": "#101316",
+    "dark-green": "#173D2A",
+    "green": "#38A169",
+    "bright-green": "#8BE28B",
+    "off-white": "#E8ECE7"
+  },
+  "earth-blue": {
+    "charcoal": "#161A1D",
+    "forest": "#315443",
+    "earth": "#77644B",
+    "blue": "#527D96",
+    "off-white": "#E8E5DA"
+  }
+}

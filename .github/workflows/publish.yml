@@ -17,7 +17,8 @@ concurrency:
 
 jobs:
   # Build docs and run doctests only when their inputs change: the guides, the
-  # API docstrings, the benchmark plots embedded in the guides, or the tooling.
+  # API docstrings, the benchmark plots embedded in the guides, the tooling, or
+  # the logo playground published alongside them.
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
@@ -46,6 +47,8 @@ jobs:
               - scripts/pixi.lock
               - scripts/run_doctests.sh
               - .github/workflows/publish.yml
+              - branding/previews/playground.html
+              - branding/previews/vendor/**
 
   publish:
     name: Publish API docs
@@ -86,6 +89,12 @@ jobs:
         run: |
           pixi install --locked
           pixi run build-docs
+
+      - name: Add logo playground to the docs site
+        run: |
+          mkdir -p docs/site/public/branding
+          cp branding/previews/playground.html docs/site/public/branding/index.html
+          cp -r branding/previews/vendor docs/site/public/branding/
 
       - name: Archive Doc-tests
         uses: actions/upload-artifact@v4
