@@ -10,8 +10,42 @@ on:
 permissions: {}
 
 jobs:
+  # Decide which checks this change needs. Toolchain and workflow changes
+  # count as changes to everything they build.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      tests: ${{ steps.filter.outputs.tests }}
+      build: ${{ steps.filter.outputs.build }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            tests: &tests
+              - src/**
+              - test/**
+              - pixi.toml
+              - pixi.lock
+              - scripts/monitor_ci_memory.py
+              - scripts/check_spatial_performance.py
+              - .github/workflows/main.yml
+            build:
+              - *tests
+              - examples/**
+              - benchmark/**
+
   build_and_test:
     name: Build and test (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -62,6 +96,7 @@ jobs:
           echo "has_accelerator() output above to tell skipped from executed."
 
       - name: Run tests
+        if: needs.changes.outputs.tests == 'true'
         run: |
           pixi run -e test python -m unittest discover -s test -p ci_memory_test.py
           # Large sanitizer builds ran concurrently when earlier runners shut
