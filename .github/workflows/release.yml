@@ -10,12 +10,15 @@ on:
 permissions: {}
 
 concurrency:
-  # Serialize stable publishing. Other events have independent build runs.
+  # Serialize stable publishing and keep only the latest validation run per PR.
   group: >-
     ${{ github.event.action == 'closed' && github.event.pull_request.merged
     && startsWith(github.event.pull_request.base.ref, 'release/base-')
-    && 'stable-release' || github.run_id }}
-  cancel-in-progress: false
+    && 'stable-release'
+    || github.event_name == 'pull_request' && github.event.action != 'closed'
+    && format('{0}-pr-{1}', github.workflow, github.event.pull_request.number)
+    || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
 
 jobs:
   # Choose the commit, package version, and platform matrix for the build.
