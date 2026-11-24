@@ -76,7 +76,10 @@ for test_path in "${test_args[@]}"; do
     if [ -d "$test_path" ] && \
         [ "$(cd "$test_path" && pwd)" = "$larecs_test_directory" ]; then
         run_backend_contracts=true
-        run_spatial_performance=true
+        # The comparison needs the source tree and Git history.
+        if (( ${#precompile_args[@]} > 0 )); then
+            run_spatial_performance=true
+        fi
         run_resource_contracts=true
         run_threaded_contracts=true
         run_synchronization_contracts=true
