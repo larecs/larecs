@@ -1,33 +1,8 @@
 # larecs branding
 
-The larecs logo is **V12, "Square L, rounded L"**: a stem and a square-cut,
-slanted foot form an L with a rounded bend, and four branches on the same 36°
-slant turn it into one side of a spruce. It is a refinement of concept T03R.
-Production assets are in `final/`; the tooling and exploration that led to it
-are described below.
-
-## Final assets
-
-| File | Use |
-|---|---|
-| `final/larecs-icon.svg` | Icon for light backgrounds (forest + green), transparent |
-| `final/larecs-icon-dark.svg` | Icon for dark backgrounds (ivory + light green), transparent |
-| `final/larecs-icon-{black,white,forest,ivory}.svg` | Single-colour icons |
-| `final/larecs-avatar.svg`, `final/larecs-avatar-dark.svg` | GitHub avatar on ivory or deep forest; fits a circular crop |
-| `final/larecs-lockup.svg`, `final/larecs-lockup-dark.svg` | Icon + wordmark, text outlined |
-| `final/larecs-lockup-editable.svg` | Same lockup with live Inter text |
-| `final/favicon.svg`, `final/favicon.ico` | Favicon; the SVG follows the browser's colour scheme |
-| `final/png/` | Icons at 16–512 px, avatars at 512 and 1024 px, lockups at 240 px height |
-
-Colours: forest `#1F5138` with green `#4E8B58` on light backgrounds, ivory
-`#F1E9D2` with light green `#91C96B` on dark ones. Wordmark: Inter, weight 500,
-lowercase.
-
-Geometry is defined by the `V12` parameters in `generate_logos.py` (units
-where the mark is 3 tall): stem 0.29 wide, foot 0.37 thick and 1.1 long with a
-square-cut tip, four branches 0.28 thick with a 0.17 gap to the stem and
-lengths from 1.0 (bottom) to 0.44 (top), 36° slant, bend radii 0.2, and
-separate radii on each stem-top and foot-tip corner.
+Tooling for the larecs logo: a generator that builds every logo asset from
+geometric primitives, an interactive playground for tuning the logo, and the
+exploration concepts that led to it.
 
 ## Regenerating
 
