@@ -33,7 +33,7 @@ def scale_and_record(
     context: KernelContext[
         Filter().include[Int32](),
         Resources[CaptureBias](),
-        capture_spec=captures,
+        captures=captures,
     ]
 ):
     """Scales matching rows and updates the mutable capture from one thread.
@@ -42,14 +42,15 @@ def scale_and_record(
         context: Component rows and the bound local values.
     """
     var factor = (
-        context.captures.get[0]() + context.resources.get[CaptureBias]().value
+        context.capture_values.get[0]()
+        + context.resources.get[CaptureBias]().value
     )
     for entity in context:
         entity.get[Int32]() *= factor
     comptime if is_gpu():
         if global_idx.x != 0:
             return
-    context.captures.get[1]() += context.length
+    context.capture_values.get[1]() += context.length
 
 
 def check_capture_round_trip[on_device: Bool]() raises:
@@ -168,7 +169,7 @@ def test_gpu_repeated_and_empty_bindings() raises:
 def update_struct_capture(
     context: KernelContext[
         Filter().include[Int32](),
-        capture_spec=Captures[MutCapture[CaptureBias]](),
+        captures=Captures[MutCapture[CaptureBias]](),
     ]
 ):
     """Updates a plain struct capture from a single GPU thread.
@@ -179,7 +180,7 @@ def update_struct_capture(
     comptime if is_gpu():
         if global_idx.x != 0:
             return
-    context.captures.get[0]().value += 5
+    context.capture_values.get[0]().value += 5
 
 
 def test_gpu_plain_struct_capture() raises:

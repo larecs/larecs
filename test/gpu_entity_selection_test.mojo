@@ -75,14 +75,14 @@ def update_with_bindings(
         context: Packed rows, resource, and explicit capture bindings.
     """
     for entity in context:
-        entity.get[Position]().value += context.captures.get[0]()
+        entity.get[Position]().value += context.capture_values.get[0]()
         entity.set(Tag(9))
 
     comptime if is_gpu():
         if global_idx.x != 0:
             return
     context.resources.get[VisitTotal]().value += context.length
-    context.captures.get[1]() += context.length
+    context.capture_values.get[1]() += context.length
 
 
 def test_gpu_selection_packs_nonzero_ranges_and_reuses_storage() raises:

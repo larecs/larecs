@@ -358,7 +358,7 @@ Declare explicit capture slots with {{< api Captures >}}, using
 {{< api ReadCapture >}} for inputs and {{< api MutCapture >}} for values that
 must be copied back. Bind host locals with {{< api read_capture >}} and
 {{< api mut_capture >}} when calling `run`. Inside the kernel,
-`context.captures.get[index]()` returns a reference with the declared access.
+`context.capture_values.get[index]()` returns a reference with the declared access.
 The slot index is compile-time; two slots may have the same value type.
 
 ```mojo {doctest="guide_gpu_captures" global=true hide=true}
@@ -380,7 +380,7 @@ from std.testing import assert_equal
 comptime locals_spec = Captures[ReadCapture[Int32], MutCapture[Int32]]()
 
 def scale(
-    context: KernelContext[Filter().include[Int32](), capture_spec=locals_spec]
+    context: KernelContext[Filter().include[Int32](), captures=locals_spec]
 ):
     """Scales components and reports the number of processed entities.
 
@@ -388,13 +388,13 @@ def scale(
         context: Matching rows and the explicitly bound host-local values.
     """
     for entity in context:
-        entity.get[Int32]() *= context.captures.get[0]()
+        entity.get[Int32]() *= context.capture_values.get[0]()
 
     # The output is shared by all threads: only one GPU thread updates it.
     comptime if is_gpu():
         if global_idx.x != 0:
             return
-    context.captures.get[1]() += context.length
+    context.capture_values.get[1]() += context.length
 
 def main() raises:
     """Demonstrates input transfer and synchronous copy-back.

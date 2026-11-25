@@ -102,7 +102,7 @@ def count_selected_tags(
 
 def count_selected_capture(
     context: KernelContext[
-        Filter().include[Counter](), capture_spec=selected_cpu_bindings
+        Filter().include[Counter](), captures=selected_cpu_bindings
     ],
 ):
     """Counts selected rows through an explicit mutable binding.
@@ -111,7 +111,7 @@ def count_selected_capture(
         context: Selected counter rows and the bound count.
     """
     for _ in context:
-        context.captures.get[0]() += 1
+        context.capture_values.get[0]() += 1
 
 
 def test_selection_move_release_and_empty_lifecycle() raises:

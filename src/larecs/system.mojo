@@ -198,21 +198,21 @@ def _bind_host_resources[
 def _host_kernel_context[
     filter: Filter,
     required_resources: Resources,
-    capture_spec: Captures,
+    captures: Captures,
     *WorldTs: ComponentType,
 ](
     mut archetype: _Archetype[*WorldTs],
     first_row: Int,
     row_count: Int,
     resources: ResourceAccessor[required_resources],
-    captures: CaptureAccessor[capture_spec],
-) raises -> KernelContext[filter, required_resources, capture_spec]:
+    bound_captures: CaptureAccessor[captures],
+) raises -> KernelContext[filter, required_resources, captures]:
     """Prepares one bounded host range using invocation-wide bindings.
 
     Parameters:
         filter: Component access declarations for this range.
         required_resources: Resource declarations for the invocation.
-        capture_spec: Explicit capture declarations for the invocation.
+        captures: Explicit capture declarations for the invocation.
         WorldTs: Component types declared by the world.
 
     Args:
@@ -220,7 +220,7 @@ def _host_kernel_context[
         first_row: First row in the caller-validated range.
         row_count: Exact number of rows to execute.
         resources: Validated resource pointers shared across ranges.
-        captures: Bound capture pointers shared across ranges.
+        bound_captures: Bound capture pointers shared across ranges.
 
     Raises:
         Error: If a declared component column is missing.
@@ -236,9 +236,9 @@ def _host_kernel_context[
             archetype._storage._touch_column(
                 ComponentManager[*WorldTs].get_id[T]()
             )
-    var columns = KernelContext[
-        filter, required_resources, capture_spec
-    ].Columns(uninitialized=True)
+    var columns = KernelContext[filter, required_resources, captures].Columns(
+        uninitialized=True
+    )
     comptime for i in range(len(filter)):
         comptime T = filter._include.ComponentTypes[i]
         columns[i] = (
@@ -246,10 +246,10 @@ def _host_kernel_context[
             .unsafe_offset(first_row)
             .unsafe_bitcast[UInt8]()
         )
-    return KernelContext[filter, required_resources, capture_spec](
+    return KernelContext[filter, required_resources, captures](
         columns^,
         resources.copy(),
-        capture_columns=captures._pointers.copy(),
+        capture_columns=bound_captures._pointers.copy(),
         length=Int32(row_count),
         thread_count=1,
     )
@@ -373,7 +373,7 @@ def _commit_device_columns[
 
 
 def _validate_threaded_spec[
-    filter: Filter, required_resources: Resources, capture_spec: Captures
+    filter: Filter, required_resources: Resources, captures: Captures
 ]():
     """Checks eligibility independently of worker count or sequential fallback.
 
@@ -381,7 +381,7 @@ def _validate_threaded_spec[
         filter: Accessed components, excluding filter-only exclusions.
         required_resources: Explicit read-only plain values or adapted sources;
             adapted sources may be mutable with concurrent-mutation support.
-        capture_spec: Must be empty for threaded kernels.
+        captures: Must be empty for threaded kernels.
 
     Constraints:
         Accessed components and ordinary resources must be pointer-free values;
@@ -389,7 +389,7 @@ def _validate_threaded_spec[
         `supports_concurrent_mutation`; explicit captures are unsupported.
     """
     comptime assert (
-        len(capture_spec) == 0
+        len(captures) == 0
     ), "Threaded execution does not support captures"
     comptime for i in range(len(filter)):
         comptime assert _plain_device_value[
@@ -411,9 +411,9 @@ def _validate_threaded_spec[
 def _run_threaded[
     filter: Filter,
     required_resources: Resources,
-    capture_spec: Captures,
+    captures: Captures,
     KernelFunc: def(
-        KernelContext[filter, required_resources, capture_spec]
+        KernelContext[filter, required_resources, captures]
     ) thin -> None,
     selected: Bool,
     *WorldTs: ComponentType,
@@ -423,7 +423,7 @@ def _run_threaded[
     Parameters:
         filter: Kernel component access declaration.
         required_resources: Read-only invocation resource declarations.
-        capture_spec: Empty capture declaration, retained in the kernel type.
+        captures: Empty capture declaration, retained in the kernel type.
         KernelFunc: Nonraising thin kernel invoked once per prepared context.
         selected: Use saved exact ranges rather than discovering whole stores.
         WorldTs: Component types supported by the world.
@@ -436,7 +436,7 @@ def _run_threaded[
         Error: If execution, resources, ranges, or checked arithmetic are invalid.
         Preparation completes before any kernel writes; worker failures are fatal.
     """
-    _validate_threaded_spec[filter, required_resources, capture_spec]()
+    _validate_threaded_spec[filter, required_resources, captures]()
     world._check_execution()
     var active = _ExecutionGuard(
         Pointer[Bool, MutUntrackedOrigin](
@@ -448,7 +448,7 @@ def _run_threaded[
     var resources = ResourceAccessor[required_resources](
         binding.pointers.copy()
     )
-    var captures = CaptureAccessor[capture_spec]({uninitialized = True})
+    var bound_captures = CaptureAccessor[captures]({uninitialized = True})
     var ranges = List[EntityRange]()
     comptime bitmask = filter.get_bitmask_filter[*WorldTs]()
     comptime if selected:
@@ -501,9 +501,7 @@ def _run_threaded[
     if parallel:
         var target = config.workers() * config.chunks_per_worker()
         chunk_size = max(1, total // target + Int(total % target != 0))
-    var contexts = List[
-        KernelContext[filter, required_resources, capture_spec]
-    ]()
+    var contexts = List[KernelContext[filter, required_resources, captures]]()
     for rows in ranges:
         if (
             not bitmask.matches(
@@ -520,8 +518,8 @@ def _run_threaded[
             if count > Int(Int32.MAX):
                 raise Error("Threaded context exceeds Int32 row limit")
             contexts.append(
-                _host_kernel_context[filter, required_resources, capture_spec](
-                    store, first, count, resources, captures
+                _host_kernel_context[filter, required_resources, captures](
+                    store, first, count, resources, bound_captures
                 )
             )
             first += count
@@ -822,10 +820,10 @@ struct EntitySelection[
     def run[
         filter: Filter,
         required_resources: Resources = Resources[](),
-        capture_spec: Captures = Captures[](),
+        captures: Captures = Captures[](),
         //,
         KernelFunc: def(
-            KernelContext[filter, required_resources, capture_spec]
+            KernelContext[filter, required_resources, captures]
         ) thin -> None,
         *Bindings: CaptureBindingType,
         backend: ExecutionBackend = ExecutionBackend.HOST,
@@ -835,13 +833,13 @@ struct EntitySelection[
         Parameters:
             filter: Kernel filter intersected with saved selection membership.
             required_resources: Resources available to the kernel.
-            capture_spec: Explicit read-only and mutable capture slots.
+            captures: Explicit read-only and mutable capture slots.
             KernelFunc: Thin kernel function to invoke.
             Bindings: Inferred explicit capture binding types.
             backend: HOST (default), HOST_THREADED, or DEVICE; no device fallback.
 
         Args:
-            bindings: Capture bindings in ``capture_spec`` order.
+            bindings: Capture bindings in ``captures`` order.
 
         Raises:
             Error: If the world is unusable or already executing; selected ranges
@@ -856,14 +854,14 @@ struct EntitySelection[
                 len(Bindings) == 0
             ), "Threaded execution does not support captures"
             _run_threaded[
-                filter, required_resources, capture_spec, KernelFunc, True
+                filter, required_resources, captures, KernelFunc, True
             ](self._world[], self._ranges)
             return
         self._world[]._check_execution()
         _validate_resource_spec[
             required_resources, backend == ExecutionBackend.DEVICE
         ]()
-        var host_captures = _bind_captures[capture_spec](*bindings)
+        var host_captures = _bind_captures[captures](*bindings)
         comptime if backend != ExecutionBackend.DEVICE:
             var resource_binding = _bind_host_resources[required_resources](
                 self._world[].resources
@@ -886,9 +884,7 @@ struct EntitySelection[
                 ):
                     continue
                 KernelFunc(
-                    _host_kernel_context[
-                        filter, required_resources, capture_spec
-                    ](
+                    _host_kernel_context[filter, required_resources, captures](
                         archetype,
                         selected_range.first_row,
                         selected_range.row_count,
@@ -940,15 +936,15 @@ struct EntitySelection[
 
             ref device_storage = self._world[]._device_storage[]
             var frame = _TransferFrame(device_storage._device_context)
-            var device_captures = DeviceCaptureStorage[capture_spec]()
+            var device_captures = DeviceCaptureStorage[captures]()
             try:
                 device_captures.prepare(
                     device_storage._device_context, host_captures, frame
                 )
                 var capture_pointers = HostKernelContext[
-                    filter, required_resources, capture_spec
+                    filter, required_resources, captures
                 ].CaptureBuffers(uninitialized=True)
-                comptime for i in range(len(capture_spec)):
+                comptime for i in range(len(captures)):
                     capture_pointers[i] = rebind[
                         DevicePointer[mut=True, DType.uint8, MutUntrackedOrigin]
                     ](device_captures._buffers[i].unsafe_value().device_ptr())
@@ -959,7 +955,7 @@ struct EntitySelection[
                     self._world[], matching_ranges, total_length, frame
                 )
                 var kernel_columns = HostKernelContext[
-                    filter, required_resources, capture_spec
+                    filter, required_resources, captures
                 ].Columns(uninitialized=True)
                 comptime for i in range(len(filter)):
                     comptime T = filter._include.ComponentTypes[i]
@@ -969,7 +965,7 @@ struct EntitySelection[
                     total_length, device_storage._max_grid_dim
                 )
                 var kernel_context = HostKernelContext[
-                    filter, required_resources, capture_spec
+                    filter, required_resources, captures
                 ](
                     kernel_columns^,
                     resource_pointers^,
@@ -1029,10 +1025,10 @@ struct EntitySelection[
     def run[
         filter: Filter,
         required_resources: Resources = Resources[](),
-        capture_spec: Captures = Captures[](),
+        captures: Captures = Captures[](),
         //,
         KernelFunc: def(
-            KernelContext[filter, required_resources, capture_spec]
+            KernelContext[filter, required_resources, captures]
         ) -> None,
         *Bindings: CaptureBindingType,
         backend: ExecutionBackend = ExecutionBackend.HOST,
@@ -1042,14 +1038,14 @@ struct EntitySelection[
         Parameters:
             filter: Kernel filter intersected with saved selection membership.
             required_resources: Resources available to the closure.
-            capture_spec: Explicit read-only and mutable capture slots.
+            captures: Explicit read-only and mutable capture slots.
             KernelFunc: Inferred unified closure type.
             Bindings: Inferred explicit capture binding types.
             backend: Must be HOST; value-taking device callables are unsupported.
 
         Args:
             kernel_func: Closure invoked once per matching selected range.
-            bindings: Capture bindings in ``capture_spec`` order.
+            bindings: Capture bindings in ``captures`` order.
 
         Raises:
             Error: If explicit bindings or required resources are invalid.
@@ -1062,7 +1058,7 @@ struct EntitySelection[
         _validate_resource_spec[
             required_resources, backend == ExecutionBackend.DEVICE
         ]()
-        var host_captures = _bind_captures[capture_spec](*bindings)
+        var host_captures = _bind_captures[captures](*bindings)
         var resource_binding = _bind_host_resources[required_resources](
             self._world[].resources
         )
@@ -1084,7 +1080,7 @@ struct EntitySelection[
             ):
                 continue
             kernel_func(
-                _host_kernel_context[filter, required_resources, capture_spec](
+                _host_kernel_context[filter, required_resources, captures](
                     archetype,
                     selected_range.first_row,
                     selected_range.row_count,
@@ -1228,14 +1224,14 @@ struct ResourceAccessor[resources: Resources](Copyable):
 struct KernelContext[
     filter: Filter,
     required_resources: Resources = Resources[](),
-    capture_spec: Captures = Captures[](),
+    captures: Captures = Captures[](),
 ](Copyable):
     """Component columns, resources, and row/thread counts available to a kernel body.
 
     Parameters:
         filter: The comptime [..filter.Filter] describing the accessed components.
         required_resources: Compile-time resources the kernel may access.
-        capture_spec: Ordered read-only and mutable host-local capture slots.
+        captures: Ordered read-only and mutable host-local capture slots.
     """
 
     var length: Int32
@@ -1250,7 +1246,7 @@ struct KernelContext[
     var _columns: Self.Columns
     """Byte pointers to each included component's column, indexed by position in ``filter``."""
 
-    var captures: CaptureAccessor[Self.capture_spec]
+    var capture_values: CaptureAccessor[Self.captures]
     """Explicitly bound host-local values available to this kernel."""
 
     var resources: ResourceAccessor[Self.required_resources]
@@ -1262,8 +1258,8 @@ struct KernelContext[
         var resources: ResourceAccessor[Self.required_resources],
         *,
         var capture_columns: Array[
-            Pointer[UInt8, MutUntrackedOrigin], len(Self.capture_spec)
-        ] = Array[Pointer[UInt8, MutUntrackedOrigin], len(Self.capture_spec)](
+            Pointer[UInt8, MutUntrackedOrigin], len(Self.captures)
+        ] = Array[Pointer[UInt8, MutUntrackedOrigin], len(Self.captures)](
             uninitialized=True
         ),
         length: Int32,
@@ -1289,7 +1285,9 @@ struct KernelContext[
             self.thread_count = thread_count
             self._columns = columns^
             self.resources = resources^
-            self.captures = CaptureAccessor[Self.capture_spec](capture_columns^)
+            self.capture_values = CaptureAccessor[Self.captures](
+                capture_columns^
+            )
 
     def __iter__(self) -> EntityAccessorIterator[Self.filter]:
         """Returns an iterator over the rows matching ``filter``.
@@ -1306,18 +1304,18 @@ struct KernelContext[
 struct HostKernelContext[
     filter: Filter,
     required_resources: Resources = Resources[](),
-    capture_spec: Captures = Captures[](),
+    captures: Captures = Captures[](),
 ](Copyable, DevicePassable):
     """Device-passable view of the component columns used by a kernel.
 
     Parameters:
         filter: The comptime [..filter.Filter] describing the accessed components.
         required_resources: Compile-time resources the kernel may access.
-        capture_spec: Ordered read-only and mutable host-local capture slots.
+        captures: Ordered read-only and mutable host-local capture slots.
     """
 
     comptime device_type = KernelContext[
-        Self.filter, Self.required_resources, Self.capture_spec
+        Self.filter, Self.required_resources, Self.captures
     ]
     """The device-side type this host context is encoded into."""
 
@@ -1353,7 +1351,7 @@ struct HostKernelContext[
 
     comptime CaptureBuffers = Array[
         DevicePointer[mut=True, dtype=DType.uint8, origin=MutUntrackedOrigin],
-        len(Self.capture_spec),
+        len(Self.captures),
     ]
     var _capture_pointers: Self.CaptureBuffers
 
@@ -1432,13 +1430,13 @@ struct HostKernelContext[
             )
 
             var capture_columns = Array[
-                Pointer[UInt8, MutUntrackedOrigin], len(Self.capture_spec)
+                Pointer[UInt8, MutUntrackedOrigin], len(Self.captures)
             ](uninitialized=True)
-            comptime for i in range(len(Self.capture_spec)):
+            comptime for i in range(len(Self.captures)):
                 capture_columns[i] = (
                     self._capture_pointers[i].buffer().unsafe_ptr()
                 )
-            dst[].captures = CaptureAccessor[Self.capture_spec](
+            dst[].capture_values = CaptureAccessor[Self.captures](
                 capture_columns^
             )
 
@@ -1708,10 +1706,10 @@ struct SystemContext[
     def run[
         filter: Filter,
         required_resources: Resources = Resources[](),
-        capture_spec: Captures = Captures[](),
+        captures: Captures = Captures[](),
         //,
         KernelFunc: def(
-            KernelContext[filter, required_resources, capture_spec]
+            KernelContext[filter, required_resources, captures]
         ) thin -> None,
         *Bindings: CaptureBindingType,
         backend: ExecutionBackend = ExecutionBackend.HOST,
@@ -1727,7 +1725,7 @@ struct SystemContext[
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
             required_resources: Compile-time resources the kernel may access.
-            capture_spec: Ordered read-only and mutable host-local capture slots.
+            captures: Ordered read-only and mutable host-local capture slots.
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
@@ -1757,14 +1755,14 @@ struct SystemContext[
                     len(Bindings) == 0
                 ), "Threaded execution does not support captures"
                 _run_threaded[
-                    filter, required_resources, capture_spec, KernelFunc, False
+                    filter, required_resources, captures, KernelFunc, False
                 ](self.world[], List[EntityRange]())
                 return
             self.world[]._check_execution()
             _validate_resource_spec[
                 required_resources, backend == ExecutionBackend.DEVICE
             ]()
-            var host_captures = _bind_captures[capture_spec](*bindings)
+            var host_captures = _bind_captures[captures](*bindings)
             comptime if backend != ExecutionBackend.DEVICE:
                 var resource_binding = _bind_host_resources[required_resources](
                     self.world[].resources
@@ -1799,7 +1797,7 @@ struct SystemContext[
                         continue
                     KernelFunc(
                         _host_kernel_context[
-                            filter, required_resources, capture_spec
+                            filter, required_resources, captures
                         ](
                             archetype,
                             0,
@@ -1882,15 +1880,15 @@ struct SystemContext[
                 ref device_storage = self.world[]._device_storage[]
 
                 var frame = _TransferFrame(device_storage._device_context)
-                var device_captures = DeviceCaptureStorage[capture_spec]()
+                var device_captures = DeviceCaptureStorage[captures]()
                 try:
                     device_captures.prepare(
                         device_storage._device_context, host_captures, frame
                     )
                     var capture_pointers = HostKernelContext[
-                        filter, required_resources, capture_spec
+                        filter, required_resources, captures
                     ].CaptureBuffers(uninitialized=True)
-                    comptime for i in range(len(capture_spec)):
+                    comptime for i in range(len(captures)):
                         capture_pointers[i] = rebind[
                             DevicePointer[
                                 mut=True, DType.uint8, MutUntrackedOrigin
@@ -1922,7 +1920,7 @@ struct SystemContext[
                         self.world[], matched_ranges, length, frame
                     )
                     var kernel_columns = HostKernelContext[
-                        filter, required_resources, capture_spec
+                        filter, required_resources, captures
                     ].Columns(uninitialized=True)
                     comptime for i in range(len(filter)):
                         comptime T = filter._include.ComponentTypes[i]
@@ -1932,7 +1930,7 @@ struct SystemContext[
                     )
                     if length > 0:
                         var kernel_context = HostKernelContext[
-                            filter, required_resources, capture_spec
+                            filter, required_resources, captures
                         ](
                             kernel_columns^,
                             resource_pointers^,
@@ -2002,10 +2000,10 @@ struct SystemContext[
     def run[
         filter: Filter,
         required_resources: Resources = Resources[](),
-        capture_spec: Captures = Captures[](),
+        captures: Captures = Captures[](),
         //,
         KernelFunc: def(
-            KernelContext[filter, required_resources, capture_spec]
+            KernelContext[filter, required_resources, captures]
         ) -> None,
         *Bindings: CaptureBindingType,
         backend: ExecutionBackend = ExecutionBackend.HOST,
@@ -2015,7 +2013,7 @@ struct SystemContext[
         Parameters:
             filter: Compile-time component inclusion and exclusion constraints.
             required_resources: Compile-time resources the kernel may access.
-            capture_spec: Ordered read-only and mutable host-local capture slots.
+            captures: Ordered read-only and mutable host-local capture slots.
             KernelFunc: The kernel specialized for ``filter`` and
                 ``required_resources``.
             Bindings: The inferred types of the supplied capture bindings.
@@ -2051,7 +2049,7 @@ struct SystemContext[
             _validate_resource_spec[
                 required_resources, backend == ExecutionBackend.DEVICE
             ]()
-            var host_captures = _bind_captures[capture_spec](*bindings)
+            var host_captures = _bind_captures[captures](*bindings)
             var resource_binding = _bind_host_resources[required_resources](
                 self.world[].resources
             )
@@ -2080,9 +2078,7 @@ struct SystemContext[
                 ):
                     continue
                 kernel_func(
-                    _host_kernel_context[
-                        filter, required_resources, capture_spec
-                    ](
+                    _host_kernel_context[filter, required_resources, captures](
                         archetype,
                         0,
                         len(archetype),
