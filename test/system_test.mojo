@@ -238,7 +238,7 @@ def test_cpu_closure_with_explicit_capture_bindings() raises:
     comptime slots = Captures[ReadCapture[Int32], MutCapture[Int32]]()
 
     def bound_kernel(
-        rows: KernelContext[Filter().include[Int32](), capture_spec=slots]
+        rows: KernelContext[Filter().include[Int32](), captures=slots]
     ) {mut visits}:
         """Updates each row and both kinds of mutable capture.
 
@@ -246,8 +246,8 @@ def test_cpu_closure_with_explicit_capture_bindings() raises:
             rows: Components and explicit capture bindings.
         """
         for row in rows:
-            row.get[Int32]() *= rows.captures.get[0]()
-            rows.captures.get[1]() += row.get[Int32]()
+            row.get[Int32]() *= rows.capture.get[0]()
+            rows.capture.get[1]() += row.get[Int32]()
             visits += 1
 
     var context = SystemContext(world)
