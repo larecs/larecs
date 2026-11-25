@@ -210,7 +210,8 @@ def compare(base_binary, head_binary, *, initial_failures=None):
         flush=True,
     )
     print(
-        f"{'Workload':<13}  {'Configuration':<58}  {'Before':>10} {'After':>10} "
+        f"{'Workload':<13}  Configuration (rows/cell/key step/cadence/order)  "
+        f"{'Before':>10} {'After':>10} "
         f"{'Change':>8}  Verdict",
         flush=True,
     )
@@ -220,13 +221,11 @@ def compare(base_binary, head_binary, *, initial_failures=None):
         rows, group, stride, cadence, ordered, maintenance = case
         mode = "Maintenance" if maintenance else "Moving gather" if cadence else "Static gather"
         layout = "ordered" if ordered else "scrambled"
-        interval = f"{cadence} fr" if cadence else "off"
-        configuration = (
-            f"{rows} rows, {group}/cell, key step {stride}, cadence {interval}, {layout}"
-        )
+        interval = cadence or "off"
+        configuration = f"{rows}/{group}/{stride}/{interval}/{layout}"
         verdict = flagged_status if case in failures else "ACCEPTABLE"
         print(
-            f"{mode:<13}  {configuration:<58}  {old / 1000:>10.3f} {new / 1000:>10.3f} "
+            f"{mode:<13}  {configuration:<48}  {old / 1000:>10.3f} {new / 1000:>10.3f} "
             f"{(new / old - 1) * 100:>+7.1f}%  {verdict}",
             flush=True,
         )
@@ -270,7 +269,7 @@ def main():
         "in at least four of five pairs and in the paired medians, in both rounds.",
         flush=True,
     )
-    print("Cadence is the maintenance interval for ordered moving cases. "
+    print("Cadence is the maintenance interval in frames for ordered moving cases. "
           "Scrambled cases are controls with no maintenance at that interval.",
           flush=True)
     with tempfile.TemporaryDirectory(prefix="larecs-spatial-") as directory:

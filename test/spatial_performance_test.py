@@ -76,9 +76,12 @@ class PerformanceGuardTest(unittest.TestCase):
                 if line.endswith(("ACCEPTABLE", "RECHECK", "CRITICAL"))
             ]
             self.assertEqual(len(lines), len(cases))
-            self.assertIn("Configuration", output.getvalue())
-            self.assertIn("512 rows, 8/cell, key step 1, cadence 4 fr, scrambled", lines[6])
-            self.assertIn("512 rows, 8/cell, key step 1, cadence off, ordered", lines[2])
+            self.assertIn(
+                "Configuration (rows/cell/key step/cadence/order)", output.getvalue()
+            )
+            self.assertIn("512/8/1/off/scrambled", lines[0])
+            self.assertIn("512/8/1/off/ordered", lines[2])
+            self.assertIn("512/8/1/4/scrambled", lines[6])
             for case, line in zip(cases, lines):
                 after, change = ("15.000", "+50.0%") if case in slow_cases else ("10.000", "+0.0%")
                 verdict = status if case in flagged else "ACCEPTABLE"
