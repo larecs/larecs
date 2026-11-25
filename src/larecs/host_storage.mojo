@@ -689,18 +689,19 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         out iterator: Self.Iterator[
             origin_of(self._archetypes),
             origin_of(self._locks),
+            row_filter=Filter().include[*Ts](),
             has_ranges=True,
         ],
     ) raises LarecsError:
         """Adds a batch of [..entity.Entity Entities].
 
-        The given component types are added to the entities.
+        Each row supports `get[T]()` for every supplied component type.
         Do not use during [.HostStorage.query] iteration!
 
         Example:
 
         ```mojo {doctest="add_entity_comps" global=true hide=true}
-        from larecs import World, ResourceStorage
+        from larecs import World
 
         @fieldwise_init
         struct Position(Copyable, Movable):
@@ -714,14 +715,13 @@ struct HostStorage[*ComponentTypes: ComponentType](Copyable):
         ```
 
         ```mojo {doctest="add_entity_comps"}
-        world = World[Position, Velocity]()
-        for entity in world.add_entities(
+        var world = World[Position, Velocity]()
+        for row in world.storage.add_entities(
             Position(0, 0),
             Velocity(0.5, -0.5),
             count = 5
         ):
-            # Do things with the newly created entities
-            position = entity.unsafe_get[Position]()
+            print(row.get[Position]().x)
         ```
 
         Parameters:
