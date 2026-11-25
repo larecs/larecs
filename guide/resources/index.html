@@ -34,7 +34,7 @@ possible." />
   <meta itemprop="name" content="Resources">
   <meta itemprop="description" content="Not all data in a world is associated with specific entities. This often applies to parameters (such as a time step), global state variables (such as the current time), or spatial data structures (such as a grid displaying entity positions). These data are called resources.
 Defining resources Similar to components, resources are defined via structs. That is, each resource has a specific type, and having two resources of the same type is not possible.">
-  <meta itemprop="wordCount" content="3387">
+  <meta itemprop="wordCount" content="3406">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Resources">
   <meta name="twitter:description" content="Not all data in a world is associated with specific entities. This often applies to parameters (such as a time step), global state variables (such as the current time), or spatial data structures (such as a grid displaying entity positions). These data are called resources.
@@ -1421,8 +1421,10 @@ for an example. Device entry points use the non-capturing <code>context.run[kern
 </div>
 <p>Host execution is the default. DEVICE requires a working accelerator and raises
 when unavailable, including for empty matches; it never falls back to HOST.</p>
-<p>For device execution, components must conform to <code>TrivialRegisterPassable</code>.
-Ordinary resources need a supported pointer-free representation with trivial
+<p>For device execution, components must be trivially copyable and trivially
+deletable. Larecs copies component columns as raw bytes. Pointers dereferenced
+on device must refer to device-accessible memory.</p>
+<p>Ordinary resources need a supported pointer-free representation with trivial
 copy, move, and destruction. Numeric values, <code>Bool</code>, and aggregates of those
 values are accepted without declaring <code>TrivialRegisterPassable</code>. Owning
 collections, host pointers, and opaque representations (including fixed <code>Array</code>

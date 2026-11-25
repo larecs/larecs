@@ -32,7 +32,7 @@ in a defined order with access to the appropriate context." />
   <meta itemprop="name" content="Systems and the scheduler">
   <meta itemprop="description" content="A key feature of entity-component systems is that operations on the entities are organized in systems, which operate independently from one another and can be added or removed as required.
 Systems Systems are the principal way to mutate the state of the ECS. Application logic that creates or removes entities, changes components, or updates resources should generally live in a system, where the scheduler can run it in a defined order with access to the appropriate context.">
-  <meta itemprop="wordCount" content="2352">
+  <meta itemprop="wordCount" content="2380">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Systems and the scheduler">
   <meta name="twitter:description" content="A key feature of entity-component systems is that operations on the entities are organized in systems, which operate independently from one another and can be added or removed as required.
@@ -1170,7 +1170,7 @@ system and is not registered with the scheduler.</p>
 </span></span></span><span class="line"><span class="cl"><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nd">@fieldwise_init</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span><span class="w"> </span><span class="nc">Time</span><span class="p">(</span><span class="n">ResourceType</span><span class="p">,</span><span class="w"> </span><span class="n">TrivialRegisterPassable</span><span class="p">):</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">delta</span><span class="p">:</span><span class="w"> </span><span class="nb">Float64</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="nv">delta</span><span class="p">:</span><span class="w"> </span><span class="nb">Float32</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1"># This kernel writes Position and reads Velocity for every matching entity.</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1"># Move.update invokes it through the system&#39;s SystemContext below.</span><span class="w">
@@ -1588,6 +1588,10 @@ details. Device execution requires an available accelerator and the correspondin
 Mojo GPU toolchain. Selecting <code>DEVICE</code> raises an error when accelerator compilation
 support or a working world device context is unavailable, including for empty
 matches. There is no automatic backend selection or host fallback.</p>
+<p>Component columns require trivially copyable and trivially deletable types.
+The scalar-field <code>Position</code> and <code>Velocity</code> structs above meet these
+requirements. Pointers dereferenced on device must refer to device-accessible
+memory.</p>
 <p><code>backend</code> is a compile-time parameter on both <code>SystemContext.run</code> and
 <code>EntitySelection.run</code>. This specializes kernel compilation and transfer checks
 for the chosen target. Runtime choices require an explicit branch calling each
