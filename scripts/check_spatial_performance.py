@@ -162,19 +162,20 @@ def ensure_commit(revision):
     return revision
 
 
-def compare(base_binary, head_binary):
+def compare(base_binary, head_binary, *, initial_failures=None):
     """Warm both binaries, then alternate five paired samples and report medians.
 
     Args:
         base_binary: Baseline executable path.
         head_binary: Current executable path.
+        initial_failures: Cases flagged in the initial comparison, when confirming.
 
     Raises:
         ValueError: If a report is invalid.
         subprocess.SubprocessError: If execution fails or times out.
 
     Returns:
-        Scenarios that exceed both regression thresholds."""
+        Scenarios flagged for recheck or confirmed critical."""
     def sample(binary):
         """Execute one bounded batch and validate its complete report.
 
@@ -199,16 +200,36 @@ def compare(base_binary, head_binary):
             old, new = sample(base_binary), sample(head_binary)
         base.append(old)
         head.append(new)
+    failures = set(regressions(base, head))
+    if initial_failures is not None:
+        failures.intersection_update(initial_failures)
+    flagged_status = "RECHECK" if initial_failures is None else "CRITICAL"
+    round_name = "Initial" if initial_failures is None else "Confirmation"
+    print(
+        f"\n{round_name} spatial comparison (median µs/frame, positive change is slower)",
+        flush=True,
+    )
+    print(
+        f"{'Workload':<13} {'Rows':>5} {'Rows/cell':>9} {'Key step':>8} "
+        f"{'Cadence':>7} {'Layout':<9} {'Before':>10} {'After':>10} "
+        f"{'Change':>8}  Verdict",
+        flush=True,
+    )
     for case in sorted(expected_cases()):
         old = statistics.median(item[case] for item in base)
         new = statistics.median(item[case] for item in head)
         rows, group, stride, cadence, ordered, maintenance = case
-        mode = "maintenance" if maintenance else "gather" if not cadence else "mobile"
-        print(f"{mode:11} rows={rows:4} group={group:2} stride={stride:4} "
-              f"cadence={cadence} layout={'ordered' if ordered else 'scrambled':9} "
-              f"base={old / 1000:8.2f}us head={new / 1000:8.2f}us "
-              f"change={(new / old - 1) * 100:+6.1f}%", flush=True)
-    print("Current ordered / scrambled frame time (lower is faster):", flush=True)
+        mode = "Maintenance" if maintenance else "Moving gather" if cadence else "Static gather"
+        layout = "ordered" if ordered else "scrambled"
+        interval = f"{cadence} fr" if cadence else "-"
+        verdict = flagged_status if case in failures else "ACCEPTABLE"
+        print(
+            f"{mode:<13} {rows:>5} {group:>9} {stride:>8} {interval:>7} "
+            f"{layout:<9} {old / 1000:>10.3f} {new / 1000:>10.3f} "
+            f"{(new / old - 1) * 100:>+7.1f}%  {verdict}",
+            flush=True,
+        )
+    print("\nCurrent ordered / scrambled frame time (lower is faster):", flush=True)
     for case in sorted(expected_cases()):
         rows, group, stride, cadence, ordered, maintenance = case
         if not ordered or maintenance:
@@ -217,7 +238,7 @@ def compare(base_binary, head_binary):
         ratio = statistics.median(item[case] / item[control] for item in head)
         print(f"  rows={rows} group={group} stride={stride} cadence={cadence}: "
               f"{ratio:.2f}x", flush=True)
-    return regressions(base, head)
+    return failures
 
 
 def main():
@@ -241,6 +262,15 @@ def main():
         print("Base predates spatial API; using first implementation as bootstrap.", flush=True)
         revision = ensure_commit(BOOTSTRAP)
     print(f"Spatial baseline: {revision}; 512/2048 rows, 32 cases, five paired samples",
+          flush=True)
+    print(
+        f"A case is critical if it slows down by more than "
+        f"{(RATIO_LIMIT - 1) * 100:.0f}% and {ABSOLUTE_LIMIT_NS} ns "
+        "in at least four of five pairs and in the paired medians, in both rounds.",
+        flush=True,
+    )
+    print("Cadence is the maintenance interval for ordered moving cases. "
+          "Scrambled cases are controls with no maintenance at that interval.",
           flush=True)
     with tempfile.TemporaryDirectory(prefix="larecs-spatial-") as directory:
         scratch = Path(directory)
@@ -266,10 +296,14 @@ def main():
             print(f"Compiled {binary.name} in {time.monotonic() - before:.1f}s", flush=True)
         failures = compare(*binaries)
         if failures:
-            print("Possible regression; repeating all pairs to reject transient load.", flush=True)
-            failures = sorted(set(failures) & set(compare(*binaries)))
+            print(f"\nRechecking {len(failures)} flagged case(s) with a new set of pairs.",
+                  flush=True)
+            failures = compare(*binaries, initial_failures=failures)
         if failures:
-            raise SystemExit(f"Spatial performance regression (>30% and >500ns): {failures}")
+            raise SystemExit(
+                f"Spatial performance check failed. {len(failures)} confirmed "
+                "regression(s) marked CRITICAL in the confirmation table."
+            )
     print(f"Spatial performance check passed in {time.monotonic() - started:.1f}s", flush=True)
 
 
