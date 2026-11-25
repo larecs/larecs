@@ -111,7 +111,7 @@ def count_selected_capture(
         context: Selected counter rows and the bound count.
     """
     for _ in context:
-        context.capture_values.get[0]() += 1
+        context.capture.get[0]() += 1
 
 
 def test_selection_move_release_and_empty_lifecycle() raises:

@@ -51,8 +51,8 @@ def update_rows(rows: KernelContext[cpu_filter, Resources[History](), slots]):
     ref history = rows.resources.get[History]()
     history.lengths.append(Int(rows.length))
     for row in rows:
-        row.set(row.get[Int32]() + rows.capture_values.get[0]())
-        rows.capture_values.get[1]() += row.get[Int32]()
+        row.set(row.get[Int32]() + rows.capture.get[0]())
+        rows.capture.get[1]() += row.get[Int32]()
         history.values.append(row.get[Int32]())
 
 
@@ -265,8 +265,8 @@ def excluded_rows(
         rows: Filtered rows and shared explicit captures.
     """
     for row in rows:
-        row.get[Int32]() += rows.capture_values.get[0]()
-        rows.capture_values.get[1]() += row.get[Int32]()
+        row.get[Int32]() += rows.capture.get[0]()
+        rows.capture.get[1]() += row.get[Int32]()
 
 
 def _check_filtered[selected: Bool]() raises:
@@ -297,8 +297,8 @@ def _check_filtered[selected: Bool]() raises:
             rows: Exclusively filtered rows and explicit captures.
         """
         for row in rows:
-            row.get[Int32]() += rows.capture_values.get[0]()
-            rows.capture_values.get[1]() += row.get[Int32]()
+            row.get[Int32]() += rows.capture.get[0]()
+            rows.capture.get[1]() += row.get[Int32]()
             visits += 1
 
     var context = SystemContext(world)

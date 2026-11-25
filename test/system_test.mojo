@@ -246,8 +246,8 @@ def test_cpu_closure_with_explicit_capture_bindings() raises:
             rows: Components and explicit capture bindings.
         """
         for row in rows:
-            row.get[Int32]() *= rows.capture_values.get[0]()
-            rows.capture_values.get[1]() += row.get[Int32]()
+            row.get[Int32]() *= rows.capture.get[0]()
+            rows.capture.get[1]() += row.get[Int32]()
             visits += 1
 
     var context = SystemContext(world)

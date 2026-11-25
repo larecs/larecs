@@ -42,15 +42,14 @@ def scale_and_record(
         context: Component rows and the bound local values.
     """
     var factor = (
-        context.capture_values.get[0]()
-        + context.resources.get[CaptureBias]().value
+        context.capture.get[0]() + context.resources.get[CaptureBias]().value
     )
     for entity in context:
         entity.get[Int32]() *= factor
     comptime if is_gpu():
         if global_idx.x != 0:
             return
-    context.capture_values.get[1]() += context.length
+    context.capture.get[1]() += context.length
 
 
 def check_capture_round_trip[on_device: Bool]() raises:
@@ -180,7 +179,7 @@ def update_struct_capture(
     comptime if is_gpu():
         if global_idx.x != 0:
             return
-    context.capture_values.get[0]().value += 5
+    context.capture.get[0]().value += 5
 
 
 def test_gpu_plain_struct_capture() raises:

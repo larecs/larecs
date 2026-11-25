@@ -1246,7 +1246,7 @@ struct KernelContext[
     var _columns: Self.Columns
     """Byte pointers to each included component's column, indexed by position in ``filter``."""
 
-    var capture_values: CaptureAccessor[Self.captures]
+    var capture: CaptureAccessor[Self.captures]
     """Explicitly bound host-local values available to this kernel."""
 
     var resources: ResourceAccessor[Self.required_resources]
@@ -1285,9 +1285,7 @@ struct KernelContext[
             self.thread_count = thread_count
             self._columns = columns^
             self.resources = resources^
-            self.capture_values = CaptureAccessor[Self.captures](
-                capture_columns^
-            )
+            self.capture = CaptureAccessor[Self.captures](capture_columns^)
 
     def __iter__(self) -> EntityAccessorIterator[Self.filter]:
         """Returns an iterator over the rows matching ``filter``.
@@ -1436,9 +1434,7 @@ struct HostKernelContext[
                 capture_columns[i] = (
                     self._capture_pointers[i].buffer().unsafe_ptr()
                 )
-            dst[].capture_values = CaptureAccessor[Self.captures](
-                capture_columns^
-            )
+            dst[].capture = CaptureAccessor[Self.captures](capture_columns^)
 
 
 @fieldwise_init
