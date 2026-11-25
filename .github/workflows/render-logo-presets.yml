@@ -1,18 +1,14 @@
 name: Render logo presets
 
-# Replies to logo playground share links posted on pull requests labelled
-# `logo` with a rendering of the linked variation. Renders are committed to
-# the orphan `branding-renders` branch and embedded from there.
+# Opens a review thread for each logo playground proposal on a pull request
+# labelled `logo` and posts its rendering as a threaded reply. Renders are
+# committed to the orphan `branding-renders` branch and embedded from there.
 
 on:
   issue_comment:
     types: [created]
 
 permissions: {}
-
-concurrency:
-  group: branding-renders
-  cancel-in-progress: false
 
 jobs:
   render:
@@ -23,6 +19,9 @@ jobs:
       contains(github.event.comment.body, '#preset=') &&
       github.event.comment.user.type != 'Bot'
     runs-on: ubuntu-latest
+    concurrency:
+      group: branding-renders
+      queue: max
     permissions:
       contents: write # push the render to branding-renders
       pull-requests: write # reply on the pull request
@@ -67,19 +66,58 @@ jobs:
           mkdir -p renders
           cp "$FILE" "renders/$COMMENT_ID.png"
           git add "renders/$COMMENT_ID.png"
-          git commit -m "Render logo preset from comment $COMMENT_ID on #$PR"
-          git push origin branding-renders
+          if ! git diff --cached --quiet; then
+            git commit -m "Render logo preset from comment $COMMENT_ID on #$PR"
+            git push origin branding-renders
+          fi
 
-      - name: Reply with the render
+      - name: Post the rendering in a review thread
         if: steps.render.outputs.file
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.issue.number }}
           COMMENT_ID: ${{ github.event.comment.id }}
           COMMENT_URL: ${{ github.event.comment.html_url }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          body="Rendering of the variation in [this comment]($COMMENT_URL):
+          pull="repos/$REPO/pulls/$PR"
+          marker="<!-- logo-preset:$COMMENT_ID -->"
+          reply="![Logo variation](https://raw.githubusercontent.com/$REPO/branding-renders/renders/$COMMENT_ID.png)"
+          comments="$(gh api --paginate --slurp "$pull/comments?per_page=100")"
+          thread="$(jq -r --arg marker "$marker" '
+            first(.[][] | select(
+              .user.login == "github-actions[bot]" and
+              .in_reply_to_id == null and
+              (.body | contains($marker))
+            ) | .id) // empty
+          ' <<< "$comments")"
 
-          ![Logo variation](https://raw.githubusercontent.com/$REPO/branding-renders/renders/$COMMENT_ID.png)"
-          gh api "repos/$REPO/issues/$PR/comments" -f body="$body" >/dev/null
+          if [[ -z "$thread" ]]; then
+            head="$(gh api "$pull" --jq '.head.sha')"
+            path="$(gh api --paginate --slurp "$pull/files?per_page=100" | jq -er '
+              map(.[]) | map(.filename) |
+              (map(select(. == "branding/README.md"))[0] //
+               map(select(startswith("branding/")))[0] // .[0])
+            ')"
+            # Use the same fragment alphabet and length limit as the renderer.
+            [[ "$COMMENT_BODY" =~ \#preset=([A-Za-z0-9_-]+) ]]
+            preset="${BASH_REMATCH[1]:0:8000}"
+            proposal="$marker
+          ### Logo variation
+
+          [Open this variation in the playground](https://larecs.github.io/larecs/branding/#preset=$preset)
+
+          [Original proposal]($COMMENT_URL)"
+            thread="$(gh api --method POST "$pull/comments" \
+              -f subject_type=file -f commit_id="$head" -f path="$path" \
+              -f body="$proposal" --jq '.id')"
+          fi
+
+          if ! jq -e --argjson thread "$thread" --arg reply "$reply" '
+            any(.[][]; .in_reply_to_id == $thread and
+              .user.login == "github-actions[bot]" and .body == $reply)
+          ' <<< "$comments" >/dev/null; then
+            gh api --method POST "$pull/comments/$thread/replies" -f body="$reply" >/dev/null
+          fi
