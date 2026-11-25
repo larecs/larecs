@@ -9,6 +9,13 @@ from larecs.host_storage import HostStorage
 from larecs.iteration import LockedEntityRange
 """
 CASES = {
+    "batch_component_presence": (
+        "def main() raises:\n    var world = World[Int32, Int64]()\n"
+        "    for row in world.storage.add_entities(Int32(2), count=1):\n"
+        "        print(row.get[Int64]())\n",
+        "Component type is not included by this accessor's filter",
+        "row.get[Int32]()",
+    ),
     "query_read_only": (
         "def main() raises:\n    var storage = HostStorage[Int]()\n"
         "    _ = storage.add_entity(1)\n"
@@ -46,7 +53,7 @@ CASES = {
     ),
     "range_storage_origin": (
         "def bad(mut storage: HostStorage[Int]) raises -> "
-        "LockedEntityRange[origin_of(storage._archetypes), origin_of(storage._locks), Int, has_ranges=True]:\n"
+        "LockedEntityRange[origin_of(storage._archetypes), origin_of(storage._locks), Int, row_filter=Filter().include[Int](), has_ranges=True]:\n"
         "    var local = HostStorage[Int]()\n"
         "    return local.add_entities(1, count=2)\n\n"
         "def main() raises:\n    var storage = HostStorage[Int]()\n"
@@ -67,7 +74,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix="larecs-iteration-contracts-") as directory:
         temporary = Path(directory)
         for name, (program, diagnostic, replacement) in CASES.items():
-            if name == "query_read_only":
+            if name == "batch_component_presence":
+                control = program.replace("row.get[Int64]()", replacement)
+            elif name == "query_read_only":
                 control = program.replace("row.get[Int]() = 2", replacement)
             elif name == "selection_noncopyable":
                 control = program.replace("var copied = selected.copy()", replacement)

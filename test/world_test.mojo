@@ -96,8 +96,8 @@ def test_add_entities_iterator_length() raises:
     for remaining in range(12, 0, -1):
         assert_equal(len(iter), remaining)
         var entity = iter.__next__()
-        assert_equal(entity.unsafe_get[Position]().x, pos.x)
-        assert_equal(entity.unsafe_get[Velocity]().dy, vel.dy)
+        assert_equal(entity.get[Position]().x, pos.x)
+        assert_equal(entity.get[Velocity]().dy, vel.dy)
 
     assert_equal(len(iter), 0)
 
