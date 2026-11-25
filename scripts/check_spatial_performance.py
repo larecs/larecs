@@ -210,8 +210,7 @@ def compare(base_binary, head_binary, *, initial_failures=None):
         flush=True,
     )
     print(
-        f"{'Workload':<13} {'Rows':>5} {'Rows/cell':>9} {'Key step':>8} "
-        f"{'Cadence':>7} {'Layout':<9} {'Before':>10} {'After':>10} "
+        f"{'Workload':<13}  {'Configuration':<58}  {'Before':>10} {'After':>10} "
         f"{'Change':>8}  Verdict",
         flush=True,
     )
@@ -221,11 +220,13 @@ def compare(base_binary, head_binary, *, initial_failures=None):
         rows, group, stride, cadence, ordered, maintenance = case
         mode = "Maintenance" if maintenance else "Moving gather" if cadence else "Static gather"
         layout = "ordered" if ordered else "scrambled"
-        interval = f"{cadence} fr" if cadence else "-"
+        interval = f"{cadence} fr" if cadence else "off"
+        configuration = (
+            f"{rows} rows, {group}/cell, key step {stride}, cadence {interval}, {layout}"
+        )
         verdict = flagged_status if case in failures else "ACCEPTABLE"
         print(
-            f"{mode:<13} {rows:>5} {group:>9} {stride:>8} {interval:>7} "
-            f"{layout:<9} {old / 1000:>10.3f} {new / 1000:>10.3f} "
+            f"{mode:<13}  {configuration:<58}  {old / 1000:>10.3f} {new / 1000:>10.3f} "
             f"{(new / old - 1) * 100:>+7.1f}%  {verdict}",
             flush=True,
         )
