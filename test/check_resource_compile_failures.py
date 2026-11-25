@@ -75,11 +75,12 @@ class ResourceCompileFailures(unittest.TestCase):
                 "@PAYLOAD@", "String", "Device resources require pointer-free trivial plain values",
             ),
         ]
-        cases.append((
-            "resource_cache_sample.mojo.in",
-            {"@SAMPLE@": "PlainSample"},
-            "@SAMPLE@", "List[Int]", "Resource samples require pointer-free trivial values",
-        ))
+        for sample in ("List[Int]", "SampleWithCopy", "SampleWithDestructor"):
+            cases.append((
+                "resource_cache_sample.mojo.in",
+                {"@SAMPLE@": "PlainSample"},
+                "@SAMPLE@", sample, "Resource samples require pointer-free trivial values",
+            ))
         for selection in ("False", "True"):
             cases.append((
                 "type_list_gpu.mojo.in",
@@ -97,7 +98,7 @@ class ResourceCompileFailures(unittest.TestCase):
             for fixture, replacements, key, invalid, diagnostic in cases:
                 for reject in (False, True):
                     with self.subTest(
-                        fixture=fixture, diagnostic=diagnostic, reject=reject,
+                        fixture=fixture, invalid=invalid, reject=reject,
                     ):
                         code = (ROOT / "test/compile_fail" / fixture).read_text()
                         for token, value in replacements.items():

@@ -1,4 +1,9 @@
 from larecs import ResourceDeviceCache
+from std.memory import (
+    is_trivially_copyable,
+    is_trivially_deletable,
+    is_trivially_movable,
+)
 
 
 @fieldwise_init
@@ -9,9 +14,38 @@ struct PlainSample(ImplicitlyCopyable):
     var y: Float32
 
 
+@fieldwise_init
+struct SampleWithCopy(Copyable):
+    var value: Int32
+
+    def __init__(out self, *, copy: Self):
+        """Copies the sample with an adjustment.
+
+        Args:
+            copy: Source sample.
+        """
+        self.value = copy.value + 1
+
+
+@fieldwise_init
+struct SampleWithDestructor(Copyable):
+    var value: Int32
+
+    def __deinit__(deinit self):
+        """Prints the sample value at destruction."""
+        print(self.value)
+
+
 def main() raises:
     """Instantiates the upload constraint for the configured sample type."""
     from max.gpu.host import DeviceContext
+
+    comptime assert not is_trivially_copyable[SampleWithCopy]()
+    comptime assert is_trivially_movable[SampleWithCopy]()
+    comptime assert is_trivially_deletable[SampleWithCopy]()
+    comptime assert is_trivially_copyable[SampleWithDestructor]()
+    comptime assert is_trivially_movable[SampleWithDestructor]()
+    comptime assert not is_trivially_deletable[SampleWithDestructor]()
 
     var cache = ResourceDeviceCache(DeviceContext())
     var samples = List[@SAMPLE@]()
