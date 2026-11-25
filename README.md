@@ -218,15 +218,11 @@ The result should look something like this:
 Any `Copyable & Deinitable` struct can be used as a component for host
 (host-only) execution -- this is no longer restricted to trivial/POD types.
 
-Components accessed by a system that runs its kernel on a device
-(`SystemContext.run(..., backend=ExecutionBackend.DEVICE)`) are subject to a stricter
-constraint: device transfer moves component columns between host and device
-buffers via a raw byte copy that never runs a type's copy constructor or
-destructor, so such components must additionally be
-`TrivialRegisterPassable` (bitwise-copyable, with no heap-allocated state
-and no custom copy/move/destroy logic -- the same requirement applies to
-resources read by a device kernel). Using a type with heap-allocated memory in
-a component accessed on the device will corrupt or leak that memory.
+Components accessed by a device kernel must be trivially copyable and
+trivially deletable. Device execution copies component columns as bytes
+between host and device buffers, bypassing copy constructors and
+destructors. Pointers dereferenced on device must refer to
+device-accessible memory.
 
 Heap-allocated (non-trivial) components for host-only use are permitted by
 the type system, but are a comparatively new and lightly-exercised path

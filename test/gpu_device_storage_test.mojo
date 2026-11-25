@@ -27,11 +27,8 @@ from max.gpu.host import DeviceContext
 from larecs.device_storage import DeviceComponentStorage
 
 
-# `DeviceComponentStorage` itself is only constrained to `ComponentType`
-# (it doesn't route through `SystemContext.run`'s `DeviceComponentType`
-# compile-time check), but everything it does is a raw byte copy, so
-# `Vec3` conforms to `TrivialRegisterPassable` anyway to stay honest about
-# what these tests exercise.
+# DeviceComponentStorage copies raw bytes. Its callers must supply trivially
+# copyable and trivially deletable components.
 @fieldwise_init
 struct Vec3(Copyable, TrivialRegisterPassable):
     var x: Float32

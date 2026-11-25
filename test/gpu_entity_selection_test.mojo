@@ -28,7 +28,7 @@ from larecs import (
 
 
 @fieldwise_init
-struct Position(Copyable, TrivialRegisterPassable):
+struct Position(Copyable):
     """Device-safe scalar position."""
 
     var value: Float32

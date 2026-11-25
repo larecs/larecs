@@ -18,10 +18,6 @@ from larecs import (
 )
 
 
-# `TrivialRegisterPassable` on every component below satisfies
-# `DeviceComponentType` (see component.mojo): `SystemContext.run(...,
-# backend=ExecutionBackend.DEVICE)` moves component columns as raw bytes, which is only
-# compile-time-permitted for a type with no non-trivial state.
 @fieldwise_init
 struct Position(Copyable, TrivialRegisterPassable):
     var x: Float32

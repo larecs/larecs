@@ -18,33 +18,26 @@ comptime ComponentType = Copyable & Deinitable
 """The trait that components must conform to."""
 
 comptime DeviceComponentType = TrivialRegisterPassable
-"""Trait subset of [.ComponentType] safe for device raw-byte transfer.
+"""Compatibility alias for the register-passing component constraint.
 
-`SystemContext.run(..., backend=ExecutionBackend.DEVICE)` moves component columns between host
-and device buffers via a plain byte copy (see
-[..device_storage.DeviceComponentStorage]): the destination never runs
-`T`'s copy constructor or destructor, only `memcpy`s its bytes. That is
-only sound for a type with no non-trivial state -- no owned heap
-allocation, no custom copy/move/destroy logic -- since a bitwise copy of
-such a type would corrupt or leak it. `TrivialRegisterPassable` already
-encodes exactly that constraint at the type-system level (bitwise
-copyable, trivially destroyed, and transitively so for every member), so
-it is reused here rather than inventing a new marker trait.
-
-It also already implies `Copyable & Deinitable` (i.e. [.ComponentType]),
-so it alone is the constraint -- composing it with `ComponentType` would
-be redundant.
+Use [.constrain_device_safe_components] to check eligibility for device
+component column transfer.
 """
 
 
 def constrain_device_safe_components[*Ts: ComponentType]() -> Bool:
-    """Checks whether all component types are safe for device raw-byte transfer.
+    """Checks the lifecycle requirements for device raw-byte transfer.
+
+    Device execution copies component columns as bytes without invoking copy
+    constructors or destructors. Pointers dereferenced on device must refer to
+    device-accessible memory.
 
     Parameters:
         Ts: The component types to check.
 
     Returns:
-        True when every type in ``Ts`` conforms to [.DeviceComponentType].
+        True when every type in ``Ts`` is trivially copyable and trivially
+        deletable.
     """
     with Zone(
         function_name=(

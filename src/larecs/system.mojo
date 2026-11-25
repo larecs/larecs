@@ -916,7 +916,8 @@ struct EntitySelection[
                 *filter._include.ComponentTypes
             ](), (
                 "EntitySelection.run(..., backend=ExecutionBackend.DEVICE)"
-                " requires every accessed component type to be device-safe."
+                " requires every accessed component type to be trivially"
+                " copyable and trivially deletable for raw byte transfer."
             )
             if not self._world[]._device_storage:
                 raise Error(
@@ -1823,25 +1824,14 @@ struct SystemContext[
                 for ref archetype in matching_archetypes.copy():
                     length += len(archetype)
 
-                # Device execution moves every accessed component and resource
-                # across the host/device boundary as raw bytes (see
-                # `DeviceComponentStorage`/`DeviceResourceStorage`): the
-                # destination is never constructed through `T`'s copy
-                # constructor, only `memcpy`'d into. A type with non-trivial
-                # state (an owned heap allocation, custom copy/destroy
-                # logic) would be silently corrupted or leaked by that copy,
-                # so reject it here at compile time rather than at the
-                # `DeviceBuffer` call sites below where the failure would be
-                # far less legible. Host execution is
-                # unaffected -- it never takes this branch.
+                # Raw column transfers bypass component copy constructors and
+                # destructors.
                 comptime assert constrain_device_safe_components[
                     *filter._include.ComponentTypes
                 ](), (
                     "SystemContext.run(..., backend=ExecutionBackend.DEVICE)"
-                    " requires every accessed component type to be device-safe"
-                    " (conform to DeviceComponentType, i.e."
-                    " TrivialRegisterPassable) for raw byte transfer between"
-                    " host and device."
+                    " requires every accessed component type to be trivially"
+                    " copyable and trivially deletable for raw byte transfer."
                 )
 
                 if not self.world[]._device_storage:

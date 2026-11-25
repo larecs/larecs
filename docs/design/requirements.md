@@ -52,7 +52,7 @@ under [decision 0022](decisions/0022-mutable-adapted-resources.md). See
 [adapter integration](../../test/resource_adapter_test.mojo) and
 [raw representation regressions](../../test/resource_test.mojo).
 
-Execution APIs use `backend=ExecutionBackend.HOST/HOST_THREADED/DEVICE`, `DeviceComponentType`, `DeviceResourceType`,
+Execution APIs use `backend=ExecutionBackend.HOST/HOST_THREADED/DEVICE`, `DeviceResourceType`,
 and `constrain_device_safe_*` under
 [decision 0023](decisions/0023-explicit-execution-backend.md) and the retained
 terminology renames from [decision 0015](decisions/0015-host-device-execution-terminology.md).

@@ -31,9 +31,11 @@ unchanged.
   readable/writable values for each call. Synchronize before returning so
   callers observe completed writes and may safely reuse host state.
 - Transfer only component and resource types supported by the current raw-byte
-  device path. Heap-backed resources need a separate ownership and encoding
-  design. Explicit captures and required resources follow their declared
-  binding and copy-back rules.
+  device path. Component columns require trivial copy and destruction because
+  byte transfers bypass both operations. Pointers dereferenced on device must
+  refer to device-accessible memory. Heap-backed resources need a separate
+  ownership and encoding design. Explicit captures and required resources
+  follow their declared binding and copy-back rules.
 - Use the [grid-stride iteration decision](0003-grid-stride-entity-iteration.md)
   to partition packed rows among GPU threads.
 

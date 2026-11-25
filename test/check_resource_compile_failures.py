@@ -15,6 +15,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 DIAGNOSTIC = "ResourceStorage.add requires unique resource types"
+COMPONENT_DIAGNOSTIC = (
+    "requires every accessed component type to be trivially copyable and trivially deletable"
+)
 
 
 class ResourceCompileFailures(unittest.TestCase):
@@ -64,21 +67,25 @@ class ResourceCompileFailures(unittest.TestCase):
             ),
             (
                 "type_list_gpu.mojo.in",
-                {"@PAYLOAD@": "Int32", "@FILTER@": "Filter().include[Value]()",
-                 "@RESOURCES@": "Resources[]()",
-                 "@CHECK@": "constrain_device_safe_components[Value]()",
-                 "@DIAGNOSTIC@": "DeviceComponentType"},
-                "@PAYLOAD@", "String", "DeviceComponentType",
-            ),
-            (
-                "type_list_gpu.mojo.in",
                 {"@PAYLOAD@": "Int32", "@FILTER@": "Filter().include[Int32]()",
                  "@RESOURCES@": "Resources[Value]()",
                  "@CHECK@": "constrain_device_safe_resources[Value]()",
+                 "@SELECTION@": "False",
                  "@DIAGNOSTIC@": "Device resources require pointer-free trivial plain values"},
                 "@PAYLOAD@", "String", "Device resources require pointer-free trivial plain values",
             ),
         ]
+        for selection in ("False", "True"):
+            cases.append((
+                "type_list_gpu.mojo.in",
+                {"@PAYLOAD@": "ScalarComponent",
+                 "@FILTER@": "Filter().include[Value]()",
+                 "@RESOURCES@": "Resources[]()",
+                 "@CHECK@": "constrain_device_safe_components[Value]()",
+                 "@SELECTION@": selection,
+                 "@DIAGNOSTIC@": COMPONENT_DIAGNOSTIC},
+                "@PAYLOAD@", "ComponentWithDestructor", COMPONENT_DIAGNOSTIC,
+            ))
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "fixture.mojo"
             output = Path(directory) / "fixture.ll"
