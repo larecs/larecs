@@ -18,14 +18,14 @@ or device.
 from larecs import ExecutionBackend, Scheduler, System, SystemContext, KernelContext, Filter
 
 @fieldwise_init
-struct Position(Copyable, Movable, TrivialRegisterPassable):
-    var x: Float64
-    var y: Float64
+struct Position(Copyable):
+    var x: Float32
+    var y: Float32
 
 @fieldwise_init
-struct Velocity(Copyable, Movable, TrivialRegisterPassable):
-    var dx: Float64
-    var dy: Float64
+struct Velocity(Copyable):
+    var dx: Float32
+    var dy: Float32
 
 comptime move_filter = Filter().include[Position].read[Velocity]()
 
@@ -68,10 +68,11 @@ from larecs import ExecutionBackend
 context.run[move_entities, backend=ExecutionBackend.DEVICE]()
 ```
 
-Device execution requires device-safe component types and the corresponding Mojo
-toolchain. If you need explicit CPU `SIMD` batching, that is not part of the
-public systems API yet; avoid depending on archetype storage internals, whose
-layout and iteration contracts may change.
+Device execution requires trivially copyable and trivially deletable
+components and a Mojo toolchain for the target. If you need explicit CPU
+`SIMD` batching, that is not part of the public systems API yet. Avoid
+depending on archetype storage internals, whose layout and iteration contracts
+may change.
 
 The default is `ExecutionBackend.HOST`. Selecting DEVICE raises when an
 accelerator is unavailable; it never falls back to host execution.

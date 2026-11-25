@@ -29,7 +29,7 @@ from larecs import (
 
 
 @fieldwise_init
-struct Cell(TrivialRegisterPassable):
+struct Cell(Copyable):
     """Target cell of an entity."""
 
     var index: Int32
