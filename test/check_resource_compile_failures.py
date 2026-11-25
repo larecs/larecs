@@ -9,6 +9,7 @@ form. Constraint fixtures also require a positive compilation control.
 
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -96,6 +97,11 @@ class ResourceCompileFailures(unittest.TestCase):
             source = Path(directory) / "fixture.mojo"
             output = Path(directory) / "fixture.ll"
             for fixture, replacements, key, invalid, diagnostic in cases:
+                target_options = []
+                if fixture == "resource_cache_sample.mojo.in":
+                    # DeviceContext needs a GPU target even for compile-only checks.
+                    accelerator = "apple-m1" if sys.platform == "darwin" else "sm_80"
+                    target_options = ["--target-accelerator", accelerator]
                 for reject in (False, True):
                     with self.subTest(
                         fixture=fixture, invalid=invalid, reject=reject,
@@ -106,7 +112,7 @@ class ResourceCompileFailures(unittest.TestCase):
                             code = code.replace(token, replacement)
                         source.write_text(code)
                         result = subprocess.run(
-                            ["mojo", "build", "--emit", "llvm", "-I",
+                            ["mojo", "build", "--emit", "llvm", *target_options, "-I",
                              str(ROOT / "src"), str(source), "-o", str(output)],
                             capture_output=True, text=True, timeout=120,
                         )
