@@ -4,7 +4,7 @@ Fixtures use .mojo.in so mogo-tester never discovers invalid Mojo programs.
 Emit LLVM IR to test compilation without depending on the system linker.
 Resource-add fixtures must compile with add replaced by set (which permits
 repeated types), then fail with the specific add diagnostic in their original
-form. Shared type-list fixtures also require a positive compilation control.
+form. Constraint fixtures also require a positive compilation control.
 """
 
 from pathlib import Path
@@ -53,8 +53,8 @@ class ResourceCompileFailures(unittest.TestCase):
                         else:
                             self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_type_list_constraints(self):
-        """Check shared constraints with a valid control for every rejection."""
+    def test_compile_time_constraints(self):
+        """Check compiler constraints with a valid control for every rejection."""
         cases = [
             (
                 "type_list_component_ids.mojo.in", {"@TYPES@": "Int, Float32"},
@@ -75,6 +75,11 @@ class ResourceCompileFailures(unittest.TestCase):
                 "@PAYLOAD@", "String", "Device resources require pointer-free trivial plain values",
             ),
         ]
+        cases.append((
+            "resource_cache_sample.mojo.in",
+            {"@SAMPLE@": "PlainSample"},
+            "@SAMPLE@", "List[Int]", "Resource samples require pointer-free trivial values",
+        ))
         for selection in ("False", "True"):
             cases.append((
                 "type_list_gpu.mojo.in",

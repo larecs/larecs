@@ -231,7 +231,7 @@ struct ResourceDeviceCache(Movable):
         self._downloads = List[_Download]()
 
     def upload[
-        mut: Bool, origin: Origin[mut=mut], //, T: TrivialRegisterPassable
+        mut: Bool, origin: Origin[mut=mut], //, T: Copyable & Deinitable
     ](mut self, slot: Int, samples: Span[T, origin]) raises -> Pointer[
         T, ImmUntrackedOrigin
     ]:
@@ -240,7 +240,7 @@ struct ResourceDeviceCache(Movable):
         Parameters:
             mut: Source span mutability.
             origin: Source span borrow origin.
-            T: Trivial sample element type.
+            T: Pointer-free sample type with trivial copy, move, and destruction.
 
         Args:
             slot: Nonnegative adapter allocation identifier.
@@ -258,7 +258,7 @@ struct ResourceDeviceCache(Movable):
         )
 
     def upload_mutable[
-        mut: Bool, origin: Origin[mut=mut], //, T: TrivialRegisterPassable
+        mut: Bool, origin: Origin[mut=mut], //, T: Copyable & Deinitable
     ](mut self, slot: Int, samples: Span[T, origin]) raises -> Pointer[
         T, MutUntrackedOrigin
     ]:
@@ -269,7 +269,7 @@ struct ResourceDeviceCache(Movable):
         Parameters:
             mut: Source span mutability.
             origin: Source span borrow origin.
-            T: Trivial sample element type.
+            T: Pointer-free sample type with trivial copy, move, and destruction.
 
         Args:
             slot: Nonnegative adapter allocation identifier.
@@ -287,7 +287,7 @@ struct ResourceDeviceCache(Movable):
         )
 
     def fill[
-        T: TrivialRegisterPassable
+        T: Copyable & Deinitable
     ](mut self, slot: Int, count: Int, value: T) raises -> Pointer[
         T, MutUntrackedOrigin
     ]:
@@ -297,7 +297,7 @@ struct ResourceDeviceCache(Movable):
         contents. The fill is snapshotted in staging and queued like an upload.
 
         Parameters:
-            T: Trivial element type.
+            T: Pointer-free element type with trivial copy, move, and destruction.
 
         Args:
             slot: Nonnegative adapter allocation identifier.
@@ -321,7 +321,7 @@ struct ResourceDeviceCache(Movable):
         )
 
     def download[
-        origin: MutOrigin, //, T: TrivialRegisterPassable
+        origin: MutOrigin, //, T: Copyable & Deinitable
     ](mut self, slot: Int, target: Span[T, origin]) raises:
         """Stages a device buffer prefix for publication into host memory.
 
@@ -331,7 +331,7 @@ struct ResourceDeviceCache(Movable):
 
         Parameters:
             origin: Mutable host target origin.
-            T: Trivial element type.
+            T: Pointer-free element type with trivial copy, move, and destruction.
 
         Args:
             slot: Previously prepared adapter allocation identifier.
@@ -367,14 +367,14 @@ struct ResourceDeviceCache(Movable):
         )
 
     def _upload[
-        mut: Bool, origin: Origin[mut=mut], //, T: TrivialRegisterPassable
+        mut: Bool, origin: Origin[mut=mut], //, T: Copyable & Deinitable
     ](mut self, slot: Int, samples: Span[T, origin]) raises -> Int:
         """Snapshots and uploads samples, returning the device address.
 
         Parameters:
             mut: Source span mutability.
             origin: Source span borrow origin.
-            T: Trivial sample element type.
+            T: Pointer-free sample type with trivial copy, move, and destruction.
 
         Args:
             slot: Nonnegative adapter allocation identifier.

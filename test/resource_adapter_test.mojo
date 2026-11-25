@@ -455,6 +455,44 @@ def test_staged_download_publication() raises:
         assert_equal(output, 9)
 
 
+@fieldwise_init
+struct PlainSample(ImplicitlyCopyable):
+    """Pointer-free aggregate used as a device buffer element."""
+
+    var x: Float32
+    var y: Float32
+
+
+def test_cache_plain_aggregate_round_trip() raises:
+    """Round-trips plain aggregates through every typed cache transfer.
+
+    Raises:
+        Error: If device transfers fail or any returned element differs.
+    """
+    comptime if has_accelerator():
+        var context = DeviceContext()
+        var cache = ResourceDeviceCache(context)
+        var samples = [PlainSample(1, 2), PlainSample(3, 4)]
+        var fill = PlainSample(5, 6)
+        var result = List[PlainSample](
+            length=len(samples), fill=PlainSample(0, 0)
+        )
+        _ = cache.upload(0, Span(samples))
+        _ = cache.upload_mutable(1, Span(samples))
+        _ = cache.fill(2, len(samples), fill)
+
+        for slot in range(3):
+            cache.download(slot, Span(result))
+            var frame = _TransferFrame(context)
+            swap(frame.downloads, cache._downloads)
+            context.synchronize()
+            frame.publish()
+            for i in range(len(samples)):
+                var expected = fill if slot == 2 else samples[i]
+                assert_equal(result[i].x, expected.x)
+                assert_equal(result[i].y, expected.y)
+
+
 def test_selected_portable_views() raises:
     """Uses the source-oriented API for packed disjoint device row selections.
 

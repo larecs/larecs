@@ -1,0 +1,18 @@
+from larecs import ResourceDeviceCache
+
+
+@fieldwise_init
+struct PlainSample(ImplicitlyCopyable):
+    """Pointer-free sample used as the positive control."""
+
+    var x: Float32
+    var y: Float32
+
+
+def main() raises:
+    """Instantiates the upload constraint for the configured sample type."""
+    from max.gpu.host import DeviceContext
+
+    var cache = ResourceDeviceCache(DeviceContext())
+    var samples = List[@SAMPLE@]()
+    _ = cache.upload(0, Span(samples))
