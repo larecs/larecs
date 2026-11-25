@@ -6,8 +6,8 @@
 
 Reads text (for example a pull request comment) from the COMMENT_BODY
 environment variable, takes the first `#preset=<base64url JSON>` fragment in
-it, and renders that preset: the mark on its background, on its second
-background, and at 64, 32 and 16 px. The text is untrusted: parameters are
+it, and renders the mark on both preset backgrounds, in black on white, and
+at 64, 32 and 16 px. The text is untrusted: parameters are
 clamped to the playground's slider ranges and colours must be six-digit hex.
 
 Usage:
@@ -67,23 +67,26 @@ def parse(text: str) -> dict | None:
 
 
 def board(preset: dict) -> str:
-    """Two large tiles and a small-size strip, as one SVG document."""
+    """Render two colour tiles, a black-on-white tile, and a small-size strip."""
     mark = gl.spruce_l(preset["params"])
     cols = preset["colors"]
     roles = {k: cols[k] for k in "abcd"}
     icon = gl.svg_doc(gl.render_mark(mark, roles, 192), title="larecs")
+    black = gl.SCHEMES["black"]
+    black_icon = gl.svg_doc(gl.render_mark(mark, black["colors"], 192), title="larecs")
+    tiles = [(icon, cols["bg"]), (icon, cols["alt"]), (black_icon, black["bg"])]
     parts = []
-    for i, bg in enumerate([cols["bg"], cols["alt"]]):
+    for i, (tile, bg) in enumerate(tiles):
         x = 16 + i * 416
         parts.append(f'<rect x="{x}" y="16" width="400" height="400" rx="24" fill="{bg}"/>')
-        parts.append(gl.nest(icon, x, 16, 400))
-    x = 848
+        parts.append(gl.nest(tile, x, 16, 400))
+    x = 16 + len(tiles) * 416
     parts.append(f'<rect x="{x}" y="16" width="176" height="400" rx="24" fill="{cols["bg"]}"/>')
     y = 48
     for z in [64, 32, 16]:
         parts.append(gl.nest(icon, x + 88 - z / 2, y, z))
         y += z + 48
-    return gl.svg_doc("\n  ".join(parts), 1040, 432, "larecs logo variation")
+    return gl.svg_doc("\n  ".join(parts), x + 176 + 16, 432, "larecs logo variation")
 
 
 def main() -> int:
