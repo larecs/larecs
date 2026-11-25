@@ -1,11 +1,26 @@
 # SKIP_ASAN
 # SKIP_DEBUG
 
+from std.memory import is_trivially_copyable, is_trivially_deletable
 from std.sys import has_accelerator
 
 from larecs.component import constrain_device_safe_components
 from larecs.resource import constrain_device_safe_resources
 from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter, Resources
+
+
+@fieldwise_init
+struct ScalarComponent(Copyable):
+    var value: Int32
+
+
+@fieldwise_init
+struct ComponentWithDestructor(Copyable):
+    var value: Int32
+
+    def __deinit__(deinit self):
+        """Performs an observable action at destruction."""
+        print(self.value)
 
 
 comptime Value = @PAYLOAD@
@@ -26,10 +41,17 @@ def main() raises:
     Raises:
         Error: If context initialization or dispatch fails.
     """
+    comptime assert not conforms_to(ScalarComponent, TrivialRegisterPassable)
+    comptime assert is_trivially_copyable[ComponentWithDestructor]()
+    comptime assert not is_trivially_deletable[ComponentWithDestructor]()
     comptime if has_accelerator():
         var world = World[Int32, Value]()
         var context = SystemContext(world)
-        context.run[kernel, backend=ExecutionBackend.DEVICE]()
+        comptime if @SELECTION@:
+            var selection = context.add_entities(Value(0), count=1)
+            selection.run[kernel, backend=ExecutionBackend.DEVICE]()
+        else:
+            context.run[kernel, backend=ExecutionBackend.DEVICE]()
     else:
         # CPU-only CI still checks the same constraint without GPU codegen.
         comptime assert @CHECK@, "@DIAGNOSTIC@"

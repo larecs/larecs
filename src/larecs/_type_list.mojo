@@ -6,6 +6,9 @@ This module must not import component or resource modules.
 """
 
 
+from std.memory import is_trivially_copyable, is_trivially_deletable
+
+
 struct _TypeChecks[*Ts: Copyable & Deinitable]:
     """Compile-time operations on storage-compatible types.
 
@@ -77,10 +80,13 @@ struct _TypeChecks[*Ts: Copyable & Deinitable]:
         """Checks that every type supports raw-byte GPU transfer.
 
         Returns:
-            True when every type is TrivialRegisterPassable, including an
-            empty list.
+            True when every type is trivially copyable and trivially deletable,
+            including an empty list.
         """
         comptime for i in range(len(Self.Ts)):
-            comptime if not conforms_to(Self.Ts[i], TrivialRegisterPassable):
+            comptime if not (
+                is_trivially_copyable[Self.Ts[i]]()
+                and is_trivially_deletable[Self.Ts[i]]()
+            ):
                 return False
         return True

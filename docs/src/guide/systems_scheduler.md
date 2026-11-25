@@ -45,7 +45,7 @@ from larecs import (
 
 @fieldwise_init
 struct Time(ResourceType, TrivialRegisterPassable):
-    var delta: Float64
+    var delta: Float32
 
 # This kernel writes Position and reads Velocity for every matching entity.
 # Move.update invokes it through the system's SystemContext below.
@@ -106,14 +106,14 @@ further systems for adding entities and logging their positions.
 
 ```mojo {doctest="guide_systems_scheduler" global=true hide=true}
 @fieldwise_init
-struct Position(Movable, Copyable, TrivialRegisterPassable):
-    var x: Float64
-    var y: Float64
+struct Position(Copyable):
+    var x: Float32
+    var y: Float32
 
 @fieldwise_init
-struct Velocity(Movable, Copyable, TrivialRegisterPassable):
-    var dx: Float64
-    var dy: Float64
+struct Velocity(Copyable):
+    var dx: Float32
+    var dy: Float32
 ```
 
 ```mojo {doctest="guide_systems_scheduler" global=true}
@@ -458,6 +458,11 @@ details. Device execution requires an available accelerator and the correspondin
 Mojo GPU toolchain. Selecting `DEVICE` raises an error when accelerator compilation
 support or a working world device context is unavailable, including for empty
 matches. There is no automatic backend selection or host fallback.
+
+Component columns require trivially copyable and trivially deletable types.
+The scalar-field `Position` and `Velocity` structs above meet these
+requirements. Pointers dereferenced on device must refer to device-accessible
+memory.
 
 `backend` is a compile-time parameter on both `SystemContext.run` and
 `EntitySelection.run`. This specializes kernel compilation and transfer checks

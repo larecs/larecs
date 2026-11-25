@@ -21,12 +21,9 @@ from std.testing import *
 from larecs import ExecutionBackend, World, SystemContext, KernelContext, Filter
 
 
-# `TrivialRegisterPassable` satisfies `DeviceComponentType` (see
-# component.mojo): `SystemContext.run(..., backend=ExecutionBackend.DEVICE)` moves component
-# columns as raw bytes, which is only compile-time-permitted for a type
-# with no non-trivial state.
+# An ordinary Copyable scalar-field component supports raw column transfers.
 @fieldwise_init
-struct Value(Copyable, TrivialRegisterPassable):
+struct Value(Copyable):
     var v: Int32
 
 

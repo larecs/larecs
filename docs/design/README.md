@@ -65,7 +65,7 @@ the [Mojo GPU package terminology](https://docs.modular.com/mojo/std/gpu/).
 
 Keep **CPU** and **GPU** when identifying hardware, GPU thread/grid facilities,
 toolchain requirements, hardware validation, or processor-specific performance
-evidence. Larecs APIs use `backend=ExecutionBackend.HOST/HOST_THREADED/DEVICE`, `DeviceComponentType`,
+evidence. Larecs APIs use `backend=ExecutionBackend.HOST/HOST_THREADED/DEVICE`,
 `DeviceResourceType`, `constrain_device_safe_components`, and
 `constrain_device_safe_resources`; see [decision 0023](decisions/0023-explicit-execution-backend.md)
 for target selection and [decision 0015](decisions/0015-host-device-execution-terminology.md)

@@ -229,7 +229,10 @@ Import `ExecutionBackend` from `larecs` and replace the host `run` call with:
 Host execution is the default. DEVICE requires a working accelerator and raises
 when unavailable, including for empty matches; it never falls back to HOST.
 
-For device execution, components must conform to `TrivialRegisterPassable`.
+For device execution, components must be trivially copyable and trivially
+deletable. Larecs copies component columns as raw bytes. Pointers dereferenced
+on device must refer to device-accessible memory.
+
 Ordinary resources need a supported pointer-free representation with trivial
 copy, move, and destruction. Numeric values, `Bool`, and aggregates of those
 values are accepted without declaring `TrivialRegisterPassable`. Owning
