@@ -8,13 +8,16 @@
 from std.sys import has_accelerator
 from std.testing import *
 
-from larecs import World, SystemContext, KernelContext, Filter
+from larecs import (
+    ExecutionBackend,
+    Entity,
+    World,
+    SystemContext,
+    KernelContext,
+    Filter,
+)
 
 
-# `TrivialRegisterPassable` on every component below satisfies
-# `GPUComponentType` (see component.mojo): `SystemContext.run(...,
-# on_gpu=True)` moves component columns as raw bytes, which is only
-# compile-time-permitted for a type with no non-trivial state.
 @fieldwise_init
 struct Position(Copyable, TrivialRegisterPassable):
     var x: Float32
@@ -37,9 +40,9 @@ def bump(context: KernelContext[Filter().include[Position, Velocity]()]):
 
 
 def test_gpu_run_covers_every_matching_archetype() raises:
-    """A GPU-run filter matching multiple archetypes updates every row.
+    """A filter running on the device updates every matching archetype.
 
-    Before this test existed, `SystemContext.run`'s GPU upload path copied
+    Before this test existed, `SystemContext.run`'s device upload path copied
     every matching archetype's column to device offset zero (rather than the
     running offset the download path already used), so the second matching
     archetype silently overwrote the first and any archetype after the first
@@ -66,7 +69,7 @@ def test_gpu_run_covers_every_matching_archetype() raises:
     var e = world.storage.add_entity(Position(1000.0), Tag(1))
 
     var context = SystemContext(world)
-    context.run[bump, on_gpu=True]()
+    context.run[bump, backend=ExecutionBackend.DEVICE]()
 
     assert_equal(world.storage.get[Position](a).x, 1.0)
     assert_equal(world.storage.get[Position](b).x, 11.0)
@@ -76,19 +79,19 @@ def test_gpu_run_covers_every_matching_archetype() raises:
 
 
 def test_gpu_run_raises_a_clear_error_without_device_storage() raises:
-    """`on_gpu=True` raises a legible error when the world has no working
+    """`backend=ExecutionBackend.DEVICE` raises a legible error when the world has no working
     device storage, instead of an opaque `EmptyOptionalError`.
 
     `World.__init__` already falls back to an empty `_device_storage` when
     `DeviceContext()` fails (e.g. no accelerator, or a driver-level
     failure despite `has_accelerator()` being true at compile time). Before
-    this fix, `SystemContext.run(..., on_gpu=True)` unwrapped that
+    this fix, `SystemContext.run(..., backend=ExecutionBackend.DEVICE)` unwrapped that
     `Optional` directly with `[]`, which raises `EmptyOptionalError`, an
     error type that names neither the world, the requested run, nor what
     to do about it. This test forces that fallback path directly (rather
     than relying on a specific `DeviceContext()` failure) by clearing an
     otherwise-working world's device storage, since this machine having an
-    accelerator is exactly what makes `on_gpu=True` reach this branch at
+    accelerator is exactly what makes `backend=ExecutionBackend.DEVICE` reach this branch at
     all -- see the `has_accelerator()` guard below.
     """
     comptime if not has_accelerator():
@@ -102,12 +105,51 @@ def test_gpu_run_raises_a_clear_error_without_device_storage() raises:
 
     var raised = False
     try:
-        context.run[bump, on_gpu=True]()
+        context.run[bump, backend=ExecutionBackend.DEVICE]()
     except e:
         raised = True
         assert_true("device" in String(e))
 
     assert_true(raised)
+
+
+def test_gpu_growing_and_repeated_multi_archetype_calls() raises:
+    """Checks flattened offsets and buffer reuse as matching groups grow.
+
+    Raises:
+        Error: If GPU execution or an assertion fails.
+    """
+    comptime if has_accelerator():
+        var world = World[Position, Velocity, Tag]()
+        var entities = List[Entity]()
+        for i in range(17):
+            entities.append(
+                world.storage.add_entity(Position(Float32(i)), Velocity(1))
+            )
+            entities.append(
+                world.storage.add_entity(
+                    Position(Float32(i)), Velocity(1), Tag(Int32(i))
+                )
+            )
+            var context = SystemContext(world)
+            context.run[bump, backend=ExecutionBackend.DEVICE]()
+            for j in range(i + 1):
+                assert_equal(
+                    world.storage.get[Position](entities[2 * j]).x,
+                    Float32(i + 1),
+                )
+                assert_equal(
+                    world.storage.get[Position](entities[2 * j + 1]).x,
+                    Float32(i + 1),
+                )
+        var pointer = world._device_storage[].get_device_ptr[Position]()
+        var context = SystemContext(world)
+        context.run[bump, backend=ExecutionBackend.DEVICE]()
+        assert_equal(
+            world._device_storage[].get_device_ptr[Position](), pointer
+        )
+        for entity in entities:
+            assert_equal(world.storage.get[Position](entity).x, 18)
 
 
 comptime functions = __functions_in_module()

@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 from std.testing import *
 from larecs.entity import Entity, EntityLocation
 from larecs.filter import Filter

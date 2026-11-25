@@ -1,57 +1,99 @@
 name: Release
 
 on:
-  release:
-    types: [created]
-  push:
-    branches:
-      - main
   pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 permissions: {}
 
+concurrency:
+  # Serialize stable publishing and keep only the latest validation run per PR.
+  group: >-
+    ${{ github.event.action == 'closed' && github.event.pull_request.merged
+    && startsWith(github.event.pull_request.base.ref, 'release/base-')
+    && 'stable-release'
+    || github.event_name == 'pull_request' && github.event.action != 'closed'
+    && format('{0}-pr-{1}', github.workflow, github.event.pull_request.number)
+    || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
+
 jobs:
-  define-matrix:
-    name: Define matrix
+  # Select a package source for release PRs and for ordinary PRs that change
+  # build inputs. For publishing, the verifier on main checks the PR approval
+  # and selects the reviewed commit.
+  candidate:
+    name: Resolve package source
+    if: >-
+      github.event.action != 'closed' ||
+      (github.event.pull_request.merged
+      && startsWith(github.event.pull_request.base.ref, 'release/base-')
+      && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix: ${{ steps.resolve.outputs.matrix }}
+      sha: ${{ steps.resolve.outputs.sha }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      version: ${{ steps.resolve.outputs.version }}
+      previous: ${{ steps.resolve.outputs.previous }}
     steps:
-      - id: set-matrix
-        run: |
-          echo 'matrix=[{ "os": "ubuntu-latest", "target-platform": "linux-64" }, { "os": "macos-latest", "target-platform": "osx-arm64" }]' >> $GITHUB_OUTPUT
-  define-version:
-    name: Define version
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.set-version.outputs.version }}
-    steps:
-      - id: set-version
-        shell: bash
+      - id: filter
+        if: ${{ !startsWith(github.base_ref, 'release/base-') }}
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            package:
+              - src/**
+              - conda.recipe/**
+              - LICENSE
+              - .github/workflows/release.yml
+      - uses: actions/checkout@v6
+        if: github.event.action == 'closed'
+        with:
+          ref: refs/heads/main
+          fetch-depth: 0
+          persist-credentials: false
+      - id: resolve
+        if: steps.filter.outputs.package != 'false'
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_PR: ${{ github.event.pull_request.number }}
+          PR_ACTION: ${{ github.event.action }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
-          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
-            echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+          echo 'matrix=[{"os":"ubuntu-latest","target-platform":"linux-64"},{"os":"macos-latest","target-platform":"osx-arm64"}]' >> "$GITHUB_OUTPUT"
+          if [[ "$PR_ACTION" == closed ]]; then
+            python3 scripts/release_pr.py resolve "$RELEASE_PR"
           else
-            echo "version=1.0.0b1" >> "$GITHUB_OUTPUT"
+            version=1.0.0b1
+            if [[ "$BASE_REF" == release/base-v* ]]; then
+              version=${BASE_REF#release/base-v}
+            fi
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
           fi
+  # Package the selected commit on Linux and macOS. Release PRs also run the
+  # package tests before merge and again on the approved commit after merge.
   build:
     name: Build package
-    needs:
-      - define-matrix
-      - define-version
+    needs: candidate
+    if: needs.candidate.outputs.sha != ''
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     env:
-      LARECS_VERSION: ${{ needs.define-version.outputs.version }}
+      LARECS_VERSION: ${{ needs.candidate.outputs.version }}
     strategy:
       matrix:
-        include: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
+        include: ${{ fromJSON(needs.candidate.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.candidate.outputs.sha }}
+          persist-credentials: false
       - name: Build conda package
         uses: prefix-dev/rattler-build-action@v0.2.39
         with:
@@ -63,26 +105,37 @@ jobs:
             --channel https://repo.prefix.dev/max
             --channel https://repo.prefix.dev/modular-community
             --channel https://prefix.dev/tree-d
-            ${{ github.event_name != 'release' && '--no-test' || '' }}
+            ${{ !startsWith(github.event.pull_request.base.ref, 'release/base-') && '--no-test' || '' }}
+  # Branch rules require this single check, which passes once both builds pass.
   build-gate:
     name: Build gate
+    if: >-
+      ${{ always() && needs.candidate.result != 'skipped'
+      && (needs.candidate.result != 'success' || needs.candidate.outputs.sha != '') }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: [candidate, build]
     steps:
-      - run: echo "All builds completed successfully."
+      - name: Require successful package builds
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: |
+          if [[ "$BUILD_RESULT" != success ]]; then
+            echo "::error::Package builds finished with result: $BUILD_RESULT"
+            exit 1
+          fi
+  # A verified release tag and successful builds permit uploads to Tree-D.
+  # Each job uploads the artifact built for its platform.
   upload:
-    if: ${{ github.event_name == 'release' }}
+    if: needs.candidate.outputs.tag != ''
     name: Upload conda packages to Tree-D Prefix channel
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write # OIDC trusted publishing to prefix.dev
-    needs:
-      - build-gate
-      - define-matrix
+    needs: [candidate, build-gate]
     strategy:
       matrix:
-        include: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
+        include: ${{ fromJSON(needs.candidate.outputs.matrix) }}
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -94,7 +147,83 @@ jobs:
       - name: Upload package to prefix.dev
         shell: bash
         run: |
-          for pkg in $(find dist -type f \( -name "*.conda" -o -name "*.tar.bz2" \) ); do
-            echo "Uploading ${pkg}"
-            rattler-build upload prefix --channel tree-d "${pkg}"
+          mapfile -d '' -t packages < <(find dist -type f \( -name '*.conda' -o -name '*.tar.bz2' \) -print0)
+          (( ${#packages[@]} > 0 ))
+          for package in "${packages[@]}"; do
+            rattler-build upload prefix --channel tree-d "$package"
           done
+
+  # After both uploads succeed, tag the approved commit and publish its GitHub
+  # release notes.
+  release:
+    name: Publish GitHub release
+    needs: [candidate, upload]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      is_prerelease: ${{ steps.publish.outputs.is_prerelease }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ needs.candidate.outputs.tag }}
+      RELEASE_SHA: ${{ needs.candidate.outputs.sha }}
+      PREVIOUS_TAG: ${{ needs.candidate.outputs.previous }}
+    steps:
+      - name: Tag the reviewed commit
+        id: publish
+        run: |
+          release_type=(--latest)
+          is_prerelease=false
+          if [[ "$RELEASE_TAG" == *b* ]]; then
+            release_type=(--prerelease)
+            is_prerelease=true
+          fi
+          gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --target "$RELEASE_SHA" --generate-notes --notes-start-tag "$PREVIOUS_TAG" "${release_type[@]}"
+          echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
+
+  cleanup:
+    name: Clean up temporary release branches
+    needs: [candidate, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ needs.candidate.outputs.tag }}
+    steps:
+      - name: Delete temporary release branches
+        run: |
+          for branch in "release/base-$RELEASE_TAG" "release/candidate-$RELEASE_TAG"; do
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" --silent; then
+              gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
+            fi
+          done
+
+  close-milestone:
+    name: Close release milestone
+    needs: release
+    if: needs.release.outputs.is_prerelease == 'false' && github.event.pull_request.milestone.number > 0
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Close the milestone assigned to the release PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MILESTONE_NUMBER: ${{ github.event.pull_request.milestone.number }}
+        run: |
+          gh api --method PATCH --silent \
+            "repos/$GITHUB_REPOSITORY/milestones/$MILESTONE_NUMBER" \
+            -f state=closed
+
+  sync-roadmap:
+    name: Sync the Roadmap after publishing
+    needs: release
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/roadmap-release-status.yml
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}

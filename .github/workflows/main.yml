@@ -4,13 +4,54 @@ on:
   push:
     branches:
       - main
+      - nightly
   pull_request:
 
 permissions: {}
 
+concurrency:
+  group: >-
+    ${{ github.event_name == 'pull_request'
+    && format('{0}-pr-{1}', github.workflow, github.event.pull_request.number)
+    || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # Decide which checks this change needs. Toolchain and workflow changes
+  # count as changes to everything they build.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      tests: ${{ steps.filter.outputs.tests }}
+      build: ${{ steps.filter.outputs.build }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            tests: &tests
+              - src/**
+              - test/**
+              - pixi.toml
+              - pixi.lock
+              - scripts/check_spatial_performance.py
+              - .github/workflows/main.yml
+            build:
+              - *tests
+              - examples/**
+              - benchmark/**
+
   build_and_test:
     name: Build and test (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -60,9 +101,25 @@ jobs:
           echo "without exercising any GPU code path. Compare against the"
           echo "has_accelerator() output above to tell skipped from executed."
 
+      # Release PRs run this suite in the Release workflow's package tests.
       - name: Run tests
+        if: needs.changes.outputs.tests == 'true' && !startsWith(github.base_ref, 'release/base-')
         run: |
-          pixi run tests test
+          pixi install --locked -e test-runner
+          MOGO_TESTER_BIN="$PWD/.pixi/envs/test-runner/bin/mogo-tester" \
+            pixi run -e test bash test/run_tests.sh --parallel auto test
+
+      # Package tests pass --no-precompile, which skips the spatial checks.
+      - name: Check spatial performance for release PRs
+        if: needs.changes.outputs.tests == 'true' && startsWith(github.base_ref, 'release/base-')
+        run: |
+          pixi run -e test python -m unittest discover -s test -p spatial_performance_test.py
+          pixi run -e test python scripts/check_spatial_performance.py
+
+      - name: Check resource compile failures
+        if: needs.changes.outputs.tests == 'true'
+        run: |
+          pixi run test-resource-compile-failures
 
       # BUG: Skip benchmarks as they need to much time to compile!
       # - name: Run benchmarks

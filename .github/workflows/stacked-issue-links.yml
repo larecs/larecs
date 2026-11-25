@@ -1,0 +1,74 @@
+name: Sync stacked PR issues
+
+# GitHub links `Closes #N` only for pull requests into the default branch.
+# For stacked pull requests, this marks referenced issues "In progress" in the
+# project while the pull request is open, and closes them when it is merged.
+# An issue reopened after an automatic close stays open, unless the pull
+# request's description or code changed after the reopen and it still
+# references the issue.
+# See scripts/sync_stacked_issue_links.py.
+
+on:
+  # Scheduled runs use this file from the default branch, so they also cover
+  # stacked branches created before it existed.
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Report changes without making them
+        type: boolean
+        default: false
+      lookback-hours:
+        description: >-
+          How far back to look for merged pull requests; raise it to recover
+          merges missed while scans were paused or failing
+        type: number
+        default: 24
+  # Immediate updates for branches that contain this file.
+  pull_request:
+    types: [opened, edited, reopened, closed]
+
+permissions: {}
+
+concurrency:
+  group: stacked-issue-links-${{ github.event.pull_request.number || 'scan' }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync issue status
+    if: >-
+      ${{ github.event_name != 'pull_request'
+      || (github.event.pull_request.base.ref != github.event.repository.default_branch
+      && github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+    permissions:
+      # Check suite creation times stand in for push times.
+      checks: read
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Checkout Larecs
+        uses: actions/checkout@v6
+        with:
+          # Run the default branch's script; a PR cannot change what runs here.
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: scripts/sync_stacked_issue_links.py
+          sparse-checkout-cone-mode: false
+      - name: Sync issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Fine-grained token or GitHub App token with organization
+          # Projects read and write access.
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          DRY_RUN: ${{ inputs.dry-run }}
+          LOOKBACK_HOURS: ${{ inputs.lookback-hours }}
+        run: |
+          args=(--repo "$GITHUB_REPOSITORY")
+          if [ -n "$PR_NUMBER" ]; then args+=(--pr "$PR_NUMBER"); fi
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          if [ -n "$LOOKBACK_HOURS" ]; then args+=(--lookback-hours "$LOOKBACK_HOURS"); fi
+          python3 scripts/sync_stacked_issue_links.py "${args[@]}"

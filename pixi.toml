@@ -12,11 +12,15 @@ channels = [
 description = "Larecs🌲 is a performance-oriented archetype-based ECS for Mojo🔥."
 name = "larecs"
 platforms = ["linux-64", "osx-arm64"]
-version = "1.0.0b1"
+version = "1.0.0b2"
 preview = ["pixi-build"]
 
 [tasks]
-tests = { cmd = "test/run_tests.sh", default-environment = "test" }
+spatial-benchmarks = "mojo run -I src benchmark/spatial_smoke.mojo"
+spatial-performance-check = "python scripts/check_spatial_performance.py"
+spatial-filter-checks = "bash test/check_spatial_filters.sh"
+tests = { cmd = "pixi install --locked -e test-runner && MOGO_TESTER_BIN=$PIXI_PROJECT_ROOT/.pixi/envs/test-runner/bin/mogo-tester test/run_tests.sh", default-environment = "test" }
+test-resource-compile-failures = { cmd = "python test/check_resource_compile_failures.py", default-environment = "test" }
 doctest = { cmd = "scripts/run_doctests.sh", default-environment = "test" }
 benchmarks = { cmd = "mojo run -I src benchmark/run_benchmarks.mojo", default-environment = "default" }
 update-mojo = { cmd = "python scripts/update_mojo.py", default-environment = "default" }
@@ -26,10 +30,11 @@ watch-docs = { cmd = "cd scripts && pixi run watch-docs", default-environment = 
 serve-docs = { cmd = "cd scripts && pixi run serve-docs", default-environment = "default" }
 
 satellites = { cmd = "cd examples/satellites && pixi run satellites" }
+scatter-example = "mojo run -I src examples/scatter_resource.mojo"
 plots = { cmd = "cd benchmark/plots && pixi run plots" }
 
 [dependencies]
-mojo = ">=1.0.0b2,<2"
+mojo = ">=1.0.0,<1.1.0"
 mojo-tracy = ">=1.1.0,<2"
 max = ">=26.5.0,<27"
 
@@ -38,15 +43,31 @@ clang = ">=22.1.8,<23"
 clangxx = ">=22.1.8,<23"
 mogo-tester = ">=2.3.3,<3"
 
+# Mogo Tester 3 needs the Mojo 1.2 runtime, so it cannot share an environment
+# with Larecs' compiler. The tests task runs it from this environment.
+[feature.test-runner]
+channels = [
+  "https://prefix.dev/tree-d",
+  "https://conda.modular.com/max",
+  "conda-forge",
+]
+
+[feature.test-runner.dependencies]
+mogo-tester = ">=3.1.1,<4"
+
 [feature.test.activation.env]
 CC = "clang"
 CXX = "clang++"
+
+[target.osx-arm64.activation]
+scripts = ["scripts/activate_macos_sdk.sh"]
 
 [target.linux-64.dependencies]
 sysroot_linux-64 = ">=2.34,<3"
 
 [environments]
 test = ["test"] # An environment covering the "test" feature
+test-runner = { features = ["test-runner"], no-default-feature = true }
 
 [package]
 name = { workspace = true }

@@ -1,4 +1,4 @@
-"""Device-side (GPU) storage for components and resources.
+"""Device-side storage for components and resources.
 
 Provides `DeviceComponentStorage`, which mirrors a set of component columns
 on the device, and `DeviceResourceStorage`, which uploads individual
@@ -7,30 +7,61 @@ resources for a kernel invocation.
 
 from max.gpu.host import DeviceBuffer, DeviceContext, DevicePointer
 from std.sys import size_of
+from std.memory import ArcPointer
 
 from tracy import Zone
 
 from .component import ComponentType, ComponentManager
 from .debug_utils import debug_warn
+from .gpu_launch import max_resident_blocks
 from .resource import ResourceType, Resources
+from .resource_adapter import _TransferFrame
+from .resource_representation import _plain_device_value
 
 
 @fieldwise_init
-struct DeviceComponentType:
-    """Describes the on-device layout of a component type."""
+struct _Segment(Copyable, Equatable, ImplicitlyCopyable):
+    """One contiguous store range at a fixed offset of a device column."""
 
-    var dtype: DType
-    """The scalar data type used to represent the component's bytes."""
-    var dtype_size: Int
-    """The size of `dtype`, in bytes."""
-    var size: Int
-    """The size of the component type, in bytes."""
-    var padding: Int
-    """Extra bytes appended to `size` to satisfy alignment requirements."""
+    var store: Int
+    """Index of the physical store."""
+    var incarnation: UInt64
+    """Identity of the store object; 0 never matches."""
+    var revision: UInt64
+    """Column revision the device bytes match."""
+    var first_row: Int
+    """First store row of the range."""
+    var row_count: Int
+    """Number of rows in the range."""
+    var offset: Int
+    """First device column row of the range."""
+
+    def __eq__(self, other: Self) -> Bool:
+        """Compares every field.
+
+        Args:
+            other: Segment to compare with.
+
+        Returns:
+            Whether both segments describe the same device bytes.
+        """
+        return (
+            self.store == other.store
+            and self.incarnation == other.incarnation
+            and self.revision == other.revision
+            and self.first_row == other.first_row
+            and self.row_count == other.row_count
+            and self.offset == other.offset
+        )
 
 
 struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
     """Owns one byte-addressed device column per configured component type.
+
+    Each initialized column has an independent valid row count. Its buffer
+    length is a byte capacity, at least the row count times the component
+    size. Capacity and valid row counts never shrink; smaller uploads
+    overwrite only their range and retain previously valid suffix rows.
 
     Parameters:
         ComponentTypes: The component types managed by this storage.
@@ -44,19 +75,39 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
     ]
     """The type of the per-component device column array."""
     var _columns: Self.Columns
-    var _length: Int
+    var _lengths: Array[Int, len(Self.ComponentTypes)]
+    """Valid rows per column; zero until uploaded or ensured for kernel output."""
+    var _initial_capacity: Int
+    """Minimum row capacity when a column is first allocated."""
     var _device_context: DeviceContext
+    var _records: List[List[_Segment]]
+    """Per component ID, the segments the device column holds (decision 0021).
+
+    Only maintained while `_reuse` is enabled. A device run takes the
+    records of every column it accesses and restores them only after
+    successful publication, so a failure leaves those columns unknown.
+    """
+    var _reuse: Bool
+    """Whether device runs may skip uploading unchanged segments."""
+    var _host_id: Optional[ArcPointer[UInt8]]
+    """Identity of the host storage the records describe."""
+    var _max_grid_dim: Int
+    """Maximum number of blocks a kernel launch on this device should use.
+
+    ``0`` if the device does not report the attributes needed to compute it.
+    """
 
     def __init__(
         out self,
         var device_context: DeviceContext,
         length: Int,
     ):
-        """Allocates all configured device component columns.
+        """Creates storage with lazily allocated component columns.
 
         Args:
             device_context: The device context to allocate columns on.
-            length: The number of rows each column should be sized for.
+            length: The initial row capacity of each column, allocated lazily.
+                This reserves space but does not establish valid rows.
         """
         with Zone(
             function_name=(
@@ -65,8 +116,13 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             )
         ):
             self._columns = Self.Columns(fill=None)
+            self._max_grid_dim = max_resident_blocks(device_context)
             self._device_context = device_context^
-            self._length = length
+            self._lengths = Array[Int, len(Self.ComponentTypes)](fill=0)
+            self._initial_capacity = max(0, length)
+            self._records = Self._empty_records()
+            self._reuse = False
+            self._host_id = None
 
     def __init__(out self, *, copy: Self):
         """Copies the device storage from another instance.
@@ -79,7 +135,12 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         ):
             self._columns = Self.Columns(fill=None)
             self._device_context = copy._device_context
-            self._length = copy._length
+            self._lengths = copy._lengths.copy()
+            self._initial_capacity = copy._initial_capacity
+            self._max_grid_dim = copy._max_grid_dim
+            self._records = Self._empty_records()
+            self._reuse = copy._reuse
+            self._host_id = None
 
             comptime for i in range(len(Self.ComponentTypes)):
                 comptime T = Self.ComponentTypes[i]
@@ -97,15 +158,87 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
                     # `LockGuard.__deinit__` in lock.mojo
                     # for the same pattern applied to the same constraint.
                     try:
-                        self._create_column[T]()
+                        self._create_column[T](
+                            len(copy._columns[i].unsafe_value())
+                        )
                         self._copy_column[T](copy._columns[i].unsafe_value())
                     except e:
                         self._columns[i] = None
+                        self._lengths[i] = 0
                         debug_warn(
                             t"DeviceComponentStorage.copy: failed to copy"
                             t" the device column for"
                             t" {reflect[T].name()}: {String(e)}"
                         )
+
+    @staticmethod
+    def _empty_records() -> List[List[_Segment]]:
+        """Creates one empty record list per component type.
+
+        Returns:
+            Records describing no device bytes.
+        """
+        var records = List[List[_Segment]](capacity=len(Self.ComponentTypes))
+        for _ in range(len(Self.ComponentTypes)):
+            records.append(List[_Segment]())
+        return records^
+
+    def _set_reuse(mut self, enabled: Bool):
+        """Enables or disables segment reuse; disabling discards records.
+
+        Args:
+            enabled: Whether device runs may skip unchanged segments.
+        """
+        self._reuse = enabled
+        if not enabled:
+            self._invalidate_records()
+
+    def _invalidate_records(mut self):
+        """Marks every device column's contents unknown."""
+        for i in range(len(self._records)):
+            self._records[i].clear()
+
+    def _check_host(mut self, host_id: ArcPointer[UInt8]):
+        """Discards all records if they describe a different host storage.
+
+        Args:
+            host_id: Identity of the world's current host storage.
+        """
+        if (
+            self._host_id is None
+            or self._host_id.unsafe_value().unsafe_ptr() != host_id.unsafe_ptr()
+        ):
+            self._invalidate_records()
+            self._host_id = host_id.copy()
+
+    def _take_records[T: ComponentType](mut self) -> List[_Segment]:
+        """Removes and returns the records of one column before queueing work.
+
+        Parameters:
+            T: The column's component type.
+
+        Returns:
+            The previous records; the column is unknown until restored.
+        """
+        comptime id = Self.component_manager.get_id[T]()
+        var records = self._records[id].copy()
+        self._records[id].clear()
+        return records^
+
+    def _restore_records[
+        T: ComponentType
+    ](mut self, var records: List[_Segment]):
+        """Records the segments a column holds after a successful run.
+
+        Parameters:
+            T: The column's component type.
+
+        Args:
+            records: Segments in transfer order.
+        """
+        comptime id = Self.component_manager.get_id[T]()
+        if self._reuse:
+            self._records[id] = records^
 
     def has_component[T: ComponentType](self) -> Bool:
         """Returns whether the device column for ``T`` is initialized.
@@ -127,7 +260,18 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             comptime id = Self.component_manager.get_id[T]()
             return Bool(self._columns[id])
 
-    def _create_column[T: ComponentType](mut self) raises:
+    def _create_column[T: ComponentType](mut self, capacity_bytes: Int) raises:
+        """Allocates a column with the requested byte capacity.
+
+        Parameters:
+            T: The component type to allocate.
+
+        Args:
+            capacity_bytes: The byte capacity of the new column.
+
+        Raises:
+            Error: If device allocation fails.
+        """
         with Zone(
             function_name=(
                 "DeviceComponentStorage._create_column[T: ComponentType]()"
@@ -137,11 +281,22 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
 
             self._columns[id] = self._device_context.enqueue_create_buffer[
                 DType.uint8
-            ](self._length * size_of[T]())
+            ](capacity_bytes)
 
     def _copy_column[
         T: ComponentType
     ](mut self, src: DeviceBuffer[DType.uint8]) raises:
+        """Copies the valid prefix of an initialized column.
+
+        Parameters:
+            T: The component type to copy.
+
+        Args:
+            src: The source column with at least the valid row count.
+
+        Raises:
+            Error: If the destination is missing or the device copy fails.
+        """
         with Zone(
             function_name=(
                 "DeviceComponentStorage._copy_column[T: ComponentType](src:"
@@ -153,9 +308,11 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             if self._columns[id] is None:
                 raise Error("Column not initialized")
 
-            assert len(self._columns[id].unsafe_value()) <= len(src)
-
-            self._columns[id].unsafe_value().enqueue_copy_from(src)
+            var size = self._lengths[id] * size_of[T]()
+            if size > 0:
+                self._columns[id].unsafe_value().create_sub_buffer[DType.uint8](
+                    0, size
+                ).enqueue_copy_from(src.create_sub_buffer[DType.uint8](0, size))
 
     def copy_to_host[T: ComponentType](self, out data: List[T]) raises:
         """Copies the device column for ``T`` into a newly allocated list.
@@ -163,8 +320,9 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         Parameters:
             T: The component type of the column to copy.
 
-        Returns:
-            The column contents, or an empty list when the column is not initialized.
+        Args:
+            data: Receives the valid column contents, or an empty list when
+                the column is not initialized.
 
         Raises:
             Error: If synchronizing the device context fails.
@@ -180,19 +338,11 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             if self._columns[id] is None:
                 return List[T](capacity=0)
 
-            # Build the result as a `List[T]` directly, sized in *elements*
-            # (`self._length`), and copy into its raw bytes -- rather than
-            # building a `List[UInt8]` sized in bytes and reinterpreting it
-            # via `rebind_var[List[T]]`. `rebind_var` only reinterprets the
-            # list's fields (pointer, length, capacity) bit-for-bit; it does
-            # not rescale `length`/`capacity` from a byte count to an
-            # element count, so the previous version left `data` reporting
-            # `self._length * size_of[T]()` elements -- `size_of[T]()` times
-            # too many -- for any `T` wider than one byte.
-            data = List[T](unsafe_uninit_length=self._length)
-            self._columns[id].unsafe_value().enqueue_copy_to(
-                data.unsafe_ptr().unsafe_bitcast[UInt8]()
-            )
+            data = List[T](unsafe_uninit_length=self._lengths[id])
+            if self._lengths[id] > 0:
+                self._columns[id].unsafe_value().create_sub_buffer[DType.uint8](
+                    0, self._lengths[id] * size_of[T]()
+                ).enqueue_copy_to(data.unsafe_ptr().unsafe_bitcast[UInt8]())
             self._device_context.synchronize()
 
     def copy_to_host[
@@ -218,7 +368,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
 
         Raises:
             Error: If ``offset``/``length`` describe a range outside the
-                column's ``[0, self._length)`` bounds, or if the device
+                selected column's valid row bounds, or if the device
                 copy fails.
         """
         with Zone(
@@ -239,15 +389,20 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             # column's end) is still rejected below rather than silently
             # multiplying out to a nonsensical byte count in
             # `create_sub_buffer`.
-            var copy_length = length if length >= 0 else self._length - offset
+            var copy_length = (
+                length if length >= 0 else self._lengths[id] - offset
+            )
 
             var end = offset + copy_length
-            if offset < 0 or copy_length < 0 or end > self._length:
+            if offset < 0 or copy_length < 0 or end > self._lengths[id]:
                 raise Error(
                     t"DeviceComponentStorage.copy_to_host: range [{offset},"
                     t" {end}) is out of bounds for a column of length"
-                    t" {self._length}"
+                    t" {self._lengths[id]}"
                 )
+
+            if copy_length == 0:
+                return
 
             self._columns[id].unsafe_value().create_sub_buffer[DType.uint8](
                 offset * size_of[T](), copy_length * size_of[T]()
@@ -257,6 +412,9 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         """Ensures the device column for ``T`` exists and covers ``length`` rows.
 
         Creates or grows the column as needed, but uploads no data into it.
+        Marks at least ``length`` rows valid for kernel output; the caller
+        must write newly exposed rows before downloading them. Existing
+        valid rows and capacity are retained when ``length`` is smaller.
         Used for a kernel component that is write-only for the current
         call: the column must exist before the kernel writes through it,
         but nothing needs uploading first, since a write-only component's
@@ -269,7 +427,7 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             length: The minimum number of rows the column must cover.
 
         Raises:
-            Error: If allocating or growing the device buffer fails.
+            Error: If length is negative or device allocation fails.
         """
         with Zone(
             function_name=(
@@ -279,43 +437,51 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         ):
             comptime id = Self.component_manager.get_id[T]()
 
-            if self._length < length:
-                self._length = length
+            if length < 0:
+                raise Error("Column length must be nonnegative")
 
-            if self._columns[id] is None:
-                self._columns[id] = {
-                    self._device_context.enqueue_create_buffer[DType.uint8](
-                        self._length * size_of[T]()
-                    )
-                }
+            self.reserve_column[T](length)
+            self._lengths[id] = max(self._lengths[id], length)
 
-            # Compare byte counts on both sides: `len()` on a `uint8`
-            # `DeviceBuffer` is a byte count, while `self._length` is a row
-            # count. Comparing them directly as if they were the same unit
-            # made this condition true for any component wider than one
-            # byte, so every call reallocated the column and did a full
-            # device-to-device copy of the column it had just allocated,
-            # even when the column's size had not actually changed.
-            if (
-                len(self._columns[id].unsafe_value())
-                != self._length * size_of[T]()
-            ):
-                var old_buffer = self._columns[id].unsafe_value()
-                var new_buffer = self._device_context.enqueue_create_buffer[
-                    DType.uint8
-                ](self._length * size_of[T]())
-                # The device copy API requires the destination and source
-                # buffers to be the same size (a same-sized `enqueue_copy_to`
-                # or `enqueue_copy_from` errors as "not enough data in src"
-                # or "Destination buffer size must be >= source buffer
-                # size" otherwise). `new_buffer` is always at least as large
-                # as `old_buffer` here, since this branch only ever grows a
-                # column, so copy into a same-sized leading sub-buffer of
-                # `new_buffer` rather than into `new_buffer` directly.
+    def reserve_column[T: ComponentType](mut self, length: Int) raises:
+        """Reserves device capacity without publishing unwritten logical rows.
+
+        Existing valid rows survive growth. A new column allocates at least
+        the initial capacity or requested rows; subsequent growth doubles
+        byte capacity unless the request is larger. Smaller requests retain
+        both capacity and valid length. Use ``ensure_column`` instead when
+        promising output rows that a kernel will write.
+
+        Parameters:
+            T: The component type whose capacity to reserve.
+
+        Args:
+            length: The minimum row capacity, which must be nonnegative.
+
+        Raises:
+            Error: If length is negative or device allocation or copying fails.
+        """
+        comptime id = Self.component_manager.get_id[T]()
+        if length < 0:
+            raise Error("Column capacity must be nonnegative")
+
+        var capacity_bytes = max(self._initial_capacity, length) * size_of[T]()
+        if self._columns[id] is None:
+            self._create_column[T](capacity_bytes)
+        elif len(self._columns[id].unsafe_value()) < capacity_bytes:
+            var old_buffer = self._columns[id].unsafe_value()
+            capacity_bytes = max(capacity_bytes, 2 * len(old_buffer))
+            var new_buffer = self._device_context.enqueue_create_buffer[
+                DType.uint8
+            ](capacity_bytes)
+            var valid_bytes = self._lengths[id] * size_of[T]()
+            if valid_bytes > 0:
                 new_buffer.create_sub_buffer[DType.uint8](
-                    0, len(old_buffer)
-                ).enqueue_copy_from(old_buffer)
-                self._columns[id] = {new_buffer^}
+                    0, valid_bytes
+                ).enqueue_copy_from(
+                    old_buffer.create_sub_buffer[DType.uint8](0, valid_bytes)
+                )
+            self._columns[id] = {new_buffer^}
 
     def copy_from_host[
         mut: Bool, origin: Origin[mut=mut], //, T: ComponentType
@@ -329,10 +495,14 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
 
         Args:
             data: The host data to upload.
-            offset: The starting row at which to write the data.
+            offset: The starting row at which to write the data. Must be in
+                ``[0, valid rows]``; uploads may overwrite or append, but
+                cannot leave an uninitialized gap. Smaller uploads retain
+                the valid suffix. Empty uploads do not initialize a column.
 
         Raises:
-            Error: If allocating or copying the device buffer fails.
+            Error: If offset is outside the valid rows or allocating or copying
+                the device buffer fails.
         """
         with Zone(
             function_name=(
@@ -343,10 +513,13 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
         ):
             comptime id = Self.component_manager.get_id[T]()
 
+            if offset < 0 or offset > self._lengths[id]:
+                raise Error("Upload offset is outside the column's valid rows")
             if len(data) == 0:
                 return
 
-            self.ensure_column[T](len(data) + offset)
+            var old_length = self._lengths[id]
+            self.reserve_column[T](len(data) + offset)
 
             var sub_buffer = (
                 self._columns[id]
@@ -358,6 +531,81 @@ struct DeviceComponentStorage[*ComponentTypes: ComponentType](Copyable):
             sub_buffer.enqueue_copy_from(
                 data.unsafe_ptr().unsafe_bitcast[UInt8]()
             )
+            self._lengths[id] = max(old_length, offset + len(data))
+
+    def stage_from_host[
+        mut: Bool, origin: Origin[mut=mut], //, T: ComponentType
+    ](
+        mut self,
+        mut frame: _TransferFrame,
+        data: Span[T, origin],
+        *,
+        offset: Int = 0,
+    ) raises:
+        """Snapshots a host column range into native staging for queued upload.
+
+        Parameters:
+            mut: Source span mutability.
+            origin: Source borrow origin.
+            T: Component type.
+
+        Args:
+            frame: Invocation staging owner.
+            data: Source component range.
+            offset: First destination row.
+
+        Raises:
+            Error: If allocation or transfer fails.
+        """
+        if len(data) == 0:
+            return
+        self.ensure_column[T](len(data) + offset)
+        comptime id = Self.component_manager.get_id[T]()
+        frame.upload(
+            self._columns[id]
+            .unsafe_value()
+            .create_sub_buffer[DType.uint8](
+                offset * size_of[T](), len(data) * size_of[T]()
+            ),
+            data.unsafe_ptr().unsafe_bitcast[UInt8]().unsafe_mut_cast[False](),
+        )
+
+    def stage_to_host[
+        T: ComponentType
+    ](
+        self,
+        mut frame: _TransferFrame,
+        column_ptr: Pointer[T, MutUntrackedOrigin],
+        *,
+        offset: Int = 0,
+        length: Int = -1,
+    ) raises:
+        """Stages a device column range without publishing partial downloads.
+
+        Parameters:
+            T: Component type.
+
+        Args:
+            frame: Invocation staging and publication owner.
+            column_ptr: Destination host component range.
+            offset: First device source row.
+            length: Row count, or -1 for the remaining column.
+
+        Raises:
+            Error: If the range is invalid or the transfer fails.
+        """
+        comptime id = Self.component_manager.get_id[T]()
+        var count = length if length >= 0 else self._lengths[id] - offset
+        if offset < 0 or count < 0 or count > self._lengths[id] - offset:
+            raise Error("Invalid staged component download range")
+        frame.download(
+            self._columns[id]
+            .unsafe_value()
+            .create_sub_buffer[DType.uint8](
+                offset * size_of[T](), count * size_of[T]()
+            ),
+            column_ptr.unsafe_bitcast[UInt8](),
+        )
 
     def get_device_ptr[
         T: ComponentType
@@ -435,12 +683,8 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
     def upload[T: ResourceType](mut self, ref value: T) raises:
         """Copies ``value`` into a freshly allocated device buffer.
 
-        Takes ``value`` by `ref` and copies from it immediately, in the
-        same call -- callers must pass the result of a resource lookup
-        directly (e.g. ``device_resources.upload[T](world.resources.get[T]())``)
-        rather than routing it through a variable that outlives the call,
-        since a `ref` returned by a `raises` accessor is only guaranteed
-        valid for immediate use at its own call site.
+        The host value must remain alive until the queued copy completes.
+        This copies only the value's bytes, not any allocations it points to.
 
         Parameters:
             T: The type of the resource to upload. Must be part of
@@ -457,6 +701,9 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
                 "DeviceResourceStorage.upload[T: ResourceType](ref value: T)"
             )
         ):
+            comptime assert _plain_device_value[
+                T
+            ](), "Device resources require pointer-free trivial plain values"
             comptime id = Self.resources.index_of[T]()
             comptime assert id != -1, "T is not part of `resources`"
 
@@ -490,6 +737,9 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
                 "DeviceResourceStorage.download[T: ResourceType](mut value: T)"
             )
         ):
+            comptime assert _plain_device_value[
+                T
+            ](), "Device resources require pointer-free trivial plain values"
             comptime id = Self.resources.index_of[T]()
             comptime assert id != -1, "T is not part of `resources`"
 
@@ -520,6 +770,9 @@ struct DeviceResourceStorage[resources: Resources](Copyable):
                 "DeviceResourceStorage.get_device_ptr[T: ResourceType]()"
             )
         ):
+            comptime assert _plain_device_value[
+                T
+            ](), "Device resources require pointer-free trivial plain values"
             comptime id = Self.resources.index_of[T]()
             comptime assert id != -1, "T is not part of `resources`"
 

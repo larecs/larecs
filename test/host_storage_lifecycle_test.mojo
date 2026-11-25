@@ -1,3 +1,5 @@
+# MOJO_BUILD_ARGS: -g1
+
 """HostStorage-level tests for lifecycle safety, bounds safety, and typed errors.
 
 These exercise `HostStorage` directly (rather than through `World`) so they
@@ -5,80 +7,14 @@ stay decoupled from the higher-level query API.
 """
 
 from std.testing import *
-from std.memory import alloc, dealloc, Layout, Allocation
 
 from larecs.host_storage import HostStorage
 from larecs.entity import Entity
 from larecs.filter import Filter
-from larecs.error import LarecsError, WorldError, EntityError, ComponentError
+from larecs.error import WorldError, EntityError
 from larecs.test_utils import *
 
-
-comptime TrackedComponent = MemTestStruct[
-    MutUnsafeAnyOrigin, MutUnsafeAnyOrigin, MutUnsafeAnyOrigin
-]
-
-
-struct LifecycleCounters(Movable):
-    """Lifecycle operation counters for non-trivial component tests."""
-
-    var _copy_counter: Allocation[Int]
-    """The number of copy initializations."""
-
-    var _move_counter: Allocation[Int]
-    """The number of move initializations."""
-
-    var _del_counter: Allocation[Int]
-    """The number of destructor calls."""
-
-    def __init__(out self):
-        """Initializes copy, move, and delete counters to zero."""
-        self._copy_counter = alloc(Layout[Int].single())
-        self._move_counter = alloc(Layout[Int].single())
-        self._del_counter = alloc(Layout[Int].single())
-        self._copy_counter.unsafe_ptr().unsafe_write(0)
-        self._move_counter.unsafe_ptr().unsafe_write(0)
-        self._del_counter.unsafe_ptr().unsafe_write(0)
-
-    def __deinit__(deinit self):
-        """Destroys and frees the allocated lifecycle counters."""
-        self._copy_counter.unsafe_ptr().unsafe_deinit_pointee()
-        self._move_counter.unsafe_ptr().unsafe_deinit_pointee()
-        self._del_counter.unsafe_ptr().unsafe_deinit_pointee()
-        dealloc(self._copy_counter^)
-        dealloc(self._move_counter^)
-        dealloc(self._del_counter^)
-
-    def del_counter(ref self) -> Int:
-        """Returns the current delete counter value."""
-        return self._del_counter.unsafe_ptr()[]
-
-    def copy_counter(ref self) -> Int:
-        """Returns the current copy counter value."""
-        return self._copy_counter.unsafe_ptr()[]
-
-    def move_counter(ref self) -> Int:
-        """Returns the current move counter value."""
-        return self._move_counter.unsafe_ptr()[]
-
-    def component(ref self) -> TrackedComponent:
-        """Creates a tracked component connected to these counters.
-
-        Returns:
-            A component whose copy, move, and destructor operations increment
-            this counter set.
-        """
-        return TrackedComponent(
-            self._copy_counter.unsafe_ptr()
-            .as_unsafe_any_origin()
-            .mut_cast[True](),
-            self._move_counter.unsafe_ptr()
-            .as_unsafe_any_origin()
-            .mut_cast[True](),
-            self._del_counter.unsafe_ptr()
-            .as_unsafe_any_origin()
-            .mut_cast[True](),
-        )
+from fixtures.lifecycle import LifecycleCounters, TrackedComponent
 
 
 # ===----------------------------------------------------------------------=== #
@@ -359,6 +295,7 @@ def test_host_storage_replace_same_non_trivial_component_in_place() raises:
     _ = storage^
     # Teardown owns only the replacement, not the already-destroyed old value.
     assert_equal(old_counters.del_counter() - old_base_dels, 1)
+    assert_equal(new_counters.del_counter(), 1)
     _ = new_counters.del_counter()
     _ = old_counters.del_counter()
 

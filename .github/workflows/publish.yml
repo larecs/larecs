@@ -8,14 +8,55 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: >-
+    ${{ github.event_name == 'pull_request'
+    && format('{0}-pr-{1}', github.workflow, github.event.pull_request.number)
+    || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  publish:
-    name: Publish API docs
+  # Build docs and run doctests only when their inputs change: the guides, the
+  # API docstrings, the benchmark plots embedded in the guides, the tooling, or
+  # the logo playground published alongside them.
+  changes:
+    name: Detect changes
     runs-on: ubuntu-latest
     permissions:
-      # Only the deploy step (push to a fresh, orphan-history gh-pages
-      # branch) needs write access; everything else here only reads.
-      contents: write
+      contents: read
+      pull-requests: read
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            docs:
+              - docs/**
+              - src/**
+              - benchmark/plots/**
+              - modo.yaml
+              - pixi.toml
+              - pixi.lock
+              - scripts/docs.py
+              - scripts/pixi.toml
+              - scripts/pixi.lock
+              - scripts/run_doctests.sh
+              - .github/workflows/publish.yml
+              - branding/previews/playground.html
+              - branding/previews/vendor/**
+
+  publish:
+    name: Publish API docs
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     defaults:
       run:
@@ -49,6 +90,12 @@ jobs:
           pixi install --locked
           pixi run build-docs
 
+      - name: Add logo playground to the docs site
+        run: |
+          mkdir -p docs/site/public/branding
+          cp branding/previews/playground.html docs/site/public/branding/index.html
+          cp -r branding/previews/vendor docs/site/public/branding/
+
       - name: Archive Doc-tests
         uses: actions/upload-artifact@v4
         with:
@@ -65,11 +112,38 @@ jobs:
           name: public
           path: docs/site/public
 
-      - name: Deploy to GitHub Pages
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: crazy-max/ghaction-github-pages@v4
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: publish
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # No concurrency group: a newer pending job in a group cancels an older
+    # one, which would drop main deployments. Preview deployments write only
+    # under pr-preview/, so concurrent pushes rebase without conflicts.
+    steps:
+      - name: Checkout Larecs
+        uses: actions/checkout@v6
         with:
-          target_branch: gh-pages
-          build_dir: docs/site/public
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+      - name: Download HTML artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: public
+          path: public
+      # Jekyll omits directories starting with "_", such as the _astro/ assets
+      # of Starlight PR previews.
+      - name: Disable Jekyll
+        run: touch public/.nojekyll
+      - name: Deploy, keeping PR previews
+        uses: JamesIves/github-pages-deploy-action@v4.9.0
+        with:
+          branch: gh-pages
+          folder: public
+          # Previews and the Starlight dev site are deployed by other jobs.
+          clean-exclude: |
+            pr-preview/
+            dev/
+          force: false
+          attempt-limit: 10

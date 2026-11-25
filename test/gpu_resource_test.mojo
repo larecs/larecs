@@ -5,26 +5,29 @@
 # GPU kernel reliably crashes Apple's Metal compiler when compiled with
 # `-g`. See "Known issues" in AGENTS.md for the full writeup.
 
+from std.gpu import global_idx
 from std.sys import has_accelerator
+from std.sys.info import is_gpu
 from std.testing import *
+from std.utils import StaticTuple
 
 from larecs import (
+    ExecutionBackend,
     World,
     SystemContext,
     KernelContext,
     Filter,
     Resources,
     ResourceType,
+    PlainValue,
+    ThreadedExecutionConfig,
 )
 
 
-# `TrivialRegisterPassable` satisfies `GPUResourceType` (see
-# resource.mojo): `SystemContext.run(..., on_gpu=True)` moves required
-# resources as raw bytes, which is only compile-time-permitted for a type
-# with no non-trivial state. `Int32`, this file's component type, is
-# already `TrivialRegisterPassable` as a builtin scalar.
+# Required resources must be trivially movable for raw-byte transfer.
+# Scale contains only an Int32 and needs no TrivialRegisterPassable conformance.
 @fieldwise_init
-struct Scale(ResourceType, TrivialRegisterPassable):
+struct Scale(ResourceType):
     var value: Int32
 
 
@@ -37,8 +40,8 @@ def scale_entities(
         entity.get[Int32]() *= scale.value
 
 
-def test_kernel_context_required_resources_on_gpu() raises:
-    """A GPU kernel can declare and read a resource via `KernelContext.resources`.
+def test_kernel_context_required_resources_on_device() raises:
+    """A device kernel can declare and read a resource via `KernelContext.resources`.
     """
     comptime if not has_accelerator():
         return
@@ -48,7 +51,7 @@ def test_kernel_context_required_resources_on_gpu() raises:
     _ = world.storage.add_entities(Int32(1), count=5)
 
     var context = SystemContext(world)
-    context.run[scale_entities, on_gpu=True]()
+    context.run[scale_entities, backend=ExecutionBackend.DEVICE]()
 
     var total: Int32 = 0
     for entity in world.storage.query[Filter().include[Int32]()]():
@@ -62,14 +65,19 @@ def overwrite_scale(
 ):
     """Overwrites the `Scale` resource with a fixed value.
 
-    Every thread writes the same value, so the result is deterministic
-    regardless of which thread's write lands last.
+    Only the first thread writes, avoiding concurrent resource mutation.
+
+    Args:
+        context: Matching component rows and the shared scale resource.
     """
+    comptime if is_gpu():
+        if global_idx.x != 0:
+            return
     context.resources.get[Scale]() = Scale(42)
 
 
 def test_kernel_context_resource_mutation_is_copied_back_to_host() raises:
-    """A resource mutated on the GPU is copied back to host after the kernel runs.
+    """A resource mutated on the device is copied back to host after the kernel runs.
     """
     comptime if not has_accelerator():
         return
@@ -79,9 +87,107 @@ def test_kernel_context_resource_mutation_is_copied_back_to_host() raises:
     _ = world.storage.add_entities(Int32(1), count=5)
 
     var context = SystemContext(world)
-    context.run[overwrite_scale, on_gpu=True]()
+    context.run[overwrite_scale, backend=ExecutionBackend.DEVICE]()
 
     assert_equal(world.resources.get[Scale]().value, 42)
+
+
+def update_with_local_captures(
+    context: KernelContext[Filter().include[Int32](), Resources[Scale]()]
+):
+    """Uses closures capturing variables local to each GPU thread.
+
+    Args:
+        context: Matching integer components and the shared scale resource.
+    """
+    var factor = context.resources.get[Scale]().value
+    var processed: Int32 = 0
+
+    def transform(value: Int32) {imm factor, mut processed} -> Int32:
+        """Transforms one component and counts this thread's processed rows.
+
+        Args:
+            value: The component value to scale.
+
+        Returns:
+            The scaled value plus this thread's processed row count.
+        """
+        processed += 1
+        return value * factor + processed
+
+    for entity in context:
+        entity.get[Int32]() = transform(entity.get[Int32]())
+
+
+def test_gpu_kernel_local_captures() raises:
+    """Captures kernel-local values without borrowing host stack memory.
+
+    Raises:
+        Error: If execution fails or a component has an unexpected value.
+    """
+    comptime if not has_accelerator():
+        return
+    var world = World[Int32]()
+    world.resources.add(Scale(3))
+    # More than one block, with a partially populated final block.
+    _ = world.storage.add_entities(Int32(2), count=37)
+    var context = SystemContext(world)
+    context.run[update_with_local_captures, backend=ExecutionBackend.DEVICE]()
+    for entity in world.storage.query[Filter().include[Int32]()]():
+        assert_equal(entity.get[Int32](), 7)
+
+
+@fieldwise_init
+struct DeclaredScale(PlainValue, ResourceType):
+    """Holds fixed numeric factors in an opaque scalar tuple."""
+
+    var values: StaticTuple[Int32, 4]
+
+
+def apply_declared_scale(
+    context: KernelContext[
+        Filter().include[Int32](), Resources().read[DeclaredScale]()
+    ]
+):
+    """Adds the factors from a declared read resource to each row.
+
+    Args:
+        context: Rows and their read-only factors.
+    """
+    ref values = context.resources.get[DeclaredScale]().values
+    for entity in context:
+        entity.get[Int32]() += values[0] + values[3]
+
+
+def _check_declared_scale[backend: ExecutionBackend]() raises:
+    """Checks that a backend accepts and reads a declared plain resource.
+
+    Parameters:
+        backend: Backend under test.
+
+    Raises:
+        Error: If the backend cannot run the kernel or a component differs.
+    """
+    var world = World[Int32](
+        execution_config=ThreadedExecutionConfig(workers=4, min_parallel_rows=0)
+    )
+    world.resources.add(DeclaredScale(StaticTuple[Int32, 4](3)))
+    _ = world.storage.add_entities(Int32(1), count=257)
+    var context = SystemContext(world)
+    context.run[apply_declared_scale, backend=backend]()
+    for entity in world.storage.query[Filter().include[Int32]()]():
+        assert_equal(entity.get[Int32](), 7)
+
+
+def test_declared_plain_read_resource() raises:
+    """Exercises declared plain resources on both accelerated execution paths.
+
+    Raises:
+        Error: If a backend rejects the resource or produces an unexpected value.
+    """
+    _check_declared_scale[ExecutionBackend.HOST_THREADED]()
+    comptime if has_accelerator():
+        _check_declared_scale[ExecutionBackend.DEVICE]()
 
 
 comptime functions = __functions_in_module()

@@ -18,7 +18,9 @@ from tracy import Zone
 # TODO: Implement `IterableOwned` for this
 # TODO: Implement `Iterator` for this
 @fieldwise_init
-struct _BitMaskIndexIter[total_bits: Int](ImplicitlyCopyable, Sized):
+struct _BitMaskIndexIter[total_bits: Int](ImplicitlyCopyable, Sized) where (
+    total_bits >= 8 and total_bits.is_power_of_two()
+):
     """Iterator for BitMask indices.
 
     Iterates over the indices of all bits that are set to True in a BitMask,
@@ -50,16 +52,13 @@ struct _BitMaskIndexIter[total_bits: Int](ImplicitlyCopyable, Sized):
             bytes: The bytes to scan for set bits.
 
         Constraints:
-            `total_bits` must be a power of two.
+            `total_bits` must be a power of two and at least eight.
         """
         with Zone(
             function_name=(
                 "_BitMaskIndexIter.__init__(var bytes: Self.bitmask.BytesType)"
             )
         ):
-            comptime assert (
-                Self.total_bits.is_power_of_two()
-            ), "BitMask size must be a power of two."
             self._bytes = bytes
             self._mask = Self.bitmask.BytesType(1)
             self._compare = self._bytes & self._mask
@@ -120,8 +119,14 @@ struct _BitMask[total_bits: Int](
     Movable,
     RegisterPassable,
     Writable,
+) where (
+    total_bits >= 8 and total_bits.is_power_of_two()
 ):
-    """A 256-bit bitmask for efficient set operations."""
+    """A bitmask with a power-of-two bit count of at least eight.
+
+    Parameters:
+        total_bits: Bit count, stored in a nonempty power-of-two SIMD byte vector.
+    """
 
     comptime total_bytes = Self.total_bits // 8
     """The number of bytes required to store the bitmask."""
@@ -141,9 +146,6 @@ struct _BitMask[total_bits: Int](
             bytes: The raw byte data representing the bitmask state.
         """
         with Zone(function_name="BitMask.__init__(bytes: Self.BytesType)"):
-            comptime assert (
-                Self.total_bits.is_power_of_two()
-            ), "BitMask size must be a power of two."
             self._bytes = bytes
 
     @always_inline
@@ -161,9 +163,6 @@ struct _BitMask[total_bits: Int](
         with Zone(
             function_name="BitMask.__init__[size: Int](bits: Array[Int, size])"
         ):
-            comptime assert (
-                Self.total_bits.is_power_of_two()
-            ), "BitMask size must be a power of two."
             self._bytes = Self.BytesType()
 
             comptime for i in range(size):
@@ -179,9 +178,6 @@ struct _BitMask[total_bits: Int](
             bits: Variadic bit indices to set to True.
         """
         with Zone(function_name="BitMask.__init__(*bits: Int)"):
-            comptime assert (
-                Self.total_bits.is_power_of_two()
-            ), "BitMask size must be a power of two."
             self._bytes = Self.BytesType()
             for bit in bits:
                 self.set[True](bit)
